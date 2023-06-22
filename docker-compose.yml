@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  pocketbase:
+    image: spectado/pocketbase:0.16.5
+    container_name: grimoire-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./pb_data:/pb_data
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 5
