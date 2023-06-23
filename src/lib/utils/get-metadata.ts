@@ -57,16 +57,20 @@ const articleExtractorScraper = async (html: string, _url: string): Promise<Part
 };
 
 const faviconScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
+	const getFaviconElementsRegex =
+		/<link[^>]*rel=["'](?:icon|shortcut icon|apple-touch-icon-precomposed|apple-touch-icon|mask-icon|fluid-icon|manifest)["'][^>]*>/gim;
+	const getUrlRegex = /href="([^"]*)"/;
 	const baseUrl = new URL(url).origin;
-	const matchedElements = html.match(
-		/<link[^>]*rel=["'](?:icon|shortcut icon|apple-touch-icon-precomposed|apple-touch-icon|mask-icon|fluid-icon|manifest)["'][^>]*>/gim
-	);
+	const matchedElements = html.match(getFaviconElementsRegex);
 
 	const favicon = matchedElements?.reduce((acc, element) => {
 		if (acc) return acc;
-		const hrefMatch = element.match(/href="([^"]*)"/);
+
+		const hrefMatch = element.match(getUrlRegex);
 		if (!hrefMatch) return '';
+
 		let faviconUrl = hrefMatch[1];
+
 		if (faviconUrl.startsWith('/')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
 		}
@@ -95,20 +99,18 @@ export async function getMetadata(url: string) {
 
 	return {
 		url: metascraperMetadata?.url || articleExtractorMetadata?.url || '',
-		domain: domain || '',
+		domain,
 		title: metascraperMetadata?.title || articleExtractorMetadata?.title || '',
 		description: metascraperMetadata?.description || articleExtractorMetadata?.description || '',
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
 		content_text,
 		content_html: articleExtractorMetadata?.content_html || '',
 		content_type: '',
-		content_published_date: metascraperMetadata?.content_published_date || new Date(),
+		content_published_date: metascraperMetadata?.content_published_date || '',
 		main_image: '',
 		main_image_url:
 			metascraperMetadata?.main_image_url || articleExtractorMetadata?.main_image_url || '',
 		icon: '',
-		icon_url: faviconMetadata?.icon_url || '',
-		metascraperMetadata,
-		articleExtractorMetadata
+		icon_url: faviconMetadata?.icon_url || ''
 	};
 }

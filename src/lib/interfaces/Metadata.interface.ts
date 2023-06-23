@@ -8,7 +8,6 @@ export interface Metadata {
 	content_html: string;
 	content_type: string;
 	content_published_date: Date | null;
-	note: string;
 	main_image_url: string;
 	icon_url: string;
 }

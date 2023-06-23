@@ -2,17 +2,16 @@
 	import AddBookmarkButton from '$lib/components/AddBookmarkButton/AddBookmarkButton.svelte';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import Bookmark from '$lib/components/Bookmark/Bookmark.svelte';
-	// import type { PageData, ActionData } from './$types';
+	import type { Category } from '$lib/interfaces/Category.interface';
+	import type { PageData } from './$types';
 
-	// export let form: ActionData;
+	export let pageData: PageData;
 </script>
 
 <div class="m-8">
-	<AddBookmarkButton />
+	<div class="ml-auto w-fit">
+		<AddBookmarkButton />
+	</div>
 	<AddBookmarkModal />
 	<Bookmark />
-
-	<!-- {#if form}
-		<pre>{JSON.stringify(form, null, 2)}</pre>
-	{/if} -->
 </div>
