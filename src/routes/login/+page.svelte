@@ -1,24 +1,14 @@
 <script lang="ts">
-	import { Auth } from '$lib/api/auth';
-	import { applyAction, enhance } from '$app/forms';
-	import { pb } from '$lib/pb';
-	import type { PageData, ActionData } from './$types';
+	import type { ActionData } from './$types';
+
 	export let form: ActionData;
 </script>
 
 <div class="w-full mt-24">
 	<div class="form-control mx-auto max-w-xs gap-4">
-		<form
-			method="POST"
-			use:enhance={() => {
-				return async ({ result }) => {
-					pb.authStore.loadFromCookie(document.cookie);
-					await applyAction(result);
-				};
-			}}
-		>
+		<form method="POST">
 			<div>
-				<label class="label">
+				<label for="usernameOrEmail" class="label">
 					<span class="label-text">Username / email</span>
 				</label>
 				<input
@@ -30,7 +20,7 @@
 			</div>
 
 			<div>
-				<label class="label">
+				<label for="password" class="label">
 					<span class="label-text">Password</span>
 				</label>
 				<input

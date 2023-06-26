@@ -2,11 +2,16 @@
 	import '../app.css';
 	import { currentUser, pb } from '$lib/pb';
 	import { applyAction, enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+
+	onMount(async () => {
+		pb.authStore.loadFromCookie(document.cookie);
+	});
 </script>
 
 <div class="navbar bg-base-100 z-10">
 	<div class="flex">
-		<a class="btn btn-ghost normal-case text-xl">grimoire</a>
+		<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
 	</div>
 	<div class="navbar-center flex-1">
 		<div

@@ -51,6 +51,32 @@ export const actions = {
 			success
 		};
 	},
+	updateRead: async ({ request, locals }) => {
+		const data = await request.formData();
+		const id = data.get('id') as string;
+		const read = data.get('read') === 'on' ? new Date().toISOString() : null;
+
+		const { success } = await pb.collection('bookmarks').update(id, {
+			read
+		});
+
+		return {
+			success
+		};
+	},
+	updateFlagged: async ({ request, locals }) => {
+		const data = await request.formData();
+		const id = data.get('id') as string;
+		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
+
+		const { success } = await pb.collection('bookmarks').update(id, {
+			flagged
+		});
+
+		return {
+			success
+		};
+	},
 	addNewBookmark: async ({ request, locals }) => {
 		const owner = locals.user!.id;
 		const data = await request.formData();
