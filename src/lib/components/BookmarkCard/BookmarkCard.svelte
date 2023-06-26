@@ -1,21 +1,57 @@
 <script lang="ts">
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+	import config from '$lib/config';
+	export let bookmark: Bookmark = {} as Bookmark;
+	let importanceForm: HTMLFormElement;
 </script>
 
 <div class="relative card w-full sm:w-96 bg-base-100 shadow-xl">
 	<figure class="relative h-36">
-		<img src="https://daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.jpg" alt="Main" />
-		<div class="badge badge-xl absolute top-1 left-1">Category</div>
+		<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+		<div class="badge badge-xl absolute top-1 left-1">{bookmark.category.name}</div>
 
-		<div class="badge rating rating-sm opacity-90 absolute bottom-1 left-1">
-			<input type="radio" name="rating-2" class="rating-hidden" />
-			<input type="radio" name="rating-2" class="mask mask-star-2 bg-orange-400" />
-			<input type="radio" name="rating-2" class="mask mask-star-2 bg-orange-400" checked />
-			<input type="radio" name="rating-2" class="mask mask-star-2 bg-orange-400" />
-		</div>
+		<form bind:this={importanceForm} method="POST" action="?/updateImportance">
+			<input type="hidden" name="id" value={bookmark.id} />
+			<div class="badge rating rating-sm opacity-90 absolute bottom-1 left-1">
+				<input
+					type="radio"
+					name="importance"
+					class="rating-hidden"
+					checked={!bookmark.importance}
+					value="0"
+					on:change={() => importanceForm.requestSubmit()}
+				/>
+				<input
+					type="radio"
+					name="importance"
+					class="mask mask-star-2 bg-orange-400"
+					checked={bookmark.importance === 1}
+					value="1"
+					on:change={() => importanceForm.requestSubmit()}
+				/>
+				<input
+					type="radio"
+					name="importance"
+					class="mask mask-star-2 bg-orange-400"
+					checked={bookmark.importance === 2}
+					value="2"
+					on:change={() => importanceForm.requestSubmit()}
+				/>
+				<input
+					type="radio"
+					name="importance"
+					class="mask mask-star-2 bg-orange-400"
+					checked={bookmark.importance === 3}
+					value="3"
+					on:change={() => {
+						importanceForm.requestSubmit();
+					}}
+				/>
+			</div>
+		</form>
 		<div class="absolute bottom-1 right-1 scale-90">
 			<label class="swap btn btn-circle btn-xs p-4">
-				<input type="checkbox" />
+				<input type="checkbox" checked={!!bookmark.read} />
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
@@ -51,7 +87,7 @@
 				</svg>
 			</label>
 			<label class="swap btn btn-circle btn-xs p-4">
-				<input type="checkbox" />
+				<input type="checkbox" checked={!!bookmark.flagged} />
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
@@ -82,27 +118,46 @@
 		</div>
 	</figure>
 	<div class="card-body p-2">
-		<h2 class="card-title text-lg">
-			<img
-				src="https://github.githubassets.com/favicons/favicon.png"
-				alt="Favicon"
-				class="avatar w-4"
-			/>
-			Grimoire
-			<div class="badge badge-ghost">github.com</div>
+		<h2 class="card-title flex flex-wrap text-lg">
+			<span
+				><img
+					src={bookmark.icon || bookmark.icon_url}
+					alt={`${bookmark.domain}'s favicon`}
+					class="avatar w-4"
+				/>
+				<a href={bookmark.url} title={bookmark.url} target="_self">{bookmark.title}</a>
+				<a href={bookmark.url} target="_blank" class="btn btn-xs btn-circle btn-ghost">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						class="w-6 h-6 w-3 h-3"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M15.75 2.25H21a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V4.81L8.03 17.03a.75.75 0 01-1.06-1.06L19.19 3.75h-3.44a.75.75 0 010-1.5zm-10.5 4.5a1.5 1.5 0 00-1.5 1.5v10.5a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5V10.5a.75.75 0 011.5 0v8.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V8.25a3 3 0 013-3h8.25a.75.75 0 010 1.5H5.25z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</a>
+			</span>
+			<div class="badge badge-ghost">{bookmark.domain}</div>
 		</h2>
 		<p class="font-light text-sm text-gray-700 line-clamp-2">
-			Short description of this website. More to follow. Short description of this website. More to
-			follow. Short description of this website. More to follow.
+			{bookmark.description}
 		</p>
 		<div class="card-actions justify-end px-2 font-medium tracking-tight gap-1">
 			<span class="font-sans font-semibold text-xs">#</span>
-			<a href="#" class="link font-sans text-xs">articles</a>
-			<a href="#" class="link font-sans text-xs">comments</a>
+			{#if bookmark.tags}
+				{#each bookmark.tags as tag}
+					<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
+				{/each}
+			{/if}
+			<button class="link link-hover font-sans text-xs text-gray-400">+</button>
 		</div>
 	</div>
 	<div class="dropdown dropdown-end absolute top-1 right-1">
-		<label tabindex="0" class="btn btn-circle btn-ghost btn-xs">
+		<label for="options" tabindex="0" class="btn btn-circle btn-ghost btn-xs">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"

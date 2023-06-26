@@ -1,18 +1,56 @@
 import type { Actions, PageServerLoad } from './$types';
 import { pb } from '$lib/pb';
 import type { Category } from '$lib/interfaces/Category.interface';
+import { getFileUrl } from '$lib/utils';
 
 export const load = (async ({ locals }) => {
-	const categories = await pb
-		.collection('categories')
-		.getList<Category>(1, 1000, { filter: `owner = "${locals.user!.id}"`, sort: 'name' });
+	if (!locals.user) {
+		return {
+			categories: [],
+			bookmarks: [],
+			status: 401
+		};
+	}
+
+	const categories = await pb.collection('categories').getList<Category>(1, 1000, {
+		filter: `owner = "${locals.user!.id}"`,
+		sort: 'name'
+	});
+
+	const bookmarks = await pb.collection('bookmarks').getList(1, 50, {
+		filter: `owner = "${locals.user!.id}"`,
+		expand: 'tags,category',
+		sort: '-created'
+	});
 
 	return {
-		categories: structuredClone(categories.items)
+		categories: structuredClone(categories.items),
+		bookmarks: structuredClone(
+			bookmarks.items.map((bookmark) => ({
+				// TODO: export this logic to a function
+				...bookmark,
+				main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
+				icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
+				...bookmark.expand
+			}))
+		)
 	};
 }) satisfies PageServerLoad;
 
 export const actions = {
+	updateImportance: async ({ request, locals }) => {
+		const data = await request.formData();
+		const id = data.get('id') as string;
+		const importance = data.get('importance');
+
+		const { success } = await pb.collection('bookmarks').update(id, {
+			importance
+		});
+
+		return {
+			success
+		};
+	},
 	addNewBookmark: async ({ request, locals }) => {
 		const owner = locals.user!.id;
 		const data = await request.formData();
