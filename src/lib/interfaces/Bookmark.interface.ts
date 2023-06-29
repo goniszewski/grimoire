@@ -12,7 +12,7 @@ export interface Bookmark {
 	content_text: string;
 	content_html: string;
 	content_type: string;
-	content_published_date: Date;
+	content_published_date: Date | null;
 	note: string;
 	main_image: string;
 	main_image_url: string;

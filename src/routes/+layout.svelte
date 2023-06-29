@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import '../app.css';
 	import { currentUser, pb } from '$lib/pb';
 	import { applyAction, enhance } from '$app/forms';

@@ -1,28 +1,15 @@
 <script lang="ts">
 	import type { Metadata } from '$lib/interfaces/Metadata.interface';
 	import { debounce } from 'lodash';
-	import { writable } from 'svelte/store';
-	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
+	import { writable, type Writable } from 'svelte/store';
+	import { page } from '$app/stores';
 
-	const defaultFormValues: Metadata = {
-		url: '',
-		domain: '',
-		title: '',
-		description: '',
-		author: '',
-		content_text: '',
-		content_html: '',
-		content_type: '',
-		main_image_url: '',
-		icon_url: '',
-		content_published_date: null
-	};
+	import { editBookmarkStore as bookmark } from '$lib/stores/edit-bookmark.store';
 
-	let metadata: Metadata = { ...defaultFormValues };
+	let form: HTMLFormElement;
 	export let closeModal: () => void;
 
-	let note = '';
 	let error = '';
 	const loading = writable(false);
 
@@ -36,11 +23,6 @@
 
 			loading.set(true);
 
-			if (!url) {
-				metadata = { ...defaultFormValues };
-				loading.set(false);
-				return;
-			}
 			if (!url.match(validateUrlRegex)) {
 				error = 'Invalid URL';
 				loading.set(false);
@@ -56,7 +38,10 @@
 			})
 				.then((res) => res.json())
 				.then((data) => {
-					metadata = data?.metadata || { ...defaultFormValues };
+					$bookmark = {
+						...$bookmark,
+						...data?.metadata
+					};
 				})
 				.catch((err) => {
 					console.error(err);
@@ -75,62 +60,57 @@
 	);
 </script>
 
-<form
-	method="POST"
-	action="?/addNewBookmark"
-	use:enhance={() =>
-		({ update }) => {
-			closeModal();
-			update();
-		}}
->
-	<div class="w-full">
-		<div class="form-control flex w-full gap-4">
-			<input type="text" class="hidden" name="domain" value={metadata.domain} />
-			<input type="text" class="hidden" name="content_html" value={metadata.content_html} />
-			<input
-				type="text"
-				class="hidden"
-				name="content_published_date"
-				value={metadata.content_published_date}
-			/>
+{#if $bookmark?.id}
+	<form
+		bind:this={form}
+		method="POST"
+		action="?/updateBookmark"
+		use:enhance={() =>
+			({ update }) => {
+				closeModal();
+				update();
+			}}
+	>
+		<input type="text" class="hidden" name="id" value={$bookmark.id} />
 
-			{#if error}
-				<div class="alert alert-error">{error}</div>
-			{/if}
-			<div class="join">
+		<div class="w-full">
+			<div class="form-control flex w-full gap-4">
+				<input type="text" class="hidden" name="domain" value={$bookmark.domain} />
+				<input type="text" class="hidden" name="content_html" value={$bookmark.content_html} />
 				<input
 					type="text"
-					placeholder="Paste link here..."
-					class="join-item input input-secondary input-bordered w-full"
-					name="url"
-					value={metadata.url}
-					on:input={onGetMetadata}
-					disabled={$loading}
+					class="hidden"
+					name="content_published_date"
+					value={$bookmark.content_published_date}
 				/>
-				{#if metadata.url}
-					<button
-						class="join-item btn btn-primary"
-						on:click={() => {
-							// @ts-ignore-next-line
-							metadata.url = '';
-						}}
-						disabled={!metadata.url || $loading}
-					>
-						X
-					</button>
-				{/if}
-			</div>
 
-			{#if $loading}
-				<div class="loading loading-lg m-auto my-10" />
-			{/if}
-			{#if !$loading && metadata.url}
+				{#if error}
+					<div class="alert alert-error">{error}</div>
+				{/if}
+				<div class="join">
+					<input
+						type="text"
+						placeholder="Paste link here..."
+						class="join-item input input-secondary input-bordered w-full"
+						name="url"
+						value={$bookmark.url}
+						on:input={onGetMetadata}
+						disabled={$loading}
+					/>
+				</div>
+
+				{#if $loading}
+					<div class="loading loading-lg m-auto my-10" />
+				{/if}
 				<div class="flex flex-col w-full">
 					<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
 						<div class="flex flex-col w-full">
 							<label for="category" class="label">Category</label>
-							<select class="select select-bordered w-full" name="category">
+							<select
+								class="select select-bordered w-full"
+								name="category"
+								value={$bookmark.category?.id}
+							>
 								{#each $page.data.categories as category}
 									<option value={category.id}>{category.name}</option>
 								{/each}
@@ -140,24 +120,33 @@
 							<div class="flex flex-col w-full">
 								<label for="importance" class="label">Importance</label>
 								<div class="rating rating-md">
-									<input type="radio" name="importance" class="rating-hidden" value="" checked />
+									<input
+										type="radio"
+										name="importance"
+										class="rating-hidden"
+										value=""
+										checked={!$bookmark.importance}
+									/>
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="1"
+										checked={$bookmark.importance === 1}
 									/>
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="2"
+										checked={$bookmark.importance === 2}
 									/>
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="3"
+										checked={$bookmark.importance === 3}
 									/>
 								</div>
 							</div>
@@ -165,7 +154,12 @@
 								<label for="flag" class="label">Flag it?</label>
 								<label class="cursor-pointer label max-w-fit gap-2">
 									<!-- <span class="label-text">Flag</span> -->
-									<input type="checkbox" name="flagged" class="checkbox checkbox-error" />
+									<input
+										type="checkbox"
+										name="flagged"
+										class="checkbox checkbox-error"
+										checked={!!$bookmark.flagged}
+									/>
 								</label>
 							</div>
 						</div>
@@ -176,11 +170,11 @@
 							type="text"
 							class="input input-bordered"
 							name="title"
-							value={metadata.title}
+							value={$bookmark.title}
 							required
 							on:input={(event) => {
 								// @ts-ignore-next-line
-								metadata.title = event.target.value;
+								$bookmark.title = event.target.value;
 							}}
 						/>
 					</div>
@@ -191,14 +185,18 @@
 								type="text"
 								class="input input-bordered w-9/12"
 								name="icon_url"
-								value={metadata.icon_url}
+								value={$bookmark.icon_url}
 								on:input={(event) => {
 									// @ts-ignore-next-line
-									metadata.icon_url = event.target.value;
+									$bookmark.icon_url = event.target.value;
 								}}
 							/>
-							{#if metadata.icon_url}
-								<img class="w-8 h-8 m-auto md:ml-8" src={metadata.icon_url} alt={metadata.title} />
+							{#if $bookmark.icon_url}
+								<img
+									class="w-8 h-8 m-auto md:ml-8"
+									src={$bookmark.icon_url}
+									alt={$bookmark.title}
+								/>
 							{/if}
 						</div>
 					</div>
@@ -207,30 +205,30 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="description"
-							value={metadata.description}
-							on:input={(event) => {
+							value={$bookmark.description}
+							on:change={(event) => {
 								// @ts-ignore-next-line
-								metadata.description = event.target.value;
+								$bookmark.description = event.target.value;
 							}}
 						/>
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
-						{#if metadata.main_image_url}
+						{#if $bookmark.main_image_url}
 							<img
 								class="rounded-md m-auto max-h-64"
-								src={metadata.main_image_url}
-								alt={metadata.title}
+								src={$bookmark.main_image_url}
+								alt={$bookmark.title}
 							/>
 						{/if}
 						<input
 							type="text"
 							class="input input-bordered w-full"
 							name="main_image_url"
-							value={metadata.main_image_url}
+							value={$bookmark.main_image_url}
 							on:input={(event) => {
 								// @ts-ignore-next-line
-								metadata.main_image_url = event.target.value;
+								$bookmark.main_image_url = event.target.value;
 							}}
 						/>
 					</div>
@@ -239,11 +237,11 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="content_text"
-							value={metadata.content_text}
+							value={$bookmark.content_text}
 							placeholder="Extracted if possible..."
 							on:input={(event) => {
 								// @ts-ignore-next-line
-								metadata.content_text = event.target.value;
+								bookmark.content_text = event.target.value;
 							}}
 						/>
 					</div>
@@ -253,8 +251,12 @@
 							type="text"
 							class="input input-bordered"
 							name="author"
-							value={metadata.author}
+							value={$bookmark.author}
 							placeholder="Extracted if possible..."
+							on:input={(event) => {
+								// @ts-ignore-next-line
+								$bookmark.author = event.target.value;
+							}}
 						/>
 					</div>
 					<div class="flex flex-col w-auto">
@@ -262,21 +264,21 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="note"
-							value={note}
+							value={$bookmark.note}
 							placeholder="Add your note here..."
 							on:input={(event) => {
 								// @ts-ignore-next-line
-								metadata.note = event.target.value;
+								$bookmark.note = event.target.value;
 							}}
 						/>
 					</div>
 				</div>
-			{/if}
 
-			<button
-				class="btn btn-primary my-6 mx-auto w-full max-w-xs"
-				disabled={$loading || !metadata.url || !metadata.title}>Add</button
-			>
+				<button
+					class="btn btn-primary my-6 mx-auto w-full max-w-xs"
+					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button
+				>
+			</div>
 		</div>
-	</div>
-</form>
+	</form>
+{/if}

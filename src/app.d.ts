@@ -9,7 +9,9 @@ declare global {
 		}
 		interface PageData {
 			categories: import('$lib/interfaces/Category.interface').Category[];
+			bookmarks: import('$lib/interfaces/Bookmark.interface').Bookmark[];
 		}
+		interface LayoutData {}
 		// interface Platform {}
 	}
 }
