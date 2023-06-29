@@ -1,0 +1,12 @@
+{
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "eslint.validate": [
+      "javascript",
+      "typescript"
+    ],
+    "editor.formatOnSave": true,
+    "importSorter.generalConfiguration.sortOnBeforeSave": true
+   }
+  
