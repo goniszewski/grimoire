@@ -8,6 +8,12 @@ dependencies:
   '@extractus/article-extractor':
     specifier: ^7.2.16
     version: 7.2.16
+  '@tabler/icons':
+    specifier: ^2.23.0
+    version: 2.23.0
+  '@tabler/icons-svelte':
+    specifier: ^2.23.0
+    version: 2.23.0(svelte@3.59.1)
   '@tailwindcss/line-clamp':
     specifier: ^0.4.4
     version: 0.4.4(tailwindcss@3.3.2)
@@ -621,6 +627,19 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       defer-to-connect: 2.0.1
+    dev: false
+
+  /@tabler/icons-svelte@2.23.0(svelte@3.59.1):
+    resolution: {integrity: sha512-vFOxzcKWXTLGgCFwJbbQgmXb6PGTwZtWVKRTkBY7ah09R2xIeddwhRprn4zt9DmS36n4GSGMllpk/leIPCYFiA==}
+    peerDependencies:
+      svelte: ^3.49.0
+    dependencies:
+      '@tabler/icons': 2.23.0
+      svelte: 3.59.1
+    dev: false
+
+  /@tabler/icons@2.23.0:
+    resolution: {integrity: sha512-dU54aBwaxG0H+jQ4BdrqtYFN5L7PZevvlnzyL6XeOZgfDS3+sVNCtuG3JmpTEqQSwGLYC1IEwogPGA/Iit2bOA==}
     dev: false
 
   /@tailwindcss/line-clamp@0.4.4(tailwindcss@3.3.2):
@@ -3530,7 +3549,6 @@ packages:
   /svelte@3.59.1:
     resolution: {integrity: sha512-pKj8fEBmqf6mq3/NfrB9SLtcJcUvjYSWyePlfCqN9gujLB25RitWK8PvFzlwim6hD/We35KbPlRteuA6rnPGcQ==}
     engines: {node: '>= 8'}
-    dev: true
 
   /symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}

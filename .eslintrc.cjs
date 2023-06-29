@@ -8,15 +8,14 @@ module.exports = {
 	],
 	parser: '@typescript-eslint/parser',
 	plugins: ['@typescript-eslint', 'perfectionist'],
-	rules:{
-		"perfectionist/sort-objects": [
-			"error",
+	rules: {
+		'perfectionist/sort-objects': [
+			'error',
 			{
-			  "type": "natural",
-			  "order": "asc"
+				type: 'natural',
+				order: 'asc'
 			}
-		  ]
-		
+		]
 	},
 	parserOptions: {
 		sourceType: 'module',
