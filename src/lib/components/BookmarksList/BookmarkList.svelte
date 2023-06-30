@@ -1,13 +1,16 @@
 <script lang="ts">
 	import BookmarkCard from '../BookmarkCard/BookmarkCard.svelte';
-	import { currentUser, pb } from '$lib/pb';
+	import { currentUser } from '$lib/pb';
 	import { page } from '$app/stores';
+	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+
+	export let bookmarks: Bookmark[] = [];
 </script>
 
 {#if $currentUser?.id}
 	{#if $page.data.bookmarks.length > 0}
 		<div class="flex flex-wrap gap-4">
-			{#each $page.data.bookmarks as bookmark}
+			{#each bookmarks as bookmark}
 				<BookmarkCard {bookmark} />
 			{/each}
 		</div>

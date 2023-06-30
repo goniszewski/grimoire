@@ -5,45 +5,45 @@ import { getFileUrl, prepareTags } from '$lib/utils';
 
 import type { Category } from '$lib/interfaces/Category.interface';
 import type { BookmarkDto } from '$lib/interfaces/dto/Bookmark.dto';
-export const load = (async ({ locals, url }) => {
-	if (!locals.user) {
-		return {
-			bookmarks: [],
-			categories: [],
-			status: 401
-		};
-	}
+// export const load = (async ({ locals, url }) => {
+// 	if (!locals.user) {
+// 		return {
+// 			bookmarks: [],
+// 			categories: [],
+// 			status: 401
+// 		};
+// 	}
 
-	const categories = await pb.collection('categories').getList<Category>(1, 1000, {
-		filter: `owner = "${locals.user!.id}"`,
-		sort: 'name'
-	});
+// 	const categories = await pb.collection('categories').getList<Category>(1, 1000, {
+// 		filter: `owner = "${locals.user!.id}"`,
+// 		sort: 'name'
+// 	});
 
-	const tags = await pb.collection('tags').getList<Tag>(1, 1000, {
-		filter: `owner = "${locals.user!.id}"`,
-		sort: 'name'
-	});
+// 	const tags = await pb.collection('tags').getList<Tag>(1, 1000, {
+// 		filter: `owner = "${locals.user!.id}"`,
+// 		sort: 'name'
+// 	});
 
-	const bookmarks = (await pb.collection('bookmarks').getList(1, 50, {
-		expand: 'tags,category',
-		filter: `owner = "${locals.user!.id}"`,
-		sort: '-created'
-	})) as { items: BookmarkDto[] };
+// 	const bookmarks = (await pb.collection('bookmarks').getList(1, 50, {
+// 		expand: 'tags,category',
+// 		filter: `owner = "${locals.user!.id}"`,
+// 		sort: '-created'
+// 	})) as { items: BookmarkDto[] };
 
-	return {
-		bookmarks: structuredClone(
-			bookmarks.items.map((bookmark) => ({
-				// TODO: export this logic to a function
-				...bookmark,
-				icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
-				main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
-				...bookmark.expand
-			}))
-		),
-		categories: structuredClone(categories.items),
-		tags: structuredClone(tags.items)
-	};
-}) satisfies PageServerLoad;
+// 	return {
+// 		bookmarks: structuredClone(
+// 			bookmarks.items.map((bookmark) => ({
+// 				// TODO: export this logic to a function
+// 				...bookmark,
+// 				icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
+// 				main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
+// 				...bookmark.expand
+// 			}))
+// 		),
+// 		categories: structuredClone(categories.items),
+// 		tags: structuredClone(tags.items)
+// 	};
+// }) satisfies PageServerLoad;
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {

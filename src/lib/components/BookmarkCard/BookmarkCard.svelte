@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-	import config from '$lib/config';
-	import { enhance } from '$app/forms';
-	import { getContext } from 'svelte';
-	import { goto } from '$app/navigation';
+
+	import { enhance, applyAction } from '$app/forms';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import {
 		IconEyeCheck,
@@ -25,14 +23,23 @@
 
 <div class="relative card w-full sm:w-96 bg-base-100 shadow-xl">
 	<figure class="relative h-36">
-		<a
-			href={bookmark.url}
-		>
+		<a href={bookmark.url}>
 			<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
 		</a>
 		<div class="badge badge-xl absolute top-1 left-1">{bookmark.category.name}</div>
 
-		<form bind:this={importanceForm} method="POST" action="?/updateImportance" use:enhance>
+		<form
+			bind:this={importanceForm}
+			method="POST"
+			action="/?/updateImportance"
+			use:enhance={() => {
+				return async ({ result }) => {
+					if (result.type === 'success') {
+						await applyAction(result);
+					}
+				};
+			}}
+		>
 			<input type="hidden" name="id" value={bookmark.id} />
 			<div class="badge rating rating-sm opacity-90 absolute bottom-1 left-1">
 				<input
@@ -73,7 +80,18 @@
 		</form>
 
 		<div class="absolute flex bottom-1 right-1 scale-90 gap-1">
-			<form bind:this={readForm} method="POST" action="?/updateRead" use:enhance>
+			<form
+				bind:this={readForm}
+				method="POST"
+				action="/?/updateRead"
+				use:enhance={() => {
+					return async ({ result }) => {
+						if (result.type === 'success') {
+							await applyAction(result);
+						}
+					};
+				}}
+			>
 				<input type="hidden" name="id" value={bookmark.id} />
 				<label class="swap btn btn-circle btn-xs p-4">
 					<input
@@ -88,7 +106,18 @@
 					<IconEyeClosed class="swap-off text-gray-400" />
 				</label>
 			</form>
-			<form bind:this={flaggedForm} method="POST" action="?/updateFlagged" use:enhance>
+			<form
+				bind:this={flaggedForm}
+				method="POST"
+				action="/?/updateFlagged"
+				use:enhance={() => {
+					return async ({ result }) => {
+						if (result.type === 'success') {
+							await applyAction(result);
+						}
+					};
+				}}
+			>
 				<input type="hidden" name="id" value={bookmark.id} />
 				<label class="swap btn btn-circle btn-xs p-4">
 					<input
@@ -171,10 +200,20 @@
 				>Edit</button> -->
 			<!-- </li> -->
 			<li>
-				<a href="/" on:click={onEditBookmark} tabindex="0">Edit</a>
+				<a on:click={onEditBookmark} tabindex="0">Edit</a>
 			</li>
 			<li>
-				<form method="POST" action="?/deleteBookmark" use:enhance>
+				<form
+					method="POST"
+					action="/?/deleteBookmark"
+					use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'success') {
+								await applyAction(result);
+							}
+						};
+					}}
+				>
 					<input type="hidden" name="id" value={bookmark.id} />
 					<button tabindex="0" class="text"> Remove </button>
 				</form>

@@ -1,5 +1,6 @@
-import type PocketBase from 'pocketbase';
+import { createSlug } from './create-slug';
 
+import type PocketBase from 'pocketbase';
 export async function prepareTags(
 	pb: PocketBase,
 	tags: {
@@ -23,6 +24,7 @@ export async function prepareTags(
 			const { id } = await pb.collection('tags').create(
 				{
 					name: tag.label,
+					slug: createSlug(tag.label),
 					owner
 				},
 				{
