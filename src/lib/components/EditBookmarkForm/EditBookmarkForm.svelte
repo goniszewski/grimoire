@@ -5,13 +5,17 @@
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 
-	import { editBookmarkStore as bookmark } from '$lib/stores/edit-bookmark.store';
+	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
 
 	let error = '';
 	const loading = writable(false);
+	const bookmark = writable<Partial<Bookmark>>({});
+
+	$: $bookmark = { ...$editBookmarkStore };
 
 	const bookmarkTagsInput: Writable<{
 		value: string;
