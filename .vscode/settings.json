@@ -1,12 +1,9 @@
 {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true
-    },
-    "eslint.validate": [
-      "javascript",
-      "typescript"
-    ],
-    "editor.formatOnSave": true,
-    "importSorter.generalConfiguration.sortOnBeforeSave": true
-   }
-  
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": true
+	},
+	"eslint.validate": ["javascript", "typescript", "svelte"],
+	"editor.formatOnSave": true,
+	"importSorter.generalConfiguration.sortOnBeforeSave": true,
+	"svelte.plugin.svelte.format.enable": false
+}
