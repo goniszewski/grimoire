@@ -10,6 +10,7 @@ declare global {
 		interface PageData {
 			categories: import('$lib/interfaces/Category.interface').Category[];
 			bookmarks: import('$lib/interfaces/Bookmark.interface').Bookmark[];
+			tags: import('$lib/interfaces/Tag.interface').Tag[];
 		}
 		interface LayoutData {}
 		// interface Platform {}

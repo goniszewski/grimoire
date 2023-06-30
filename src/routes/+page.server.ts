@@ -1,10 +1,10 @@
 import type { Actions, PageServerLoad } from './$types';
+import type { Tag } from '$lib/interfaces/Tag.interface';
 import { pb } from '$lib/pb';
-import { getFileUrl } from '$lib/utils';
+import { getFileUrl, prepareTags } from '$lib/utils';
 
 import type { Category } from '$lib/interfaces/Category.interface';
 import type { BookmarkDto } from '$lib/interfaces/dto/Bookmark.dto';
-
 export const load = (async ({ locals, url }) => {
 	if (!locals.user) {
 		return {
@@ -15,6 +15,11 @@ export const load = (async ({ locals, url }) => {
 	}
 
 	const categories = await pb.collection('categories').getList<Category>(1, 1000, {
+		filter: `owner = "${locals.user!.id}"`,
+		sort: 'name'
+	});
+
+	const tags = await pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner = "${locals.user!.id}"`,
 		sort: 'name'
 	});
@@ -35,13 +40,21 @@ export const load = (async ({ locals, url }) => {
 				...bookmark.expand
 			}))
 		),
-		categories: structuredClone(categories.items)
+		categories: structuredClone(categories.items),
+		tags: structuredClone(tags.items)
 	};
 }) satisfies PageServerLoad;
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
-		const owner = locals.user!.id;
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
 		const data = await request.formData();
 
 		const url = data.get('url');
@@ -58,11 +71,14 @@ export const actions = {
 		const note = data.get('note');
 		const importance = data.get('importance');
 		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
-		const category = data.get('category');
+		const category = JSON.parse(data.get('category') as string);
+		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 
+		const tagIds = await prepareTags(pb, tags, owner);
 		const { id } = await pb.collection('bookmarks').create({
 			author,
-			category,
+			category: category?.value ? category.value : category,
+			tags: tagIds,
 			content_html,
 			content_published_date,
 			content_text,
@@ -107,9 +123,16 @@ export const actions = {
 		};
 	},
 	deleteBookmark: async ({ locals, request }) => {
-		const owner = locals.user!.id;
-		const data = await request.formData();
+		const owner = locals.user?.id;
 
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
+		const data = await request.formData();
 		const id = data.get('id') as string;
 
 		await pb.collection('bookmarks').delete(id);
@@ -120,7 +143,15 @@ export const actions = {
 		};
 	},
 	updateBookmark: async ({ locals, request }) => {
-		const owner = locals.user!.id;
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
 		const data = await request.formData();
 
 		const id = data.get('id') as string;
@@ -138,11 +169,15 @@ export const actions = {
 		const note = data.get('note');
 		const importance = data.get('importance');
 		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
-		const category = data.get('category');
+		const category = JSON.parse(data.get('category') as string);
+		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
+
+		const tagIds = await prepareTags(pb, tags, owner);
 
 		await pb.collection('bookmarks').update(id, {
 			author,
-			category,
+			category: category?.value ? category.value : category,
+			tags: tagIds,
 			content_html,
 			content_published_date,
 			content_text,
@@ -181,6 +216,15 @@ export const actions = {
 		};
 	},
 	updateFlagged: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
 		const data = await request.formData();
 		const id = data.get('id') as string;
 		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
@@ -194,6 +238,15 @@ export const actions = {
 		};
 	},
 	updateImportance: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
 		const data = await request.formData();
 		const id = data.get('id') as string;
 		const importance = data.get('importance');
@@ -208,6 +261,15 @@ export const actions = {
 	},
 
 	updateRead: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
 		const data = await request.formData();
 		const id = data.get('id') as string;
 		const read = data.get('read') === 'on' ? new Date().toISOString() : null;

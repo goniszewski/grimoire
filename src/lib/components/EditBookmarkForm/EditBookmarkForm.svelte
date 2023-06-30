@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Metadata } from '$lib/interfaces/Metadata.interface';
+	import Select from 'svelte-select';
 	import { debounce } from 'lodash';
 	import { enhance } from '$app/forms';
 	import { writable, type Writable } from 'svelte/store';
@@ -12,6 +12,39 @@
 
 	let error = '';
 	const loading = writable(false);
+
+	const bookmarkTagsInput: Writable<{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[] | null> = writable(null);
+
+	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
+
+	const bookmarkTags = writable<{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[]	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+
+	let tagsInputFilterText: '';
+
+	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean}[]
+	>) {        
+		if (!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) && e.detail.length === 0 && tagsInputFilterText.length > 0) {
+            const prev = $bookmarkTags.filter((i) => !i.created);
+            $bookmarkTags = [...prev, { value: tagsInputFilterText, label: tagsInputFilterText, created: true }];
+        }
+    }
+
+	function handleTagsChange() {
+        $bookmarkTags = [...$bookmarkTags.map((i) => {
+            if (i.created) {
+				delete i.created;
+			}
+            return i;
+        })]
+    }
 
 	const onGetMetadata = debounce(
 		async (event: Event) => {
@@ -103,9 +136,9 @@
 					<div class="loading loading-lg m-auto my-10" />
 				{/if}
 				<div class="flex flex-col w-full">
-					<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+					<div class="flex flex-col md:flex-row items-start justify-between w-full gap-2">
 						<div class="flex flex-col w-full">
-							<label for="category" class="label">Category</label>
+							<!-- <label for="category" class="label">Category</label>
 							<select
 								class="select select-bordered w-full"
 								name="category"
@@ -114,9 +147,39 @@
 								{#each $page.data.categories as category}
 									<option value={category.id}>{category.name}</option>
 								{/each}
-							</select>
+							</select> -->
+							{#if $bookmark.category?.id}
+							<label for="tags" class="label">Category</label>
+								<Select
+									name="category"
+									searchable
+									items={$page.data.categories.map((c) => ({
+										value: c.id,
+										label: c.name
+									}))}
+									value={$bookmark.category?.id}
+								/>
+							{/if}
 						</div>
-						<div class="flex w-full md:w-4/12 gap-4 ml-4">
+						<div class="flex flex-col w-full">
+							<label for="tags" class="label">Tags</label>
+							<Select
+								name="tags"
+								searchable
+								multiple
+								on:filter={handleTagsFilter}
+								on:change={handleTagsChange}
+								bind:filterText={tagsInputFilterText}
+								bind:value={$bookmarkTagsInput}
+								items={$bookmarkTags}
+						>
+						<div slot="item" let:item>
+							{item.created ? 'Create tag: ' : ''}
+							{item.label}
+						</div>
+					</Select>
+						</div>
+						<div class="flex flex-col w-full md:w-4/12 gap-4 ml-4">
 							<div class="flex flex-col w-full">
 								<label for="importance" class="label">Importance</label>
 								<div class="rating rating-md">

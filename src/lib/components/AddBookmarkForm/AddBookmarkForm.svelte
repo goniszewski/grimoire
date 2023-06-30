@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Metadata } from '$lib/interfaces/Metadata.interface';
 	import { debounce } from 'lodash';
-	import { writable } from 'svelte/store';
+	import Select from 'svelte-select';
+	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 
@@ -21,6 +22,37 @@
 
 	let metadata: Metadata = { ...defaultFormValues };
 	export let closeModal: () => void;
+
+	const bookmarkTagsInput: Writable<{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[] | null> = writable(null);
+
+	const bookmarkTags = writable<{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[]	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+
+	let tagsInputFilterText: '';
+
+	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean}[]
+	>) {        
+		if (!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) && e.detail.length === 0 && tagsInputFilterText.length > 0) {
+            const prev = $bookmarkTags.filter((i) => !i.created);
+            $bookmarkTags = [...prev, { value: tagsInputFilterText, label: tagsInputFilterText, created: true }];
+        }
+    }
+
+	function handleTagsChange() {
+        $bookmarkTags = [...$bookmarkTags.map((i) => {
+            if (i.created) {
+				delete i.created;
+			}
+            return i;
+        })]
+    }
 
 	let note = '';
 	let error = '';
@@ -128,13 +160,36 @@
 			{#if !$loading && metadata.url}
 				<div class="flex flex-col w-full">
 					<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
-						<div class="flex flex-col w-full">
-							<label for="category" class="label">Category</label>
-							<select class="select select-bordered w-full" name="category">
-								{#each $page.data.categories as category}
-									<option value={category.id}>{category.name}</option>
-								{/each}
-							</select>
+							<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+								<div class="flex flex-col w-full">
+									<label for="tags" class="label">Category</label>
+								<Select
+									name="category"
+									searchable
+									items={$page.data.categories.map((c) => ({
+										value: c.id,
+										label: c.name
+									}))}
+								/>
+							</div>
+							<div class="flex flex-col w-full">
+								<label for="tags" class="label">Tags</label>
+								<Select
+									name="tags"
+									searchable
+									multiple
+									on:filter={handleTagsFilter}
+									on:change={handleTagsChange}
+									bind:filterText={tagsInputFilterText}
+									bind:value={$bookmarkTagsInput}
+									items={$bookmarkTags}
+							>
+							<div slot="item" let:item>
+								{item.created ? 'Create tag: ' : ''}
+								{item.label}
+							</div>
+						</Select>
+							</div>
 						</div>
 						<div class="flex w-full md:w-4/12 gap-4 ml-4">
 							<div class="flex flex-col w-full">

@@ -25,7 +25,11 @@
 
 <div class="relative card w-full sm:w-96 bg-base-100 shadow-xl">
 	<figure class="relative h-36">
-		<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+		<a
+			href={bookmark.url}
+		>
+			<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+		</a>
 		<div class="badge badge-xl absolute top-1 left-1">{bookmark.category.name}</div>
 
 		<form bind:this={importanceForm} method="POST" action="?/updateImportance" use:enhance>
