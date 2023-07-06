@@ -26,7 +26,14 @@
 		<a href={bookmark.url}>
 			<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
 		</a>
-		<div class="badge badge-xl absolute top-1 left-1">{bookmark.category.name}</div>
+		<div
+			class="badge badge-xl absolute top-1 left-1"
+			style={`background-color: ${bookmark.category.color || '#a0a0a0'};`}
+		>
+			<span class=" mix-blend-difference" style={`color: ${bookmark.category.color};`}
+				>{bookmark.category.name}</span
+			>
+		</div>
 
 		<form
 			bind:this={importanceForm}

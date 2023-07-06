@@ -18,11 +18,11 @@
 	<div class="navbar-center flex-1">
 		<div
 			class="form-control
-            hidden md:flex mx-auto
+            flex mx-auto
             w-10/12
         "
 		>
-			<input type="text" placeholder="Search" class="input input-bordered w-24 md:w-full" />
+			<input type="text" placeholder="Search" class="input input-bordered w-full" />
 		</div>
 	</div>
 	<div class="flex-none">
@@ -89,7 +89,13 @@
 					<h3 class="text-xl">Categories</h3>
 					<div class="flex flex-col p-2">
 						{#each $page.data.categories as category}
-							<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
+							<div class="flex">
+								<div
+									class="w-4 h-4 mx-1 my-auto rounded-full"
+									style={`background-color: ${category?.color || '#a0a0a0'};`}
+								/>
+								<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
+							</div>
 						{/each}
 					</div>
 				</div>

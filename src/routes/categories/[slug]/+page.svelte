@@ -17,7 +17,17 @@
 </script>
 
 <div class="flex flex-col gap-8 w-full">
-	<h1 class="text-2xl">Category: {category?.name}</h1>
+	<div class="flex">
+		<h1 class="text-2xl">Category: {category?.name}</h1>
+		<div
+			class="w-4 h-4 mx-2 my-auto rounded-full"
+			style={`background-color: ${category?.color || '#a0a0a0'};`}
+		/>
+	</div>
+	<div class="flex flex-col">
+		<strong>Description</strong>
+		<em class="text-sm">{category?.description}</em>
+	</div>
 
 	<EditBookmarkModal />
 
