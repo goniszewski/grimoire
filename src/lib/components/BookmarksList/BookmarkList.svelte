@@ -9,7 +9,7 @@
 
 {#if $currentUser?.id}
 	{#if $page.data.bookmarks.length > 0}
-		<div class="flex flex-wrap gap-4">
+		<div class="w-full columns-xs gap-8">
 			{#each bookmarks as bookmark}
 				<BookmarkCard {bookmark} />
 			{/each}
@@ -18,5 +18,5 @@
 		<p>No bookmarks yet.</p>
 	{/if}
 {:else}
-	NO USER
+	USER NOT LOGGED IN
 {/if}

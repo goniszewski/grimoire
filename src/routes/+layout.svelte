@@ -11,17 +11,15 @@
 	});
 </script>
 
+<head>
+	<title>Grimoire</title>
+</head>
 <div class="navbar bg-base-100 z-10">
 	<div class="flex">
 		<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
 	</div>
 	<div class="navbar-center flex-1">
-		<div
-			class="form-control
-            flex mx-auto
-            w-10/12
-        "
-		>
+		<div class="form-control flex mx-auto w-10/12">
 			<input type="text" placeholder="Search" class="input input-bordered w-full" />
 		</div>
 	</div>
@@ -70,7 +68,6 @@
 	<div class="drawer lg:drawer-open">
 		<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 		<div class="drawer-content flex flex-col items-center justify-top m-2 sm:m-8">
-			<!-- Page content here -->
 			<slot />
 
 			<label
@@ -79,9 +76,9 @@
 				><IconMenu /></label
 			>
 		</div>
-		<div class="drawer-side mt-4">
+		<div class="drawer-side mt-4 w-screen h-max">
 			<label for="my-drawer-2" class="drawer-overlay" />
-			<ul class="menu p-4 w-64 h-full bg-slate-100 text-base-content rounded-tr-xl mt-8 gap-4">
+			<ul class="menu p-4 w-64 h-full bg-slate-100 text-base-content rounded-r-xl mt-8 gap-4">
 				<!-- Sidebar content here -->
 				<!-- <li><a>Sidebar Item 1</a></li>
 				<li><a>Sidebar Item 2</a></li> -->

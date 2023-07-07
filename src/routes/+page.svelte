@@ -76,6 +76,7 @@
 </div>
 <AddBookmarkModal />
 <EditBookmarkModal />
+
 <BookmarkList {bookmarks} />
 
 <style>
