@@ -24,7 +24,7 @@
 
 <div class="relative card w-full sm:w-96 bg-base-100 shadow-xl mb-4 break-inside-avoid">
 	<figure class="relative max-h-36">
-		<a href={bookmark.url} class="w-full hover:brightness-75">
+		<a href={bookmark.url} class="w-full hover:brightness-90">
 			{#if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
 				<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
 			{:else}
@@ -57,7 +57,7 @@
 				<input
 					type="radio"
 					name="importance"
-					class="rating-hidden"
+					class="rating-hidden rating-sm"
 					checked={!bookmark.importance}
 					value="0"
 					on:change={() => importanceForm.requestSubmit()}
@@ -87,6 +87,14 @@
 					on:change={() => {
 						importanceForm.requestSubmit();
 					}}
+				/>
+				<input
+					type="radio"
+					name="importance"
+					class="rating-hidden rating-sm"
+					checked={!bookmark.importance}
+					value="0"
+					on:change={() => importanceForm.requestSubmit()}
 				/>
 			</div>
 		</form>

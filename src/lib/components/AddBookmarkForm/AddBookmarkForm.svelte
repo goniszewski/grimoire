@@ -23,36 +23,49 @@
 	let metadata: Metadata = { ...defaultFormValues };
 	export let closeModal: () => void;
 
-	const bookmarkTagsInput: Writable<{
-		value: string;
-		label: string;
-		created?: boolean;
-	}[] | null> = writable(null);
+	const bookmarkTagsInput: Writable<
+		| {
+				value: string;
+				label: string;
+				created?: boolean;
+		  }[]
+		| null
+	> = writable(null);
 
-	const bookmarkTags = writable<{
-		value: string;
-		label: string;
-		created?: boolean;
-	}[]	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+	const bookmarkTags = writable<
+		{
+			value: string;
+			label: string;
+			created?: boolean;
+		}[]
+	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
 
 	let tagsInputFilterText: '';
 
-	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean}[]
-	>) {        
-		if (!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) && e.detail.length === 0 && tagsInputFilterText.length > 0) {
-            const prev = $bookmarkTags.filter((i) => !i.created);
-            $bookmarkTags = [...prev, { value: tagsInputFilterText, label: tagsInputFilterText, created: true }];
-        }
-    }
+	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+		if (
+			!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) &&
+			e.detail.length === 0 &&
+			tagsInputFilterText.length > 0
+		) {
+			const prev = $bookmarkTags.filter((i) => !i.created);
+			$bookmarkTags = [
+				...prev,
+				{ value: tagsInputFilterText, label: tagsInputFilterText, created: true }
+			];
+		}
+	}
 
 	function handleTagsChange() {
-        $bookmarkTags = [...$bookmarkTags.map((i) => {
-            if (i.created) {
-				delete i.created;
-			}
-            return i;
-        })]
-    }
+		$bookmarkTags = [
+			...$bookmarkTags?.map((i) => {
+				if (i.created) {
+					delete i.created;
+				}
+				return i;
+			})
+		];
+	}
 
 	let note = '';
 	let error = '';
@@ -160,9 +173,9 @@
 			{#if !$loading && metadata.url}
 				<div class="flex flex-col w-full">
 					<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
-							<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
-								<div class="flex flex-col w-full">
-									<label for="tags" class="label">Category</label>
+						<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+							<div class="flex flex-col w-full">
+								<label for="tags" class="label">Category</label>
 								<Select
 									name="category"
 									searchable
@@ -183,12 +196,12 @@
 									bind:filterText={tagsInputFilterText}
 									bind:value={$bookmarkTagsInput}
 									items={$bookmarkTags}
-							>
-							<div slot="item" let:item>
-								{item.created ? 'Create tag: ' : ''}
-								{item.label}
-							</div>
-						</Select>
+								>
+									<div slot="item" let:item>
+										{item.created ? 'Create tag: ' : ''}
+										{item.label}
+									</div>
+								</Select>
 							</div>
 						</div>
 						<div class="flex w-full md:w-4/12 gap-4 ml-4">

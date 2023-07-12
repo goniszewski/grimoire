@@ -76,35 +76,37 @@
 				><IconMenu /></label
 			>
 		</div>
-		<div class="drawer-side mt-4 w-screen h-max">
-			<label for="my-drawer-2" class="drawer-overlay" />
-			<ul class="menu p-4 w-64 h-full bg-slate-100 text-base-content rounded-r-xl mt-8 gap-4">
-				<!-- Sidebar content here -->
-				<!-- <li><a>Sidebar Item 1</a></li>
+		{#if $currentUser}
+			<div class="drawer-side mt-4 w-screen h-max">
+				<label for="my-drawer-2" class="drawer-overlay" />
+				<ul class="menu p-4 w-64 h-full bg-slate-100 text-base-content rounded-r-xl mt-8 gap-4">
+					<!-- Sidebar content here -->
+					<!-- <li><a>Sidebar Item 1</a></li>
 				<li><a>Sidebar Item 2</a></li> -->
-				<div>
-					<h3 class="text-xl">Categories</h3>
-					<div class="flex flex-col p-2">
-						{#each $page.data.categories as category}
-							<div class="flex">
-								<div
-									class="w-4 h-4 mx-1 my-auto rounded-full"
-									style={`background-color: ${category?.color || '#a0a0a0'};`}
-								/>
-								<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
-							</div>
-						{/each}
+					<div>
+						<h3 class="text-xl">Categories</h3>
+						<div class="flex flex-col p-2">
+							{#each $page.data.categories as category}
+								<div class="flex">
+									<div
+										class="w-4 h-4 mx-1 my-auto rounded-full"
+										style={`background-color: ${category?.color || '#a0a0a0'};`}
+									/>
+									<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
+								</div>
+							{/each}
+						</div>
 					</div>
-				</div>
-				<div>
-					<h3 class="text-xl">Tags</h3>
-					<div class="flex flex-wrap p-2">
-						{#each $page.data.tags as tag}
-							<a href={`/tags/${tag.slug}`} class="link m-1">#{tag.name}</a>
-						{/each}
+					<div>
+						<h3 class="text-xl">Tags</h3>
+						<div class="flex flex-wrap p-2">
+							{#each $page.data.tags as tag}
+								<a href={`/tags/${tag.slug}`} class="link m-1">#{tag.name}</a>
+							{/each}
+						</div>
 					</div>
-				</div>
-			</ul>
-		</div>
+				</ul>
+			</div>
+		{/if}
 	</div>
 </div>
