@@ -101,9 +101,15 @@
 						<h3 class="text-xl">Tags</h3>
 						<div class="flex flex-wrap p-2">
 							{#each $page.data.tags as tag}
-								<a href={`/tags/${tag.slug}`} class="link m-1">#{tag.name}</a>
+								{#if tag.bookmarks.length > 0}
+									<a href={`/tags/${tag.slug}`} class="link m-1">#{tag.name}</a>
+								{/if}
 							{/each}
 						</div>
+					</div>
+					<div>
+						<h3 class="text-xl">Flows</h3>
+						<div class="flex flex-wrap p-2">To be added.</div>
 					</div>
 				</ul>
 			</div>

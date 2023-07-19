@@ -1,9 +1,27 @@
 import type { LayoutServerLoad } from './$types';
 
 import type { Category } from '$lib/interfaces/Category.interface';
-import type { Tag } from 'sanitize-html';
+import type { Tag } from '$lib/interfaces/Tag.interface';
 import type { BookmarkDto } from '$lib/interfaces/dto/Bookmark.dto';
 import { getFileUrl } from '$lib/utils';
+
+import type { TagWithBookmarks } from '$lib/interfaces/dto/Tag.dto';
+
+function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
+	return tags.map((tag) => {
+		const tagBookmarks = bookmarks.reduce((acc, bookmark) => {
+			if (bookmark.expand?.tags?.find((t) => t.id === tag.id)) {
+				acc.push(bookmark.id);
+			}
+			return acc;
+		}, [] as string[]);
+
+		return {
+			...tag,
+			bookmarks: tagBookmarks
+		};
+	});
+}
 
 export const load = (async ({ locals }) => {
 	if (!locals.user) {
@@ -30,6 +48,8 @@ export const load = (async ({ locals }) => {
 		sort: '-created'
 	})) as { items: BookmarkDto[] };
 
+	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
+
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({
@@ -41,6 +61,6 @@ export const load = (async ({ locals }) => {
 			}))
 		),
 		categories: structuredClone(categories.items),
-		tags: structuredClone(tags.items)
+		tags: structuredClone(tagsWithBookmarks)
 	};
 }) satisfies LayoutServerLoad;
