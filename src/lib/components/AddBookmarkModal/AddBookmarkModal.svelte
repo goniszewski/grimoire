@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { writable } from 'svelte/store';
 	import AddBookmarkForm from '../AddBookmarkForm/AddBookmarkForm.svelte';
-	import { onMount } from 'svelte/internal';
+	import { onMount } from 'svelte';
 
 	const modal = writable<HTMLDialogElement>();
 

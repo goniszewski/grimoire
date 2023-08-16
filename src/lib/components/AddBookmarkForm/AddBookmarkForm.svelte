@@ -124,7 +124,12 @@
 	method="POST"
 	action="?/addNewBookmark"
 	use:enhance={() =>
-		({ update }) => {
+		({ update, formData }) => {
+			const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
+			console.log("formData.get('category')", formData.get('category'));
+			if (!formData.get('category') && defaultCategory) {
+				formData.set('category', defaultCategory?.id);
+			}
 			closeModal();
 			update();
 		}}
@@ -179,6 +184,8 @@
 								<Select
 									name="category"
 									searchable
+									placeholder="Select category..."
+									value={$page.data.categories[0].id}
 									items={$page.data.categories.map((c) => ({
 										value: c.id,
 										label: c.name

@@ -8,7 +8,20 @@
 </script>
 
 {#if $currentUser?.id}
-	<form method="POST" class="w-full sm:w-96" use:enhance>
+	<form
+		method="POST"
+		class="w-full sm:w-96"
+		use:enhance={() =>
+			({ formData, update }) => {
+				if (!showPasswordForm) {
+					formData.delete('current_password');
+					formData.delete('new_password');
+					formData.delete('new_password_repeat');
+				}
+				// update();
+				console.log(formData);
+			}}
+	>
 		<div class="form-control flex w-full gap-4">
 			<div>
 				<label for="name" class="label">
@@ -45,16 +58,16 @@
 					placeholder="none"
 				/>
 			</div>
-			<div>
-				<button
-					on:click={(e) => {
-						e.preventDefault();
-						showPasswordForm = !showPasswordForm;
-					}}
-					class="btn btn-ghost"
-					>{showPasswordForm ? 'Hide password form' : 'I want to change my password'}</button
-				>
-			</div>
+			<!-- <div> -->
+			<button
+				on:click={(e) => {
+					e.preventDefault();
+					showPasswordForm = !showPasswordForm;
+				}}
+				class="btn btn-ghost"
+				>{showPasswordForm ? 'Hide password form' : 'I want to change my password'}</button
+			>
+			<!-- </div> -->
 			{#if showPasswordForm}
 				<div>
 					<label for="current_password" class="label">
@@ -90,6 +103,7 @@
 					/>
 				</div>
 			{/if}
+			<button class="btn btn-primary">Save</button>
 		</div>
 	</form>
 {:else}

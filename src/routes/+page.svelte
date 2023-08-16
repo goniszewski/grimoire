@@ -11,6 +11,7 @@
 	import { writable } from 'svelte/store';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
 	import { currentUser } from '$lib/pb';
+	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 
 	let bookmarks: Bookmark[] = [];
 	let sortBySelected = writable<{
@@ -78,6 +79,7 @@
 	</div>
 	<AddBookmarkModal />
 	<EditBookmarkModal />
+	<ShowBookmarkModal />
 
 	<BookmarkList {bookmarks} />
 {/if}

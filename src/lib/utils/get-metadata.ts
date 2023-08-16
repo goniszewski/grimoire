@@ -1,16 +1,18 @@
+import { convert } from 'html-to-text';
 import metascraper from 'metascraper';
 import metascraperAuthor from 'metascraper-author';
+import metascraperClearbit from 'metascraper-clearbit';
 import metascraperDate from 'metascraper-date';
 import metascraperDescription from 'metascraper-description';
 import metascraperImage from 'metascraper-image';
 import metascraperLogo from 'metascraper-logo';
-import metascraperClearbit from 'metascraper-clearbit';
 import metascraperPublisher from 'metascraper-publisher';
 import metascraperTitle from 'metascraper-title';
 import metascraperUrl from 'metascraper-url';
-import { extract } from '@extractus/article-extractor';
-import { convert } from 'html-to-text';
 import sanitize from 'sanitize-html';
+
+import { extract } from '@extractus/article-extractor';
+
 import type { Metadata } from '$lib/interfaces/Metadata.interface';
 
 const metascraperScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
@@ -73,6 +75,9 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 
 		if (faviconUrl.startsWith('/')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
+		}
+		if (faviconUrl.startsWith('./')) {
+			faviconUrl = `${baseUrl}${faviconUrl.replace('./', '/')}`;
 		}
 		return faviconUrl;
 	}, '');
