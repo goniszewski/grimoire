@@ -63,6 +63,7 @@
 		"metascraper-url": "^5.35.1",
 		"pocketbase": "^0.16.0",
 		"sanitize-html": "^2.11.0",
+		"svelte-french-toast": "^1.2.0",
 		"svelte-select": "^5.6.1"
 	}
 }
