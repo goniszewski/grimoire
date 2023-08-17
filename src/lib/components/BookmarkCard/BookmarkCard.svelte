@@ -20,6 +20,7 @@
 	let importanceForm: HTMLFormElement;
 	let readForm: HTMLFormElement;
 	let flaggedForm: HTMLFormElement;
+	let increaseOpenedTimesForm: HTMLFormElement;
 
 	function onEditBookmark() {
 		editBookmarkStore.set(bookmark);
@@ -185,13 +186,22 @@
 					alt={`${bookmark.domain}'s favicon`}
 					class="avatar w-4"
 				/>
+				<form
+					bind:this={increaseOpenedTimesForm}
+					method="POST"
+					action="/?/updateIncreasedOpenedCount"
+					use:enhance
+				>
+					<input type="hidden" name="id" value={bookmark.id} />
+				</form>
 				<a
 					href={bookmark.url}
 					title={bookmark.title}
 					target="_self"
 					class="link link-hover card-title text-lg line-clamp-1"
-					on:click={// TODO: increase 'opened_times'
-					() => {}}>{bookmark.title}</a
+					on:click={() => {
+						increaseOpenedTimesForm.requestSubmit();
+					}}>{bookmark.title}</a
 				>
 				<div class="flex">
 					<a
@@ -199,8 +209,9 @@
 						title="open in a new tab"
 						target="_blank"
 						class=" btn btn-xs btn-circle btn-ghost"
-						on:click={// TODO: increase 'opened_times'
-						() => {}}
+						on:click={() => {
+							increaseOpenedTimesForm.requestSubmit();
+						}}
 					>
 						<IconExternalLink size={14} />
 					</a>

@@ -26,7 +26,7 @@ export interface Bookmark {
 	tags: Tag[];
 	owner: User;
 	opened_last: Date;
-	opened_count: number;
+	opened_times: number;
 	created: Date;
 	updated: Date;
 }

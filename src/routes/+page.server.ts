@@ -239,5 +239,30 @@ export const actions = {
 		return {
 			success
 		};
+	},
+
+	updateIncreasedOpenedCount: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
+		const data = await request.formData();
+		const id = data.get('id') as string;
+
+		const currentOpenedCount = (await pb.collection('bookmarks').getOne(id))?.opened_times || 0;
+
+		const { success } = await pb.collection('bookmarks').update(id, {
+			opened_times: currentOpenedCount + 1,
+			opened_last: new Date().toISOString()
+		});
+
+		return {
+			success
+		};
 	}
 } satisfies Actions;

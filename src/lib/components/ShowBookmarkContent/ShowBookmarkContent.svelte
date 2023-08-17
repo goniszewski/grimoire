@@ -6,14 +6,17 @@
 	import { page } from '$app/stores';
 	import toast, { Toaster } from 'svelte-french-toast';
 
+	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 
 	export let closeModal: () => void;
 	let contentTab = writable<'text' | 'html'>('html');
 
-	let error = '';
-	const loading = writable(false);
+	function onEditBookmark() {
+		closeModal();
+		editBookmarkStore.set($bookmark);
+	}
 	const bookmark = writable<Partial<Bookmark>>({});
 
 	$: $bookmark = { ...$showBookmarkStore };
@@ -40,9 +43,12 @@
 
 <div class="flex flex-col gap-4">
 	{#if $bookmark?.id}
-		<h1 class="text-2xl">
-			{$bookmark.title}
-		</h1>
+		<div class="flex justify-between gap-2">
+			<h1 class="text-2xl">
+				{$bookmark.title}
+			</h1>
+			<button class="btn btn-sm btn-link" on:click={onEditBookmark} tabindex="0">Edit</button>
+		</div>
 		<div class="flex flex-col md:flex-row">
 			<div class="flex flex-col flex-1">
 				<div class="flex gap-2">
@@ -77,13 +83,18 @@
 						{$bookmark.flagged ? 'Yes' : 'No'}
 					</span>
 					<span>
+						<b> Archived: </b>
+						{$bookmark.archived ? 'Yes' : 'No'}
+					</span>
+					<span
+						title={`Last on: ${
+							$bookmark.opened_last ? new Date($bookmark.opened_last).toLocaleString() : ''
+						}`}
+					>
 						<b> Opened: </b>
-						{$bookmark.opened_count || 0} times
+						{$bookmark.opened_times || 0} times
 					</span>
-					<span>
-						<b> last on: </b>
-						{$bookmark.opened_last ? new Date($bookmark.opened_last).toLocaleString() : ''}
-					</span>
+
 					<span>
 						<b> Added: </b>
 						{$bookmark.created ? new Date($bookmark.created).toLocaleString() : ''}
@@ -91,10 +102,6 @@
 					<span>
 						<b> Updated: </b>
 						{$bookmark.updated ? new Date($bookmark.updated).toLocaleString() : ''}
-					</span>
-					<span>
-						<b> Archived: </b>
-						{$bookmark.archived ? 'Yes' : 'No'}
 					</span>
 				</div>
 			</div>
