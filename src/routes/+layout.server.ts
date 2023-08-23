@@ -26,8 +26,9 @@ function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookm
 export const load = (async ({ locals }) => {
 	if (!locals.user) {
 		return {
-			bookmarks: [],
-			categories: [],
+			bookmarks: [] as BookmarkDto[],
+			categories: [] as Category[],
+			tags: [] as TagWithBookmarks[],
 			status: 401
 		};
 	}

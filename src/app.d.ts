@@ -12,8 +12,6 @@ declare global {
 			bookmarks: import('$lib/interfaces/Bookmark.interface').Bookmark[];
 			tags: import('$lib/interfaces/dto/Tag.dto').TagWithBookmarks[];
 		}
-		interface LayoutData {}
-		// interface Platform {}
 	}
 }
 
