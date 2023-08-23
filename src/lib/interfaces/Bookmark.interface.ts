@@ -19,13 +19,13 @@ export interface Bookmark {
 	icon: string;
 	icon_url: string;
 	importance: number;
-	flagged: Date;
-	read: Date;
-	archived: Date;
+	flagged: null | Date;
+	read: null | Date;
+	archived: null | Date;
 	category: Category;
 	tags: Tag[];
 	owner: User;
-	opened_last: Date;
+	opened_last: null | Date;
 	opened_times: number;
 	created: Date;
 	updated: Date;
