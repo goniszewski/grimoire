@@ -180,7 +180,7 @@
 	</figure>
 	<div class="card-body p-2">
 		<div class="flex flex-wrap items-baseline">
-			<div class="flex items-baseline gap-2">
+			<div class="flex items-baseline gap-2 w-full">
 				<img
 					src={bookmark.icon || bookmark.icon_url}
 					alt={`${bookmark.domain}'s favicon`}
@@ -203,7 +203,7 @@
 						increaseOpenedTimesForm.requestSubmit();
 					}}>{bookmark.title}</a
 				>
-				<div class="flex">
+				<div class="flex ml-auto">
 					<a
 						href={bookmark.url}
 						title="open in a new tab"
@@ -216,7 +216,7 @@
 						<IconExternalLink size={14} />
 					</a>
 					<button
-						title="open in a new tab"
+						title="copy URL to clipboard"
 						class="btn btn-xs btn-circle btn-ghost"
 						on:click={() => {
 							navigator.clipboard.writeText(bookmark.url);
@@ -229,7 +229,6 @@
 					</button>
 				</div>
 			</div>
-			<div class="badge ml-auto badge-ghost">{bookmark.domain}</div>
 		</div>
 		<div class="tooltip text-left" data-tip={bookmark.description}>
 			<p class="font-light text-sm text-gray-700 line-clamp-2">
@@ -246,40 +245,44 @@
 			<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400">+</button>
 		</div>
 	</div>
-	<div class="dropdown dropdown-end absolute top-1 right-1">
-		<label for="options">
-			<button tabindex="0" class="btn btn-circle btn-ghost btn-xs">
-				<IconDots stroke={1.5} />
-			</button>
-		</label>
-		<ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28">
-			<!-- <li> -->
-			<!-- <button type="button" class="btn btn-xs btn-ghost" on:click={onEditBookmark} tabindex="0"
+	<div class="absolute top-1 right-1 flex items-center gap-1">
+		<div class="badge badge-ghost bg-gray-100 bg-opacity-75">{bookmark.domain}</div>
+
+		<div class="dropdown dropdown-end">
+			<label for="options">
+				<button tabindex="0" class="btn btn-circle btn-xs">
+					<IconDots size={16} stroke={1.5} class="" />
+				</button>
+			</label>
+			<ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28">
+				<!-- <li> -->
+				<!-- <button type="button" class="btn btn-xs btn-ghost" on:click={onEditBookmark} tabindex="0"
 				>Edit</button> -->
-			<!-- </li> -->
-			<li>
-				<a on:click={onEditBookmark} tabindex="0">Edit</a>
-			</li>
-			<li>
-				<form
-					method="POST"
-					action="/?/deleteBookmark"
-					use:enhance={() => {
-						return async ({ result }) => {
-							if (result.type === 'success') {
-								toast.success('Bookmark deleted', {
-									position: 'bottom-center'
-								});
-								await applyAction(result);
-							}
-						};
-					}}
-				>
-					<input type="hidden" name="id" value={bookmark.id} />
-					<button tabindex="0" class="text"> Remove </button>
-				</form>
-			</li>
-		</ul>
+				<!-- </li> -->
+				<li>
+					<a on:click={onEditBookmark} tabindex="0">Edit</a>
+				</li>
+				<li>
+					<form
+						method="POST"
+						action="/?/deleteBookmark"
+						use:enhance={() => {
+							return async ({ result }) => {
+								if (result.type === 'success') {
+									toast.success('Bookmark deleted', {
+										position: 'bottom-center'
+									});
+									await applyAction(result);
+								}
+							};
+						}}
+					>
+						<input type="hidden" name="id" value={bookmark.id} />
+						<button tabindex="0" class="text"> Remove </button>
+					</form>
+				</li>
+			</ul>
+		</div>
 	</div>
 </div>
 <Toaster />
