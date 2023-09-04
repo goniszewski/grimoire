@@ -5,6 +5,7 @@
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
+	import { onDestroy } from 'svelte';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -19,6 +20,11 @@
 		icon_url: '',
 		content_published_date: null
 	};
+
+	onDestroy(() => {
+		bookmarkTagsInput.set(null);
+		metadata = { ...defaultFormValues };
+	});
 
 	let metadata: Metadata = { ...defaultFormValues };
 	export let closeModal: () => void;

@@ -15,6 +15,7 @@
 	} from '@tabler/icons-svelte';
 	import toast, { Toaster } from 'svelte-french-toast';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
+	import { invalidate } from '$app/navigation';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -274,6 +275,8 @@
 									});
 									await applyAction(result);
 								}
+
+								invalidate('/');
 							};
 						}}
 					>

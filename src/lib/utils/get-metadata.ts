@@ -87,7 +87,9 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 	};
 };
 
-const htmlToText = (html: string) => convert(html, { wordwrap: false });
+const removeExtraEmptyLines = (html: string) => html.replace(/\n\s*\n/g, '\n');
+
+const htmlToText = (html: string) => removeExtraEmptyLines(convert(html, { wordwrap: false }));
 const sanitizeHtml = (html: string) => sanitize(html);
 
 export async function getMetadata(url: string) {

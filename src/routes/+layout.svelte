@@ -15,7 +15,7 @@
 	<title>Grimoire</title>
 </head>
 <div class="flex flex-col min-w-screen min-h-screen">
-	<div class="navbar bg-base-100 z-10">
+	<div class="navbar bg-base-100 z-1">
 		<div class="flex">
 			<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
 		</div>
@@ -65,7 +65,7 @@
 			{/if}
 		</div>
 	</div>
-	<div class="flex flex-1 min-w-full">
+	<div class="flex flex-1 min-w-full z-2">
 		<div class="drawer lg:drawer-open">
 			<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 			<div class="drawer-content flex flex-1 flex-col items-center justify-top m-2 sm:m-8">
@@ -78,7 +78,7 @@
 			{#if $currentUser}
 				<div class="drawer-side min-w-screen min-h-full">
 					<label for="my-drawer-2" class="drawer-overlay" />
-					<ul class="menu p-4 w-64 h-full bg-slate-100 text-base-content rounded-r-xl mt-20 gap-4">
+					<ul class="menu p-4 w-64 h-auto bg-slate-100 text-base-content rounded-r-xl gap-4 mt-20">
 						<!-- Sidebar content here -->
 						<!-- <li><a>Sidebar Item 1</a></li>
 					<li><a>Sidebar Item 2</a></li> -->
