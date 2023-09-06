@@ -4,7 +4,9 @@
 	import { applyAction, enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { IconMenu } from '@tabler/icons-svelte';
+	import { IconMenu, IconX } from '@tabler/icons-svelte';
+	import { writable } from 'svelte/store';
+	import { searchedValue } from '$lib/stores/search.store';
 
 	onMount(async () => {
 		pb.authStore.loadFromCookie(document.cookie);
@@ -20,8 +22,18 @@
 			<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
 		</div>
 		<div class="navbar-center flex-1">
-			<div class="form-control flex mx-auto w-10/12">
-				<input type="text" placeholder="Search" class="input input-bordered w-full" />
+			<div class="form-control flex mx-auto w-10/12 join join-horizontal">
+				<input
+					type="text"
+					placeholder="Search"
+					bind:value={$searchedValue}
+					class={`input input-bordered w-full ${$searchedValue ? 'rounded-r-none' : ''}`}
+				/>
+				{#if $searchedValue}
+					<button class="btn join-item" on:click={() => ($searchedValue = '')}>
+						<IconX />
+					</button>
+				{/if}
 			</div>
 		</div>
 		<div class="flex-none">

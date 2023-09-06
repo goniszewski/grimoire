@@ -12,8 +12,10 @@
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
 	import { currentUser } from '$lib/pb';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
+	import { searchedValue } from '$lib/stores/search.store';
+	import { searchFactory } from '$lib/utils/search';
 
-	let bookmarks: Bookmark[] = [];
+	export let bookmarks: Bookmark[] = [];
 	let sortBySelected = writable<{
 		label: string;
 		value: sortByType;
@@ -22,6 +24,8 @@
 		unread: false,
 		flagged: false
 	});
+
+	const searchEngine = searchFactory($page.data.bookmarks);
 
 	function filterBookmarks(bookmarks: Bookmark[], filters: { unread: boolean; flagged: boolean }) {
 		return bookmarks.filter((b) => {
@@ -36,14 +40,18 @@
 	}
 
 	$: {
-		const sortedBookmarks = sortBookmarks($page.data.bookmarks, $sortBySelected.value);
+		const searchedBookmarks = $searchedValue
+			? searchEngine.search($searchedValue).map((b) => b.item)
+			: $page.data.bookmarks;
+		const sortedBookmarks = sortBookmarks(searchedBookmarks, $sortBySelected.value);
+
 		bookmarks = filterBookmarks(sortedBookmarks, $showOnlyFilters);
 	}
 </script>
 
 {#if $currentUser}
 	<div class="flex justify-center ml-auto w-full m-4">
-		<div class="flex flex-1">
+		<div class="flex flex-1 w-full pr-5 items-center">
 			<Select
 				class="this-select select min-w-fit"
 				placeholder="Sort by"
@@ -74,6 +82,9 @@
 				<span class="label-text">Only flagged</span>
 				<input type="checkbox" bind:checked={$showOnlyFilters.flagged} class="checkbox" />
 			</label>
+			<span class="ml-auto text-sm text-gray-500"
+				>{`Showing ${bookmarks.length} out of ${$page.data.bookmarks.length}`}</span
+			>
 		</div>
 		<AddBookmarkButton />
 	</div>
