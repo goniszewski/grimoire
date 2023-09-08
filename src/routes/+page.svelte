@@ -15,11 +15,25 @@
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 
+	const sortByOptions = [
+		{ label: 'added (desc)', value: 'created_desc' },
+		{ label: 'added (asc)', value: 'created_asc' },
+		{ label: 'domain (desc)', value: 'domain_desc' },
+		{ label: 'domain (asc)', value: 'domain_asc' },
+		{ label: 'opened times (desc)', value: 'opened_times_desc' },
+		{ label: 'opened times (asc)', value: 'opened_times_asc' }
+	];
+
 	export let bookmarks: Bookmark[] = [];
 	let sortBySelected = writable<{
 		label: string;
 		value: sortByType;
-	}>({ label: 'added (desc)', value: 'added_desc' });
+	}>(
+		sortByOptions[0] as {
+			label: string;
+			value: sortByType;
+		}
+	);
 	let showOnlyFilters = writable({
 		unread: false,
 		flagged: false
@@ -58,12 +72,7 @@
 				searchable={false}
 				clearable={false}
 				bind:value={$sortBySelected}
-				items={[
-					{ label: 'added (asc)', value: 'added_asc' },
-					{ label: 'added (desc)', value: 'added_desc' },
-					{ label: 'title (asc)', value: 'title_asc' },
-					{ label: 'title (desc)', value: 'title_desc' }
-				]}
+				items={sortByOptions}
 			>
 				<div slot="prepend">
 					{#if $sortBySelected.value.includes('_asc')}
