@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   pocketbase:
-    image: spectado/pocketbase:0.16.5
+    image: spectado/pocketbase:0.18.10
     container_name: grimoire-pocketbase
     restart: unless-stopped
     ports:
