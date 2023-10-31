@@ -16,12 +16,20 @@
 	const bookmarksOpenedTimesPerBookmark = (
 		bookmarksOpenedTimes / $page.data.bookmarks.length
 	).toFixed(2);
+
+	const displayAddedDate = (date: Date) => {
+		const relativeDate = (
+			(new Date().getTime() - new Date(date).getTime()) /
+			(1000 * 3600 * 24)
+		).toFixed(0);
+		return relativeDate === '0' ? 'today' : `${relativeDate} days ago`;
+	};
 </script>
 
 {#if $currentUser?.id}
 	<div>
 		<div class="card lg:card-side bg-base-100 shadow-xl">
-			<div class="card-body">
+			<div class="card-body gap-5">
 				<h2 class="card-title gap-0">
 					Hello <span class="text-blue-600 ml-1">{$currentUser.name}</span>!
 				</h2>
@@ -32,7 +40,7 @@
 						<div class="stat-figure text-secondary">
 							<IconBookmarks size={32} />
 						</div>
-						<div class="stat-title">Bookmarks total</div>
+						<div class="stat-title">Bookmarks added</div>
 						<div class="stat-value">{$page.data.bookmarks.length}</div>
 						<div class="stat-desc">
 							since <span class="text-blue-600">{accountCreated}</span>
@@ -69,8 +77,41 @@
 						</div>
 					</div>
 				</div>
-				<div class="card-actions justify-end">
-					<button class="btn btn-primary">Edit Profile</button>
+				<h2 class="card-title">Latest bookmarks</h2>
+				{#if $page.data.bookmarks.length > 0}
+					<div class="flex flex-col w-full columns-sm gap-2">
+						{#each $page.data.bookmarks.slice(0, 3) as bookmark}
+							<a
+								href={bookmark.url}
+								title={bookmark.url}
+								target="_blank"
+								class="hover:bg-slate-100 p-2 rounded-md"
+								><div class="flex gap-2">
+									<img
+										src={bookmark.icon || bookmark.icon_url}
+										alt={`${bookmark.domain}'s favicon`}
+										class="avatar w-6 h-6"
+									/>
+									<h3 class="max-w-sm text-md text-ellipsis overflow-hidden whitespace-nowrap">
+										{bookmark.title}
+									</h3>
+									<div class="flex ml-auto gap-1">
+										<span style={`color: ${bookmark.category.color || '#a0a0a0'};`}>
+											{bookmark.category.name}
+										</span>
+										<span class="w-36 text-end">
+											added {displayAddedDate(bookmark.created)}
+										</span>
+									</div>
+								</div></a
+							>
+						{/each}
+					</div>
+				{:else}
+					<p>No bookmarks yet.</p>
+				{/if}
+				<div class="card-actions justify-end mt-4">
+					<a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
 				</div>
 			</div>
 		</div>

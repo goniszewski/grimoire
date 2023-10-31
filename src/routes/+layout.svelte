@@ -54,7 +54,7 @@
 						class="mt-3 p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-auto gap-2"
 					>
 						<li>
-							<a href="/" class="justify-between">
+							<a href="/profile" class="justify-between">
 								Profile
 								<!-- <span class="badge">New</span> -->
 							</a>
