@@ -26,7 +26,7 @@
 </script>
 
 <dialog bind:this={$modal} id="showBookmarkModal" class="modal">
-	<form method="dialog" class="modal-box max-w-full sm:max-w-screen-md md:max-w-screen-md">
+	<form method="dialog" class="modal-box max-w-fit">
 		<button
 			type="button"
 			on:click={closeModal}

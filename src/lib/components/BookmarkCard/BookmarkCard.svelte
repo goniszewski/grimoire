@@ -34,11 +34,17 @@
 
 <div class="relative card w-full sm:w-96 bg-base-100 shadow-xl mb-4 break-inside-avoid">
 	<figure class="relative max-h-36">
-		<div on:click={onShowBookmark} class="w-full hover:brightness-90">
+		<div
+			on:click={onShowBookmark}
+			class="w-full hover:brightness-90"
+			role="button"
+			tabindex="0"
+			on:keydown={onShowBookmark}
+		>
 			{#if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
 				<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
 			{:else}
-				<IconPhotoX class="mx-auto my-16" />
+				<IconPhotoX class="m-auto my-16" />
 			{/if}
 		</div>
 		<div
@@ -261,7 +267,7 @@
 				>Edit</button> -->
 				<!-- </li> -->
 				<li>
-					<a on:click={onEditBookmark} tabindex="0">Edit</a>
+					<button on:click={onEditBookmark} tabindex="0">Edit</button>
 				</li>
 				<li>
 					<form
