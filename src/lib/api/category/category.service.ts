@@ -28,11 +28,14 @@ export class CategoryService {
 	async getCategoryByName(name: string, owner: string) {
 		return this.backend
 			.collection('categories')
-			.getFirstListItem(`name="${name}" AND owner="${owner}"`);
+			.getFirstListItem(`name="${name}" AND owner="${owner}"`, {
+				expand: 'parent'
+			});
 	}
 
 	async getCategoriesByOwner(owner: string) {
 		return this.backend.collection('categories').getFirstListItem(`owner="${owner}"`, {
+			expand: 'parent',
 			sort: 'name'
 		});
 	}

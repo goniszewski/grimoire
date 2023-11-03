@@ -272,5 +272,48 @@ export const actions = {
 		return {
 			success
 		};
+	},
+
+	updateCategory: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+
+		const data = await request.formData();
+
+		const id = data.get('id') as string;
+		const name = data.get('name') as string;
+		const description = data.get('description') as string;
+		const icon = data.get('icon') as string;
+		const color = data.get('color') as string;
+		const parent = JSON.parse(data.get('parent') as string);
+		const parentValue = parent?.value ? parent.value : parent;
+		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
+		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
+
+		console.log('parent', parent);
+		const requestBody = {
+			name,
+			slug: name.toLowerCase().replace(/ /g, '-'),
+			description,
+			icon,
+			color,
+			parent: parentValue === 'null' ? null : parentValue,
+			archived,
+			public: setPublic,
+			updated: new Date().toISOString()
+		};
+		console.log(JSON.stringify(requestBody, null, 2));
+
+		const { success } = await pb.collection('categories').update(id, requestBody);
+
+		return {
+			success
+		};
 	}
 } satisfies Actions;

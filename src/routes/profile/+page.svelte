@@ -33,7 +33,7 @@
 				<h2 class="card-title gap-0">
 					Hello <span class="text-blue-600 ml-1">{$currentUser.name}</span>!
 				</h2>
-				<p>Click the button to listen on Spotiwhy app.</p>
+				<p>Welcome to your profile page. Here you can see your stats and latest bookmarks.</p>
 				<h2 class="card-title">Your stats</h2>
 				<div class="stats shadow">
 					<div class="stat">
@@ -96,10 +96,16 @@
 										{bookmark.title}
 									</h3>
 									<div class="flex ml-auto gap-1">
-										<span style={`color: ${bookmark.category.color || '#a0a0a0'};`}>
+										<span
+											style={`color: ${bookmark.category.color || '#a0a0a0'};`}
+											title={bookmark.category.description ? bookmark.category.description : ''}
+										>
 											{bookmark.category.name}
 										</span>
-										<span class="w-36 text-end">
+										<span
+											class="w-36 text-end"
+											title={`On ${new Date(bookmark.created).toLocaleDateString()}`}
+										>
 											added {displayAddedDate(bookmark.created)}
 										</span>
 									</div>

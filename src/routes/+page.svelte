@@ -1,8 +1,6 @@
 <script lang="ts">
 	import AddBookmarkButton from '$lib/components/AddBookmarkButton/AddBookmarkButton.svelte';
-	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
-	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 
 	import { page } from '$app/stores';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
@@ -11,7 +9,6 @@
 	import { writable } from 'svelte/store';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
 	import { currentUser } from '$lib/pb';
-	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 
@@ -97,9 +94,6 @@
 		</div>
 		<AddBookmarkButton />
 	</div>
-	<AddBookmarkModal />
-	<EditBookmarkModal />
-	<ShowBookmarkModal />
 
 	<BookmarkList {bookmarks} />
 {/if}

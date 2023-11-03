@@ -7,10 +7,36 @@
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 	import { searchedValue } from '$lib/stores/search.store';
+	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+	import { editCategoryStore } from '$lib/stores/edit-category.store';
+	import Icon from '$lib/components/Icon/Icon.svelte';
+	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
+	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
+	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
+	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
+	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
+	import type { Category } from '$lib/interfaces/Category.interface';
 
 	onMount(async () => {
 		pb.authStore.loadFromCookie(document.cookie);
 	});
+
+	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
+
+	$: {
+		const categories = $page.data.categories;
+		const categoriesTreeData = categories
+			.filter((c) => !c.parent)
+			.map((c) => ({
+				...c,
+				children: categories
+					.filter((c2) => c2.parent?.id === c.id)
+					.map((c2) => ({
+						...c2
+					}))
+			}));
+		categoriesTree.set(categoriesTreeData);
+	}
 </script>
 
 <head>
@@ -95,17 +121,12 @@
 						<!-- <li><a>Sidebar Item 1</a></li>
 					<li><a>Sidebar Item 2</a></li> -->
 						<div>
-							<h3 class="text-xl">Categories</h3>
+							<div class="flex">
+								<h3 class="text-xl">Categories</h3>
+								<button class="link link-hover opacity-50 hover:opacity-90 ml-auto">➕</button>
+							</div>
 							<div class="flex flex-col p-2">
-								{#each $page.data.categories as category}
-									<div class="flex">
-										<div
-											class="w-4 h-4 mx-1 my-auto rounded-full"
-											style={`background-color: ${category?.color || '#a0a0a0'};`}
-										/>
-										<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
-									</div>
-								{/each}
+								<CategoryTree categories={$categoriesTree} />
 							</div>
 						</div>
 						<div>
@@ -128,3 +149,7 @@
 		</div>
 	</div>
 </div>
+<AddBookmarkModal />
+<EditBookmarkModal />
+<ShowBookmarkModal />
+<EditCategoryModal />

@@ -3,6 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import type { Category } from '$lib/interfaces/Category.interface';
 import type { Tag } from '$lib/interfaces/Tag.interface';
 import type { BookmarkDto } from '$lib/interfaces/dto/Bookmark.dto';
+import type { CategoryDto } from '$lib/interfaces/dto/Category.dto';
 import { getFileUrl } from '$lib/utils';
 
 import type { TagWithBookmarks } from '$lib/interfaces/dto/Tag.dto';
@@ -33,10 +34,11 @@ export const load = (async ({ locals }) => {
 		};
 	}
 
-	const categories = await locals.pb.collection('categories').getList<Category>(1, 1000, {
+	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
+		expand: 'parent',
 		filter: `owner = "${locals.user!.id}"`,
 		sort: 'name'
-	});
+	})) as { items: CategoryDto[] };
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner = "${locals.user!.id}"`,
@@ -51,6 +53,7 @@ export const load = (async ({ locals }) => {
 
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
+	console.log(JSON.stringify(categories, null, 2));
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({
@@ -61,7 +64,9 @@ export const load = (async ({ locals }) => {
 				...bookmark.expand
 			}))
 		),
-		categories: structuredClone(categories.items),
+		categories: structuredClone(
+			categories.items.map((category) => ({ ...category, ...category.expand }))
+		),
 		tags: structuredClone(tagsWithBookmarks)
 	};
 }) satisfies LayoutServerLoad;
