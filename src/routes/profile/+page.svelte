@@ -35,7 +35,7 @@
 				</h2>
 				<p>Welcome to your profile page. Here you can see your stats and latest bookmarks.</p>
 				<h2 class="card-title">Your stats</h2>
-				<div class="stats shadow">
+				<div class=" shadow flex-col md:stats">
 					<div class="stat">
 						<div class="stat-figure text-secondary">
 							<IconBookmarks size={32} />
@@ -86,16 +86,18 @@
 								title={bookmark.url}
 								target="_blank"
 								class="hover:bg-slate-100 p-2 rounded-md"
-								><div class="flex gap-2">
-									<img
-										src={bookmark.icon || bookmark.icon_url}
-										alt={`${bookmark.domain}'s favicon`}
-										class="avatar w-6 h-6"
-									/>
-									<h3 class="max-w-sm text-md text-ellipsis overflow-hidden whitespace-nowrap">
-										{bookmark.title}
-									</h3>
-									<div class="flex ml-auto gap-1">
+								><div class="flex flex-col gap-2 md:flex-row">
+									<div class="flex gap-2">
+										<img
+											src={bookmark.icon || bookmark.icon_url}
+											alt={`${bookmark.domain}'s favicon`}
+											class="avatar w-6 h-6"
+										/>
+										<h3 class="max-w-sm text-md text-ellipsis overflow-hidden whitespace-nowrap">
+											{bookmark.title}
+										</h3>
+									</div>
+									<div class="flex ml-8 sm:ml-auto gap-1">
 										<span
 											style={`color: ${bookmark.category.color || '#a0a0a0'};`}
 											title={bookmark.category.description ? bookmark.category.description : ''}
