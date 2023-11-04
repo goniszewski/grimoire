@@ -61,7 +61,7 @@
 				{/if}
 			</div>
 		</div>
-		<div class="flex-none">
+		<div class="flex-none mr-6">
 			{#if !$currentUser}
 				<ul class="menu menu-horizontal px-1">
 					<li><a href="/signup">Sign up</a></li>
@@ -102,7 +102,7 @@
 			{/if}
 		</div>
 	</div>
-	<div class="flex flex-1 min-w-full z-2">
+	<div class="flex flex-1 min-w-full z-2 mb-20 sm:mb-0">
 		<div class="drawer lg:drawer-open">
 			<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 			<div class="drawer-content flex flex-1 flex-col items-center justify-top m-2 sm:m-8">

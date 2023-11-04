@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 	import Icon from '$lib/components/Icon/Icon.svelte';
+	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import type { Category } from '$lib/interfaces/Category.interface';
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
@@ -65,6 +66,12 @@
 		{#if bookmarks.length > 0}
 			<div class="flex flex-wrap gap-4">
 				<BookmarkList {bookmarks} />
+				<Pagination
+					page={$page.data.page}
+					limit={$page.data.limit}
+					items={$page.data.bookmarks.length}
+					position="right"
+				/>
 			</div>
 		{:else}
 			<p>No bookmarks yet.</p>

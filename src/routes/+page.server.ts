@@ -1,7 +1,6 @@
-import type { Actions, PageServerLoad } from './$types';
-import type { Tag } from '$lib/interfaces/Tag.interface';
+import type { Actions } from './$types';
 import { pb } from '$lib/pb';
-import { createSlug, getFileUrl, prepareTags } from '$lib/utils';
+import { createSlug, prepareTags } from '$lib/utils';
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {

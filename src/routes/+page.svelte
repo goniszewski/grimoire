@@ -11,6 +11,7 @@
 	import { currentUser } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
+	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -96,6 +97,12 @@
 	</div>
 
 	<BookmarkList {bookmarks} />
+	<Pagination
+		page={$page.data.page}
+		limit={$page.data.limit}
+		items={$page.data.bookmarksCount}
+		position="right"
+	/>
 {/if}
 
 <style>

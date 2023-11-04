@@ -24,7 +24,7 @@ function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookm
 	});
 }
 
-export const load = (async ({ locals }) => {
+export const load = (async ({ locals, url }) => {
 	if (!locals.user) {
 		return {
 			bookmarks: [] as BookmarkDto[],
@@ -33,6 +33,9 @@ export const load = (async ({ locals }) => {
 			status: 401
 		};
 	}
+
+	const page = parseInt(url.searchParams.get('page') || '1')
+	const limit = parseInt(url.searchParams.get('limit') || '20')
 
 	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
 		expand: 'parent',
@@ -45,11 +48,18 @@ export const load = (async ({ locals }) => {
 		sort: 'name'
 	});
 
-	const bookmarks = (await locals.pb.collection('bookmarks').getList(1, 50, {
+	const bookmarks = (await locals.pb.collection('bookmarks').getList(page, limit, {
 		expand: 'tags,category',
 		filter: `owner = "${locals.user!.id}"`,
 		sort: '-created'
 	})) as { items: BookmarkDto[] };
+
+	const bookmarksCount = await locals.pb.collection('bookmarks').getList(1, 1, {
+		filter: `owner = "${locals.user!.id}"`,
+		count: true
+		}).then((res) => res.totalItems);
+
+	console.log('bookmarksCount', bookmarksCount);
 
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
@@ -66,6 +76,9 @@ export const load = (async ({ locals }) => {
 		categories: structuredClone(
 			categories.items.map((category) => ({ ...category, ...category.expand }))
 		),
-		tags: structuredClone(tagsWithBookmarks)
+		tags: structuredClone(tagsWithBookmarks),
+		bookmarksCount: bookmarksCount,
+		page,
+		limit,
 	};
 }) satisfies LayoutServerLoad;
