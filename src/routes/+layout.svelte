@@ -14,6 +14,7 @@
 	import { writable } from 'svelte/store';
 	import '../app.css';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
+	import { Toaster } from 'svelte-french-toast';
 
 	onMount(async () => {
 		pb.authStore.loadFromCookie(document.cookie);
@@ -157,8 +158,11 @@
 		</div>
 	</div>
 </div>
+<!-- Modals -->
 <AddBookmarkModal />
 <EditBookmarkModal />
 <ShowBookmarkModal />
 <EditCategoryModal />
 <AddCategoryModal />
+
+<Toaster />

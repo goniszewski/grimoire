@@ -77,7 +77,6 @@ export const actions = {
 
 			if (icon_url) {
 				const icon = await fetch(icon_url as string).then((r) => r.blob());
-				console.log('icon', icon.size, 'bytes');
 				attachments.append('icon', icon);
 			}
 
@@ -170,7 +169,6 @@ export const actions = {
 
 			if (icon_url) {
 				const icon = await fetch(icon_url as string).then((r) => r.blob());
-				console.log('icon', icon.size, 'bytes');
 				attachments.append('icon', icon);
 			}
 
@@ -293,7 +291,6 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
 		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
 
-		console.log('parent', parent);
 		const requestBody = {
 			name,
 			slug: createSlug(name),
@@ -307,7 +304,6 @@ export const actions = {
 			created: new Date().toISOString(),
 			updated: new Date().toISOString()
 		};
-		console.log(JSON.stringify(requestBody, null, 2));
 
 		const { id } = await pb.collection('categories').create(requestBody);
 
@@ -338,7 +334,6 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
 		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
 
-		console.log('parent', parent);
 		const requestBody = {
 			name,
 			slug: createSlug(name),
@@ -350,12 +345,29 @@ export const actions = {
 			public: setPublic,
 			updated: new Date().toISOString()
 		};
-		console.log(JSON.stringify(requestBody, null, 2));
 
 		const { success } = await pb.collection('categories').update(id, requestBody);
 
 		return {
 			success
 		};
-	}
+	},
+	deleteCategory: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false
+			};
+		}
+
+		const data = await request.formData();
+		const id = data.get('id') as string;
+
+		await pb.collection('categories').delete(id);
+
+		return {
+			success: true
+		};
+	},
 } satisfies Actions;

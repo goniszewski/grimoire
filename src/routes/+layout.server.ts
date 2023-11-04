@@ -53,7 +53,6 @@ export const load = (async ({ locals }) => {
 
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
-	console.log(JSON.stringify(categories, null, 2));
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({

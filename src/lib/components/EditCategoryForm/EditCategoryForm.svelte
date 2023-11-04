@@ -1,10 +1,9 @@
 <script lang="ts">
 	import Select from 'svelte-select';
 	import { writable, type Writable } from 'svelte/store';
-	import { debounce } from 'lodash';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import toast, { Toaster } from 'svelte-french-toast';
+	import toast from 'svelte-french-toast';
 
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
 	import type { Category } from '$lib/interfaces/Category.interface';
@@ -32,7 +31,6 @@
 			},
 			...$page.data.categories
 				.filter((c) => {
-					console.log(c.id, $category.id);
 					return c.id !== $category.id;
 				})
 				.map((c) => ({
@@ -46,31 +44,31 @@
 </script>
 
 {#if $category?.id}
-	<form
-		bind:this={form}
-		method="POST"
-		action="/?/updateCategory"
-		use:enhance={() =>
-			({ update, result }) => {
-				if (result.type === 'success') {
-					toast.success('Category updated', {
-						position: 'bottom-center'
-					});
-				}
+	<div class="w-full">
+		<form
+			bind:this={form}
+			name="editCategoryForm"
+			method="POST"
+			action="/?/updateCategory"
+			use:enhance={() =>
+				({ update, result }) => {
+					if (result.type === 'success') {
+						toast.success('Category updated', {
+							position: 'bottom-center'
+						});
+					}
 
-				if (result.type === 'error') {
-					toast.error(`Error: ${JSON.stringify(result?.error)}`, {
-						position: 'bottom-center'
-					});
-				}
-				console.log('result', result);
-				closeModal();
-				update();
-			}}
-	>
-		<input type="text" class="hidden" name="id" value={$category.id} />
-		<input type="text" class="hidden" name="icon" value={$category.icon} />
-		<div class="w-full">
+					if (result.type === 'error') {
+						toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+							position: 'bottom-center'
+						});
+					}
+					closeModal();
+					update();
+				}}
+		>
+			<input type="text" class="hidden" name="id" value={$category.id} />
+			<input type="text" class="hidden" name="icon" value={$category.icon} />
 			<div class="flex flex-col w-full">
 				<div class="flex flex-col w-full">
 					<label for="name" class="label">Name</label>
@@ -181,11 +179,47 @@
 					/>
 				</div>
 			</div>
+			<div>
+				<div class="flex place-content-between">
+					<button
+						type="submit"
+						formaction="/?/updateCategory"
+						class="btn btn-primary my-6 w-full max-w-xs"
+						disabled={!$category.name}>Save</button
+					>
+					<form
+						method="POST"
+						action="/?/deleteCategory"
+						use:enhance={() =>
+							({ update, result }) => {
+								if (result.type === 'success') {
+									toast.success('Category deleted. Redirecting...', {
+										position: 'bottom-center'
+									});
+								}
 
-			<button class="btn btn-primary my-6 mx-auto w-full max-w-xs" disabled={!$category.name}
-				>Save</button
-			>
-		</div>
-	</form>
-	<Toaster />
+								if (result.type === 'error') {
+									toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+										position: 'bottom-center'
+									});
+								}
+								closeModal();
+								update();
+								setTimeout(() => {
+									window.location.href = '/';
+								}, 200);
+							}}
+					>
+						<input type="text" class="hidden" name="id" value={$category.id} />
+						<button
+							class="btn btn-error my-6 mx-auto w-full max-w-xs"
+							formaction="/?/deleteCategory"
+						>
+							Delete
+						</button>
+					</form>
+				</div>
+			</div>
+		</form>
+	</div>
 {/if}

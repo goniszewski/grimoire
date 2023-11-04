@@ -9,12 +9,7 @@ export function sortBookmarks(bookmarks: Bookmark[], sortString: sortByType) {
 	];
 	const field = fieldNameParts.reverse().join('_') as keyof Bookmark;
 	let result = sortBy(bookmarks, (b) => {
-		// console.log('field', field);
-		// console.log('b[field]', b[field]);
-		// console.log(
-		// 	"typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field]",
-		// 	typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field]
-		// );
+	
 		return typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field];
 	});
 

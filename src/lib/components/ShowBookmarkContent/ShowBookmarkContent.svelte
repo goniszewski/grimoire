@@ -4,7 +4,6 @@
 	import { enhance } from '$app/forms';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
-	import toast, { Toaster } from 'svelte-french-toast';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
@@ -241,4 +240,3 @@
 		{/if}
 	</div>
 </div>
-<Toaster />

@@ -3,7 +3,7 @@
 	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import toast, { Toaster } from 'svelte-french-toast';
+	import toast from 'svelte-french-toast';
 
 	import type { Category } from '$lib/interfaces/Category.interface';
 	import { icons } from '$lib/enums/icons';
@@ -43,7 +43,6 @@
 			},
 			...$page.data.categories
 				.filter((c) => {
-					console.log(c.id, $category.id);
 					return c.id !== $category.id;
 				})
 				.map((c) => ({
@@ -73,7 +72,6 @@
 					position: 'bottom-center'
 				});
 			}
-			console.log('result', result);
 			closeModal();
 			update();
 		}}
@@ -199,4 +197,3 @@
 		>
 	</div>
 </form>
-<Toaster />

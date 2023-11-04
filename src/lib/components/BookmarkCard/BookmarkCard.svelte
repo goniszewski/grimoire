@@ -13,7 +13,7 @@
 		IconExternalLink,
 		IconClipboardText
 	} from '@tabler/icons-svelte';
-	import toast, { Toaster } from 'svelte-french-toast';
+	import toast from 'svelte-french-toast';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { invalidate } from '$app/navigation';
 
@@ -294,4 +294,3 @@
 		</div>
 	</div>
 </div>
-<Toaster />

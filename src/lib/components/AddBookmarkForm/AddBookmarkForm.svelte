@@ -132,7 +132,6 @@
 	use:enhance={() =>
 		({ update, formData }) => {
 			const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
-			console.log("formData.get('category')", formData.get('category'));
 			if (!formData.get('category') && defaultCategory) {
 				formData.set('category', defaultCategory?.id);
 			}
