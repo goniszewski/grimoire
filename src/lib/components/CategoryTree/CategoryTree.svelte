@@ -18,12 +18,6 @@
 				<Icon name={category.icon} size={16} color={category?.color} />
 			{/if}
 			<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
-			<button
-				class="link link-hover opacity-50 hover:opacity-90 text-xs px-2"
-				on:click={() => {
-					editCategoryStore.set(category);
-				}}>✏️</button
-			>
 		</div>
 
 		{#if category.children}
@@ -38,12 +32,6 @@
 						<Icon name={categoryChild.icon} size={16} color={categoryChild?.color} />
 					{/if}
 					<a href={`/categories/${categoryChild.slug}`} class="link m-1">{categoryChild.name}</a>
-					<button
-						class="link link-hover opacity-50 hover:opacity-90 text-xs px-2"
-						on:click={() => {
-							editCategoryStore.set(categoryChild);
-						}}>✏️</button
-					>
 				</div>
 			{/each}
 		{/if}

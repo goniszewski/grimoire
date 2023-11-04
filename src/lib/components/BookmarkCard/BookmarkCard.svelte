@@ -32,7 +32,7 @@
 	}
 </script>
 
-<div class="relative card w-full sm:w-96 bg-base-100 shadow-xl mb-4 break-inside-avoid">
+<div class="relative card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid">
 	<figure class="relative max-h-36">
 		<div
 			on:click={onShowBookmark}

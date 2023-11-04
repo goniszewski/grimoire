@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
-	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
-	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import type { Category } from '$lib/interfaces/Category.interface';
+	import { editCategoryStore } from '$lib/stores/edit-category.store';
 
 	let slug: string;
 	let category: Category | undefined;
@@ -32,6 +31,13 @@
 			{:else}
 				<Icon name={category.icon} size={16} color={category?.color} />
 			{/if}
+			<button
+				class="link link-hover opacity-80 hover:opacity-10s px-2"
+				on:click={() => {
+					// @ts-ignore
+					editCategoryStore.set(category);
+				}}>Edit</button
+			>
 		</div>
 		<div class="flex flex-col">
 			<div class="flex gap-1">

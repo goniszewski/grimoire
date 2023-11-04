@@ -9,7 +9,7 @@
 
 {#if $currentUser?.id}
 	{#if $page.data.bookmarks.length > 0}
-		<div class="w-full columns-sm gap-8">
+		<div class="w-full columns-[22rem] gap-6">
 			{#each bookmarks as bookmark}
 				<BookmarkCard {bookmark} />
 			{/each}

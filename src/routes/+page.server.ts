@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import type { Tag } from '$lib/interfaces/Tag.interface';
 import { pb } from '$lib/pb';
-import { getFileUrl, prepareTags } from '$lib/utils';
+import { createSlug, getFileUrl, prepareTags } from '$lib/utils';
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
@@ -273,7 +273,49 @@ export const actions = {
 			success
 		};
 	},
+	addNewCategory: async ({ locals, request }) => {
+		const owner = locals.user?.id;
 
+		if (!owner) {
+			return {
+				success: false,
+				error: 'Unauthorized'
+			};
+		}
+		const data = await request.formData();
+
+		const name = data.get('name') as string;
+		const description = data.get('description') as string;
+		const icon = data.get('icon') as string;
+		const color = data.get('color') as string;
+		const parent = JSON.parse(data.get('parent') as string);
+		const parentValue = parent?.value ? parent.value : parent;
+		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
+		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
+
+		console.log('parent', parent);
+		const requestBody = {
+			name,
+			slug: createSlug(name),
+			description,
+			icon,
+			color,
+			parent: parentValue === 'null' ? null : parentValue,
+			archived,
+			public: setPublic,
+			owner,
+			created: new Date().toISOString(),
+			updated: new Date().toISOString()
+		};
+		console.log(JSON.stringify(requestBody, null, 2));
+
+		const { id } = await pb.collection('categories').create(requestBody);
+
+		return {
+			id,
+			success: true
+		};
+	},
 	updateCategory: async ({ locals, request }) => {
 		const owner = locals.user?.id;
 
@@ -299,7 +341,7 @@ export const actions = {
 		console.log('parent', parent);
 		const requestBody = {
 			name,
-			slug: name.toLowerCase().replace(/ /g, '-'),
+			slug: createSlug(name),
 			description,
 			icon,
 			color,

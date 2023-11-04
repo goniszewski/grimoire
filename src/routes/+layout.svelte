@@ -1,21 +1,19 @@
 <script lang="ts">
-	import '../app.css';
-	import { currentUser, pb } from '$lib/pb';
 	import { applyAction, enhance } from '$app/forms';
-	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { writable } from 'svelte/store';
-	import { searchedValue } from '$lib/stores/search.store';
-	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import { editCategoryStore } from '$lib/stores/edit-category.store';
-	import Icon from '$lib/components/Icon/Icon.svelte';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
-	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
-	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
-	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
+	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
+	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
+	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import type { Category } from '$lib/interfaces/Category.interface';
+	import { currentUser, pb } from '$lib/pb';
+	import { searchedValue } from '$lib/stores/search.store';
+	import { IconMenu, IconX } from '@tabler/icons-svelte';
+	import { onMount } from 'svelte';
+	import { writable } from 'svelte/store';
+	import '../app.css';
+	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 
 	onMount(async () => {
 		pb.authStore.loadFromCookie(document.cookie);
@@ -115,15 +113,25 @@
 			</div>
 			{#if $currentUser}
 				<div class="drawer-side min-w-screen min-h-full">
+					<!-- allign items in center vertically and horizontally -->
+					<div class="flex flex-col items-end justify-center h-14">
+						{#if $page.url.pathname !== '/'}
+							<a href="/" class="link">{'< Back to Home'}</a>
+						{/if}
+					</div>
 					<label for="my-drawer-2" class="drawer-overlay" />
-					<ul class="menu p-4 w-64 h-auto bg-slate-100 text-base-content rounded-r-xl gap-4 mt-20">
+					<ul class="menu p-4 w-64 h-auto bg-slate-100 text-base-content rounded-r-xl gap-4">
 						<!-- Sidebar content here -->
 						<!-- <li><a>Sidebar Item 1</a></li>
 					<li><a>Sidebar Item 2</a></li> -->
 						<div>
 							<div class="flex">
 								<h3 class="text-xl">Categories</h3>
-								<button class="link link-hover opacity-50 hover:opacity-90 ml-auto">➕</button>
+								<!-- @ts-ignore -->
+								<button
+									class="link link-hover opacity-50 hover:opacity-90 ml-auto"
+									onclick="addCategoryModal.showModal()">➕</button
+								>
 							</div>
 							<div class="flex flex-col p-2">
 								<CategoryTree categories={$categoriesTree} />
@@ -153,3 +161,4 @@
 <EditBookmarkModal />
 <ShowBookmarkModal />
 <EditCategoryModal />
+<AddCategoryModal />
