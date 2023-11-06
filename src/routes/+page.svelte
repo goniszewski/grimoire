@@ -71,34 +71,37 @@
 {#if pb.authStore.isValid && pb.authStore.model}
 	<div class="flex justify-center ml-auto w-full m-4">
 		<div class="flex flex-1 w-full pr-5 items-center">
-			<label class="link swap swap-rotate">
-				<input
-					type="checkbox"
-					on:change={() => {
-						$viewOptionsStore.bookmarksView =
-							$viewOptionsStore.bookmarksView === 'grid' ? 'list' : 'grid';
-					}}
-				/>
-				<IconLayout2 class="w-5 h-5 swap-off" />
-				<IconListDetails class="w-5 h-5 swap-on" />
-			</label>
-			<Select
-				class="this-select select min-w-fit"
-				placeholder="Sort by"
-				searchable={false}
-				clearable={false}
-				bind:value={$sortBySelected}
-				items={sortByOptions}
-			>
-				<div slot="prepend">
-					{#if $sortBySelected.value.includes('_asc')}
-						<IconSortAscending class="w-5 h-5" />
-					{:else}
-						<IconSortDescending class="w-5 h-5" />
-					{/if}
-				</div>
-			</Select>
-
+			<div class="tooltip flex flex-col justify-center" data-tip="Change view">
+				<label class="link swap swap-rotate px-1">
+					<input
+						type="checkbox"
+						on:change={() => {
+							$viewOptionsStore.bookmarksView =
+								$viewOptionsStore.bookmarksView === 'grid' ? 'list' : 'grid';
+						}}
+					/>
+					<IconLayout2 class="w-5 h-5 swap-off" />
+					<IconListDetails class="w-5 h-5 swap-on" />
+				</label>
+			</div>
+			<div class="tooltip" data-tip="Sort items">
+				<Select
+					class="this-select select min-w-fit "
+					placeholder="Sort by"
+					searchable={false}
+					clearable={false}
+					bind:value={$sortBySelected}
+					items={sortByOptions}
+				>
+					<div slot="prepend">
+						{#if $sortBySelected.value.includes('_asc')}
+							<IconSortAscending class="w-5 h-5" />
+						{:else}
+							<IconSortDescending class="w-5 h-5" />
+						{/if}
+					</div>
+				</Select>
+			</div>
 			<label class="label cursor-pointer gap-2">
 				<span class="label-text">Only unread</span>
 				<input type="checkbox" bind:checked={$showOnlyFilters.unread} class="checkbox" />
