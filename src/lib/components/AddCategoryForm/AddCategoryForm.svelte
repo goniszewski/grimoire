@@ -3,11 +3,11 @@
 	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import toast from 'svelte-french-toast';
 
 	import type { Category } from '$lib/interfaces/Category.interface';
 	import { icons } from '$lib/enums/icons';
 	import Icon from '$lib/components/Icon/Icon.svelte';
+	import { showToast } from '$lib/utils/show-toast';
 
 	const category = writable<
 		Partial<
@@ -62,13 +62,13 @@
 	use:enhance={() =>
 		({ update, result }) => {
 			if (result.type === 'success') {
-				toast.success('Category added', {
+				showToast.success('Category added', {
 					position: 'bottom-center'
 				});
 			}
 
 			if (result.type === 'error') {
-				toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+				showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 					position: 'bottom-center'
 				});
 			}

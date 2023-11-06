@@ -4,10 +4,10 @@
 	import { enhance } from '$app/forms';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
-	import toast from 'svelte-french-toast';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+	import { showToast } from '$lib/utils/show-toast';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
@@ -119,13 +119,13 @@
 		use:enhance={() =>
 			({ update, result }) => {
 				if (result.type === 'success') {
-					toast.success('Bookmark updated', {
+					showToast.success('Bookmark updated', {
 						position: 'bottom-center'
 					});
 				}
 
 				if (result.type === 'error') {
-					toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+					showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 						position: 'bottom-center'
 					});
 				}

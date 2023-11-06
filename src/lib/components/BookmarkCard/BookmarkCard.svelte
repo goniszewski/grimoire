@@ -13,9 +13,9 @@
 		IconExternalLink,
 		IconClipboardText
 	} from '@tabler/icons-svelte';
-	import toast from 'svelte-french-toast';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { invalidate } from '$app/navigation';
+	import { showToast } from '$lib/utils/show-toast';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -66,7 +66,7 @@
 						await applyAction(result);
 					}
 					if (result.type === 'error') {
-						toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+						showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 							position: 'bottom-center'
 						});
 					}
@@ -131,7 +131,7 @@
 							await applyAction(result);
 						}
 						if (result.type === 'error') {
-							toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+							showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 								position: 'bottom-center'
 							});
 						}
@@ -162,7 +162,7 @@
 							await applyAction(result);
 						}
 						if (result.type === 'error') {
-							toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+							showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 								position: 'bottom-center'
 							});
 						}
@@ -227,7 +227,7 @@
 						class="btn btn-xs btn-circle btn-ghost"
 						on:click={() => {
 							navigator.clipboard.writeText(bookmark.url);
-							toast.success('URL copied to clipboard', {
+							showToast.success('URL copied to clipboard', {
 								position: 'bottom-center'
 							});
 						}}
@@ -276,7 +276,7 @@
 						use:enhance={() => {
 							return async ({ result }) => {
 								if (result.type === 'success') {
-									toast.success('Bookmark deleted', {
+									showToast.success('Bookmark deleted', {
 										position: 'bottom-center'
 									});
 									await applyAction(result);

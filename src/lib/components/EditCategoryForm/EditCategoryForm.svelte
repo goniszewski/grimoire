@@ -3,12 +3,12 @@
 	import { writable, type Writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import toast from 'svelte-french-toast';
 
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
 	import type { Category } from '$lib/interfaces/Category.interface';
 	import { icons } from '$lib/enums/icons';
 	import Icon from '$lib/components/Icon/Icon.svelte';
+	import { showToast } from '$lib/utils/show-toast';
 
 	const category = writable<Partial<Category>>({});
 	$: $category = { ...$editCategoryStore };
@@ -53,13 +53,13 @@
 			use:enhance={() =>
 				({ update, result }) => {
 					if (result.type === 'success') {
-						toast.success('Category updated', {
+						showToast.success('Category updated', {
 							position: 'bottom-center'
 						});
 					}
 
 					if (result.type === 'error') {
-						toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+						showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 							position: 'bottom-center'
 						});
 					}
@@ -193,13 +193,13 @@
 						use:enhance={() =>
 							({ update, result }) => {
 								if (result.type === 'success') {
-									toast.success('Category deleted. Redirecting...', {
+									showToast.success('Category deleted. Redirecting...', {
 										position: 'bottom-center'
 									});
 								}
 
 								if (result.type === 'error') {
-									toast.error(`Error: ${JSON.stringify(result?.error)}`, {
+									showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
 										position: 'bottom-center'
 									});
 								}
