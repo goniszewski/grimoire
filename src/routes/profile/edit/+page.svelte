@@ -21,7 +21,6 @@
 					formData.delete('new_password_repeat');
 				}
 				// update();
-				console.log(formData);
 			}}
 	>
 		<div class="form-control flex w-full gap-4">

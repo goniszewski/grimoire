@@ -33,8 +33,6 @@ export const load: PageServerLoad = async ({ params }) => {
 	adminData.s3Test = await pb.settings.testS3('backups').catch(() => false);
 	adminData.settings = (await pb.settings.getAll()) as Settings;
 
-	console.log(JSON.stringify(adminData, null, 2));
-
 	return {
 		adminData
 	};
