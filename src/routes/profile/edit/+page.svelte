@@ -7,7 +7,9 @@
 	let showPasswordForm = false;
 </script>
 
-{#if $currentUser?.id}
+{#if !$currentUser}
+	<p>Not logged in</p>
+{:else}
 	<form
 		method="POST"
 		class="w-full sm:w-96"
@@ -106,6 +108,4 @@
 			<button class="btn btn-primary">Save</button>
 		</div>
 	</form>
-{:else}
-	<p>Not logged in</p>
 {/if}

@@ -5,8 +5,8 @@
 </script>
 
 <div class="w-full mt-24">
-	<div class="form-control mx-auto max-w-xs gap-4">
-		<form method="POST">
+	<form method="POST">
+		<div class="form-control mx-auto max-w-xs gap-4">
 			<div>
 				<label for="usernameOrEmail" class="label">
 					<span class="label-text">Username / email</span>
@@ -32,6 +32,6 @@
 			</div>
 
 			<button class="btn btn-primary">Sign in</button>
-		</form>
-	</div>
+		</div>
+	</form>
 </div>

@@ -59,8 +59,6 @@ export const load = (async ({ locals, url }) => {
 		count: true
 		}).then((res) => res.totalItems);
 
-	console.log('bookmarksCount', bookmarksCount);
-
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
 	return {
@@ -77,7 +75,7 @@ export const load = (async ({ locals, url }) => {
 			categories.items.map((category) => ({ ...category, ...category.expand }))
 		),
 		tags: structuredClone(tagsWithBookmarks),
-		bookmarksCount: bookmarksCount,
+		bookmarksCount,
 		page,
 		limit,
 	};

@@ -4,14 +4,21 @@
 
 	import { page } from '$app/stores';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-	import { IconSortAscending, IconSortDescending } from '@tabler/icons-svelte';
+	import {
+		IconGrid3x3,
+		IconLayout2,
+		IconListDetails,
+		IconSortAscending,
+		IconSortDescending
+	} from '@tabler/icons-svelte';
 	import Select from 'svelte-select';
 	import { writable } from 'svelte/store';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
-	import { currentUser } from '$lib/pb';
+	import { currentUser, pb } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
+	import { viewOptionsStore } from '$lib/stores/view-options.store';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -61,9 +68,20 @@
 	}
 </script>
 
-{#if $currentUser}
+{#if pb.authStore.isValid && pb.authStore.model}
 	<div class="flex justify-center ml-auto w-full m-4">
 		<div class="flex flex-1 w-full pr-5 items-center">
+			<label class="link swap swap-rotate">
+				<input
+					type="checkbox"
+					on:change={() => {
+						$viewOptionsStore.bookmarksView =
+							$viewOptionsStore.bookmarksView === 'grid' ? 'list' : 'grid';
+					}}
+				/>
+				<IconLayout2 class="w-5 h-5 swap-off" />
+				<IconListDetails class="w-5 h-5 swap-on" />
+			</label>
 			<Select
 				class="this-select select min-w-fit"
 				placeholder="Sort by"
@@ -103,6 +121,15 @@
 		items={$page.data.bookmarksCount}
 		position="right"
 	/>
+{:else}
+	<div class="flex flex-col items-center justify-center h-full">
+		<h1 class="text-2xl">Grimoire welcomes!</h1>
+		<p class="text-lg">
+			Please <a href="/login" class="link">login</a> or
+			<a href="/register" class="link">register</a>
+			to see your bookmarks
+		</p>
+	</div>
 {/if}
 
 <style>

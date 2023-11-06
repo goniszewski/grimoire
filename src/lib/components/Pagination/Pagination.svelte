@@ -4,8 +4,6 @@
 	export let items: number = 0;
 	export let position: 'left' | 'center' | 'right' = 'center';
 
-	console.log(page, limit, items, position);
-
 	const pagesCount = Math.ceil(items / limit);
 
 	function handlePageChange() {
