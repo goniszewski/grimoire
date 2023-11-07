@@ -94,6 +94,7 @@ const sanitizeHtml = (html: string) => sanitize(html);
 
 export async function getMetadata(url: string) {
 	const html = await fetch(url).then((res) => res.text());
+	const firstParagraph = html.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
 
 	const metascraperMetadata = await metascraperScraper(html, url);
 	const articleExtractorMetadata = await articleExtractorScraper(html, url);
@@ -108,7 +109,11 @@ export async function getMetadata(url: string) {
 		url: metascraperMetadata?.url || articleExtractorMetadata?.url || '',
 		domain,
 		title: metascraperMetadata?.title || articleExtractorMetadata?.title || '',
-		description: metascraperMetadata?.description || articleExtractorMetadata?.description || '',
+		description:
+			metascraperMetadata?.description ||
+			articleExtractorMetadata?.description ||
+			firstParagraph ||
+			'',
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
 		content_text,
 		content_html: articleExtractorMetadata?.content_html || '',
