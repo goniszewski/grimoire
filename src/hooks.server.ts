@@ -6,16 +6,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 	pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 	if (pb.authStore.isValid) {
 		try {
-			if(event.url.pathname.startsWith('/admin')) {
+			if (event.url.pathname.startsWith('/admin')) {
 				await pb.admins.authRefresh().then((res) => {
-					console.log('pb.admins.authRefresh', res,pb.authStore.model, pb.authStore.isAdmin);
-				}
-				);
+					console.info('Admin logged:', res?.admin.email);
+				});
 			} else {
-				await pb.collection('users').authRefresh().then((res) => {
-					console.log('pb.collection(users).authRefresh', res,pb.authStore.model);
-				}
-				);
+				await pb
+					.collection('users')
+					.authRefresh()
+					.then((res) => {
+						console.info('User logged:', res.record.username);
+					});
 			}
 		} catch (_) {
 			pb.authStore.clear();

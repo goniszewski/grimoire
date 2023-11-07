@@ -34,8 +34,8 @@ export const load = (async ({ locals, url }) => {
 		};
 	}
 
-	const page = parseInt(url.searchParams.get('page') || '1')
-	const limit = parseInt(url.searchParams.get('limit') || '20')
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '20');
 
 	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
 		expand: 'parent',
@@ -54,10 +54,13 @@ export const load = (async ({ locals, url }) => {
 		sort: '-created'
 	})) as { items: BookmarkDto[] };
 
-	const bookmarksCount = await locals.pb.collection('bookmarks').getList(1, 1, {
-		filter: `owner = "${locals.user!.id}"`,
-		count: true
-		}).then((res) => res.totalItems);
+	const bookmarksCount = await locals.pb
+		.collection('bookmarks')
+		.getList(1, 1, {
+			filter: `owner = "${locals.user!.id}"`,
+			count: true
+		})
+		.then((res) => res.totalItems);
 
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
@@ -77,6 +80,6 @@ export const load = (async ({ locals, url }) => {
 		tags: structuredClone(tagsWithBookmarks),
 		bookmarksCount,
 		page,
-		limit,
+		limit
 	};
 }) satisfies LayoutServerLoad;

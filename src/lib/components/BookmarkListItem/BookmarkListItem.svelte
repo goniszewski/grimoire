@@ -13,7 +13,8 @@
 		IconExternalLink,
 		IconClipboardText,
 		IconMenu,
-		IconBackspace
+		IconBackspace,
+		IconPencil
 	} from '@tabler/icons-svelte';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { invalidate } from '$app/navigation';
@@ -163,102 +164,115 @@
 					on:change={() => importanceForm.requestSubmit()}
 				/>
 			</div>
-			<details class="dropdown dropdown-end">
-				<summary class="btn btn-xs">
+			<div class="dropdown dropdown-left">
+				<button tabindex="0" class="btn btn-xs">
 					<IconMenu size={14} />
-				</summary>
-				<ul class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+				</button>
+				<ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
 					<li>
-						<form
-							bind:this={readForm}
-							method="POST"
-							action="/?/updateRead"
-							use:enhance={() => {
-								return async ({ result }) => {
-									if (result.type === 'success') {
-										await applyAction(result);
-									}
-									if (result.type === 'error') {
-										showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
-											position: 'bottom-center'
-										});
-									}
-								};
-							}}
-						>
-							<input type="hidden" name="id" value={bookmark.id} />
-							<label class="swap btn btn-circle">
-								<input
-									type="checkbox"
-									name="read"
-									checked={!!bookmark.read}
-									on:change={() => {
-										readForm.requestSubmit();
-									}}
-								/>
-								<IconEyeCheck class="swap-on text-blue-500" />
-								<IconEyeClosed class="swap-off text-gray-400" />
-							</label>
-						</form>
+						<div class="tooltip text-left" data-tip="Mark bookmark as read">
+							<form
+								bind:this={readForm}
+								method="POST"
+								action="/?/updateRead"
+								use:enhance={() => {
+									return async ({ result }) => {
+										if (result.type === 'success') {
+											await applyAction(result);
+										}
+										if (result.type === 'error') {
+											showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
+												position: 'bottom-center'
+											});
+										}
+									};
+								}}
+							>
+								<input type="hidden" name="id" value={bookmark.id} />
+								<label class="swap btn btn-circle">
+									<input
+										type="checkbox"
+										name="read"
+										checked={!!bookmark.read}
+										on:change={() => {
+											readForm.requestSubmit();
+										}}
+									/>
+									<IconEyeCheck class="swap-on text-blue-500" />
+									<IconEyeClosed class="swap-off text-gray-400" />
+								</label>
+							</form>
+						</div>
 					</li>
 					<li>
-						<form
-							bind:this={flaggedForm}
-							method="POST"
-							action="/?/updateFlagged"
-							use:enhance={() => {
-								return async ({ result }) => {
-									if (result.type === 'success') {
-										await applyAction(result);
-									}
-									if (result.type === 'error') {
-										showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
-											position: 'bottom-center'
-										});
-									}
-								};
-							}}
-						>
-							<input type="hidden" name="id" value={bookmark.id} />
-							<label class="swap btn btn-circle">
-								<input
-									type="checkbox"
-									name="flagged"
-									checked={!!bookmark.flagged}
-									on:change={() => {
-										flaggedForm.requestSubmit();
-									}}
-								/>
-								<IconBookmarkFilled class="swap-on text-green-600" />
-								<IconBookmark class="swap-off text-gray-400" />
-							</label>
-						</form>
+						<div class="tooltip text-left" data-tip="Flag bookmark">
+							<form
+								bind:this={flaggedForm}
+								method="POST"
+								action="/?/updateFlagged"
+								use:enhance={() => {
+									return async ({ result }) => {
+										if (result.type === 'success') {
+											await applyAction(result);
+										}
+										if (result.type === 'error') {
+											showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
+												position: 'bottom-center'
+											});
+										}
+									};
+								}}
+							>
+								<input type="hidden" name="id" value={bookmark.id} />
+								<label class="swap btn btn-circle">
+									<input
+										type="checkbox"
+										name="flagged"
+										checked={!!bookmark.flagged}
+										on:change={() => {
+											flaggedForm.requestSubmit();
+										}}
+									/>
+									<IconBookmarkFilled class="swap-on text-green-600" />
+									<IconBookmark class="swap-off text-gray-400" />
+								</label>
+							</form>
+						</div>
 					</li>
 					<li>
-						<form
-							method="POST"
-							action="/?/deleteBookmark"
-							use:enhance={() => {
-								return async ({ result }) => {
-									if (result.type === 'success') {
-										showToast.success('Bookmark deleted', {
-											position: 'bottom-center'
-										});
-										await applyAction(result);
-									}
-
-									invalidate('/');
-								};
-							}}
-						>
-							<input type="hidden" name="id" value={bookmark.id} />
-							<button tabindex="0" class="btn btn-circle">
-								<IconBackspace class="text-red-700" />
+						<div class="tooltip text-left" data-tip="Edit bookmark">
+							<button on:click={onEditBookmark} tabindex="0" class="btn btn-circle">
+								<IconPencil class="text-blue-700" />
 							</button>
-						</form>
+						</div>
+					</li>
+					<li>
+						<div class="tooltip text-left" data-tip="Remove bookmark">
+							<form
+								method="POST"
+								action="/?/deleteBookmark"
+								use:enhance={() => {
+									return async ({ result }) => {
+										if (result.type === 'success') {
+											showToast.success('Bookmark deleted', {
+												position: 'bottom-center'
+											});
+											await applyAction(result);
+										}
+
+										invalidate('/');
+									};
+								}}
+							>
+								<input type="hidden" name="id" value={bookmark.id} />
+								<button tabindex="0" class="btn btn-circle">
+									<IconBackspace class="text-red-700" />
+								</button>
+							</form>
+						</div>
 					</li>
 				</ul>
-			</details>
+			</div>
 		</div>
 	</div>
 </div>

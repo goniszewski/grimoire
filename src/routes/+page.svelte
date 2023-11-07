@@ -11,13 +11,13 @@
 		IconSortDescending
 	} from '@tabler/icons-svelte';
 	import Select from 'svelte-select';
-	import { writable } from 'svelte/store';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
-	import { user } from '$lib/pb';
+	import { user, type UserSettings } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import { viewOptionsStore } from '$lib/stores/view-options.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
+	import { applyAction, enhance } from '$app/forms';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -29,28 +29,15 @@
 	];
 
 	export let bookmarks: Bookmark[] = [];
-	let sortBySelected = writable<{
-		label: string;
-		value: sortByType;
-	}>(
-		sortByOptions[0] as {
-			label: string;
-			value: sortByType;
-		}
-	);
-	let showOnlyFilters = writable({
-		unread: false,
-		flagged: false
-	});
 
 	const searchEngine = searchFactory($page.data.bookmarks);
 
-	function filterBookmarks(bookmarks: Bookmark[], filters: { unread: boolean; flagged: boolean }) {
+	function filterBookmarks(bookmarks: Bookmark[], settings: UserSettings) {
 		return bookmarks.filter((b) => {
-			if (filters.unread && !!b.read) {
+			if (settings.bookmarksOnlyShowRead && !!b.read) {
 				return false;
 			}
-			if (filters.flagged && !b.flagged) {
+			if (settings.bookmarksOnlyShowFlagged && !b.flagged) {
 				return false;
 			}
 			return true;
@@ -61,26 +48,52 @@
 		const searchedBookmarks = $searchedValue
 			? searchEngine.search($searchedValue).map((b) => b.item)
 			: $page.data.bookmarks;
-		const sortedBookmarks = sortBookmarks(searchedBookmarks, $sortBySelected.value);
+		const sortedBookmarks = sortBookmarks(searchedBookmarks, $userSettingsStore.bookmarksSortedBy);
 
-		bookmarks = filterBookmarks(sortedBookmarks, $showOnlyFilters);
+		bookmarks = filterBookmarks(sortedBookmarks, $userSettingsStore);
 	}
+
+	let bookmarksViewForm: HTMLFormElement;
 </script>
 
 {#if user.isValid && user.model}
-	<div class="flex flex-col md:flex-row justify-center ml-auto w-full m-4">
-		<div class="flex-1 flex-col w-full pr-5 items-center md:flex-row">
+	<div class="flex flex-col sm:flex-row justify-center ml-auto w-full m-4">
+		<form
+			class="flex flex-1 w-full pr-5 items-center flex-wrap"
+			bind:this={bookmarksViewForm}
+			method="POST"
+			action="/profile/edit/?/updateUserSettings"
+			use:enhance={({ formData }) => {
+				$userSettingsStore = {
+					...(user.model?.settings || {}),
+					bookmarksView: formData.get('bookmarksView') === 'on' ? 'list' : 'grid',
+					// @ts-ignore
+					bookmarksSortedBy: JSON.parse(formData.get('bookmarksSortedBy') || '{}')?.value,
+					bookmarksOnlyShowRead: formData.get('bookmarksOnlyShowRead') === 'on',
+					bookmarksOnlyShowFlagged: formData.get('bookmarksOnlyShowFlagged') === 'on'
+				};
+
+				formData.set('settings', JSON.stringify($userSettingsStore));
+
+				return async ({ result }) => {
+					if (result.type === 'success') {
+						await applyAction(result);
+					}
+				};
+			}}
+		>
 			<div class="tooltip flex flex-col justify-center" data-tip="Change view">
 				<label class="link swap swap-rotate px-1">
 					<input
 						type="checkbox"
+						name="bookmarksView"
+						checked={$userSettingsStore.bookmarksView === 'list'}
 						on:change={() => {
-							$viewOptionsStore.bookmarksView =
-								$viewOptionsStore.bookmarksView === 'grid' ? 'list' : 'grid';
+							bookmarksViewForm.requestSubmit();
 						}}
 					/>
-					<IconLayout2 class="w-5 h-5 swap-off" />
-					<IconListDetails class="w-5 h-5 swap-on" />
+					<IconLayout2 class="w-5 h-5 swap-on" />
+					<IconListDetails class="w-5 h-5 swap-off" />
 				</label>
 			</div>
 			<div class="tooltip" data-tip="Sort items">
@@ -89,11 +102,15 @@
 					placeholder="Sort by"
 					searchable={false}
 					clearable={false}
-					bind:value={$sortBySelected}
 					items={sortByOptions}
+					name="bookmarksSortedBy"
+					value={sortByOptions.find((o) => o.value === $userSettingsStore.bookmarksSortedBy)}
+					on:change={() => {
+						bookmarksViewForm.requestSubmit();
+					}}
 				>
 					<div slot="prepend">
-						{#if $sortBySelected.value.includes('_asc')}
+						{#if $userSettingsStore.bookmarksSortedBy.includes('_asc')}
 							<IconSortAscending class="w-5 h-5" />
 						{:else}
 							<IconSortDescending class="w-5 h-5" />
@@ -101,18 +118,40 @@
 					</div>
 				</Select>
 			</div>
-			<label class="label cursor-pointer gap-2">
-				<span class="label-text">Only unread</span>
-				<input type="checkbox" bind:checked={$showOnlyFilters.unread} class="checkbox" />
-			</label>
-			<label class="label cursor-pointer gap-2">
-				<span class="label-text">Only flagged</span>
-				<input type="checkbox" bind:checked={$showOnlyFilters.flagged} class="checkbox" />
-			</label>
+			<div class="flex">
+				<div class="tooltip cursor-pointer" data-tip="Show only unread">
+					<label class="label cursor-pointer gap-2">
+						<span class="label-text">Only unread</span>
+						<input
+							type="checkbox"
+							name="bookmarksOnlyShowRead"
+							checked={$userSettingsStore.bookmarksOnlyShowRead}
+							class="checkbox"
+							on:change={() => {
+								bookmarksViewForm.requestSubmit();
+							}}
+						/>
+					</label>
+				</div>
+				<div class="tooltip cursor-pointer" data-tip="Show only flagged">
+					<label class="label cursor-pointer gap-2">
+						<span class="label-text">Only flagged</span>
+						<input
+							type="checkbox"
+							name="bookmarksOnlyShowFlagged"
+							checked={$userSettingsStore.bookmarksOnlyShowFlagged}
+							class="checkbox"
+							on:change={() => {
+								bookmarksViewForm.requestSubmit();
+							}}
+						/>
+					</label>
+				</div>
+			</div>
 			<span class="ml-auto text-sm text-gray-500"
 				>{`Showing ${bookmarks.length} out of ${$page.data.bookmarks.length}`}</span
 			>
-		</div>
+		</form>
 		<AddBookmarkButton />
 	</div>
 

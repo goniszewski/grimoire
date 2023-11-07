@@ -63,7 +63,7 @@
 				</div>
 			</div>
 			<div class="flex-none mr-6">
-				{#if !user}
+				{#if !user.isValid}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
@@ -143,7 +143,6 @@
 							<div>
 								<div class="flex">
 									<h3 class="text-xl">Categories</h3>
-									<!-- @ts-ignore -->
 									<button
 										class="link link-hover opacity-50 hover:opacity-90 ml-auto"
 										onclick="addCategoryModal.showModal()">➕</button
