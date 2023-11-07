@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BookmarkCard from '../BookmarkCard/BookmarkCard.svelte';
-	import { currentUser } from '$lib/pb';
+	import { user } from '$lib/pb';
 	import { page } from '$app/stores';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import { viewOptionsStore } from '$lib/stores/view-options.store';
@@ -9,7 +9,7 @@
 	export let bookmarks: Bookmark[] = [];
 </script>
 
-{#if $currentUser?.id}
+{#if user.isValid}
 	{#if $page.data.bookmarks.length > 0}
 		{#if $viewOptionsStore.bookmarksView === 'grid'}
 			<div class="w-full columns-[22rem] gap-6">
