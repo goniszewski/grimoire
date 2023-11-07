@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
-	import { pb } from '$lib/pb';
+	import { user } from '$lib/pb';
 </script>
 
 <div class="w-full mt-24">
@@ -10,7 +10,7 @@
 			class="card"
 			use:enhance={() => {
 				return async ({ result }) => {
-					pb.authStore.loadFromCookie(document.cookie);
+					user.loadFromCookie(document.cookie);
 					await applyAction(result);
 				};
 			}}

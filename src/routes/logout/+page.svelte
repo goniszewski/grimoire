@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { pb } from '$lib/pb';
+	import { user } from '$lib/pb';
 
-	pb.authStore.clear();
+	user.clear();
 </script>
 
 <div class="w-full mt-24">Logget out</div>

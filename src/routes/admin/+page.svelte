@@ -1,17 +1,16 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { pb } from '$lib/pb';
+	import { user } from '$lib/pb';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
 </script>
 
-{#if !pb.authStore.isAdmin && pb.authStore?.model}
+{#if !user.isAdmin && user?.model}
 	<p>Not logged in.</p>
 {:else}
 	<div class="flex flex-col w-full gap-4">
 		<h1 class="text-2xl m-auto">Admin Panel</h1>
-		<p class="ml-auto">Logged as <strong>{pb.authStore.model?.email}</strong></p>
+		<p class="ml-auto">Logged as <strong>{user.model?.email}</strong></p>
 		<div class="flex flex-col my-4 gap-2">
 			{#if !data.adminData}
 				<p>Loading...</p>

@@ -5,7 +5,6 @@
 	import { page } from '$app/stores';
 	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import {
-		IconGrid3x3,
 		IconLayout2,
 		IconListDetails,
 		IconSortAscending,
@@ -14,7 +13,7 @@
 	import Select from 'svelte-select';
 	import { writable } from 'svelte/store';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
-	import { currentUser, pb } from '$lib/pb';
+	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
@@ -68,9 +67,9 @@
 	}
 </script>
 
-{#if pb.authStore.isValid && pb.authStore.model}
-	<div class="flex justify-center ml-auto w-full m-4">
-		<div class="flex flex-1 w-full pr-5 items-center">
+{#if user.isValid && user.model}
+	<div class="flex flex-col md:flex-row justify-center ml-auto w-full m-4">
+		<div class="flex-1 flex-col w-full pr-5 items-center md:flex-row">
 			<div class="tooltip flex flex-col justify-center" data-tip="Change view">
 				<label class="link swap swap-rotate px-1">
 					<input

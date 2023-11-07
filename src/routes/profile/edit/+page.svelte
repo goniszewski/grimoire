@@ -2,12 +2,12 @@
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import { IconMenu } from '@tabler/icons-svelte';
-	import { currentUser, pb } from '$lib/pb';
+	import { user } from '$lib/pb';
 
 	let showPasswordForm = false;
 </script>
 
-{#if !$currentUser}
+{#if !user.isValid && user.model}
 	<p>Not logged in</p>
 {:else}
 	<form
@@ -32,7 +32,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="name"
-					value={$currentUser.name}
+					value={user.model?.name}
 				/>
 			</div>
 			<div>
@@ -43,7 +43,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="username"
-					value={$currentUser.username}
+					value={user.model?.username}
 					required
 				/>
 			</div>
@@ -55,7 +55,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="email"
-					value={$currentUser.email}
+					value={user.model?.email}
 					placeholder="none"
 				/>
 			</div>
