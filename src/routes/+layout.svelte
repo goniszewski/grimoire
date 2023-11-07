@@ -62,7 +62,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex-none mr-6">
+			<div class="flex-none md:mr-6">
 				{#if !user.isValid}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>

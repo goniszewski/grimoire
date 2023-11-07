@@ -253,7 +253,7 @@
 		</div>
 	</div>
 	<div class="absolute top-1 right-1 flex items-center gap-1">
-		<div class="badge badge-ghost bg-gray-100 bg-opacity-75">{bookmark.domain}</div>
+		<div class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6">{bookmark.domain}</div>
 
 		<div class="dropdown dropdown-end">
 			<label for="options">

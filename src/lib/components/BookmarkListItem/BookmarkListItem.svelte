@@ -35,7 +35,7 @@
 	}
 </script>
 
-<div class="flex flex-col justify-between border p-2 rounded-md min-h-[6rem]">
+<div class="flex flex-col justify-between border p-2 rounded-md min-h-[6rem] gap-1">
 	<div class="flex">
 		<div class="flex items-center justify-between gap-1">
 			<div class="flex items-center gap-1">
@@ -87,7 +87,7 @@
 			</div>
 		</div>
 		<div
-			class="badge badge-ghost bg-gray-100 bg-opacity-75 ml-auto line-clamp-1 max-w-[8rem] md:max-w-fit"
+			class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6 ml-auto line-clamp-1 max-w-[8rem] md:max-w-fit"
 		>
 			{bookmark.domain}
 		</div>
@@ -101,7 +101,7 @@
 	>
 		<div class="tooltip text-left" data-tip={bookmark.description}>
 			{#if bookmark.description}
-				<p class="font-light text-sm text-gray-700 line-clamp-2">
+				<p class="font-light text-sm text-gray-700 line-clamp-2 w-full md:w-10/12">
 					{bookmark.description}
 				</p>
 			{:else}
@@ -111,10 +111,23 @@
 	</div>
 	<div class="flex justify-between">
 		<div class="flex items-center gap-1">
+			<a
+				href={`/categories/${bookmark.category.slug}`}
+				class="badge badge-sm w-full max-w-[8rem]"
+				style={`border-color: ${bookmark.category.color};`}
+			>
+				<span
+					class="brightness-75 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+					style={`color: ${bookmark.category.color};`}>{bookmark.category.name}</span
+				>
+			</a>
 			<span class="font-sans font-semibold text-xs">#</span>
 			{#if bookmark.tags}
 				{#each bookmark.tags as tag}
-					<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
+					<a
+						href={`/tags/${tag.name}`}
+						class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem]">{tag.name}</a
+					>
 				{/each}
 			{/if}
 			<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400">+</button>
@@ -168,6 +181,7 @@
 				<button tabindex="0" class="btn btn-xs">
 					<IconMenu size={14} />
 				</button>
+				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 				<ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
 					<li>
 						<div class="tooltip text-left" data-tip="Mark bookmark as read">
