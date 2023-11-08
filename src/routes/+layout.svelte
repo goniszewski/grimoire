@@ -15,6 +15,7 @@
 	import '../app.css';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import { ToastNode } from '$lib/utils/show-toast';
+	import Footer from '$lib/components/Footer/Footer.svelte';
 
 	onMount(async () => {
 		user.loadFromCookie(document.cookie);
@@ -177,6 +178,7 @@
 		</div>
 	</div>
 </div>
+<Footer />
 <!-- Modals -->
 <AddBookmarkModal />
 <EditBookmarkModal />
