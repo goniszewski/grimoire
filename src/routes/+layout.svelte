@@ -6,7 +6,7 @@
 	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
-	import type { Category } from '$lib/interfaces/Category.interface';
+	import type { Category } from '$lib/types/Category.type';
 	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
@@ -99,7 +99,7 @@
 									<!-- <span class="badge">New</span> -->
 								</a>
 							</li>
-							<li><a>Settings</a></li>
+							<li><a href="/settings">Settings</a></li>
 							<form
 								method="POST"
 								action="/logout"
