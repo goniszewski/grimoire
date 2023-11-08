@@ -13,7 +13,7 @@ import sanitize from 'sanitize-html';
 
 import { extract } from '@extractus/article-extractor';
 
-import type { Metadata } from '$lib/interfaces/Metadata.interface';
+import type { Metadata } from '$lib/types/Metadata.type';
 
 const metascraperScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
 	const metascraperInstance = metascraper([

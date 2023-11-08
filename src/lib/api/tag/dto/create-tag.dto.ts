@@ -1,3 +1,3 @@
-import type { Tag } from "$lib/interfaces/Tag.interface";
+import type { Tag } from '$lib/types/Tag.type';
 
-export interface CreateTagDto extends Pick<Tag, "name" | "color" > {}
+export interface CreateTagDto extends Pick<Tag, 'name' | 'color'> {}

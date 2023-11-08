@@ -1,8 +1,8 @@
-import type { Category } from './Category.interface';
-import type { Tag } from './Tag.interface';
-import type { User } from './User.interface';
+import type { Category } from './Category.type';
+import type { Tag } from './Tag.type';
+import type { User } from './User.type';
 
-export interface Bookmark {
+export type Bookmark = {
 	id: string;
 	url: string;
 	domain: string;
@@ -29,4 +29,4 @@ export interface Bookmark {
 	opened_times: number;
 	created: Date;
 	updated: Date;
-}
+};

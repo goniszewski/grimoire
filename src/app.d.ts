@@ -8,9 +8,9 @@ declare global {
 			user: import('pocketbase').default['authStore']['model'];
 		}
 		interface PageData {
-			categories: import('$lib/interfaces/Category.interface').Category[];
-			bookmarks: import('$lib/interfaces/Bookmark.interface').Bookmark[];
-			tags: import('$lib/interfaces/dto/Tag.dto').TagWithBookmarks[];
+			categories: import('$lib/types/Category.type').Category[];
+			bookmarks: import('$lib/types/Bookmark.type').Bookmark[];
+			tags: import('$lib/types/dto/Tag.dto').TagWithBookmarks[];
 			bookmarksCount: number;
 			page: number;
 			limit: number;

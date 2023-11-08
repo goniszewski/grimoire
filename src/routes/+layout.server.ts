@@ -1,12 +1,12 @@
 import type { LayoutServerLoad } from './$types';
 
-import type { Category } from '$lib/interfaces/Category.interface';
-import type { Tag } from '$lib/interfaces/Tag.interface';
-import type { BookmarkDto } from '$lib/interfaces/dto/Bookmark.dto';
-import type { CategoryDto } from '$lib/interfaces/dto/Category.dto';
+import type { Category } from '$lib/types/Category.type';
+import type { Tag } from '$lib/types/Tag.type';
+import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
+import type { CategoryDto } from '$lib/types/dto/Category.dto';
 import { getFileUrl } from '$lib/utils';
 
-import type { TagWithBookmarks } from '$lib/interfaces/dto/Tag.dto';
+import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
 
 function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
 	return tags.map((tag) => {

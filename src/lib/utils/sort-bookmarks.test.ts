@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { sortBookmarks } from './sort-bookmarks';
 
-import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-import type { Category } from '$lib/interfaces/Category.interface';
-import type { User } from '$lib/interfaces/User.interface';
+import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Category } from '$lib/types/Category.type';
+import type { User } from '$lib/types/User.type';
 
 const bookmarksStub = [
 	{

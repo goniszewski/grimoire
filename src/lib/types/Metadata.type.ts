@@ -1,4 +1,4 @@
-export interface Metadata {
+export type Metadata = {
 	url: string;
 	domain: string;
 	title: string;
@@ -10,4 +10,4 @@ export interface Metadata {
 	content_published_date: Date | null;
 	main_image_url: string;
 	icon_url: string;
-}
+};

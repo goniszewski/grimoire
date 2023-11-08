@@ -1,4 +1,4 @@
-import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+import type { Bookmark } from '$lib/types/Bookmark.type';
 import { sortBy } from 'lodash';
 
 export type sortByType =

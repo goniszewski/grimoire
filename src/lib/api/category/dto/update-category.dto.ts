@@ -1,3 +1,4 @@
-import type { Category } from "$lib/interfaces/Category.interface";
+import type { Category } from '$lib/types/Category.type';
 
-export interface UpdateCategoryDto extends Partial<Pick<Category, "name" | "description" | "color" | "parent">> {}
+export interface UpdateCategoryDto
+	extends Partial<Pick<Category, 'name' | 'description' | 'color' | 'parent'>> {}

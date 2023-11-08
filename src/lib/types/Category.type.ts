@@ -1,6 +1,6 @@
-import type { User } from './User.interface';
+import type { User } from './User.type';
 
-export interface Category {
+export type Category = {
 	id: string;
 	name: string;
 	slug: string;
@@ -13,4 +13,4 @@ export interface Category {
 	public: Date | null;
 	created: Date;
 	updated: Date;
-}
+};

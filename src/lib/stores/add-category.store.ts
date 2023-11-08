@@ -1,4 +1,4 @@
-import type { Category } from '$lib/interfaces/Category.interface';
+import type { Category } from '$lib/types/Category.type';
 import { writable } from 'svelte/store';
 
 export const addCategoryStore = writable<Partial<Category>>({});

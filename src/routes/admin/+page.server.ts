@@ -2,7 +2,7 @@ import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { pb } from '$lib/pb';
 
-import type { AdminData, Settings } from '$lib/interfaces/Admin.types';
+import type { AdminData, Settings } from '$lib/types/Admin.type';
 
 //load cookie from request
 export const load: PageServerLoad = async ({ params }) => {

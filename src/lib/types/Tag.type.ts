@@ -1,10 +1,10 @@
-import type { User } from './User.interface';
+import type { User } from './User.type';
 
-export interface Tag {
+export type Tag = {
 	id: string;
 	name: string;
 	slug: string;
 	owner: User;
 	created: Date;
 	updated: Date;
-}
+};

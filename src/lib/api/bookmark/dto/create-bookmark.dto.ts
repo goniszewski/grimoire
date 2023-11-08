@@ -1,4 +1,4 @@
-import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+import type { Bookmark } from '$lib/types/Bookmark.type';
 
 export interface CreateBookmarkDto
 	extends Pick<
