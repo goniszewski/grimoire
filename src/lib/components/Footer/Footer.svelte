@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { IconBrandGithub, IconWorld } from '@tabler/icons-svelte';
+	import { IconBrandGithub } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 
 	const definitionKeyWords = [
@@ -14,7 +14,7 @@
 	];
 	let lastUsedKeyWord = '';
 
-	const definitionDefaultKeyWord = writable('bookmark');
+	const definitionKeyWord = writable('bookmark');
 
 	const getRandomKeyWord = () => {
 		const filteredKeyWords = definitionKeyWords.filter((keyWord) => keyWord !== lastUsedKeyWord);
@@ -39,18 +39,18 @@
 		<p>
 			<span class="font-bold">Grimoire</span>, open source
 			<span
-				class="py-2"
+				class={`py-2 ${$definitionKeyWord !== 'bookmark' ? 'animate-pulse' : ''}`}
 				role="term"
 				on:mouseover={() => {
-					$definitionDefaultKeyWord = getRandomKeyWord();
-					lastUsedKeyWord = $definitionDefaultKeyWord;
+					$definitionKeyWord = getRandomKeyWord();
+					lastUsedKeyWord = $definitionKeyWord;
 				}}
 				on:focus={() => {
-					$definitionDefaultKeyWord = getRandomKeyWord();
-					lastUsedKeyWord = $definitionDefaultKeyWord;
+					$definitionKeyWord = getRandomKeyWord();
+					lastUsedKeyWord = $definitionKeyWord;
 				}}
-				on:mouseout={() => ($definitionDefaultKeyWord = 'bookmark')}
-				on:blur={() => ($definitionDefaultKeyWord = 'bookmark')}>{$definitionDefaultKeyWord}</span
+				on:mouseout={() => ($definitionKeyWord = 'bookmark')}
+				on:blur={() => ($definitionKeyWord = 'bookmark')}>{$definitionKeyWord}</span
 			> manager.
 		</p>
 	</aside>
