@@ -3,9 +3,10 @@
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-	import type { Category } from '$lib/interfaces/Category.interface';
+
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import type { Category } from '$lib/types/Category.type';
 
 	let slug: string;
 	let category: Category | undefined;
@@ -41,7 +42,7 @@
 			>
 		</div>
 		<div class="flex flex-col">
-			<div class="flex gap-1">
+			<div class="flex items-center gap-1">
 				<strong>Parent:</strong>
 				{#if category?.parent}
 					<a href={`/categories/${category.parent.slug}`} class="link">{category.parent.name}</a>
@@ -49,14 +50,15 @@
 					<em class="text-sm">No parent.</em>
 				{/if}
 			</div>
-			<div class="flex gap-1">
+			<!-- TODO: enable when public categories are implemented -->
+			<!-- <div class="flex items-center gap-1">
 				<strong>Public:</strong>
 				{#if category?.public}
 					<em class="text-sm">Yes</em>
 				{:else}
 					<em class="text-sm">No</em>
 				{/if}
-			</div>
+			</div> -->
 			<div class="flex flex-col gap-1">
 				<strong>Description</strong>
 				<em class="text-sm">{category?.description}</em>
