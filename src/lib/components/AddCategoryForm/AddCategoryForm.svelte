@@ -4,10 +4,10 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
-	import type { Category } from '$lib/interfaces/Category.interface';
 	import { icons } from '$lib/enums/icons';
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import { showToast } from '$lib/utils/show-toast';
+	import type { Category } from '$lib/types/Category.type';
 
 	const category = writable<
 		Partial<
@@ -52,7 +52,22 @@
 		];
 	}
 
-	let error = '';
+	const categoryColors = [
+		'#000000',
+		'#70af85',
+		'#c6eac8',
+		'#a98975',
+		'#854d0e',
+		'#fdf7f1',
+		'#3abff8',
+		'#36d399',
+		'#fbbd23',
+		'#f87272',
+		'#800080',
+		'#A0A0A0',
+		'#00FFFF',
+		'#B0E0E6'
+	];
 </script>
 
 <form
@@ -139,22 +154,33 @@
 				<label for="color" class="label">Color</label>
 
 				<div class="flex gap-2">
-					{#each ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff', '#0000ff', '#8000ff', '#ff00ff', '#ff0080', '#ff0000'] as color}
-						<div
-							class="w-6 h-6 rounded-full"
-							style={`background-color: ${color};`}
-							on:click={() => {
-								// @ts-ignore-next-line
-								$category.color = color;
-							}}
-						/>
-					{/each}
+					<div class="flex flex-wrap max-w-[12rem] gap-1">
+						{#each categoryColors as color}
+							<div
+								class="w-6 h-6 rounded-full"
+								style={`background-color: ${color};`}
+								role="button"
+								tabindex="0"
+								on:keydown={(event) => {
+									if (event.key === 'Enter') {
+										// @ts-ignore-next-line
+										$category.color = color;
+									}
+								}}
+								on:click={() => {
+									// @ts-ignore-next-line
+									$category.color = color;
+								}}
+							/>
+						{/each}
+					</div>
 
 					<input
 						type="text"
 						class="input input-bordered w-9/12"
 						name="color"
 						value={$category.color}
+						placeholder="E.g. #00FFFF"
 						on:input={(event) => {
 							// @ts-ignore-next-line
 							$category.color = event.target.value;
@@ -177,7 +203,8 @@
 					}}
 				/>
 			</div>
-			<div class="flex flex-col w-full">
+			<!-- TODO: enable when public categories are implemented -->
+			<!-- <div class="flex flex-col w-full">
 				<label for="public" class="label">Public</label>
 				<input
 					type="checkbox"
@@ -189,7 +216,7 @@
 						$category.public = event.target.checked;
 					}}
 				/>
-			</div>
+			</div> -->
 		</div>
 
 		<button class="btn btn-primary my-6 mx-auto w-full max-w-xs" disabled={!$category.name}
