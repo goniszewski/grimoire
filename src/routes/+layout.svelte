@@ -177,8 +177,8 @@
 			{/if}
 		</div>
 	</div>
+	<Footer />
 </div>
-<Footer />
 <!-- Modals -->
 <AddBookmarkModal />
 <EditBookmarkModal />
