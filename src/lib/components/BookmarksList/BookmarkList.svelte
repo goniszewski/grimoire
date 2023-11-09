@@ -2,17 +2,17 @@
 	import BookmarkCard from '../BookmarkCard/BookmarkCard.svelte';
 	import { user } from '$lib/pb';
 	import { page } from '$app/stores';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import BookmarkListItem from '../BookmarkListItem/BookmarkListItem.svelte';
 
 	export let bookmarks: Bookmark[] = [];
 </script>
 
-{#if user.isValid}
+{#if $user.isValid}
 	{#if $page.data.bookmarks.length > 0}
 		{#if $userSettingsStore.bookmarksView === 'grid'}
-			<div class="w-full columns-[22rem] gap-6">
+			<div class="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
 				{#each bookmarks as bookmark}
 					<BookmarkCard {bookmark} />
 				{/each}

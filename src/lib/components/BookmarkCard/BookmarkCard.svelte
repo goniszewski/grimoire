@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 
 	import { enhance, applyAction } from '$app/forms';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
@@ -32,7 +32,9 @@
 	}
 </script>
 
-<div class="relative card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid">
+<div
+	class="relative flex flex-col justify-between card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid h-64 min-w-[20rem]"
+>
 	<figure class="relative max-h-36">
 		<div
 			on:click={onShowBookmark}
@@ -185,112 +187,128 @@
 			</form>
 		</div>
 	</figure>
-	<div class="card-body p-2">
-		<div class="flex flex-wrap items-baseline">
-			<div class="flex items-baseline gap-2 w-full">
-				<img
-					src={bookmark.icon || bookmark.icon_url}
-					alt={`${bookmark.domain}'s favicon`}
-					class="avatar w-4"
-				/>
-				<form
-					bind:this={increaseOpenedTimesForm}
-					method="POST"
-					action="/?/updateIncreasedOpenedCount"
-					use:enhance
-				>
-					<input type="hidden" name="id" value={bookmark.id} />
-				</form>
-				<a
-					href={bookmark.url}
-					title={bookmark.title}
-					target="_self"
-					class="link link-hover card-title text-lg line-clamp-1"
-					on:click={() => {
-						increaseOpenedTimesForm.requestSubmit();
-					}}>{bookmark.title}</a
-				>
-				<div class="flex ml-auto">
-					<a
-						href={bookmark.url}
-						title="open in a new tab"
-						target="_blank"
-						class=" btn btn-xs btn-circle btn-ghost"
-						on:click={() => {
-							increaseOpenedTimesForm.requestSubmit();
-						}}
-					>
-						<IconExternalLink size={14} />
-					</a>
-					<button
-						title="copy URL to clipboard"
-						class="btn btn-xs btn-circle btn-ghost"
-						on:click={() => {
-							navigator.clipboard.writeText(bookmark.url);
-							showToast.success('URL copied to clipboard', {
-								position: 'bottom-center'
-							});
-						}}
-					>
-						<IconClipboardText size={14} />
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="tooltip text-left" data-tip={bookmark.description}>
-			<p class="font-light text-sm text-gray-700 line-clamp-2">
-				{bookmark.description}
-			</p>
-		</div>
-		<div class="card-actions justify-end px-2 font-medium tracking-tight gap-1">
-			<span class="font-sans font-semibold text-xs">#</span>
-			{#if bookmark.tags}
-				{#each bookmark.tags as tag}
-					<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
-				{/each}
-			{/if}
-			<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400">+</button>
-		</div>
-	</div>
-	<div class="absolute top-1 right-1 flex items-center gap-1">
-		<div class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6">{bookmark.domain}</div>
-
-		<div class="dropdown dropdown-end">
-			<label for="options">
-				<button tabindex="0" class="btn btn-circle btn-xs">
-					<IconDots size={16} stroke={1.5} class="" />
-				</button>
-			</label>
-			<ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28">
-				<!-- <li> -->
-				<!-- <button type="button" class="btn btn-xs btn-ghost" on:click={onEditBookmark} tabindex="0"
-				>Edit</button> -->
-				<!-- </li> -->
-				<li>
-					<button on:click={onEditBookmark} tabindex="0">Edit</button>
-				</li>
-				<li>
-					<form
-						method="POST"
-						action="/?/deleteBookmark"
-						use:enhance={() => {
-							return async ({ result }) => {
-								if (result.type === 'success') {
-									showToast.success('Bookmark deleted', {
+	<div>
+		<div class="card-body p-2">
+			<div class="h-20">
+				<div class="flex flex-wrap items-baseline">
+					<div class="flex items-baseline gap-2 w-full">
+						<img
+							src={bookmark.icon || bookmark.icon_url}
+							alt={`${bookmark.domain}'s favicon`}
+							class="avatar w-4"
+						/>
+						<form
+							bind:this={increaseOpenedTimesForm}
+							method="POST"
+							action="/?/updateIncreasedOpenedCount"
+							use:enhance
+						>
+							<input type="hidden" name="id" value={bookmark.id} />
+						</form>
+						<a
+							href={bookmark.url}
+							title={bookmark.title}
+							target="_self"
+							class="link link-hover card-title text-lg line-clamp-1"
+							on:click={() => {
+								increaseOpenedTimesForm.requestSubmit();
+							}}>{bookmark.title}</a
+						>
+						<div class="flex ml-auto">
+							<a
+								href={bookmark.url}
+								title="open in a new tab"
+								target="_blank"
+								class=" btn btn-xs btn-circle btn-ghost"
+								on:click={() => {
+									increaseOpenedTimesForm.requestSubmit();
+								}}
+							>
+								<IconExternalLink size={14} />
+							</a>
+							<button
+								title="copy URL to clipboard"
+								class="btn btn-xs btn-circle btn-ghost"
+								on:click={() => {
+									navigator.clipboard.writeText(bookmark.url);
+									showToast.success('URL copied to clipboard', {
 										position: 'bottom-center'
 									});
-									await applyAction(result);
-								}
+								}}
+							>
+								<IconClipboardText size={14} />
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="tooltip text-left" data-tip={bookmark.description}>
+					{#if bookmark.description}
+						<p class="font-light text-sm text-gray-700 line-clamp-2">
+							{bookmark.description}
+						</p>
+					{:else}
+						<p class="font-light text-sm text-gray-500 italic">No description...</p>
+					{/if}
+				</div>
+			</div>
+			<div class="card-actions justify-end px-2 font-medium tracking-tight gap-1">
+				<span class="font-sans font-semibold text-xs">#</span>
+				{#if bookmark.tags}
+					{#each bookmark.tags as tag}
+						<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
+					{/each}
+				{/if}
+				<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400"
+					>+</button
+				>
+			</div>
+		</div>
+		<div class="absolute top-1 right-1 flex items-center gap-1">
+			<div class="tooltip tooltip-top" data-tip={bookmark.domain}>
+				<div
+					class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6 justify-start max-w-[8rem] truncate"
+				>
+					{bookmark.domain}
+				</div>
+			</div>
 
-								invalidate('/');
-							};
-						}}
-					>
-						<input type="hidden" name="id" value={bookmark.id} />
-						<button tabindex="0" class="text"> Remove </button>
-					</form>
-				</li>
-			</ul>
+			<div class="dropdown dropdown-end">
+				<label for="options">
+					<button tabindex="0" class="btn btn-circle btn-xs">
+						<IconDots size={16} stroke={1.5} class="" />
+					</button>
+				</label>
+				<ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28">
+					<!-- <li> -->
+					<!-- <button type="button" class="btn btn-xs btn-ghost" on:click={onEditBookmark} tabindex="0"
+					>Edit</button> -->
+					<!-- </li> -->
+					<li>
+						<button on:click={onEditBookmark} tabindex="0">Edit</button>
+					</li>
+					<li>
+						<form
+							method="POST"
+							action="/?/deleteBookmark"
+							use:enhance={() => {
+								return async ({ result }) => {
+									if (result.type === 'success') {
+										showToast.success('Bookmark deleted', {
+											position: 'bottom-center'
+										});
+										await applyAction(result);
+									}
+
+									invalidate('/');
+								};
+							}}
+						>
+							<input type="hidden" name="id" value={bookmark.id} />
+							<button tabindex="0" class="text"> Remove </button>
+						</form>
+					</li>
+				</ul>
+			</div>
 		</div>
 	</div>
 </div>

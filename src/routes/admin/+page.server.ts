@@ -17,7 +17,18 @@ export const load: PageServerLoad = async ({ params }) => {
 		bookmarksTotalCount: 0,
 		backups: [],
 		s3Test: false,
-		settings: {} as Settings
+		settings: {
+			llm: {
+				provider: '',
+				enabled: false,
+				openai: {
+					apiKey: ''
+				},
+				ollama: {
+					url: ''
+				}
+			}
+		} as Settings
 	};
 
 	adminData.users = await pb.collection('users').getFullList();
@@ -31,7 +42,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		.then((res) => res.totalItems);
 	adminData.backups = await pb.backups.getFullList();
 	adminData.s3Test = await pb.settings.testS3('backups').catch(() => false);
-	adminData.settings = (await pb.settings.getAll()) as Settings;
+	adminData.settings = { ...adminData.settings, ...(await pb.settings.getAll()) } as Settings;
 
 	return {
 		adminData

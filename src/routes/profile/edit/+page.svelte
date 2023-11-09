@@ -7,7 +7,7 @@
 	let showPasswordForm = false;
 </script>
 
-{#if !user.isValid && user.model}
+{#if !$user.isValid && $user.model}
 	<p>Not logged in</p>
 {:else}
 	<form
@@ -32,7 +32,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="name"
-					value={user.model?.name}
+					value={$user.model?.name}
 				/>
 			</div>
 			<div>
@@ -43,7 +43,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="username"
-					value={user.model?.username}
+					value={$user.model?.username}
 					required
 				/>
 			</div>
@@ -55,7 +55,7 @@
 					type="text"
 					class="input input-secondary input-bordered w-full"
 					name="email"
-					value={user.model?.email}
+					value={$user.model?.email}
 					placeholder="none"
 				/>
 			</div>

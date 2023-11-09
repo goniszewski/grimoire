@@ -1,6 +1,9 @@
-import { pb } from '$lib/pb';
+import { pb, user } from '$lib/pb';
+
+import type { User } from '$lib/types/User.type';
 
 import type { Handle } from '@sveltejs/kit';
+import type { BaseAuthStore } from 'pocketbase';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
@@ -9,6 +12,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 			if (event.url.pathname.startsWith('/admin')) {
 				await pb.admins.authRefresh().then((res) => {
 					console.info('Admin logged:', res?.admin.email);
+					user.set(
+						pb.authStore as BaseAuthStore & {
+							model: User;
+						}
+					);
 				});
 			} else {
 				await pb

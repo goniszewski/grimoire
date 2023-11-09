@@ -1,11 +1,14 @@
 <script lang="ts">
-	import type { Metadata } from '$lib/interfaces/Metadata.interface';
+	import type { Metadata } from '$lib/types/Metadata.type';
 	import { debounce } from 'lodash';
 	import Select from 'svelte-select';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 	import { onDestroy } from 'svelte';
+	import { generateTags } from '$lib/integrations/ollama';
+	import { showToast } from '$lib/utils/show-toast';
+	import { validateUrlRegex } from '$lib/utils/regex-library';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -45,6 +48,7 @@
 			created?: boolean;
 		}[]
 	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+	const loadingTags = writable(false);
 
 	let tagsInputFilterText: '';
 
@@ -79,8 +83,6 @@
 
 	const onGetMetadata = debounce(
 		async (event: Event) => {
-			const validateUrlRegex =
-				/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;
 			const target = event.target as HTMLButtonElement;
 			const url = target.value;
 			error = '';
@@ -108,6 +110,32 @@
 				.then((res) => res.json())
 				.then((data) => {
 					metadata = data?.metadata || { ...defaultFormValues };
+
+					// TODO: load user/system settings and check if we should generate tags
+					if (metadata.content_text && 'llm: enabled') {
+						$loadingTags = true;
+						showToast
+							.promise(
+								generateTags(metadata.content_text, 'openhermes2.5-mistral'),
+								{
+									loading: 'Generating tags...',
+									success: 'Tags generated',
+									error: 'Failed to generate tags'
+								},
+								{
+									position: 'bottom-right',
+									style: 'z-index: 100'
+								}
+							)
+							.then((tags) => {
+								$loadingTags = false;
+								bookmarkTagsInput.set(tags.map((t) => ({ value: t, label: t })));
+							})
+							.catch((err) => {
+								$loadingTags = false;
+								console.error(err);
+							});
+					}
 				})
 				.catch((err) => {
 					console.error(err);
@@ -207,6 +235,7 @@
 									on:change={handleTagsChange}
 									bind:filterText={tagsInputFilterText}
 									bind:value={$bookmarkTagsInput}
+									bind:loading={$loadingTags}
 									items={$bookmarkTags}
 								>
 									<div slot="item" let:item>
@@ -242,7 +271,7 @@
 								</div>
 							</div>
 							<div class="flex flex-col w-full">
-								<label for="flag" class="label">Flag it?</label>
+								<label for="flag" class="label whitespace-nowrap">Flag it?</label>
 								<label class="cursor-pointer label max-w-fit gap-2">
 									<!-- <span class="label-text">Flag</span> -->
 									<input type="checkbox" name="flagged" class="checkbox checkbox-error" />

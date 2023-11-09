@@ -16,8 +16,10 @@
 					showToast.success('Succesfully logged in', {
 						position: 'bottom-center'
 					});
+					update();
+					window.location.href = '/admin';
 
-					goto('/admin');
+					// goto('/admin');
 				}
 			}}
 	>

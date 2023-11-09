@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-
 	import { enhance, applyAction } from '$app/forms';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import {
@@ -19,6 +17,7 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { invalidate } from '$app/navigation';
 	import { showToast } from '$lib/utils/show-toast';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;

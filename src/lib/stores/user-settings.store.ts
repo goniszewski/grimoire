@@ -1,4 +1,4 @@
-import type { UserSettings } from '$lib/pb';
+import type { UserSettings } from '$lib/types/UserSettings.type';
 import { writable } from 'svelte/store';
 
 const defaults: UserSettings = {

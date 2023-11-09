@@ -10,7 +10,7 @@
 			class="card"
 			use:enhance={() => {
 				return async ({ result }) => {
-					user.loadFromCookie(document.cookie);
+					// $user.loadFromCookie(document.cookie);
 					await applyAction(result);
 				};
 			}}

@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { user } from '$lib/pb';
 
-	const accountCreated = new Date(user.model?.created || '').toLocaleDateString();
+	const accountCreated = new Date($user.model?.created || '').toLocaleDateString();
 	const addedInLastSevenDays = $page.data.bookmarks.filter(
 		(b) => new Date(b.created).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
 	).length;
@@ -33,7 +33,7 @@
 		<div class="card lg:card-side bg-base-100 shadow-xl">
 			<div class="card-body gap-5">
 				<h2 class="card-title gap-0">
-					Hello <span class="text-blue-600 ml-1">{user.model?.name}</span>!
+					Hello <span class="text-blue-600 ml-1">{$user.model?.name}</span>!
 				</h2>
 				<p>Welcome to your profile page. Here you can see your stats and latest bookmarks.</p>
 				<h2 class="card-title">Your stats</h2>

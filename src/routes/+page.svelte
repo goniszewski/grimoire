@@ -3,7 +3,7 @@
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 
 	import { page } from '$app/stores';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import {
 		IconLayout2,
 		IconListDetails,
@@ -12,12 +12,13 @@
 	} from '@tabler/icons-svelte';
 	import Select from 'svelte-select';
 	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
-	import { user, type UserSettings } from '$lib/pb';
+	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import { applyAction, enhance } from '$app/forms';
+	import type { UserSettings } from '$lib/types/UserSettings.type';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -56,7 +57,7 @@
 	let bookmarksViewForm: HTMLFormElement;
 </script>
 
-{#if user.isValid && user.model}
+{#if $user.isValid && $user.model}
 	<div class="flex flex-col sm:flex-row justify-center ml-auto w-full m-4">
 		<form
 			class="flex flex-1 w-full pr-5 items-center flex-wrap"
@@ -65,7 +66,7 @@
 			action="/profile/edit/?/updateUserSettings"
 			use:enhance={({ formData }) => {
 				$userSettingsStore = {
-					...(user.model?.settings || {}),
+					...($user.model?.settings || {}),
 					bookmarksView: formData.get('bookmarksView') === 'on' ? 'list' : 'grid',
 					// @ts-ignore
 					bookmarksSortedBy: JSON.parse(formData.get('bookmarksSortedBy') || '{}')?.value,

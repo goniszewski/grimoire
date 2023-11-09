@@ -6,7 +6,7 @@ export type AdminData = {
 	settings: Settings;
 };
 
-export type Settings = {
+export type PbSettings = {
 	meta: Meta;
 	logs: Logs;
 	smtp: SMTP;
@@ -43,6 +43,21 @@ export type Settings = {
 	vkAuth: AuthProvider;
 	yandexAuth: AuthProvider;
 };
+
+export type SystemSettings = {
+	llm: {
+		provider: string;
+		enabled: boolean;
+		openai: {
+			apiKey: string;
+		};
+		ollama: {
+			url: string;
+		};
+	};
+};
+
+export type Settings = PbSettings & SystemSettings;
 
 export type Backup = {
 	key: string;

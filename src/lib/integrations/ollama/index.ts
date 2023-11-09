@@ -1,3 +1,5 @@
+import { validateUrlRegex } from '$lib/utils/regex-library';
+
 const defaultConfig = {
 	url: 'http://localhost:11434/api',
 	defaultOptions: {
@@ -10,7 +12,7 @@ const defaultConfig = {
 		},
 		generateTags: {
 			system:
-				'Act as a writer. Generate tags for the provided text. Output only the text and nothing else, do not chat, no preamble, get to the point.'
+				'Act as a writer. Generate most appropriate tags for the provided text. Write only three comma separated tags, output only the text and nothing else, do not chat, no preamble, get to the point.'
 		}
 	}
 };
@@ -36,7 +38,7 @@ async function generate(
 	} = {
 		...defaultConfig.roles.summarize
 	}
-) {
+): Promise<string> {
 	return fetch(`${defaultConfig.url}/generate`, {
 		method: 'POST',
 		body: JSON.stringify({
@@ -69,5 +71,16 @@ export async function generateTags(
 		...defaultConfig.roles.generateTags
 	}
 ) {
-	return generate(prompt, model, options);
+	const serializedPrompt = prompt.replace(validateUrlRegex, '');
+
+	const response = await generate(
+		serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
+		model,
+		options
+	);
+
+	return response
+		.split(',')
+		.slice(0, 3)
+		.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
 }

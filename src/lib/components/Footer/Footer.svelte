@@ -3,14 +3,15 @@
 	import { writable } from 'svelte/store';
 
 	const definitionKeyWords = [
-		'spell',
 		'dark knowledge',
+		'enchantment',
 		'incantation',
 		'magic',
+		'ritual',
 		'sorcery',
+		'spell',
 		'witchcraft',
-		'wizardry',
-		'enchantment'
+		'wizardry'
 	];
 	let lastUsedKeyWord = '';
 

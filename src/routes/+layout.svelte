@@ -18,7 +18,7 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 
 	onMount(async () => {
-		user.loadFromCookie(document.cookie);
+		$user.loadFromCookie(document.cookie);
 	});
 
 	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
@@ -64,18 +64,18 @@
 				</div>
 			</div>
 			<div class="flex-none md:mr-6">
-				{#if !user.isValid}
+				{#if !$user.isValid}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
 					</ul>
-				{:else if user.isValid && user.isAdmin}
+				{:else if $user.isValid && $user.isAdmin}
 					<form
 						method="POST"
 						action="/logout"
 						use:enhance={() => {
 							return async ({ result }) => {
-								user.clear();
+								$user.clear();
 								await applyAction(result);
 							};
 						}}
@@ -86,7 +86,7 @@
 					<div class="dropdown dropdown-end z-10">
 						<label for="avatar" tabindex="-1" class="btn btn-ghost btn-circle avatar placeholder">
 							<div class="bg-neutral-focus text-neutral-content rounded-full w-10">
-								<span> {user.model?.name[0]} </span>
+								<span> {$user.model?.name[0]} </span>
 							</div>
 						</label>
 						<ul
@@ -105,7 +105,7 @@
 								action="/logout"
 								use:enhance={() => {
 									return async ({ result }) => {
-										user.clear();
+										$user.clear();
 										await applyAction(result);
 									};
 								}}
@@ -118,7 +118,7 @@
 			</div>
 		</div>
 		<div class="flex flex-1 min-w-full z-2 mb-20 sm:mb-0">
-			{#if user && !user.isAdmin}
+			{#if user && !$user.isAdmin}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 					<div class="drawer-content flex flex-1 flex-col items-center justify-top m-2 sm:m-8">
@@ -186,4 +186,8 @@
 <EditCategoryModal />
 <AddCategoryModal />
 
-<ToastNode />
+<ToastNode
+	toastOptions={{
+		position: 'bottom-right'
+	}}
+/>

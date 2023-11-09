@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import EditBookmarkForm from '../EditBookmarkForm/EditBookmarkForm.svelte';
 	import { editBookmarkStore as bookmark } from '$lib/stores/edit-bookmark.store';
 	import { writable } from 'svelte/store';
