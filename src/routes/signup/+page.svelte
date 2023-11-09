@@ -1,22 +1,19 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
-	import { user } from '$lib/pb';
 </script>
 
 <div class="w-full mt-24">
-	<div class="form-control mx-auto max-w-xs gap-4">
-		<form
-			method="POST"
-			class="card"
-			use:enhance={() => {
-				return async ({ result }) => {
-					// $user.loadFromCookie(document.cookie);
-					await applyAction(result);
-				};
-			}}
-		>
+	<form
+		method="POST"
+		use:enhance={() => {
+			return async ({ result }) => {
+				await applyAction(result);
+			};
+		}}
+	>
+		<div class="form-control mx-auto max-w-xs gap-4">
 			<div>
-				<label class="label">
+				<label class="label" for="username">
 					<span class="label-text">Username</span>
 				</label>
 				<input
@@ -27,7 +24,7 @@
 				/>
 			</div>
 			<div>
-				<label class="label">
+				<label class="label" for="name">
 					<span class="label-text">Display name</span>
 				</label>
 				<input
@@ -38,7 +35,7 @@
 				/>
 			</div>
 			<div>
-				<label class="label">
+				<label class="label" for="email">
 					<span class="label-text">Email</span>
 				</label>
 				<input
@@ -49,7 +46,7 @@
 				/>
 			</div>
 			<div>
-				<label class="label">
+				<label class="label" for="password">
 					<span class="label-text">Password</span>
 				</label>
 				<input
@@ -60,7 +57,7 @@
 				/>
 			</div>
 			<div>
-				<label class="label">
+				<label class="label" for="passwordConfirm">
 					<span class="label-text">Repeat password</span>
 				</label>
 				<input
@@ -71,6 +68,6 @@
 				/>
 			</div>
 			<button class="btn btn-primary">Sign up</button>
-		</form>
-	</div>
+		</div>
+	</form>
 </div>
