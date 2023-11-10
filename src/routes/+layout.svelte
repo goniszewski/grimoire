@@ -45,7 +45,7 @@
 		<title>Grimoire</title>
 	</head>
 	<div class="flex flex-col min-w-screen flex-1">
-		<div class="navbar bg-base-100 z-1">
+		<div class="navbar z-1">
 			<div class="flex">
 				<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
 			</div>
@@ -139,9 +139,7 @@
 							{/if}
 						</div>
 						<label for="my-drawer-2" class="drawer-overlay" />
-						<ul
-							class="menu p-4 w-64 h-auto bg-neutral-content text-base-content rounded-r-xl gap-4"
-						>
+						<ul class="menu p-4 w-64 h-auto bg-base-200 text-base-content rounded-r-xl gap-4">
 							<!-- Sidebar content here -->
 							<!-- <li><a>Sidebar Item 1</a></li>
 					<li><a>Sidebar Item 2</a></li> -->

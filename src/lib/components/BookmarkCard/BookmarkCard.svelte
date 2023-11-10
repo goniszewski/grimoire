@@ -53,7 +53,7 @@
 			class="badge badge-xl absolute top-1 left-1"
 			style={`border-color: ${bookmark.category.color};`}
 		>
-			<span class="brightness-75" style={`color: ${bookmark.category.color};`}
+			<span class="text-opacity-90" style={`_color: ${bookmark.category.color};`}
 				>{bookmark.category.name}</span
 			>
 		</div>
@@ -243,11 +243,11 @@
 				</div>
 				<div class="tooltip text-left" data-tip={bookmark.description}>
 					{#if bookmark.description}
-						<p class="font-light text-sm text-gray-700 line-clamp-2">
+						<p class="font-light text-sm opacity-90 line-clamp-2">
 							{bookmark.description}
 						</p>
 					{:else}
-						<p class="font-light text-sm text-gray-500 italic">No description...</p>
+						<p class="font-light text-sm opacity-80 italic">No description...</p>
 					{/if}
 				</div>
 			</div>
@@ -265,9 +265,7 @@
 		</div>
 		<div class="absolute top-1 right-1 flex items-center gap-1">
 			<div class="tooltip tooltip-top" data-tip={bookmark.domain}>
-				<div
-					class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6 justify-start max-w-[8rem] truncate"
-				>
+				<div class="badge badge-ghost bg-opacity-75 h-6 justify-start max-w-[8rem] truncate">
 					{bookmark.domain}
 				</div>
 			</div>

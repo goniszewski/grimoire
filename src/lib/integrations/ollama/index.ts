@@ -1,3 +1,4 @@
+import type { llmSettings } from '$lib/types/UserSettings.type';
 import { validateUrlRegex } from '$lib/utils/regex-library';
 
 const defaultConfig = {
@@ -62,25 +63,22 @@ export async function summarize(
 	return generate(prompt, model, options);
 }
 
-export async function generateTags(
-	prompt: string,
-	model: string,
-	options: {
-		system?: string;
-	} = {
-		...defaultConfig.roles.generateTags
-	}
-) {
+export async function generateTags(prompt: string, options: llmSettings) {
 	const serializedPrompt = prompt.replace(validateUrlRegex, '');
 
-	const response = await generate(
-		serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
-		model,
-		options
-	);
+	switch (options.provider) {
+		case 'ollama':
+			const response = await generate(
+				serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
+				options.ollama?.model || 'orca-mini',
+				{
+					system: defaultConfig.roles.generateTags.system
+				}
+			);
 
-	return response
-		.split(',')
-		.slice(0, 3)
-		.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
+			return response
+				.split(',')
+				.slice(0, 3)
+				.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
+	}
 }

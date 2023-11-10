@@ -85,9 +85,7 @@
 				</div>
 			</div>
 		</div>
-		<div
-			class="badge badge-ghost bg-gray-100 bg-opacity-75 h-6 ml-auto line-clamp-1 max-w-[8rem] md:max-w-fit"
-		>
+		<div class="badge badge-ghost bg-opacity-75 h-6 ml-auto line-clamp-1 max-w-[8rem] md:max-w-fit">
 			{bookmark.domain}
 		</div>
 	</div>
@@ -100,11 +98,11 @@
 	>
 		<div class="tooltip text-left" data-tip={bookmark.description}>
 			{#if bookmark.description}
-				<p class="font-light text-sm text-gray-700 line-clamp-2 w-full md:w-10/12">
+				<p class="font-light text-sm opacity-90 line-clamp-2 w-full md:w-10/12">
 					{bookmark.description}
 				</p>
 			{:else}
-				<p class="font-light text-sm text-gray-500 italic">No description...</p>
+				<p class="font-light text-sm opacity-80 italic">No description...</p>
 			{/if}
 		</div>
 	</div>
@@ -116,8 +114,8 @@
 				style={`border-color: ${bookmark.category.color};`}
 			>
 				<span
-					class="brightness-75 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
-					style={`color: ${bookmark.category.color};`}>{bookmark.category.name}</span
+					class="w-full whitespace-nowrap overflow-hidden overflow-ellipsis text-opacity-90"
+					style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
 				>
 			</a>
 			<span class="font-sans font-semibold text-xs">#</span>

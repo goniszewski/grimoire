@@ -179,5 +179,9 @@
 		border: 0 !important;
 		border-color: rgba(209, 213, 219, 0.5) !important;
 		max-width: 10rem;
+		background: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+	}
+	:global(.svelte-select-list) {
+		background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
 	}
 </style>
