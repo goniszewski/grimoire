@@ -10,6 +10,6 @@ export default {
 		require('daisyui')
 	],
 	daisyui: {
-		themes: ['fantasy']
+		themes: ['fantasy', 'dracula']
 	}
 };

@@ -368,5 +368,38 @@ export const actions = {
 		return {
 			success: true
 		};
+	},
+	changeTheme: async ({ locals, request }) => {
+		const owner = locals.user?.id;
+
+		if (!owner) {
+			return {
+				success: false
+			};
+		}
+
+		const data = await request.formData();
+		const theme = data.get('theme') as string;
+		const existingSettings = await pb
+			.collection('users')
+			.getOne(owner)
+			.then((res) => res?.settings || {});
+
+		try {
+			await pb.collection('users').update(owner, {
+				settings: {
+					...existingSettings,
+					theme
+				}
+			});
+
+			return {
+				success: true
+			};
+		} catch (e) {
+			return {
+				success: false
+			};
+		}
 	}
 } satisfies Actions;

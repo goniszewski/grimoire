@@ -5,4 +5,5 @@ export type UserSettings = {
 	bookmarksSortedBy: sortByType;
 	bookmarksOnlyShowFlagged: boolean;
 	bookmarksOnlyShowRead: boolean;
+	theme: 'light' | 'dark';
 };

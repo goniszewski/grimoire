@@ -16,6 +16,7 @@
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import { ToastNode } from '$lib/utils/show-toast';
 	import Footer from '$lib/components/Footer/Footer.svelte';
+	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
 
 	onMount(async () => {
 		$user.loadFromCookie(document.cookie);
@@ -64,6 +65,7 @@
 				</div>
 			</div>
 			<div class="flex-none md:mr-6">
+				<ThemeSwitch />
 				{#if !$user.isValid}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
@@ -137,7 +139,9 @@
 							{/if}
 						</div>
 						<label for="my-drawer-2" class="drawer-overlay" />
-						<ul class="menu p-4 w-64 h-auto bg-slate-100 text-base-content rounded-r-xl gap-4">
+						<ul
+							class="menu p-4 w-64 h-auto bg-neutral-content text-base-content rounded-r-xl gap-4"
+						>
 							<!-- Sidebar content here -->
 							<!-- <li><a>Sidebar Item 1</a></li>
 					<li><a>Sidebar Item 2</a></li> -->

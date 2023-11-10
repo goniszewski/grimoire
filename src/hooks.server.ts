@@ -6,6 +6,10 @@ import type { Handle } from '@sveltejs/kit';
 import type { BaseAuthStore } from 'pocketbase';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	const themes = {
+		light: 'fantasy',
+		dark: 'dracula'
+	};
 	pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 	if (pb.authStore.isValid) {
 		try {
@@ -30,11 +34,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 			pb.authStore.clear();
 		}
 	}
+	const theme: 'dark' | 'light' =
+		pb.authStore.model?.settings?.theme || event.cookies.get('theme') || 'light';
 
 	event.locals.pb = pb;
 	event.locals.user = structuredClone(pb.authStore.model);
 
-	const response = await resolve(event);
+	const response = await resolve(event, {
+		transformPageChunk({ html }) {
+			return html.replace('data-theme=""', `data-theme="${themes[theme]}"`);
+		}
+	});
 
 	response.headers.set('set-cookie', pb.authStore.exportToCookie({ httpOnly: false }));
 
