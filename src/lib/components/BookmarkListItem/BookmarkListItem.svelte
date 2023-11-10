@@ -34,7 +34,9 @@
 	}
 </script>
 
-<div class="flex flex-col justify-between border p-2 rounded-md min-h-[6rem] gap-1">
+<div
+	class="flex flex-col justify-between border border-base-content border-opacity-20 p-2 rounded-md min-h-[6rem] gap-1"
+>
 	<div class="flex">
 		<div class="flex items-center justify-between gap-1">
 			<div class="flex items-center gap-1">
