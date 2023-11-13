@@ -1,7 +1,7 @@
 import type { UserSettings } from '$lib/types/UserSettings.type';
 import { writable } from 'svelte/store';
 
-const defaults: UserSettings = {
+const defaults: Partial<UserSettings> = {
 	bookmarksView: 'grid',
 	bookmarksSortedBy: 'created_desc',
 	bookmarksOnlyShowFlagged: false,

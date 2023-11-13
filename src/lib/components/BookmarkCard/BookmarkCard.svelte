@@ -16,6 +16,7 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { invalidate } from '$app/navigation';
 	import { showToast } from '$lib/utils/show-toast';
+	import { user } from '$lib/pb';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -33,9 +34,13 @@
 </script>
 
 <div
-	class="relative flex flex-col justify-between card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid h-64 min-w-[20rem]"
+	class={`relative flex flex-col justify-between card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid h-64 min-w-[20rem] border border-base-100 hover:border-secondary ${
+		$user?.model?.settings?.uiAnimations
+			? 'transition hover:-translate-y-1 duration-300 ease-in-out'
+			: ''
+	}`}
 >
-	<figure class="relative max-h-36">
+	<figure class="relative h-36">
 		<div
 			on:click={onShowBookmark}
 			class="w-full hover:brightness-90"
@@ -43,11 +48,13 @@
 			tabindex="0"
 			on:keydown={onShowBookmark}
 		>
-			{#if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
-				<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
-			{:else}
-				<IconPhotoX class="m-auto my-16" />
-			{/if}
+			<div class="w-full h-36 flex items-center justify-center bg-base hover:bg-base-100">
+				{#if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
+					<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+				{:else}
+					<IconPhotoX class="m-auto my-16" />
+				{/if}
+			</div>
 		</div>
 		<div
 			class="badge badge-xl absolute top-1 left-1"

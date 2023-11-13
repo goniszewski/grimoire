@@ -9,6 +9,7 @@
 	import { generateTags } from '$lib/integrations/ollama';
 	import { showToast } from '$lib/utils/show-toast';
 	import { validateUrlRegex } from '$lib/utils/regex-library';
+	import { user } from '$lib/pb';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -111,31 +112,40 @@
 				.then((data) => {
 					metadata = data?.metadata || { ...defaultFormValues };
 
-					// TODO: load user/system settings and check if we should generate tags
-					if (metadata.content_text && 'llm: enabled') {
-						$loadingTags = true;
-						showToast
-							.promise(
-								generateTags(metadata.content_text, 'openhermes2.5-mistral'),
-								{
-									loading: 'Generating tags...',
-									success: 'Tags generated',
-									error: 'Failed to generate tags'
-								},
-								{
-									position: 'bottom-right',
-									style: 'z-index: 100'
-								}
-							)
-							.then((tags) => {
-								$loadingTags = false;
-								bookmarkTagsInput.set(tags.map((t) => ({ value: t, label: t })));
-							})
-							.catch((err) => {
-								$loadingTags = false;
-								console.error(err);
-							});
-					}
+					if (
+						!metadata.content_text ||
+						!$user.model.settings?.llm ||
+						!$user.model.settings.llm.enabled
+					)
+						return;
+
+					$loadingTags = true;
+
+					const generateTagsPromise = generateTags(
+						metadata.content_text,
+						$user.model.settings?.llm
+					);
+
+					showToast
+						.promise(
+							generateTagsPromise,
+							{
+								loading: 'Generating tags...',
+								success: 'Tags generated!',
+								error: 'Failed to generate tags.'
+							},
+							{
+								position: 'bottom-right'
+							}
+						)
+						.then((tags) => {
+							$loadingTags = false;
+							bookmarkTagsInput.set(tags.map((t) => ({ value: t, label: t })));
+						})
+						.catch((err) => {
+							$loadingTags = false;
+							console.error(err);
+						});
 				})
 				.catch((err) => {
 					console.error(err);

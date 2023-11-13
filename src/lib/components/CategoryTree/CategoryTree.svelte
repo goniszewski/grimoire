@@ -17,7 +17,9 @@
 			{:else}
 				<Icon name={category.icon} size={16} color={category?.color} />
 			{/if}
-			<a href={`/categories/${category.slug}`} class="link m-1">{category.name}</a>
+			<a href={`/categories/${category.slug}`} class="link m-1 hover:text-primary"
+				>{category.name}</a
+			>
 		</div>
 
 		{#if category.children}
@@ -31,7 +33,9 @@
 					{:else}
 						<Icon name={categoryChild.icon} size={16} color={categoryChild?.color} />
 					{/if}
-					<a href={`/categories/${categoryChild.slug}`} class="link m-1">{categoryChild.name}</a>
+					<a href={`/categories/${categoryChild.slug}`} class="link m-1 hover:text-primary"
+						>{categoryChild.name}</a
+					>
 				</div>
 			{/each}
 		{/if}

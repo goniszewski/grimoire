@@ -18,6 +18,7 @@
 	import { invalidate } from '$app/navigation';
 	import { showToast } from '$lib/utils/show-toast';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import { user } from '$lib/pb';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -35,7 +36,11 @@
 </script>
 
 <div
-	class="flex flex-col justify-between border border-base-content border-opacity-20 p-2 rounded-md min-h-[6rem] gap-1"
+	class={`flex flex-col justify-between border border-base-content border-opacity-20 p-2 rounded-md min-h-[6rem] gap-1 hover:border-secondary  ${
+		$user?.model?.settings?.uiAnimations
+			? 'transition hover:-translate-x-1 duration-300 ease-in-out'
+			: ''
+	}`}
 >
 	<div class="flex">
 		<div class="flex items-center justify-between gap-1">
@@ -125,7 +130,8 @@
 				{#each bookmark.tags as tag}
 					<a
 						href={`/tags/${tag.name}`}
-						class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem]">{tag.name}</a
+						class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem] hover:text-secondary"
+						>{tag.name}</a
 					>
 				{/each}
 			{/if}

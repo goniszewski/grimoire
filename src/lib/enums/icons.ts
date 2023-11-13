@@ -1,6 +1,22 @@
 import {
-    Icon123, IconAbc, IconAlertCircle, IconBook, IconBookmark, IconCake, IconCash, IconGift,
-    IconTrain
+	Icon123,
+	IconAbc,
+	IconAlertCircle,
+	IconBook,
+	IconBookmark,
+	IconBriefcase2,
+	IconCake,
+	IconCash,
+	IconDeviceGamepad,
+	IconGift,
+	IconHeart,
+	IconMoodSmile,
+	IconMovie,
+	IconMusic,
+	IconQuote,
+	IconStar,
+	IconTrain,
+	IconWand
 } from '@tabler/icons-svelte';
 
 export const icons = [
@@ -13,6 +29,11 @@ export const icons = [
 		title: 'Gift',
 		id: 'gift',
 		icon: IconGift
+	},
+	{
+		title: 'Work',
+		id: 'work',
+		icon: IconBriefcase2
 	},
 	{
 		title: 'Numbers',
@@ -48,5 +69,45 @@ export const icons = [
 		title: 'Cake',
 		id: 'cake',
 		icon: IconCake
+	},
+	{
+		title: 'Smiley',
+		id: 'smiley',
+		icon: IconMoodSmile
+	},
+	{
+		title: 'Star',
+		id: 'star',
+		icon: IconStar
+	},
+	{
+		title: 'Music',
+		id: 'music',
+		icon: IconMusic
+	},
+	{
+		title: 'Game',
+		id: 'game',
+		icon: IconDeviceGamepad
+	},
+	{
+		title: 'Movie',
+		id: 'movie',
+		icon: IconMovie
+	},
+	{
+		title: 'Wand',
+		id: 'wand',
+		icon: IconWand
+	},
+	{
+		title: 'Quote',
+		id: 'quote',
+		icon: IconQuote
+	},
+	{
+		title: 'Heart',
+		id: 'heart',
+		icon: IconHeart
 	}
 ];

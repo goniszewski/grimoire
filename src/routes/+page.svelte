@@ -84,7 +84,7 @@
 			}}
 		>
 			<div class="tooltip flex flex-col justify-center" data-tip="Change view">
-				<label class="link swap swap-rotate px-1">
+				<label class="link swap swap-rotate px-1 hover:text-secondary">
 					<input
 						type="checkbox"
 						name="bookmarksView"
@@ -122,7 +122,7 @@
 			<div class="flex">
 				<div class="tooltip cursor-pointer" data-tip="Show only unread">
 					<label class="label cursor-pointer gap-2">
-						<span class="label-text">Only unread</span>
+						<span class="label-text hover:text-secondary">Only unread</span>
 						<input
 							type="checkbox"
 							name="bookmarksOnlyShowRead"
@@ -136,7 +136,7 @@
 				</div>
 				<div class="tooltip cursor-pointer" data-tip="Show only flagged">
 					<label class="label cursor-pointer gap-2">
-						<span class="label-text">Only flagged</span>
+						<span class="label-text hover:text-secondary">Only flagged</span>
 						<input
 							type="checkbox"
 							name="bookmarksOnlyShowFlagged"
@@ -173,15 +173,3 @@
 		</p>
 	</div>
 {/if}
-
-<style>
-	:global(.this-select) {
-		border: 0 !important;
-		border-color: rgba(209, 213, 219, 0.5) !important;
-		max-width: 10rem;
-		background: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
-	}
-	:global(.svelte-select-list) {
-		background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
-	}
-</style>

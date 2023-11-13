@@ -160,7 +160,9 @@
 								<div class="flex flex-wrap p-2">
 									{#each $page.data.tags as tag}
 										{#if tag.bookmarks.length > 0}
-											<a href={`/tags/${tag.slug}`} class="link m-1">#{tag.name}</a>
+											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
+												>#{tag.name}</a
+											>
 										{/if}
 									{/each}
 								</div>
@@ -193,3 +195,20 @@
 		position: 'bottom-right'
 	}}
 />
+
+<style>
+	/* SvelteSelect styling fix */
+	:global(.this-select) {
+		border: 0 !important;
+		border-color: rgba(209, 213, 219, 0.5) !important;
+		max-width: 10rem;
+		background: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+	}
+	:global(.svelte-select-list) {
+		background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+		box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
+	}
+	:global(.svelte-select-list .list-item .item:hover) {
+		background-color: hsl(var(--pf) / var(--tw-bg-opacity, 1)) !important;
+	}
+</style>
