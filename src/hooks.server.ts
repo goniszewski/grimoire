@@ -42,7 +42,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event, {
 		transformPageChunk({ html }) {
-			return html.replace('data-theme=""', `data-theme="${themes[theme]}"`);
+			return html.replace('data-theme=""', `data-theme="${theme}"`);
 		}
 	});
 

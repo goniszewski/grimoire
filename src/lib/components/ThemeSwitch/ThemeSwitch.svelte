@@ -17,7 +17,7 @@
 	function handleThemeChange(theme: keyof typeof themes) {
 		console.log(theme);
 		document.documentElement.setAttribute('data-theme', themes[theme]);
-		document.cookie = `theme=${themes[theme]}; ${document.cookie}`;
+		document.cookie = `theme=${theme}; ${document.cookie}`;
 	}
 </script>
 
