@@ -11,5 +11,3 @@ export const user = writable(
 		model: User;
 	}
 );
-
-export const currentUser = writable(pb.authStore.model);
