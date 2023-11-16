@@ -3,10 +3,19 @@ import type { sortByType } from '$lib/utils/sort-bookmarks';
 export type llmSettings = {
 	enabled: boolean;
 	provider: 'ollama' | 'openai';
-	ollama?: {
+	ollama: {
+		url: string;
 		model: string;
+		generateTags: {
+			enabled: boolean;
+			system: string;
+		};
+		summarize: {
+			enabled: boolean;
+			system: string;
+		};
 	};
-	openai?: {
+	openai: {
 		apiKey: string;
 	};
 };

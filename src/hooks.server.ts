@@ -1,3 +1,4 @@
+import { themes } from '$lib/enums/themes';
 import { pb, user } from '$lib/pb';
 
 import type { User } from '$lib/types/User.type';
@@ -6,10 +7,6 @@ import type { Handle } from '@sveltejs/kit';
 import type { BaseAuthStore } from 'pocketbase';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const themes = {
-		light: 'fantasy',
-		dark: 'dracula'
-	};
 	pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 	if (pb.authStore.isValid) {
 		try {
@@ -42,7 +39,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event, {
 		transformPageChunk({ html }) {
-			return html.replace('data-theme=""', `data-theme="${theme}"`);
+			return html.replace('data-theme=""', `data-theme="${themes[theme]}"`);
 		}
 	});
 

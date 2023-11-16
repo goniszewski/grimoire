@@ -1,7 +1,7 @@
 import type { llmSettings } from '$lib/types/UserSettings.type';
 import { validateUrlRegex } from '$lib/utils/regex-library';
 
-const defaultConfig = {
+export const defaultConfig = {
 	url: 'http://localhost:11434/api',
 	defaultOptions: {
 		stream: false
@@ -81,4 +81,17 @@ export async function generateTags(prompt: string, options: llmSettings) {
 				.slice(0, 3)
 				.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
 	}
+}
+
+export async function getModels(url: string) {
+	return fetch(`${url}/api/tags`)
+		.then((res) => res.json())
+		.then(
+			(res: {
+				models: {
+					name: string;
+					description: string;
+				}[];
+			}) => res.models.map((model) => model.name)
+		);
 }

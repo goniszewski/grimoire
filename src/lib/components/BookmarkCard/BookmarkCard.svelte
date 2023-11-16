@@ -36,7 +36,7 @@
 <div
 	class={`relative flex flex-col justify-between card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid h-64 min-w-[20rem] border border-base-100 hover:border-secondary ${
 		$user?.model?.settings?.uiAnimations
-			? 'transition hover:-translate-y-1 duration-300 ease-in-out'
+			? 'transition hover:-translate-y-1 duration-300 ease-in-out hover:shadow-2xl'
 			: ''
 	}`}
 >

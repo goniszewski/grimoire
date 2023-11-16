@@ -63,7 +63,7 @@
 			class="flex flex-1 w-full pr-5 items-center flex-wrap"
 			bind:this={bookmarksViewForm}
 			method="POST"
-			action="/profile/edit/?/updateUserSettings"
+			action="/settings/?/updateUserSettings"
 			use:enhance={({ formData }) => {
 				$userSettingsStore = {
 					...($user.model?.settings || {}),
