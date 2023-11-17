@@ -1,6 +1,15 @@
 # Grimoire
 
-Book of (_not_)forbidden knowledge 📖💫
+![Grimoire Logo](static/grimoire_logo_300.webp)
+
+Glimpse into the magical book of your forbidden knowledge - **Grimoire!** 📖💫
+
+Unleash your inner sorcerer and conquer the chaos of bookmarks! With Grimoire, you'll have a bewitching way to store and sort your enchanted links.
+But wait, there's more!
+
+Transmute your saved pages into juicy content snippets with our mystical extraction feature. Embrace the magic, tame the clutter, and let Grimoire be your mystical companion in the vast library of the web.
+
+It's time to conjure up some organization! 📚✨
 
 ## Features
 
