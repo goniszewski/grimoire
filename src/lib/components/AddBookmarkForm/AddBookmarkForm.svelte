@@ -235,7 +235,7 @@
 			{/if}
 			{#if !$loading && metadata.url}
 				<div class="flex flex-col w-full">
-					<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+					<div class="flex flex-col md:flex-row items-start justify-between w-full gap-2">
 						<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
 							<div class="flex flex-none flex-col">
 								<label for="category" class="label">Category</label>
