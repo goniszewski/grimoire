@@ -1,13 +1,10 @@
 <script lang="ts">
-	import Select from 'svelte-select';
-	import { debounce, endsWith } from 'lodash';
-	import { enhance } from '$app/forms';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 
 	export let closeModal: () => void;
 	let contentTab = writable<'text' | 'html'>('html');
@@ -158,7 +155,7 @@
 							<img
 								src={$bookmark.main_image || $bookmark.main_image_url}
 								alt="Main"
-								class="w-full rounded-md relative hover:scale-[2] transition-all duration-300 z-10 overflow-visible"
+								class="w-full rounded-md relative"
 							/>
 						{/if}
 					</div>
