@@ -10,6 +10,7 @@
 	import { showToast } from '$lib/utils/show-toast';
 	import { validateUrlRegex } from '$lib/utils/regex-library';
 	import { user } from '$lib/pb';
+	import { IconInfoCircle } from '@tabler/icons-svelte';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -95,6 +96,7 @@
 
 	let note = '';
 	let error = '';
+	let warning = '';
 	const loading = writable(false);
 
 	const onGetMetadata = debounce(
@@ -114,6 +116,11 @@
 				error = 'Invalid URL';
 				loading.set(false);
 				return;
+			}
+
+			const bookmarkExists = $page.data.bookmarks.find((b) => b.url === url);
+			if (bookmarkExists) {
+				warning = `Be warned, bookmark with this URL already exists as '${bookmarkExists.title}' in '${bookmarkExists.category.name}' category.`;
 			}
 
 			fetch(`/api/fetch-metadata`, {
@@ -205,6 +212,12 @@
 
 			{#if error}
 				<div class="alert alert-error">{error}</div>
+			{/if}
+			{#if warning}
+				<div class="alert alert-warning">
+					<IconInfoCircle />
+					{warning}
+				</div>
 			{/if}
 			<div class="join">
 				<input
