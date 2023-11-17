@@ -159,6 +159,7 @@
 						required
 						value={$category.parent?.id || $categoriesOptions[0].value}
 						items={$categoriesOptions}
+						class="this-select input input-bordered w-max"
 						on:change={(event) => {
 							// @ts-ignore-next-line
 							$category.parent = $page.data.categories.find((c) => c.id === event.detail.value);
