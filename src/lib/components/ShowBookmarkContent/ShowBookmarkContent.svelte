@@ -27,14 +27,6 @@
 	> = writable(null);
 
 	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
-
-	const bookmarkTags = writable<
-		{
-			value: string;
-			label: string;
-			created?: boolean;
-		}[]
-	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
 </script>
 
 <div class="flex flex-col gap-8 max-w-5xl">
@@ -48,7 +40,8 @@
 	</div>
 	<div class="flex flex-col lg:flex-row gap-4">
 		{#if $bookmark?.id}
-			<div class="flex flex-col gap-2 min-w-[24rem]">
+			<!-- Display div with white background on top of other content -->
+			<div class="flex flex-col gap-2">
 				<div class="flex flex-col md:flex-row gap-2">
 					<div class="flex flex-col flex-1 gap-2 min-w-fit">
 						<div class="flex gap-2 items-center">
@@ -56,6 +49,15 @@
 								<img src={$bookmark.icon || $bookmark.icon_url} alt="Icon" class="w-8 h-8" />
 							{/if}
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
+						</div>
+						<div class="">
+							{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
+								<img
+									src={$bookmark.main_image || $bookmark.main_image_url}
+									alt="Main"
+									class="rounded-md max-w-[70vw] md:max-w-sm"
+								/>
+							{/if}
 						</div>
 						<div>
 							<h3 class="text-xl">Tags</h3>
@@ -149,21 +151,13 @@
 							</span>
 						</div>
 					</div>
-
-					<div class="max-w-md">
-						{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
-							<img
-								src={$bookmark.main_image || $bookmark.main_image_url}
-								alt="Main"
-								class="w-full rounded-md relative"
-							/>
-						{/if}
-					</div>
 				</div>
 
 				<div>
 					<h3 class="text-xl">Description</h3>
-					<p>{$bookmark.description}</p>
+					<p class="break-words lg:max-w-xl max-w-xs">
+						{$bookmark.description}
+					</p>
 				</div>
 				<div>
 					{#if $bookmark.author}
@@ -182,7 +176,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 min-w-[20rem]">
+			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
 				<div>
 					<h3 class="text-xl">Content</h3>
 					<div class="tabs">
