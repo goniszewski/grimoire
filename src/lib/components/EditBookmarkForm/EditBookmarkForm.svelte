@@ -6,8 +6,8 @@
 	import { page } from '$app/stores';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
 	import { showToast } from '$lib/utils/show-toast';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
@@ -53,9 +53,24 @@
 		}
 	}
 
+	function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+		const lastItemIndex = e.detail.length - 1;
+		e.detail[lastItemIndex] = {
+			...e.detail[lastItemIndex],
+			label: e.detail[lastItemIndex].label.replace(/#/g, ''),
+			value: e.detail[lastItemIndex].value.replace(/#/g, '')
+		};
+
+		return e;
+	}
+
 	function handleTagsChange() {
 		$bookmarkTags = [
 			...$bookmarkTags.map((i) => {
+				if (i.label.startsWith('#')) {
+					i.label = i.label.replace(/#/g, '');
+					i.value = i.value.replace(/#/g, '');
+				}
 				if (i.created) {
 					delete i.created;
 				}
@@ -166,49 +181,45 @@
 				{/if}
 				<div class="flex flex-col w-full">
 					<div class="flex flex-col md:flex-row items-start justify-between w-full gap-2">
-						<div class="flex flex-col w-full">
-							<!-- <label for="category" class="label">Category</label>
-							<select
-								class="select select-bordered w-full"
-								name="category"
-								value={$bookmark.category?.id}
-							>
-								{#each $page.data.categories as category}
-									<option value={category.id}>{category.name}</option>
-								{/each}
-							</select> -->
-							{#if $bookmark.category?.id}
-								<label for="tags" class="label">Category</label>
+						<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+							<div class="flex flex-none flex-col">
+								{#if $bookmark.category?.id}
+									<label for="category" class="label">Category</label>
+									<Select
+										name="category"
+										searchable
+										items={$page.data.categories.map((c) => ({
+											value: c.id,
+											label: c.name
+										}))}
+										value={$bookmark.category?.id}
+										class="this-select input input-bordered w-full"
+									/>
+								{/if}
+							</div>
+							<div class="flex flex-1 flex-col w-full">
+								<label for="tags" class="label">Tags</label>
 								<Select
-									name="category"
+									name="tags"
 									searchable
-									items={$page.data.categories.map((c) => ({
-										value: c.id,
-										label: c.name
-									}))}
-									value={$bookmark.category?.id}
-								/>
-							{/if}
+									multiple
+									listAutoWidth={true}
+									on:input={handleTagsInput}
+									on:filter={handleTagsFilter}
+									on:change={handleTagsChange}
+									bind:filterText={tagsInputFilterText}
+									bind:value={$bookmarkTagsInput}
+									items={$bookmarkTags}
+									class="this-select input input-bordered min-w-full flex-1"
+								>
+									<div slot="item" let:item>
+										{item.created ? 'Create tag: ' : ''}
+										{item.label}
+									</div>
+								</Select>
+							</div>
 						</div>
-						<div class="flex flex-col w-full">
-							<label for="tags" class="label">Tags</label>
-							<Select
-								name="tags"
-								searchable
-								multiple
-								on:filter={handleTagsFilter}
-								on:change={handleTagsChange}
-								bind:filterText={tagsInputFilterText}
-								bind:value={$bookmarkTagsInput}
-								items={$bookmarkTags}
-							>
-								<div slot="item" let:item>
-									{item.created ? 'Create tag: ' : ''}
-									{item.label}
-								</div>
-							</Select>
-						</div>
-						<div class="flex flex-col w-full md:w-4/12 gap-4 ml-4">
+						<div class="flex w-full md:w-4/12 gap-4 ml-4">
 							<div class="flex flex-col w-full">
 								<label for="importance" class="label">Importance</label>
 								<div class="rating rating-md">
@@ -243,7 +254,7 @@
 								</div>
 							</div>
 							<div class="flex flex-col w-full">
-								<label for="flag" class="label">Flag it?</label>
+								<label for="flag" class="label whitespace-nowrap">Flag it?</label>
 								<label class="cursor-pointer label max-w-fit gap-2">
 									<!-- <span class="label-text">Flag</span> -->
 									<input

@@ -21,7 +21,7 @@ export const actions = {
 			.getOne(owner)
 			.then((res) => res.settings);
 
-		const success = await pb
+		const updatedSettings = await pb
 			.collection('users')
 			.update(owner, {
 				settings: {
@@ -29,14 +29,13 @@ export const actions = {
 					...settings
 				}
 			})
-			.then((res) => res.success)
 			.catch((err) => {
 				console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
 				return false;
 			});
 
 		return {
-			success
+			updatedSettings
 		};
 	}
 } satisfies Actions;

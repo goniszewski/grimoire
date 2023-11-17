@@ -208,7 +208,13 @@
 		background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
 		box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
 	}
-	:global(.svelte-select-list .list-item .item:hover) {
+	:global(.svelte-select-list .list-item .item.hover) {
 		background-color: hsl(var(--pf) / var(--tw-bg-opacity, 1)) !important;
+	}
+	:global(.svelte-select .value-container .multi-item) {
+		background-color: oklch(var(--nc)) !important;
+	}
+	:global(.svelte-select .value-container .multi-item .multi-item-clear svg) {
+		color: oklch(var(--pc)) !important;
 	}
 </style>

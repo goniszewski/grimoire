@@ -1,21 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { themes } from '$lib/enums/themes';
-	import { user } from '$lib/pb';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import { IconMoon, IconSunHigh } from '@tabler/icons-svelte';
-	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
 
 	let themeSwitchForm: HTMLFormElement;
-	const currentTheme = writable<keyof typeof themes>('light');
-
-	onMount(() => {
-		$currentTheme =
-			document.documentElement.getAttribute('data-theme') === themes.dark ? 'dark' : 'light';
-	});
 
 	function handleThemeChange(theme: keyof typeof themes) {
-		console.log(theme);
 		document.documentElement.setAttribute('data-theme', themes[theme]);
 		document.cookie = `theme=${theme}; ${document.cookie}`;
 	}
@@ -38,7 +29,7 @@
 			id="theme"
 			name="theme"
 			type="checkbox"
-			checked={$currentTheme === 'dark'}
+			checked={$userSettingsStore.theme === 'dark'}
 			on:change={() => themeSwitchForm.requestSubmit()}
 		/>
 		<IconSunHigh size={20} class="swap-on" />

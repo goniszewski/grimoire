@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
 	import { defaultConfig, getModels } from '$lib/integrations/ollama';
 	import { user } from '$lib/pb';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
 	import { showToast } from '$lib/utils/show-toast';
+	import { themeChange } from '$lib/utils/theme-change';
 	import { IconPlug, IconPlugConnected } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 
@@ -43,7 +46,12 @@
 				formData.set('settings', JSON.stringify($updatedSettings));
 
 				return async ({ result }) => {
-					if (result.type === 'success') {
+					// @ts-ignore
+					if (result.data.type === 'success') {
+						// @ts-ignore
+						userSettingsStore.set(result.data.updatedSettings);
+						await invalidate((url) => url.pathname === '/');
+
 						await applyAction(result);
 					}
 				};
@@ -52,15 +60,17 @@
 			<div class="flex flex-col gap-4">
 				<h2 class="text-xl font-bold">UI</h2>
 				<div class="flex border rounded-md p-4 gap-2">
-					<table class="table table-xs w-6/12">
+					<table class="table table-xs max-w-[25rem]">
 						<tr>
-							<td><span class="label-text min-w-[8rem]">Theme</span></td>
+							<td><span class="label-text min-w-[8rem]">Theme (save to keep)</span></td>
 							<td>
 								<select
 									name="theme"
 									class="select select-bordered w-full max-w-xs"
 									value={$user.model.settings?.theme}
 									on:change={(e) => {
+										// @ts-ignore
+										themeChange(e.target.value);
 										// @ts-ignore
 										$updatedSettings.theme = e.target.value;
 									}}
