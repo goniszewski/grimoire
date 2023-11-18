@@ -22,7 +22,7 @@
 				bewitching way to store and sort your enchanted links.
 			</p>
 			<p>
-				But wait, there's <strong>more</strong>!
+				But wait, there's <strong> more</strong>!
 			</p>
 			<p>
 				Transmute your saved pages into juicy content snippets with our mystical extraction feature.
@@ -57,6 +57,7 @@
 					<a href="https://github.com/kbrgl/svelte-french-toast" class="link">Svelte French Toast</a
 					>
 					<a href="https://github.com/rob-balfre/svelte-select" class="link">Svelte Select</a>
+					<a href="https://tailwindcss.com" class="link">Tailwind CSS</a>
 					<a href="https://github.com/extractus/article-extractor" class="link">
 						@extractus/article-extractor</a
 					>

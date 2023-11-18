@@ -2,7 +2,7 @@
 
 ![Grimoire Logo](static/grimoire_logo_300.webp)
 
-Glimpse into the magical book of your forbidden knowledge - **Grimoire!** 📖💫
+Glimpse into the magical book of _your_ forbidden knowledge - **Grimoire!** 📖💫
 
 Unleash your inner sorcerer and conquer the chaos of bookmarks! With Grimoire, you'll have a bewitching way to store and sort your enchanted links.
 
@@ -21,6 +21,49 @@ It's time to conjure up some organization! 📚✨
 - fetch metadata from websites, store it locally and update it when needed 🌐
 - add your personal notes to bookmarks 📝
 
+## Installation
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Steps
+
+```bash
+# Clone the repository
+git clone git@github.com:grimoirepro/grimoire.git
+
+# [OPTIONAL] Update the `.env` if using external PocketBase installation
+
+# Build and run the containers
+docker-compose up --build
+```
+
+## Development
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en/download/)
+- [PNPM](https://pnpm.io/installation)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Steps
+
+```bash
+# Clone the repository
+git clone git@github.com:grimoirepro/grimoire.git
+
+# [OPTIONAL] Update the `.env` if using external PocketBase installation
+
+# Install dependencies
+pnpm install
+
+# Run the development server
+pnpm dev -- --open
+```
+
 ## Roadmap
 
 - sharing bookmarks with other users or publicly 🤸
@@ -34,43 +77,23 @@ It's time to conjure up some organization! 📚✨
 
 If you have an idea for a feature, please [open an issue](https://github.com/grimoirepro/grimoire/issues) and describe it in detail. If you have a mockup, please attach it to the issue.
 
-💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥 💣 💥
+## Contributing
 
-# create-svelte README (OLD, reference only)
+If you want to contribute to the project, please read the [contributing guidelines](CONTRIBUTING.md).
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+## License
 
-## Creating a project
+This project is licensed under the [MIT License](LICENSE).
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Credits
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+Special thanks to: [DaisyUI](https://github.com/saadeghi/daisyui),
+[Fuse.js](https://github.com/krisk/fuse),
+[MetaScraper](https://github.com/microlinkhq/metascraper),
+[PocketBase](https://github.com/pocketbase/pocketbase),
+[sanitize-html](https://github.com/apostrophecms/sanitize-html),
+[SvelteKit](https://github.com/sveltejs/kit),
+[Svelte Select](https://github.com/rob-balfre/svelte-select),
+[Svelte French Toast](https://github.com/kbrgl/svelte-french-toast),
+[Tailwind CSS](https://tailwindcss.com),
+[@extractus/article-extractor](https://github.com/extractus/article-extractor)
