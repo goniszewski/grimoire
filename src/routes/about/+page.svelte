@@ -21,7 +21,9 @@
 				Unleash your inner sorcerer and conquer the chaos of bookmarks! With Grimoire, you'll have a
 				bewitching way to store and sort your enchanted links.
 			</p>
-			<strong>But wait, there's more!</strong>
+			<p>
+				But wait, there's <strong>more</strong>!
+			</p>
 			<p>
 				Transmute your saved pages into juicy content snippets with our mystical extraction feature.
 				Embrace the magic, tame the clutter, and let Grimoire be your mystical companion in the vast
@@ -35,7 +37,7 @@
 				<div class="flex flex-col gap-2">
 					<div class="flex max-w-[14rem] items-center">
 						<div class="indicator">
-							<span class="indicator-item indicator-top badge badge-primary">author</span>
+							<span class="indicator-item indicator-top badge badge-primary badge-sm">author</span>
 							<a href="https://www.github.com/goniszewski" class="link text-center p-1">
 								Robert Goniszewski (@goniszewski)
 							</a>
@@ -46,20 +48,17 @@
 			<div class="flex flex-col items-center mt-8">
 				<h2 class="text-xl font-bold mt-8 mb-4">Special thanks to</h2>
 				<p class="flex flex-col items-center gap-2">
-					<a href="https://github.com/saadeghi/daisyui" class="link">DaisyUI Team</a>
-					<a href="https://github.com/krisk/fuse" class="link">Fuse.js Team</a>
-					<a href="https://github.com/microlinkhq/metascraper" class="link">MetaScraper Team</a>
-					<a href="https://github.com/pocketbase/pocketbase" class="link">PocketBase Team</a>
-					<a href="https://github.com/apostrophecms/sanitize-html" class="link"
-						>sanitize-html Team</a
+					<a href="https://github.com/saadeghi/daisyui" class="link">DaisyUI</a>
+					<a href="https://github.com/krisk/fuse" class="link">Fuse.js</a>
+					<a href="https://github.com/microlinkhq/metascraper" class="link">MetaScraper</a>
+					<a href="https://github.com/pocketbase/pocketbase" class="link">PocketBase</a>
+					<a href="https://github.com/apostrophecms/sanitize-html" class="link">sanitize-html</a>
+					<a href="https://github.com/sveltejs/kit" class="link">SvelteKit</a>
+					<a href="https://github.com/kbrgl/svelte-french-toast" class="link">Svelte French Toast</a
 					>
-					<a href="https://github.com/sveltejs/kit" class="link">SvelteKit Team</a>
-					<a href="https://github.com/rob-balfre/svelte-select" class="link">Svelte Select Team</a>
-					<a href="https://github.com/kbrgl/svelte-french-toast" class="link"
-						>Svelte French Toast Team</a
-					>
+					<a href="https://github.com/rob-balfre/svelte-select" class="link">Svelte Select</a>
 					<a href="https://github.com/extractus/article-extractor" class="link">
-						@extractus/article-extractor Team</a
+						@extractus/article-extractor</a
 					>
 				</p>
 			</div>
