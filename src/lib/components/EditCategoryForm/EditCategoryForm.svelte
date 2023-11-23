@@ -261,6 +261,7 @@
 						<button
 							class="btn btn-error my-6 mx-auto w-full max-w-xs"
 							formaction="/?/deleteCategory"
+							disabled={$category.initial}
 						>
 							Delete
 						</button>

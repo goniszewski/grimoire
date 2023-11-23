@@ -11,6 +11,7 @@ export type Category = {
 	parent: Category;
 	archived: Date | null;
 	public: Date | null;
+	initial: boolean;
 	created: Date;
 	updated: Date;
 };

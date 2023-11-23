@@ -320,6 +320,7 @@ export const actions = {
 			archived,
 			public: setPublic,
 			owner,
+			initial: false,
 			created: new Date().toISOString(),
 			updated: new Date().toISOString()
 		};

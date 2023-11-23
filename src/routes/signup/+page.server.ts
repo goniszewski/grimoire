@@ -20,7 +20,8 @@ export const actions: Actions = {
 				owner: locals.user!.id,
 				name: 'Uncategorized',
 				description: 'Default category for uncategorized bookmarks',
-				color: '#808080'
+				color: '#808080',
+				initial: true
 			});
 		} catch (e) {
 			console.error(e);
