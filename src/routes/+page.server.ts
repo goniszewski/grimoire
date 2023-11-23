@@ -13,6 +13,7 @@ export const actions = {
 			};
 		}
 		const data = await request.formData();
+		console.log('data', data);
 
 		const url = data.get('url');
 		const domain = data.get('domain');
@@ -32,6 +33,25 @@ export const actions = {
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 
 		const tagIds = await prepareTags(pb, tags, owner);
+		console.log('new bookmark', {
+			author,
+			category: category?.value ? category.value : category,
+			tags: tagIds,
+			content_html,
+			content_published_date,
+			content_text,
+			content_type,
+			description,
+			domain,
+			flagged,
+			icon_url,
+			importance,
+			main_image_url,
+			note,
+			owner,
+			title,
+			url
+		});
 		const { id } = await pb
 			.collection('bookmarks')
 			.create({

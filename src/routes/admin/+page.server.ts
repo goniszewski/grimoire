@@ -4,7 +4,7 @@ import type { PageServerLoad } from './$types';
 import type { AdminData, Settings } from '$lib/types/Admin.type';
 
 //load cookie from request
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.pb.authStore.isAdmin || !locals.pb.authStore.isValid) {
 		return {
 			status: 401
@@ -39,21 +39,21 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			(user.bookmarksCount = await locals.pb
 				.collection('bookmarks')
 				.getList(1, 1, {
-					userId: user.id,
+					filter: `owner.id="${user.id}"`,
 					requestKey: `admin-bookmarks-${user.id}`
 				})
 				.then((res) => res.totalPages)),
 			(user.categoriesCount = await locals.pb
 				.collection('categories')
 				.getList(1, 1, {
-					userId: user.id,
+					filter: `owner.id="${user.id}"`,
 					requestKey: `admin-categories-${user.id}`
 				})
 				.then((res) => res.totalPages)),
 			(user.tagsCount = await locals.pb
 				.collection('tags')
 				.getList(1, 1, {
-					userId: user.id,
+					filter: `owner.id="${user.id}"`,
 					requestKey: `admin-tags-${user.id}`
 				})
 				.then((res) => res.totalPages))
@@ -152,22 +152,37 @@ export const actions = {
 		const data = await request.formData();
 		const userId = data.get('userId') as string;
 
+		if (!userId) {
+			return {
+				status: 400,
+				body: {
+					result: false
+				}
+			};
+		}
+
 		const bookmarks = await locals.pb
 			.collection('bookmarks')
 			.getFullList({
-				owner: userId
+				filter: `owner.id="${userId}"`,
+				fields: 'id',
+				batchSize: 10000
 			})
 			.then((res) => res.map((item) => item.id));
 		const categories = await locals.pb
 			.collection('categories')
 			.getFullList({
-				owner: userId
+				filter: `owner.id="${userId}"`,
+				fields: 'id',
+				batchSize: 10000
 			})
 			.then((res) => res.map((item) => item.id));
 		const tags = await locals.pb
 			.collection('tags')
 			.getFullList({
-				owner: userId
+				filter: `owner.id="${userId}"`,
+				fields: 'id',
+				batchSize: 10000
 			})
 			.then((res) => res.map((item) => item.id));
 

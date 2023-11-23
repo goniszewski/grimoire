@@ -11,7 +11,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 			if (event.url.pathname.startsWith('/admin')) {
 				await pb.admins.authRefresh().then((res) => {
 					console.info('Admin logged:', res?.admin.email);
-					console.info({ res });
 				});
 			} else {
 				await pb

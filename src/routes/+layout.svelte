@@ -64,7 +64,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex-none md:mr-6">
+			<div class="flex-none gap-2 md:mr-6">
 				<ThemeSwitch />
 				{#if !$user.isValid}
 					<ul class="menu menu-horizontal px-1">

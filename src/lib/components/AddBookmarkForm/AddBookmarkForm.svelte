@@ -188,16 +188,21 @@
 
 <form
 	method="POST"
-	action="?/addNewBookmark"
-	use:enhance={() =>
-		({ update, formData }) => {
-			const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
-			if (!formData.get('category') && defaultCategory) {
-				formData.set('category', defaultCategory?.id);
-			}
-			closeModal();
+	action="/?/addNewBookmark"
+	use:enhance={({ formData }) => {
+		const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
+		if (!formData.get('category') && defaultCategory) {
+			formData.set('category', defaultCategory?.id);
+		}
+		return async ({ update, result }) => {
+			console.log({ result });
+			metadata = { ...defaultFormValues };
+			bookmarkTagsInput.set(null);
+
 			update();
-		}}
+			closeModal();
+		};
+	}}
 >
 	<div class="w-full">
 		<div class="form-control flex w-full gap-4">
