@@ -1,28 +1,21 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
-	import { showToast } from '$lib/utils/show-toast';
+	import { page } from '$app/stores';
+	import type { ActionData } from './$types';
+	import { IconExclamationCircle } from '@tabler/icons-svelte';
 
-	// export let form: ActionData;
+	let form: ActionData;
 </script>
 
+{#if form?.incorrect || $page.status === 401}
+	<div role="alert" class="alert alert-error">
+		<IconExclamationCircle />
+		<span> Incorrect credentials. </span>
+	</div>
+{/if}
 <div class="flex flex-col w-full mt-16 gap-20">
 	<div class="flex justify-center"><h1 class="text-2xl">Admin Login</h1></div>
-	<form
-		method="POST"
-		use:enhance={() =>
-			({ update, result }) => {
-				if (result.type === 'success') {
-					showToast.success('Succesfully logged in', {
-						position: 'bottom-center'
-					});
-					update();
-					window.location.href = '/admin';
 
-					// goto('/admin');
-				}
-			}}
-	>
+	<form method="POST">
 		<div class="form-control mx-auto max-w-xs gap-4">
 			<div>
 				<label for="usernameOrEmail" class="label">

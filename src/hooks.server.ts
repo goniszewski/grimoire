@@ -1,7 +1,5 @@
 import { themes } from '$lib/enums/themes';
-import { pb, user } from '$lib/pb';
-
-import type { User } from '$lib/types/User.type';
+import { pb } from '$lib/pb';
 
 import type { Handle } from '@sveltejs/kit';
 import type { BaseAuthStore } from 'pocketbase';
@@ -13,11 +11,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			if (event.url.pathname.startsWith('/admin')) {
 				await pb.admins.authRefresh().then((res) => {
 					console.info('Admin logged:', res?.admin.email);
-					user.set(
-						pb.authStore as BaseAuthStore & {
-							model: User;
-						}
-					);
+					console.info({ res });
 				});
 			} else {
 				await pb

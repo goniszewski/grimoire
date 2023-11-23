@@ -1,12 +1,11 @@
 import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { pb } from '$lib/pb';
 
 import type { AdminData, Settings } from '$lib/types/Admin.type';
 
 //load cookie from request
-export const load: PageServerLoad = async ({ params }) => {
-	if (!pb.authStore.isAdmin || !pb.authStore.isValid) {
+export const load: PageServerLoad = async ({ locals, params }) => {
+	if (!locals.pb.authStore.isAdmin || !locals.pb.authStore.isValid) {
 		return {
 			status: 401
 		};
@@ -31,25 +30,49 @@ export const load: PageServerLoad = async ({ params }) => {
 		} as Settings
 	};
 
-	adminData.users = await pb.collection('users').getFullList();
-	adminData.bookmarksTotalCount = await pb
-		.collection('bookmarks')
-		.getList(1, 1, {
-			fields: 'id',
-			count: true,
-			requestKey: 'admin-bookmarksTotalCount'
-		})
-		.then((res) => res.totalItems);
-	adminData.backups = await pb.backups.getFullList();
-	adminData.s3Test = await pb.settings.testS3('backups').catch(() => false);
-	adminData.settings = { ...adminData.settings, ...(await pb.settings.getAll()) } as Settings;
+	adminData.users = await locals.pb.collection('users').getFullList({
+		fields: 'id,name,username,email,createdAt,disabled',
+		requestKey: 'admin-users'
+	});
+	await Promise.all(
+		adminData.users.map(async (user) => [
+			(user.bookmarksCount = await locals.pb
+				.collection('bookmarks')
+				.getList(1, 1, {
+					userId: user.id,
+					requestKey: `admin-bookmarks-${user.id}`
+				})
+				.then((res) => res.totalPages)),
+			(user.categoriesCount = await locals.pb
+				.collection('categories')
+				.getList(1, 1, {
+					userId: user.id,
+					requestKey: `admin-categories-${user.id}`
+				})
+				.then((res) => res.totalPages)),
+			(user.tagsCount = await locals.pb
+				.collection('tags')
+				.getList(1, 1, {
+					userId: user.id,
+					requestKey: `admin-tags-${user.id}`
+				})
+				.then((res) => res.totalPages))
+		])
+	);
+
+	adminData.backups = await locals.pb.backups.getFullList();
+	adminData.s3Test = await locals.pb.settings.testS3('backups').catch(() => false);
+	adminData.settings = {
+		...adminData.settings,
+		...(await locals.pb.settings.getAll())
+	} as Settings;
 
 	return {
 		adminData
 	};
 };
 
-const actions = {
+export const actions = {
 	updateSettings: async ({ locals, request }) => {
 		const data = await request.formData();
 		const settings = JSON.parse(data.get('settings') as string);
@@ -70,6 +93,108 @@ const actions = {
 			body: {
 				result,
 				configValidations
+			}
+		};
+	},
+	toggleUserDisabled: async ({ locals, request }) => {
+		if (!locals.pb.authStore.isAdmin || !locals.pb.authStore.isValid) {
+			return {
+				status: 401,
+				body: {
+					result: false
+				}
+			};
+		}
+
+		const data = await request.formData();
+		const userId = data.get('userId') as string;
+		const disable = data.get('disable') === 'true';
+		const isDisabled = await locals.pb
+			.collection('users')
+			.getOne(userId)
+			.then((res) => !!res.disabled);
+
+		console.log({ isDisabled, disable });
+
+		if (isDisabled && disable) {
+			return {
+				status: 200,
+				body: {
+					result: true
+				}
+			};
+		}
+
+		const result = await locals.pb
+			.collection('users')
+			.update(userId, {
+				disabled: disable ? new Date().toISOString() : ''
+			})
+			.then((res) => res.disabled);
+
+		return {
+			status: 200,
+			body: {
+				result
+			}
+		};
+	},
+	deleteUser: async ({ locals, request }) => {
+		if (!locals.pb.authStore.isAdmin || !locals.pb.authStore.isValid) {
+			return {
+				status: 401,
+				body: {
+					result: false
+				}
+			};
+		}
+
+		const data = await request.formData();
+		const userId = data.get('userId') as string;
+
+		const bookmarks = await locals.pb
+			.collection('bookmarks')
+			.getFullList({
+				owner: userId
+			})
+			.then((res) => res.map((item) => item.id));
+		const categories = await locals.pb
+			.collection('categories')
+			.getFullList({
+				owner: userId
+			})
+			.then((res) => res.map((item) => item.id));
+		const tags = await locals.pb
+			.collection('tags')
+			.getFullList({
+				owner: userId
+			})
+			.then((res) => res.map((item) => item.id));
+
+		await Promise.all([
+			bookmarks.map((id) =>
+				locals.pb.collection('bookmarks').delete(id, {
+					requestKey: `remove-user-${userId}-bookmark-${id}}`
+				})
+			),
+			categories.map((id) =>
+				locals.pb.collection('categories').delete(id, {
+					requestKey: `remove-user-${userId}-category-${id}}`
+				})
+			),
+			tags.map((id) =>
+				locals.pb.collection('tags').delete(id, {
+					requestKey: `remove-user-${userId}-tag-${id}}`
+				})
+			)
+		]);
+
+		await locals.pb.collection('users').delete(userId);
+
+		return {
+			status: 200,
+			body: {
+				result: true
 			}
 		};
 	}

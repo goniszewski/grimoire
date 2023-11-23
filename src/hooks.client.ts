@@ -6,7 +6,6 @@ import type { BaseAuthStore } from 'pocketbase';
 
 pb.authStore.loadFromCookie(document.cookie);
 pb.authStore.onChange(() => {
-	console.log('pb.authStore.onChange()');
 	user.set(
 		pb.authStore as BaseAuthStore & {
 			model: User;
@@ -17,4 +16,4 @@ pb.authStore.onChange(() => {
 	if (pb.authStore.model?.settings) {
 		userSettingsStore.set(pb.authStore.model.settings);
 	}
-});
+}, true);

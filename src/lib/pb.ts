@@ -46,6 +46,7 @@ export const defaultUser: Omit<User, 'id' | 'created' | 'updated'> = {
 	email: '',
 	name: '',
 	username: '',
+	disabled: '',
 	verified: false,
 	settings: defaultUserSettings
 };

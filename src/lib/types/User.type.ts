@@ -11,4 +11,5 @@ export type User = {
 	updated: string;
 	username: string;
 	verified: boolean;
+	disabled: string;
 };

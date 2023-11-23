@@ -1,41 +1,25 @@
-import { redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
-export const actions: Actions = {
-	default: async ({ locals, request, cookies }) => {
-		const data = Object.fromEntries(await request.formData()) as {
-			usernameOrEmail: string;
-			password: string;
-		};
 
-		let authResponse;
+export const actions: Actions = {
+	default: async ({ locals, request }) => {
+		const data = await request.formData();
+		const usernameOrEmail = data.get('usernameOrEmail') as string;
+		const password = data.get('password') as string;
 
 		try {
-			authResponse = await locals.pb.admins.authWithPassword(data.usernameOrEmail, data.password);
-
-			// cookies.set('adminToken', authResponse.token, {
-			// 	path: '/admin',
-			// 	httpOnly: true,
-			// 	sameSite: 'strict',
-			// 	maxAge: 10 * 60 * 24,
-			// });
+			await locals.pb.admins.authWithPassword(usernameOrEmail, password);
 		} catch (e) {
 			console.error(e);
-			throw e;
+
+			return fail(401, {
+				usernameOrEmail,
+				password,
+				incorrect: true
+			});
 		}
 
-		if (authResponse) {
-			return {
-				status: 200
-			};
-		} else {
-			return {
-				status: 401,
-				body: {
-					success: false,
-					error: 'Unauthorized'
-				}
-			};
-		}
+		throw redirect(303, '/admin/');
 	}
 } satisfies Actions;

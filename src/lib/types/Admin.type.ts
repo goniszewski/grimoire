@@ -1,5 +1,7 @@
+import type { User } from './User.type';
+
 export type AdminData = {
-	users: User[];
+	users: UserOverview[];
 	bookmarksTotalCount: number;
 	backups: Backup[];
 	s3Test: boolean;
@@ -134,16 +136,25 @@ export type SMTP = {
 	localName: string;
 };
 
-export type User = {
-	avatar: string;
-	collectionId: string;
-	collectionName: string;
-	created: string;
-	email: string;
-	emailVisibility: boolean;
-	id: string;
-	name: string;
-	updated: string;
-	username: string;
-	verified: boolean;
+// export type User = {
+// 	avatar: string;
+// 	collectionId: string;
+// 	collectionName: string;
+// 	created: string;
+// 	email: string;
+// 	emailVisibility: boolean;
+// 	id: string;
+// 	name: string;
+// 	updated: string;
+// 	username: string;
+// 	verified: boolean;
+// 	bookmarksCount?: number;
+// 	categoriesCount?: number;
+// 	tagsCount?: number;
+// };
+
+export type UserOverview = User & {
+	bookmarksCount?: number;
+	categoriesCount?: number;
+	tagsCount?: number;
 };
