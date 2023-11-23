@@ -122,7 +122,7 @@
 					type="radio"
 					name="importance"
 					class="rating-hidden rating-sm"
-					checked={!bookmark.importance}
+					checked={false}
 					value="0"
 					on:change={() => importanceForm.requestSubmit()}
 				/>

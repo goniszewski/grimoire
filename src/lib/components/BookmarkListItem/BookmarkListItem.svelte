@@ -6,8 +6,6 @@
 		IconEyeClosed,
 		IconBookmarkFilled,
 		IconBookmark,
-		IconDots,
-		IconPhotoX,
 		IconExternalLink,
 		IconClipboardText,
 		IconMenu,
@@ -138,50 +136,69 @@
 			<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400">+</button>
 		</div>
 		<div class="flex items-center gap-1">
-			<div class="badge rating rating-sm opacity-90">
-				<input
-					type="radio"
-					name="importance"
-					class="rating-hidden rating-sm"
-					checked={!bookmark.importance}
-					value="0"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
-				<input
-					type="radio"
-					name="importance"
-					class="mask mask-star-2 bg-orange-400"
-					checked={bookmark.importance === 1}
-					value="1"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
-				<input
-					type="radio"
-					name="importance"
-					class="mask mask-star-2 bg-orange-400"
-					checked={bookmark.importance === 2}
-					value="2"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
-				<input
-					type="radio"
-					name="importance"
-					class="mask mask-star-2 bg-orange-400"
-					checked={bookmark.importance === 3}
-					value="3"
-					on:change={() => {
-						importanceForm.requestSubmit();
-					}}
-				/>
-				<input
-					type="radio"
-					name="importance"
-					class="rating-hidden rating-sm"
-					checked={!bookmark.importance}
-					value="0"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
-			</div>
+			<form
+				bind:this={importanceForm}
+				method="POST"
+				action="/?/updateImportance"
+				use:enhance={() => {
+					return async ({ result }) => {
+						if (result.type === 'success') {
+							await applyAction(result);
+						}
+						if (result.type === 'error') {
+							showToast.error(`Error: ${JSON.stringify(result?.error)}`, {
+								position: 'bottom-center'
+							});
+						}
+					};
+				}}
+			>
+				<div class="badge rating rating-sm opacity-90">
+					<input type="hidden" name="id" value={bookmark.id} />
+					<input
+						type="radio"
+						name="importance"
+						class="rating-hidden rating-sm"
+						checked={!bookmark.importance}
+						value="0"
+						on:change={() => importanceForm.requestSubmit()}
+					/>
+					<input
+						type="radio"
+						name="importance"
+						class="mask mask-star-2 bg-orange-400"
+						checked={bookmark.importance === 1}
+						value="1"
+						on:change={() => importanceForm.requestSubmit()}
+					/>
+					<input
+						type="radio"
+						name="importance"
+						class="mask mask-star-2 bg-orange-400"
+						checked={bookmark.importance === 2}
+						value="2"
+						on:change={() => importanceForm.requestSubmit()}
+					/>
+					<input
+						type="radio"
+						name="importance"
+						class="mask mask-star-2 bg-orange-400"
+						checked={bookmark.importance === 3}
+						value="3"
+						on:change={() => {
+							importanceForm.requestSubmit();
+						}}
+					/>
+					<input
+						type="radio"
+						name="importance"
+						class="rating-hidden rating-sm"
+						checked={false}
+						value="0"
+						on:change={() => importanceForm.requestSubmit()}
+					/>
+				</div>
+			</form>
 			<div class="dropdown dropdown-left">
 				<button tabindex="0" class="btn btn-xs">
 					<IconMenu size={14} />
