@@ -60,7 +60,7 @@ If you have an idea for a feature, please [open an issue](https://github.com/gri
 
 ## Contributing
 
-If you want to contribute to the project, please read the [contributing guidelines](CONTRIBUTING.md).
+If you want to contribute to the project, please read the [contributing guide](CONTRIBUTING.md).
 
 ## License
 

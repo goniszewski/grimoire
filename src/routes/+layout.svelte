@@ -132,7 +132,6 @@
 						>
 					</div>
 					<div class="drawer-side min-w-screen min-h-full">
-						<!-- allign items in center vertically and horizontally -->
 						<div class="flex flex-col items-end justify-center h-14">
 							{#if $page.url.pathname !== '/'}
 								<a href="/" class="link">{'< Back to Home'}</a>
@@ -141,8 +140,6 @@
 						<label for="my-drawer-2" class="drawer-overlay" />
 						<ul class="menu p-4 w-64 h-auto bg-base-200 text-base-content rounded-r-xl gap-4">
 							<!-- Sidebar content here -->
-							<!-- <li><a>Sidebar Item 1</a></li>
-					<li><a>Sidebar Item 2</a></li> -->
 							<div>
 								<div class="flex">
 									<h3 class="text-xl">Categories</h3>

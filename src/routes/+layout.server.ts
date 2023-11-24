@@ -39,25 +39,25 @@ export const load = (async ({ locals, url }) => {
 
 	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
 		expand: 'parent',
-		filter: `owner = "${locals.user!.id}"`,
+		filter: `owner="${locals.user!.id}"`,
 		sort: 'name'
 	})) as { items: CategoryDto[] };
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
-		filter: `owner = "${locals.user!.id}"`,
+		filter: `owner="${locals.user!.id}"`,
 		sort: 'name'
 	});
 
 	const bookmarks = (await locals.pb.collection('bookmarks').getList(page, limit, {
 		expand: 'tags,category',
-		filter: `owner = "${locals.user!.id}"`,
+		filter: `owner="${locals.user!.id}"`,
 		sort: '-created'
 	})) as { items: BookmarkDto[] };
 
 	const bookmarksCount = await locals.pb
 		.collection('bookmarks')
 		.getList(1, 1, {
-			filter: `owner = "${locals.user!.id}"`,
+			filter: `owner="${locals.user!.id}"`,
 			count: true
 		})
 		.then((res) => res.totalItems);
