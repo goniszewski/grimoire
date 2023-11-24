@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Metadata } from '$lib/types/Metadata.type';
-	import { debounce } from 'lodash';
+	import _ from 'lodash';
 	import Select from 'svelte-select';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -99,7 +99,7 @@
 	let warning = '';
 	const loading = writable(false);
 
-	const onGetMetadata = debounce(
+	const onGetMetadata = _.debounce(
 		async (event: Event) => {
 			const target = event.target as HTMLButtonElement;
 			const url = target.value;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Select from 'svelte-select';
-	import { debounce } from 'lodash';
+	import _ from 'lodash';
 	import { enhance } from '$app/forms';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
@@ -79,7 +79,7 @@
 		];
 	}
 
-	const onGetMetadata = debounce(
+	const onGetMetadata = _.debounce(
 		async (event: Event) => {
 			const validateUrlRegex =
 				/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;

@@ -123,17 +123,21 @@
 					style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
 				>
 			</a>
-			<span class="font-sans font-semibold text-xs">#</span>
-			{#if bookmark.tags}
-				{#each bookmark.tags as tag}
-					<a
-						href={`/tags/${tag.name}`}
-						class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem] hover:text-secondary"
-						>{tag.name}</a
-					>
-				{/each}
-			{/if}
-			<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400">+</button>
+			<div class="flex flex-wrap max-w-[8rem] gap-1">
+				<span class="font-sans font-semibold text-xs">#</span>
+				{#if bookmark.tags}
+					{#each bookmark.tags as tag}
+						<a
+							href={`/tags/${tag.name}`}
+							class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem] hover:text-secondary"
+							>{tag.name}</a
+						>
+					{/each}
+				{/if}
+				<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400"
+					>+</button
+				>
+			</div>
 		</div>
 		<div class="flex items-center gap-1">
 			<form
