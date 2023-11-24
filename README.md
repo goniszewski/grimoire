@@ -34,35 +34,15 @@ It's time to conjure up some organization! 📚✨
 # Clone the repository
 git clone git@github.com:grimoirepro/grimoire.git
 
-# [OPTIONAL] Update the `.env` if using external PocketBase installation
+# [RECOMMENDED] Update the `.env.local` to set the initial admin user credentials
 
 # Build and run the containers
-docker-compose up --build
+docker-compose up
 ```
 
 ## Development
 
-### Prerequisites
-
-- [Node.js](https://nodejs.org/en/download/)
-- [PNPM](https://pnpm.io/installation)
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-
-### Steps
-
-```bash
-# Clone the repository
-git clone git@github.com:grimoirepro/grimoire.git
-
-# [OPTIONAL] Update the `.env` if using external PocketBase installation
-
-# Install dependencies
-pnpm install
-
-# Run the development server
-pnpm dev -- --open
-```
+Check out the [development guide](https://grimoire.pro/docs/getting-started/development) to learn how to set up the project for development.
 
 ## Roadmap
 
@@ -72,6 +52,7 @@ pnpm dev -- --open
 - export bookmarks as HTML, CSV and JSON 📦
 - add universal bookmarklet to add bookmarks from any browser 📎
 - quickly change bookmark categories and tags from the bookmarks list ⏩
+- the official browser extension 🌐
 
 ## Feature requests
 
@@ -87,7 +68,8 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Credits
 
-Special thanks to: [DaisyUI](https://github.com/saadeghi/daisyui),
+Special thanks to: [@extractus/article-extractor](https://github.com/extractus/article-extractor),
+[DaisyUI](https://github.com/saadeghi/daisyui),
 [Fuse.js](https://github.com/krisk/fuse),
 [MetaScraper](https://github.com/microlinkhq/metascraper),
 [PocketBase](https://github.com/pocketbase/pocketbase),
@@ -95,5 +77,4 @@ Special thanks to: [DaisyUI](https://github.com/saadeghi/daisyui),
 [SvelteKit](https://github.com/sveltejs/kit),
 [Svelte Select](https://github.com/rob-balfre/svelte-select),
 [Svelte French Toast](https://github.com/kbrgl/svelte-french-toast),
-[Tailwind CSS](https://tailwindcss.com),
-[@extractus/article-extractor](https://github.com/extractus/article-extractor)
+[Tailwind CSS](https://tailwindcss.com)

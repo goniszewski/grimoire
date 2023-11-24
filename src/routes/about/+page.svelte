@@ -48,6 +48,9 @@
 			<div class="flex flex-col items-center mt-8">
 				<h2 class="text-xl font-bold mt-8 mb-4">Special thanks to</h2>
 				<p class="flex flex-col items-center gap-2">
+					<a href="https://github.com/extractus/article-extractor" class="link">
+						@extractus/article-extractor</a
+					>
 					<a href="https://github.com/saadeghi/daisyui" class="link">DaisyUI</a>
 					<a href="https://github.com/krisk/fuse" class="link">Fuse.js</a>
 					<a href="https://github.com/microlinkhq/metascraper" class="link">MetaScraper</a>
@@ -58,9 +61,6 @@
 					>
 					<a href="https://github.com/rob-balfre/svelte-select" class="link">Svelte Select</a>
 					<a href="https://tailwindcss.com" class="link">Tailwind CSS</a>
-					<a href="https://github.com/extractus/article-extractor" class="link">
-						@extractus/article-extractor</a
-					>
 				</p>
 			</div>
 		</div>
