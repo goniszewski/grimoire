@@ -14,3 +14,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  grimoire:
+    image: grimoirepro/grimoire:latest
+    container_name: grimoire
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    ports:
+      - '5173:5173'
+    depends_on:
+      - pocketbase
