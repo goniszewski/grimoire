@@ -18,8 +18,11 @@ services:
     image: grimoirepro/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
-      - .env.dev
+      - .env.local
     ports:
       - '5173:5173'
     depends_on:
