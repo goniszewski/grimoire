@@ -1,5 +1,5 @@
 import type { Bookmark } from '$lib/types/Bookmark.type';
-import { sortBy } from 'lodash';
+import _ from 'lodash';
 
 export type sortByType =
 	| 'added_asc'
@@ -14,7 +14,7 @@ export function sortBookmarks(bookmarks: Bookmark[], sortString: sortByType) {
 		keyof Bookmark
 	];
 	const field = fieldNameParts.reverse().join('_') as keyof Bookmark;
-	let result = sortBy(bookmarks, (b) => {
+	let result = _.sortBy(bookmarks, (b) => {
 		return typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field];
 	});
 

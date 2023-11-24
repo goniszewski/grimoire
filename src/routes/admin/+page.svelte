@@ -6,7 +6,6 @@
 	import { IconInfoCircle, IconLock, IconLockOpen, IconTrash } from '@tabler/icons-svelte';
 	import { showToast } from '$lib/utils/show-toast';
 	import { enhance } from '$app/forms';
-	import { fromPairs } from 'lodash';
 
 	export let data: PageData;
 	const activeTab = writable('Users');
@@ -22,12 +21,6 @@
 		// 'AI Integrations',
 		'PocketBase Settings [read-only]'
 	];
-
-	function reload() {
-		setTimeout(() => {
-			if (location) location.reload();
-		}, 50);
-	}
 </script>
 
 {#if !$user.isAdmin}
@@ -41,7 +34,6 @@
 		<p class="ml-auto">Logged as <strong>{$user.model.email}</strong></p>
 		<div class="flex flex-col my-4 gap-2">
 			{#if !data.adminData}
-				{reload()}
 				<p>Loading...</p>
 			{:else}
 				<div class="tabs">
