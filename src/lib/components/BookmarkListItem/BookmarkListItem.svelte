@@ -123,7 +123,7 @@
 					style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
 				>
 			</a>
-			<div class="flex flex-wrap max-w-[8rem] gap-1">
+			<div class="flex w-full gap-1">
 				<span class="font-sans font-semibold text-xs">#</span>
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag}
