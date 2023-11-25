@@ -15,7 +15,7 @@
 				Glimpse into the magical book of <em>your</em> forbidden knowledge -
 			</p>
 			<p class="mx-auto my-2">
-				<strong class="text-3xl font-serif"><em>Grimoire</em></strong>! 📖💫
+				<strong class="text-3xl font-serif"><em>Grimoire!</em></strong> 📖💫
 			</p>
 			<p>
 				Unleash your inner sorcerer and conquer the chaos of bookmarks! With Grimoire, you'll have a
