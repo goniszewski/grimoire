@@ -65,16 +65,8 @@
 		>
 			grimoire.pro
 		</a>
-		<a href="https://github.com/grimoirepro/grimoire" target="_blank" title="Grimoire on GitHub">
+		<a href="https://github.com/goniszewski/grimoire" target="_blank" title="Grimoire on GitHub">
 			<IconBrandGithub size={24} />
 		</a>
-		<!-- <a
-			href="https://github.com/grimoirepro/grimoire"
-			target="_blank"
-			title="Grimoire on GitHub"
-			class="link link-hover"
-		>
-			GitHub
-		</a> -->
 	</nav>
 </footer>
