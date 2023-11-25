@@ -32,7 +32,7 @@ It's time to conjure up some organization! 📚✨
 
 ```bash
 # Clone the repository
-git clone git@github.com:grimoirepro/grimoire.git
+git clone git@github.com:goniszewski/grimoire.git
 
 # [RECOMMENDED] Update the `.env.local` to set the initial admin user credentials
 
@@ -56,7 +56,7 @@ Check out the [development guide](https://grimoire.pro/docs/getting-started/deve
 
 ## Feature requests
 
-If you have an idea for a feature, please [open an issue](https://github.com/grimoirepro/grimoire/issues) and describe it in detail. If you have a mockup, please attach it to the issue.
+If you have an idea for a feature, please [open an issue](https://github.com/goniszewski/grimoire/issues) and describe it in detail. If you have a mockup, please attach it to the issue.
 
 ## Contributing
 

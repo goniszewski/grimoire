@@ -5,7 +5,7 @@ Thank you for considering contributing to this project! All contributors, big or
 1. Fork the repository: Start by forking the repository to your own GitHub account. This will create a copy of the repository under your username.
 2. Create a new branch: Clone the forked repository to your local machine and create a new branch for your feature or bug fix.
    ```bash
-   git clone https://github.com/grimoirepro/grimoire/repository.git
+   git clone https://github.com/goniszewski/grimoire/repository.git
    cd grimoire
    git checkout -b your-branch-name
    ```
