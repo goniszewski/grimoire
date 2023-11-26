@@ -34,7 +34,7 @@ It's time to conjure up some organization! 📚✨
 # Clone the repository
 git clone git@github.com:goniszewski/grimoire.git
 
-# [RECOMMENDED] Update the `.env.local` to set the initial admin user credentials
+# [RECOMMENDED] Update the `.env.docker` to set the initial admin user credentials
 
 # Build and run the containers
 docker-compose up
