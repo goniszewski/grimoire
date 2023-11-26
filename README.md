@@ -32,7 +32,7 @@ It's time to conjure up some organization! 📚✨
 
 ```bash
 # Clone the repository
-git clone git@github.com:goniszewski/grimoire.git
+git clone https://github.com/goniszewski/grimoire
 
 # [RECOMMENDED] Update the `.env.docker` to set the initial admin user credentials
 
