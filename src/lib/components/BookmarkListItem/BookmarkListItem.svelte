@@ -49,13 +49,24 @@
 					class="avatar w-4 h-4 rounded-sm"
 				/>
 				<div class="tooltip text-left" data-tip="open in current tab">
+					<form
+						bind:this={increaseOpenedTimesForm}
+						method="POST"
+						action="/?/updateIncreasedOpenedCount"
+						use:enhance
+					>
+						<input type="hidden" name="id" value={bookmark.id} />
+					</form>
 					<a
 						href={bookmark.url}
 						title={bookmark.title}
 						target="_self"
 						class="link link-hover text-sm line-clamp-1"
-						on:click={() => {
+						on:click={(el) => {
+							el.preventDefault();
 							increaseOpenedTimesForm.requestSubmit();
+
+							window.open(bookmark.url, '_self');
 						}}>{bookmark.title}</a
 					>
 				</div>
