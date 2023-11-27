@@ -168,7 +168,7 @@
 		<h1 class="text-2xl">Grimoire welcomes!</h1>
 		<p class="text-lg">
 			Please <a href="/login" class="link">login</a> or
-			<a href="/register" class="link">register</a>
+			<a href="/signup" class="link">signup</a>
 			to see your bookmarks
 		</p>
 	</div>
