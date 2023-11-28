@@ -61,10 +61,10 @@
 						</div>
 						<div>
 							<h3 class="text-xl">Tags</h3>
-							<div class="flex gap-1 m-1">
+							<div class="flex flex-wrap gap-2 m-1">
 								{#if $bookmark.tags?.length}
 									{#each $bookmark.tags as tag}
-										<span class="badge badge-outline badge-sm">{tag.name}</span>
+										<span class="badge badge-outline badge-sm whitespace-nowrap">{tag.name}</span>
 									{/each}
 								{:else}
 									<p class=" text-gray-600">No tags</p>
@@ -75,6 +75,14 @@
 							<span class="flex items-center gap-2">
 								<b> Importance: </b>
 								<div class="rating rating-sm">
+									<input
+										type="radio"
+										name="importance"
+										class="rating-hidden rating-sm"
+										checked={!$bookmark.importance}
+										value="0"
+										disabled
+									/>
 									<input
 										type="radio"
 										name="importance"
@@ -177,9 +185,9 @@
 				</div>
 			</div>
 			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
-				<div>
-					<h3 class="text-xl">Content</h3>
-					<div class="tabs">
+				<h3 class="text-xl">Content</h3>
+				<div class="flex flex-col">
+					<div class="tabs min-w-full">
 						<div
 							class={`tab tab-lifted ${$contentTab === 'html' ? 'tab-active' : ''}`}
 							on:click={() => ($contentTab = 'html')}
@@ -199,22 +207,21 @@
 							Text
 						</div>
 					</div>
-					<p
-						class={`overflow-y-scroll ${
-							$bookmark.content_html || $bookmark.content_text ? 'h-60' : 'text-gray-500 m-2 '
+					<div
+						class={`flex flex-col overflow-y-scroll pt-1 pl-1 ${
+							$bookmark.content_html || $bookmark.content_text
+								? 'h-60 border border-t-0 '
+								: 'text-gray-500  '
 						}`}
 					>
 						{#if $contentTab === 'html' && $bookmark.content_html}
 							{@html $bookmark.content_html}
-						{:else if $contentTab === 'html'}
-							<p>No content</p>
-						{/if}
-						{#if $contentTab === 'text' && $bookmark.content_text}
+						{:else if $contentTab === 'text' && $bookmark.content_text}
 							{$bookmark.content_text}
-						{:else if $contentTab === 'text'}
+						{:else}
 							<p>No content</p>
 						{/if}
-					</p>
+					</div>
 				</div>
 
 				<div>
