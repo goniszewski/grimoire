@@ -186,41 +186,42 @@
 			</div>
 			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
 				<h3 class="text-xl">Content</h3>
-				<div class="tabs">
-					<div
-						class={`tab tab-lifted ${$contentTab === 'html' ? 'tab-active' : ''}`}
-						on:click={() => ($contentTab = 'html')}
-						on:keydown={() => ($contentTab = 'html')}
-						role="tab"
-						tabindex="0"
-					>
-						HTML
+				<div class="flex flex-col">
+					<div class="tabs min-w-full">
+						<div
+							class={`tab tab-lifted ${$contentTab === 'html' ? 'tab-active' : ''}`}
+							on:click={() => ($contentTab = 'html')}
+							on:keydown={() => ($contentTab = 'html')}
+							role="tab"
+							tabindex="0"
+						>
+							HTML
+						</div>
+						<div
+							class={`tab tab-lifted ${$contentTab === 'text' ? 'tab-active' : ''}`}
+							on:click={() => ($contentTab = 'text')}
+							on:keydown={() => ($contentTab = 'text')}
+							role="tab"
+							tabindex="0"
+						>
+							Text
+						</div>
 					</div>
 					<div
-						class={`tab tab-lifted ${$contentTab === 'text' ? 'tab-active' : ''}`}
-						on:click={() => ($contentTab = 'text')}
-						on:keydown={() => ($contentTab = 'text')}
-						role="tab"
-						tabindex="0"
-					>
-						Text
-					</div>
-					<p
-						class={`overflow-y-scroll ${
-							$bookmark.content_html || $bookmark.content_text ? 'h-60' : 'text-gray-500 m-2 '
+						class={`flex flex-col overflow-y-scroll pt-1 pl-1 ${
+							$bookmark.content_html || $bookmark.content_text
+								? 'h-60 border border-t-0 '
+								: 'text-gray-500  '
 						}`}
 					>
 						{#if $contentTab === 'html' && $bookmark.content_html}
 							{@html $bookmark.content_html}
-						{:else if $contentTab === 'html'}
-							<p>No content</p>
-						{/if}
-						{#if $contentTab === 'text' && $bookmark.content_text}
+						{:else if $contentTab === 'text' && $bookmark.content_text}
 							{$bookmark.content_text}
-						{:else if $contentTab === 'text'}
+						{:else}
 							<p>No content</p>
 						{/if}
-					</p>
+					</div>
 				</div>
 
 				<div>
