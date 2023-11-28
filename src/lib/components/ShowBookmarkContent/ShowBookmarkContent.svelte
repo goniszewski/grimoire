@@ -61,10 +61,10 @@
 						</div>
 						<div>
 							<h3 class="text-xl">Tags</h3>
-							<div class="flex gap-1 m-1">
+							<div class="flex flex-wrap gap-2 m-1">
 								{#if $bookmark.tags?.length}
 									{#each $bookmark.tags as tag}
-										<span class="badge badge-outline badge-sm">{tag.name}</span>
+										<span class="badge badge-outline badge-sm whitespace-nowrap">{tag.name}</span>
 									{/each}
 								{:else}
 									<p class=" text-gray-600">No tags</p>
