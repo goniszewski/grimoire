@@ -1,11 +1,11 @@
-import { env } from '$env/dynamic/public';
 import PocketBase, { BaseAuthStore } from 'pocketbase';
 import { writable } from 'svelte/store';
 
+import config from './config';
+
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
-
-export const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL);
+export const pb = new PocketBase(config.POCKETBASE_URL);
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {
