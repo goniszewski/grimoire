@@ -78,6 +78,14 @@
 									<input
 										type="radio"
 										name="importance"
+										class="rating-hidden rating-sm"
+										checked={!$bookmark.importance}
+										value="0"
+										disabled
+									/>
+									<input
+										type="radio"
+										name="importance"
 										class="mask mask-star-2 bg-orange-400 cursor-default"
 										checked={$bookmark.importance === 1}
 										value="1"
