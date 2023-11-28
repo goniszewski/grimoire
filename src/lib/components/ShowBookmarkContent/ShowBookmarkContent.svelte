@@ -185,27 +185,25 @@
 				</div>
 			</div>
 			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
-				<div>
-					<h3 class="text-xl">Content</h3>
-					<div class="tabs">
-						<div
-							class={`tab tab-lifted ${$contentTab === 'html' ? 'tab-active' : ''}`}
-							on:click={() => ($contentTab = 'html')}
-							on:keydown={() => ($contentTab = 'html')}
-							role="tab"
-							tabindex="0"
-						>
-							HTML
-						</div>
-						<div
-							class={`tab tab-lifted ${$contentTab === 'text' ? 'tab-active' : ''}`}
-							on:click={() => ($contentTab = 'text')}
-							on:keydown={() => ($contentTab = 'text')}
-							role="tab"
-							tabindex="0"
-						>
-							Text
-						</div>
+				<h3 class="text-xl">Content</h3>
+				<div class="tabs">
+					<div
+						class={`tab tab-lifted ${$contentTab === 'html' ? 'tab-active' : ''}`}
+						on:click={() => ($contentTab = 'html')}
+						on:keydown={() => ($contentTab = 'html')}
+						role="tab"
+						tabindex="0"
+					>
+						HTML
+					</div>
+					<div
+						class={`tab tab-lifted ${$contentTab === 'text' ? 'tab-active' : ''}`}
+						on:click={() => ($contentTab = 'text')}
+						on:keydown={() => ($contentTab = 'text')}
+						role="tab"
+						tabindex="0"
+					>
+						Text
 					</div>
 					<p
 						class={`overflow-y-scroll ${
