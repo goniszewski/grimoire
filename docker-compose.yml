@@ -15,7 +15,7 @@ services:
       timeout: 5s
       retries: 5
   grimoire:
-    image: grimoirepro/grimoire:latest
+    image: goniszewski/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
     build:
