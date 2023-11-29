@@ -23,6 +23,6 @@ services:
       dockerfile: Dockerfile
     env_file: .env.docker
     ports:
-      - '5173:5173'
+      - '$PORT:$PORT'
     depends_on:
       - pocketbase
