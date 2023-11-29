@@ -37,7 +37,7 @@ git clone https://github.com/goniszewski/grimoire
 # [RECOMMENDED] Update the `.env.docker` to set the initial admin user credentials
 
 # Build and run the containers
-docker-compose up
+docker-compose --env-file .env.docker up
 ```
 
 ## Development
