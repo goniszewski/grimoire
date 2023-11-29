@@ -21,8 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env.docker
+    env_file: .env.docker
     ports:
       - '5173:5173'
     depends_on:
