@@ -18,6 +18,7 @@ services:
     image: goniszewski/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
+    env_file: .env
     build:
       context: .
       dockerfile: Dockerfile
