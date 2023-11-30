@@ -34,10 +34,13 @@ It's time to conjure up some organization! 📚✨
 # Clone the repository
 git clone https://github.com/goniszewski/grimoire
 
-# [RECOMMENDED] Update the `.env.docker` to set the initial admin user credentials
+# Rename the `.env.example` file to `.env`
+# "mv .env.example .env" on Linux/MacOS, "ren .env.example .env" on Windows
+
+# [RECOMMENDED] Update the `.env` to set the initial admin user credentials (admins are separate from regular users)
 
 # Build and run the containers
-docker-compose --env-file .env.docker up
+docker-compose up
 ```
 
 ## Development
