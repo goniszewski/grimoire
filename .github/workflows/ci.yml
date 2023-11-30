@@ -3,7 +3,22 @@ name: ci
 on:
   push:
     branches:
-      - "main"
+      - 'main'
+    paths:
+      - 'src/**'
+      - 'static/**'
+      - '.dockerignore'
+      - 'build.sh'
+      - 'docker-compose.yml'
+      - 'Dockerfile'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'postcss.config.cjs'
+      - 'run-dev.sh'
+      - 'svelte.config.js'
+      - 'tailwind.config.cjs'
+      - 'tsconfig.json'
+      - 'vite.config.cjs'
 
 jobs:
   docker:
