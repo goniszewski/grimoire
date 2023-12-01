@@ -1,12 +1,21 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { handlePBError } from '$lib/pb';
+
+import { error, fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
-
 export const actions: Actions = {
 	default: async ({ locals, request }) => {
 		const data = await request.formData();
 		const usernameOrEmail = data.get('usernameOrEmail') as string;
 		const password = data.get('password') as string;
+
+		if (!usernameOrEmail || !password) {
+			return fail(400, {
+				usernameOrEmail: !usernameOrEmail,
+				password: !password,
+				missing: true
+			});
+		}
 
 		try {
 			const user = await locals.pb.collection('users').authWithPassword(usernameOrEmail, password);
@@ -19,13 +28,7 @@ export const actions: Actions = {
 				});
 			}
 		} catch (e) {
-			console.error(e);
-
-			return fail(401, {
-				usernameOrEmail,
-				password,
-				incorrect: true
-			});
+			return handlePBError(e, locals.pb, true);
 		}
 
 		throw redirect(303, '/');

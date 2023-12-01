@@ -1,22 +1,35 @@
-import { defaultUser } from '$lib/pb';
+import { defaultUser, handlePBError } from '$lib/pb';
 
-import { redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
 export const actions: Actions = {
 	default: async ({ locals, request }) => {
-		const data = Object.fromEntries(await request.formData()) as {
-			username: string;
-			email: string;
-			password: string;
-			passwordConfirm: string;
-		};
+		const data = await request.formData();
+
+		const username = data.get('username') as string;
+		const name = data.get('name') as string;
+		const email = data.get('email') as string;
+		const password = data.get('password') as string;
+		const passwordConfirm = data.get('passwordConfirm') as string;
+
+		if (!username || !password || !passwordConfirm) {
+			return fail(400, {
+				username: !username,
+				password: !password,
+				passwordConfirm: !passwordConfirm,
+				missing: true
+			});
+		}
 
 		try {
-			await locals.pb.collection('users').create({ ...defaultUser, ...data });
+			await locals.pb
+				.collection('users')
+				.create({ ...defaultUser, username, name, email, password, passwordConfirm });
+
 			const { record: user } = await locals.pb
 				.collection('users')
-				.authWithPassword(data.username, data.password);
+				.authWithPassword(username, password);
 
 			await locals.pb.collection('categories').create({
 				owner: user.id,
@@ -25,9 +38,8 @@ export const actions: Actions = {
 				color: '#808080',
 				initial: true
 			});
-		} catch (e) {
-			console.error(e);
-			throw e;
+		} catch (e: any) {
+			return handlePBError(e, locals.pb, true);
 		}
 
 		throw redirect(303, '/');

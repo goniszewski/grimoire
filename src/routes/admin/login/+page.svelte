@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { ActionData } from './$types';
 	import { IconExclamationCircle } from '@tabler/icons-svelte';
 
-	let form: ActionData;
+	export let form: HTMLFormElement;
 </script>
 
-{#if form?.incorrect || $page.status === 401}
+{#if form?.invalid}
 	<div role="alert" class="alert alert-error">
 		<IconExclamationCircle />
 		<span> Incorrect credentials. </span>
