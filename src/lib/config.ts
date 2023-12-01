@@ -12,5 +12,5 @@ export default {
 		env.PUBLIC_POCKETBASE_URL ||
 		getProcessEnvValue('PUBLIC_POCKETBASE_URL') ||
 		'http://pocketbase:80',
-	HTTPS_ONLY: env.PUBLIC_HTTPS_ONLY === 'true' || getProcessEnvValue('PUBLIC_HTTPS_ONLY') || false
+	HTTPS_ONLY: (env.PUBLIC_HTTPS_ONLY || getProcessEnvValue('PUBLIC_HTTPS_ONLY')) === 'true' || false
 };
