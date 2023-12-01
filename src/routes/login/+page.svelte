@@ -1,12 +1,10 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { IconExclamationCircle } from '@tabler/icons-svelte';
-	import type { ActionData } from './$types';
 
-	let form: ActionData;
+	export let form: HTMLFormElement;
 </script>
 
-{#if form?.incorrect || $page.status === 401}
+{#if form?.invalid}
 	<div role="alert" class="alert alert-error">
 		<IconExclamationCircle />
 		<span> Incorrect credentials. </span>
@@ -23,8 +21,13 @@
 					type="text"
 					name="usernameOrEmail"
 					placeholder="Type here"
-					class="input input-bordered w-full max-w-xs"
+					class={`input input-bordered w-full max-w-xs ${
+						form?.invalid || (form?.missing && form?.usernameOrEmail) ? 'input-error' : ''
+					}`}
 				/>
+				{#if form?.missing && form?.usernameOrEmail}
+					<p class="text-error">This field is required.</p>
+				{/if}
 			</div>
 
 			<div>
@@ -35,8 +38,13 @@
 					type="password"
 					name="password"
 					placeholder="Type here"
-					class="input input-bordered w-full max-w-xs"
+					class={`input input-bordered w-full max-w-xs ${
+						form?.invalid || (form?.missing && form?.password) ? 'input-error' : ''
+					}`}
 				/>
+				{#if form?.missing && form?.password}
+					<p class="text-error">This field is required.</p>
+				{/if}
 			</div>
 
 			<button class="btn btn-primary">Sign in</button>
