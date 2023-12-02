@@ -14,6 +14,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    env_file: .env
   grimoire:
     image: goniszewski/grimoire:latest
     container_name: grimoire
