@@ -8,7 +8,7 @@ services:
       - '8090:80'
     volumes:
       - ./pb_data:/pb_data
-      - ./pb_migrations:/usr/local/bin/pb_migrations/
+      - ./pb_migrations:/pb_migrations/
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
       interval: 5s
