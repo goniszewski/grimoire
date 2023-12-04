@@ -13,7 +13,6 @@ export const actions = {
 			};
 		}
 		const data = await request.formData();
-		console.log('data', data);
 
 		const url = data.get('url');
 		const domain = data.get('domain');

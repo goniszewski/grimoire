@@ -217,8 +217,11 @@
 							title={bookmark.title}
 							target="_self"
 							class="link link-hover card-title text-lg line-clamp-1"
-							on:click={() => {
+							on:click={(el) => {
+								el.preventDefault();
 								increaseOpenedTimesForm.requestSubmit();
+
+								window.open(bookmark.url, '_self');
 							}}>{bookmark.title}</a
 						>
 						<div class="flex ml-auto">
@@ -226,7 +229,7 @@
 								href={bookmark.url}
 								title="open in a new tab"
 								target="_blank"
-								class=" btn btn-xs btn-circle btn-ghost"
+								class="btn btn-xs btn-circle btn-ghost"
 								on:click={() => {
 									increaseOpenedTimesForm.requestSubmit();
 								}}

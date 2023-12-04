@@ -16,7 +16,7 @@ export const actions: Actions = {
 			return fail(401, {
 				usernameOrEmail,
 				password,
-				incorrect: true
+				invalid: true
 			});
 		}
 
