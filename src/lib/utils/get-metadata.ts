@@ -75,10 +75,12 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 
 		if (faviconUrl.startsWith('/')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
-		}
-		if (faviconUrl.startsWith('./')) {
+		} else if (faviconUrl.startsWith('./')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('./', '/')}`;
+		} else if (!faviconUrl.startsWith('http')) {
+			faviconUrl = `${baseUrl}/${faviconUrl}`;
 		}
+
 		return faviconUrl;
 	}, '');
 
