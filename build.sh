@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build . -t grimoirepro/grimoire:latest
+docker build . -t goniszewski/grimoire:latest

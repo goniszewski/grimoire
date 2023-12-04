@@ -88,7 +88,7 @@
 					<div class="dropdown dropdown-end z-10">
 						<label for="avatar" tabindex="-1" class="btn btn-ghost btn-circle avatar placeholder">
 							<div class="bg-neutral-focus text-neutral-content rounded-full w-10">
-								<span> {$user.model?.name[0]} </span>
+								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
 							</div>
 						</label>
 						<ul

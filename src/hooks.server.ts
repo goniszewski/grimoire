@@ -1,8 +1,8 @@
+import config from '$lib/config';
 import { themes } from '$lib/enums/themes';
 import { pb } from '$lib/pb';
 
 import type { Handle } from '@sveltejs/kit';
-import type { BaseAuthStore } from 'pocketbase';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
@@ -36,7 +36,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	});
 
-	response.headers.set('set-cookie', pb.authStore.exportToCookie({ httpOnly: false }));
+	response.headers.set(
+		'set-cookie',
+		pb.authStore.exportToCookie({
+			httpOnly: false,
+			secure: config.HTTPS_ONLY
+		})
+	);
 
 	return response;
 };

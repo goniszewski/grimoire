@@ -8,22 +8,22 @@ services:
       - '8090:80'
     volumes:
       - ./pb_data:/pb_data
-      - ./pb_migrations:/usr/local/bin/pb_migrations/
+      - ./pb_migrations:/pb_migrations/
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
       interval: 5s
       timeout: 5s
       retries: 5
+    env_file: .env
   grimoire:
-    image: grimoirepro/grimoire:latest
+    image: goniszewski/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
+    env_file: .env
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env.docker
     ports:
-      - '5173:5173'
+      - '$PORT:$PORT'
     depends_on:
       - pocketbase
