@@ -1,3 +1,4 @@
+import config from '$lib/config';
 import { pb } from '$lib/pb';
 import fs from 'fs';
 import Fuse from 'fuse.js';
@@ -36,7 +37,7 @@ const indexKeys = defaultOptions.keys.map((key) => key.name);
 export const searchFactory = (
 	data: any[],
 	options: IFuseOptions<any> = {},
-	index: FuseIndex<any>
+	index?: FuseIndex<any>
 ) => {
 	const fuse = new Fuse(data, { ...defaultOptions, ...options }, index);
 
@@ -66,6 +67,11 @@ export const loadSearchIndex = (userId: string): FuseIndex<any> => {
 export const initializeSearch = async (userId: string) => {
 	let index: FuseIndex<any>;
 	let bookmarksForIndex = [] as Record<string, any>[];
+	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
+
+	if (searchIndexingDisabled) {
+		return searchFactory(bookmarksForIndex, {});
+	}
 
 	index = loadSearchIndex(userId);
 
