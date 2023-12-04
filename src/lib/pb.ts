@@ -54,7 +54,6 @@ export const defaultUser: Omit<User, 'id' | 'created' | 'updated'> = {
 };
 
 export async function handlePBError(e: any, pb: PocketBase, form?: boolean) {
-	console.info('handlePBError', e, form);
 	if (!(e instanceof ClientResponseError)) {
 		throw error(500, e?.message);
 	}
