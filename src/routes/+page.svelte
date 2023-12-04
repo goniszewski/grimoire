@@ -11,7 +11,7 @@
 		IconSortDescending
 	} from '@tabler/icons-svelte';
 	import Select from 'svelte-select';
-	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
+	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
@@ -19,6 +19,7 @@
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import { applyAction, enhance } from '$app/forms';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
+	import { writable } from 'svelte/store';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -45,12 +46,24 @@
 		});
 	}
 
-	$: {
-		const searchedBookmarks = $searchedValue
-			? searchEngine.search($searchedValue).map((b) => b.item)
-			: $page.data.bookmarks;
-		const sortedBookmarks = sortBookmarks(searchedBookmarks, $userSettingsStore.bookmarksSortedBy);
+	const bookmarksToDisplay = writable<Bookmark[]>($page.data.bookmarks);
 
+	$: {
+		if ($searchedValue.trim()) {
+			bookmarksToDisplay.set($page.data.bookmarks);
+			const searchedBookmarksIds = searchEngine.search($searchedValue).map((b) => b.item.id);
+			fetch(`/api/bookmarks?ids=${JSON.stringify(searchedBookmarksIds)}`)
+				.then((r) => r.json())
+				.then((r) => {
+					$bookmarksToDisplay = r.bookmarks;
+				});
+		}
+	}
+	$: {
+		const sortedBookmarks = sortBookmarks(
+			$bookmarksToDisplay,
+			$userSettingsStore.bookmarksSortedBy
+		);
 		bookmarks = filterBookmarks(sortedBookmarks, $userSettingsStore);
 	}
 
