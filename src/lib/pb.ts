@@ -19,7 +19,7 @@ export const defaultUserSettings: UserSettings = {
 	theme: 'light',
 	uiAnimations: true,
 	bookmarksView: 'grid',
-	bookmarksSortedBy: 'added_desc',
+	bookmarksSortedBy: 'created_desc',
 	bookmarksOnlyShowFlagged: false,
 	bookmarksOnlyShowRead: false,
 	llm: {

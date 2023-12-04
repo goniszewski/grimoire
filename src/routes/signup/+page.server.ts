@@ -42,6 +42,7 @@ export const actions: Actions = {
 			await locals.pb.collection('categories').create({
 				owner: user.id,
 				name: 'Uncategorized',
+				slug: 'uncategorized',
 				description: 'Default category for uncategorized bookmarks',
 				color: '#808080',
 				initial: true

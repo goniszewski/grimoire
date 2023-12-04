@@ -95,8 +95,8 @@ const bookmarksStub = [
 
 describe('sortBookmarks', () => {
 	it('should sort bookmarks by created date', () => {
-		expect(sortBookmarks(bookmarksStub, 'added_asc')).toEqual(bookmarksStub);
-		expect(sortBookmarks(bookmarksStub, 'added_desc')).toEqual([...bookmarksStub].reverse());
+		expect(sortBookmarks(bookmarksStub, 'created_asc')).toEqual(bookmarksStub);
+		expect(sortBookmarks(bookmarksStub, 'created_desc')).toEqual([...bookmarksStub].reverse());
 	});
 
 	it('should sort bookmarks by title', () => {
