@@ -15,5 +15,9 @@ export default {
 	HTTPS_ONLY:
 		(env.PUBLIC_HTTPS_ONLY || getProcessEnvValue('PUBLIC_HTTPS_ONLY')) === 'true' || false,
 	SIGNUP_DISABLED:
-		(env.PUBLIC_SIGNUP_DISABLED || getProcessEnvValue('PUBLIC_SIGNUP_DISABLED')) === 'true' || false
+		(env.PUBLIC_SIGNUP_DISABLED || getProcessEnvValue('PUBLIC_SIGNUP_DISABLED')) === 'true' ||
+		false,
+	SEARCH_INDEXING_DISABLED:
+		(env.PUBLIC_SEARCH_INDEXING_DISABLED ||
+			getProcessEnvValue('PUBLIC_SEARCH_INDEXING_DISABLED')) === 'true' || false
 };
