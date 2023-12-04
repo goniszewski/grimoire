@@ -17,6 +17,8 @@
 	import { invalidate } from '$app/navigation';
 	import { showToast } from '$lib/utils/show-toast';
 	import { user } from '$lib/pb';
+	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+	import { searchEngine } from '$lib/stores/search.store';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -304,6 +306,7 @@
 										showToast.success('Bookmark deleted', {
 											position: 'bottom-center'
 										});
+										removeBookmarkFromSearchIndex($searchEngine, bookmark.id, $user.model.id);
 										await applyAction(result);
 									}
 

@@ -13,7 +13,7 @@
 	import Select from 'svelte-select';
 	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import { user } from '$lib/pb';
-	import { searchedValue } from '$lib/stores/search.store';
+	import { searchEngine, searchedValue } from '$lib/stores/search.store';
 	import { searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
@@ -32,7 +32,7 @@
 
 	export let bookmarks: Bookmark[] = [];
 
-	const searchEngine = searchFactory($page.data.bookmarks);
+	$searchEngine = searchFactory($page.data.bookmarks);
 
 	function filterBookmarks(bookmarks: Bookmark[], settings: UserSettings) {
 		return bookmarks.filter((b) => {
@@ -51,7 +51,7 @@
 	$: {
 		if ($searchedValue.trim()) {
 			bookmarksToDisplay.set($page.data.bookmarks);
-			const searchedBookmarksIds = searchEngine.search($searchedValue).map((b) => b.item.id);
+			const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
 			fetch(`/api/bookmarks?ids=${JSON.stringify(searchedBookmarksIds)}`)
 				.then((r) => r.json())
 				.then((r) => {
