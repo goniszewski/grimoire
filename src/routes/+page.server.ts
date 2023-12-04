@@ -1,7 +1,8 @@
 import type { Actions } from './$types';
-import { pb } from '$lib/pb';
+import { handlePBError, pb } from '$lib/pb';
 import { createSlug, prepareTags } from '$lib/utils';
 
+import type { Bookmark } from '$lib/types/Bookmark.type';
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
 		const owner = locals.user?.id;
@@ -14,46 +15,27 @@ export const actions = {
 		}
 		const data = await request.formData();
 
-		const url = data.get('url');
-		const domain = data.get('domain');
-		const title = data.get('title');
-		const description = data.get('description');
-		const author = data.get('author');
-		const content_text = data.get('content_text');
-		const content_html = data.get('content_html');
-		const content_type = data.get('content_type');
-		const content_published_date = data.get('content_published_date');
-		const main_image_url = data.get('main_image_url');
-		const icon_url = data.get('icon_url');
-		const note = data.get('note');
-		const importance = data.get('importance');
-		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
-		const category = JSON.parse(data.get('category') as string);
-		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
+		try {
+			const url = data.get('url');
+			const domain = data.get('domain');
+			const title = data.get('title');
+			const description = data.get('description');
+			const author = data.get('author');
+			const content_text = data.get('content_text');
+			const content_html = data.get('content_html');
+			const content_type = data.get('content_type');
+			const content_published_date = data.get('content_published_date');
+			const main_image_url = data.get('main_image_url');
+			const icon_url = data.get('icon_url');
+			const note = data.get('note');
+			const importance = data.get('importance');
+			const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
+			const category = JSON.parse(data.get('category') as string);
+			const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 
-		const tagIds = await prepareTags(pb, tags, owner);
-		console.log('new bookmark', {
-			author,
-			category: category?.value ? category.value : category,
-			tags: tagIds,
-			content_html,
-			content_published_date,
-			content_text,
-			content_type,
-			description,
-			domain,
-			flagged,
-			icon_url,
-			importance,
-			main_image_url,
-			note,
-			owner,
-			title,
-			url
-		});
-		const { id } = await pb
-			.collection('bookmarks')
-			.create({
+			const tagIds = await prepareTags(pb, tags, owner);
+
+			const bookmark = (await pb.collection('bookmarks').create({
 				author,
 				category: category?.value ? category.value : category,
 				tags: tagIds,
@@ -71,39 +53,34 @@ export const actions = {
 				owner,
 				title,
 				url
-			})
-			.catch((e) => {
-				console.error('Error creating bookmark', e);
-				return {
-					id: null
-				};
-			});
+			})) as Bookmark;
 
-		if (!id) {
+			if (!bookmark.id) {
+				return handlePBError(bookmark, pb, true);
+			}
+
+			if (main_image_url || icon_url) {
+				const attachments = new FormData();
+
+				if (main_image_url) {
+					const main_image = await fetch(main_image_url as string).then((r) => r.blob());
+					attachments.append('main_image', main_image);
+				}
+
+				if (icon_url) {
+					const icon = await fetch(icon_url as string).then((r) => r.blob());
+					attachments.append('icon', icon);
+				}
+
+				await pb.collection('bookmarks').update(bookmark.id, attachments);
+			}
 			return {
-				success: false
+				bookmark,
+				success: true
 			};
+		} catch (e: any) {
+			return handlePBError(e, pb, true);
 		}
-
-		if (main_image_url || icon_url) {
-			const attachments = new FormData();
-
-			if (main_image_url) {
-				const main_image = await fetch(main_image_url as string).then((r) => r.blob());
-				attachments.append('main_image', main_image);
-			}
-
-			if (icon_url) {
-				const icon = await fetch(icon_url as string).then((r) => r.blob());
-				attachments.append('icon', icon);
-			}
-
-			await pb.collection('bookmarks').update(id, attachments);
-		}
-		return {
-			id,
-			success: true
-		};
 	},
 	deleteBookmark: async ({ locals, request }) => {
 		const owner = locals.user?.id;
