@@ -1,8 +1,16 @@
+import config from '$lib/config';
 import { defaultUser, handlePBError } from '$lib/pb';
 
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
+
+export const load = async () => {
+	return {
+		signupDisabled: config.SIGNUP_DISABLED
+	};
+};
+
 export const actions: Actions = {
 	default: async ({ locals, request }) => {
 		const data = await request.formData();
