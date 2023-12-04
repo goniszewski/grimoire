@@ -2,8 +2,8 @@ import type { Bookmark } from '$lib/types/Bookmark.type';
 import _ from 'lodash';
 
 export type sortByType =
-	| 'added_asc'
-	| 'added_desc'
+	| 'created_asc'
+	| 'created_desc'
 	| 'title_asc'
 	| 'title_desc'
 	| 'created_asc'
