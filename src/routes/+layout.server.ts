@@ -5,9 +5,10 @@ import type { Tag } from '$lib/types/Tag.type';
 import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
 import type { CategoryDto } from '$lib/types/dto/Category.dto';
 import { getFileUrl } from '$lib/utils';
+import { searchIndexKeys } from '$lib/utils/search';
 
 import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
-
+import type { Bookmark } from '$lib/types/Bookmark.type';
 function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
 	return tags.map((tag) => {
 		const tagBookmarks = bookmarks.reduce((acc, bookmark) => {
@@ -64,6 +65,21 @@ export const load = (async ({ locals, url }) => {
 
 	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
 
+	const bookmarksForIndex = await locals.pb
+		.collection('bookmarks')
+		.getFullList({
+			fields: 'id,' + searchIndexKeys.join(','),
+			expand: 'tags',
+			filter: `owner.id="${locals.user!.id}"`,
+			batchSize: 100000
+		})
+		.then((res) =>
+			res.map(({ expand, ...b }) => ({
+				...expand,
+				...b
+			}))
+		);
+
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({
@@ -78,6 +94,7 @@ export const load = (async ({ locals, url }) => {
 			categories.items.map((category) => ({ ...category, ...category.expand }))
 		),
 		tags: structuredClone(tagsWithBookmarks),
+		bookmarksForIndex,
 		bookmarksCount,
 		page,
 		limit

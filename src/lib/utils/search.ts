@@ -1,10 +1,9 @@
 import config from '$lib/config';
-import { pb } from '$lib/pb';
 import Fuse from 'fuse.js';
-import path from 'path';
 
 import type { FuseIndex, IFuseOptions } from 'fuse.js';
 import type { Bookmark } from '$lib/types/Bookmark.type';
+
 const defaultOptions = {
 	includeScore: true,
 	shouldSort: true,
@@ -32,7 +31,7 @@ const defaultOptions = {
 		}
 	]
 };
-const indexKeys = defaultOptions.keys.map((key) => key.name);
+export const searchIndexKeys = defaultOptions.keys.map((key) => key.name);
 
 export const searchFactory = (
 	data: any[],
@@ -44,50 +43,31 @@ export const searchFactory = (
 	return fuse;
 };
 
-export const createSearchIndex = (data: any[], userId: string) => {
-	const createdIndex = Fuse.createIndex(indexKeys, data);
+export const createSearchIndex = (data: any[]) => {
+	const createdIndex = Fuse.createIndex(searchIndexKeys, data);
 
 	return createdIndex;
 };
 
-export const initializeSearch = async (userId: string) => {
-	let bookmarksForIndex = [] as Record<string, any>[];
-	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
+export const initializeSearch = (bookmarks: any[]) => {
+	const index = createSearchIndex(bookmarks);
 
-	if (searchIndexingDisabled) {
-		return searchFactory(bookmarksForIndex, {});
-	}
-
-	bookmarksForIndex = await pb.collection('bookmarks').getFullList({
-		fields: 'id,title,domain,description,url,tags.name',
-		expand: 'tags.name',
-		filter: `owner.id="${userId}"`,
-		batchSize: 100000
-	});
-
-	const index = createSearchIndex(bookmarksForIndex, userId);
-
-	return searchFactory(bookmarksForIndex, {}, index);
+	return searchFactory(bookmarks, {}, index);
 };
 
-export const addBookmarkToSearchIndex = async (
-	searchInstance: Fuse<any>,
-	bookmark: Bookmark,
-	_userId: string
-) => {
+export const addBookmarkToSearchIndex = async ($searchInstance: Fuse<any>, bookmark: Bookmark) => {
 	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
 
 	if (searchIndexingDisabled) {
 		return;
 	}
 
-	return searchInstance.add(bookmark);
+	return $searchInstance.add(bookmark);
 };
 
 export const removeBookmarkFromSearchIndex = async (
-	searchInstance: Fuse<any>,
-	bookmarkId: string,
-	_userId: string
+	$searchInstance: Fuse<any>,
+	bookmarkId: string
 ) => {
 	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
 
@@ -95,5 +75,5 @@ export const removeBookmarkFromSearchIndex = async (
 		return;
 	}
 
-	searchInstance.remove((b) => b.id === bookmarkId);
+	$searchInstance.remove((b) => b.id === bookmarkId);
 };

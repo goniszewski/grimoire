@@ -306,7 +306,7 @@
 										showToast.success('Bookmark deleted', {
 											position: 'bottom-center'
 										});
-										removeBookmarkFromSearchIndex($searchEngine, bookmark.id, $user.model.id);
+										removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
 										await applyAction(result);
 									}
 

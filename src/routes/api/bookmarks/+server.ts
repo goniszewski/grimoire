@@ -26,16 +26,16 @@ export async function GET({ locals, url }) {
 			.collection('bookmarks')
 			.getFullList({
 				filter: ids.map((id) => `id="${id}"`).join('||'),
-				expand: 'tags.name'
+				expand: 'category,tags'
 			})
-			.then((res) =>
-				res.map((bookmark) => ({
+			.then((res) => {
+				return res.map(({ expand, ...bookmark }) => ({
 					...bookmark,
 					icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
 					main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
-					...bookmark.expand
-				}))
-			);
+					...(expand || {})
+				}));
+			});
 
 		return json(
 			{ bookmarks },

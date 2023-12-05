@@ -199,7 +199,7 @@
 		return async ({ update, result }) => {
 			if (result.type === 'success' && result?.data?.bookmark) {
 				// @ts-ignore-next-line
-				addBookmarkToSearchIndex($searchEngine, result.data.bookmark, $user.model.id);
+				addBookmarkToSearchIndex($searchEngine, result.data.bookmark);
 
 				metadata = { ...defaultFormValues };
 				bookmarkTagsInput.set(null);
