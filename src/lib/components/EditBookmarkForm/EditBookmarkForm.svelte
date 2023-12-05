@@ -8,6 +8,8 @@
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { showToast } from '$lib/utils/show-toast';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import { updateBookmarkInSearchIndex } from '$lib/utils/search';
+	import { searchEngine } from '$lib/stores/search.store';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
@@ -137,6 +139,12 @@
 					showToast.success('Bookmark updated', {
 						position: 'bottom-center'
 					});
+
+					updateBookmarkInSearchIndex(
+						$searchEngine,
+						// @ts-ignore-next-line
+						result?.data?.bookmark
+					);
 				}
 
 				if (result.type === 'error') {

@@ -11,14 +11,16 @@
 		IconSortDescending
 	} from '@tabler/icons-svelte';
 	import Select from 'svelte-select';
-	import { sortBookmarks, type sortByType } from '$lib/utils/sort-bookmarks';
+	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import { user } from '$lib/pb';
-	import { searchedValue } from '$lib/stores/search.store';
-	import { searchFactory } from '$lib/utils/search';
+	import { searchEngine, searchedValue } from '$lib/stores/search.store';
+	import { initializeSearch, searchFactory } from '$lib/utils/search';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import { applyAction, enhance } from '$app/forms';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
+	import { writable } from 'svelte/store';
+	import _ from 'lodash';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -31,7 +33,7 @@
 
 	export let bookmarks: Bookmark[] = [];
 
-	const searchEngine = searchFactory($page.data.bookmarks);
+	$searchEngine = initializeSearch($page.data.bookmarksForIndex);
 
 	function filterBookmarks(bookmarks: Bookmark[], settings: UserSettings) {
 		return bookmarks.filter((b) => {
@@ -45,12 +47,27 @@
 		});
 	}
 
-	$: {
-		const searchedBookmarks = $searchedValue
-			? searchEngine.search($searchedValue).map((b) => b.item)
-			: $page.data.bookmarks;
-		const sortedBookmarks = sortBookmarks(searchedBookmarks, $userSettingsStore.bookmarksSortedBy);
+	const bookmarksToDisplay = writable<Bookmark[]>($page.data.bookmarks);
 
+	$: {
+		if ($searchedValue.trim()) {
+			const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
+			_.throttle(() => {
+				fetch(`/api/bookmarks?ids=${JSON.stringify(searchedBookmarksIds)}`)
+					.then((r) => r.json())
+					.then((r) => {
+						$bookmarksToDisplay = r.bookmarks;
+					});
+			}, 250)();
+		} else {
+			$bookmarksToDisplay = $page.data.bookmarks;
+		}
+	}
+	$: {
+		const sortedBookmarks = sortBookmarks(
+			$bookmarksToDisplay,
+			$userSettingsStore.bookmarksSortedBy
+		);
 		bookmarks = filterBookmarks(sortedBookmarks, $userSettingsStore);
 	}
 

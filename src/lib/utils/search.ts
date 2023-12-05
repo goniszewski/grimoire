@@ -1,5 +1,8 @@
 import Fuse from 'fuse.js';
 
+import type { FuseIndex, IFuseOptions } from 'fuse.js';
+import type { Bookmark } from '$lib/types/Bookmark.type';
+
 const defaultOptions = {
 	includeScore: true,
 	shouldSort: true,
@@ -27,9 +30,35 @@ const defaultOptions = {
 		}
 	]
 };
+export const searchIndexKeys = defaultOptions.keys.map((key) => key.name);
 
-export const searchFactory = (data: any[], options: Fuse.IFuseOptions<any> = {}) => {
-	const fuse = new Fuse(data, { ...defaultOptions, ...options });
+export const searchFactory = (
+	data: any[],
+	options: IFuseOptions<any> = {},
+	index?: FuseIndex<any>
+) => new Fuse(data, { ...defaultOptions, ...options }, index);
 
-	return fuse;
+export const createSearchIndex = (data: any[]) => Fuse.createIndex(searchIndexKeys, data);
+
+export const initializeSearch = (bookmarks: any[]) => {
+	const index = createSearchIndex(bookmarks);
+
+	return searchFactory(bookmarks, {}, index);
+};
+
+export const addBookmarkToSearchIndex = async ($searchInstance: Fuse<any>, bookmark: Bookmark) =>
+	$searchInstance.add(bookmark);
+
+export const removeBookmarkFromSearchIndex = async (
+	$searchInstance: Fuse<any>,
+	bookmarkId: string
+) => $searchInstance.remove((b) => b.id === bookmarkId);
+
+export const updateBookmarkInSearchIndex = async (
+	$searchInstance: Fuse<any>,
+	bookmark: Bookmark
+) => {
+	removeBookmarkFromSearchIndex($searchInstance, bookmark.id);
+
+	return addBookmarkToSearchIndex($searchInstance, bookmark);
 };

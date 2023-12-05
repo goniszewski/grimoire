@@ -11,6 +11,7 @@ declare global {
 			categories: import('$lib/types/Category.type').Category[];
 			bookmarks: import('$lib/types/Bookmark.type').Bookmark[];
 			tags: import('$lib/types/dto/Tag.dto').TagWithBookmarks[];
+			bookmarksForIndex: import('$lib/types/Bookmark.type').Bookmark[];
 			bookmarksCount: number;
 			page: number;
 			limit: number;

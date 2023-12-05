@@ -11,6 +11,8 @@
 	import { validateUrlRegex } from '$lib/utils/regex-library';
 	import { user } from '$lib/pb';
 	import { IconInfoCircle } from '@tabler/icons-svelte';
+	import { searchEngine } from '$lib/stores/search.store';
+	import { addBookmarkToSearchIndex } from '$lib/utils/search';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -195,12 +197,16 @@
 			formData.set('category', defaultCategory?.id);
 		}
 		return async ({ update, result }) => {
-			console.log({ result });
-			metadata = { ...defaultFormValues };
-			bookmarkTagsInput.set(null);
+			if (result.type === 'success' && result?.data?.bookmark) {
+				// @ts-ignore-next-line
+				addBookmarkToSearchIndex($searchEngine, result.data.bookmark);
 
-			update();
-			closeModal();
+				metadata = { ...defaultFormValues };
+				bookmarkTagsInput.set(null);
+
+				update();
+				closeModal();
+			}
 		};
 	}}
 >
