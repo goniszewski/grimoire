@@ -20,4 +20,3 @@ package
 pb_data
 pb_migrations
 coverage
-indexes/**
