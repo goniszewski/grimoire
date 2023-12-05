@@ -113,6 +113,7 @@ export const actions = {
 		}
 
 		const data = await request.formData();
+		let bookmark: Bookmark;
 
 		const id = data.get('id') as string;
 		const url = data.get('url');
@@ -134,25 +135,37 @@ export const actions = {
 
 		const tagIds = await prepareTags(pb, tags, owner);
 
-		await pb.collection('bookmarks').update(id, {
-			author,
-			category: category?.value ? category.value : category,
-			tags: tagIds,
-			content_html,
-			content_published_date,
-			content_text,
-			content_type,
-			description,
-			domain,
-			flagged,
-			icon_url,
-			importance,
-			main_image_url,
-			note,
-			owner,
-			title,
-			url
-		});
+		bookmark = (await pb
+			.collection('bookmarks')
+			.update(
+				id,
+				{
+					author,
+					category: category?.value ? category.value : category,
+					tags: tagIds,
+					content_html,
+					content_published_date,
+					content_text,
+					content_type,
+					description,
+					domain,
+					flagged,
+					icon_url,
+					importance,
+					main_image_url,
+					note,
+					owner,
+					title,
+					url
+				},
+				{
+					expand: 'tags,category'
+				}
+			)
+			.then((res) => ({
+				...res,
+				...res.expand
+			}))) as Bookmark;
 
 		if (main_image_url || icon_url) {
 			const attachments = new FormData();
@@ -167,10 +180,18 @@ export const actions = {
 				attachments.append('icon', icon);
 			}
 
-			await pb.collection('bookmarks').update(id, attachments);
+			bookmark = (await pb
+				.collection('bookmarks')
+				.update(id, attachments, {
+					expand: 'tags,category'
+				})
+				.then((res) => ({
+					...res,
+					...res.expand
+				}))) as Bookmark;
 		}
 		return {
-			id,
+			bookmark,
 			success: true
 		};
 	},

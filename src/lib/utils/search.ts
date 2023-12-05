@@ -1,4 +1,3 @@
-import config from '$lib/config';
 import Fuse from 'fuse.js';
 
 import type { FuseIndex, IFuseOptions } from 'fuse.js';
@@ -37,17 +36,9 @@ export const searchFactory = (
 	data: any[],
 	options: IFuseOptions<any> = {},
 	index?: FuseIndex<any>
-) => {
-	const fuse = new Fuse(data, { ...defaultOptions, ...options }, index);
+) => new Fuse(data, { ...defaultOptions, ...options }, index);
 
-	return fuse;
-};
-
-export const createSearchIndex = (data: any[]) => {
-	const createdIndex = Fuse.createIndex(searchIndexKeys, data);
-
-	return createdIndex;
-};
+export const createSearchIndex = (data: any[]) => Fuse.createIndex(searchIndexKeys, data);
 
 export const initializeSearch = (bookmarks: any[]) => {
 	const index = createSearchIndex(bookmarks);
@@ -55,25 +46,19 @@ export const initializeSearch = (bookmarks: any[]) => {
 	return searchFactory(bookmarks, {}, index);
 };
 
-export const addBookmarkToSearchIndex = async ($searchInstance: Fuse<any>, bookmark: Bookmark) => {
-	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
-
-	if (searchIndexingDisabled) {
-		return;
-	}
-
-	return $searchInstance.add(bookmark);
-};
+export const addBookmarkToSearchIndex = async ($searchInstance: Fuse<any>, bookmark: Bookmark) =>
+	$searchInstance.add(bookmark);
 
 export const removeBookmarkFromSearchIndex = async (
 	$searchInstance: Fuse<any>,
 	bookmarkId: string
+) => $searchInstance.remove((b) => b.id === bookmarkId);
+
+export const updateBookmarkInSearchIndex = async (
+	$searchInstance: Fuse<any>,
+	bookmark: Bookmark
 ) => {
-	const searchIndexingDisabled = config.SEARCH_INDEXING_DISABLED;
+	removeBookmarkFromSearchIndex($searchInstance, bookmark.id);
 
-	if (searchIndexingDisabled) {
-		return;
-	}
-
-	$searchInstance.remove((b) => b.id === bookmarkId);
+	return addBookmarkToSearchIndex($searchInstance, bookmark);
 };
