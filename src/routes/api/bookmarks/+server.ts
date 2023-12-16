@@ -1,5 +1,6 @@
 import { pb } from '$lib/pb.js';
 import { getFileUrl, prepareTags } from '$lib/utils';
+import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
@@ -75,7 +76,37 @@ export async function POST({ locals, request }) {
 
 	const requestBody = await request.json();
 
-	// TODO: validate request body
+	const validationSchema = joi.object({
+		url: joi.string().uri().required(),
+		title: joi.string().required(),
+		description: joi.string().allow('').optional(),
+		author: joi.string().allow('').optional(),
+		content_text: joi.string().allow('').optional(),
+		content_html: joi.string().allow('').optional(),
+		content_type: joi.string().allow('').optional(),
+		content_published_date: joi.date().allow(null).optional(),
+		note: joi.string().allow('').optional(),
+		main_image: joi.string().allow('').optional(),
+		icon: joi.string().allow('').optional(),
+		importance: joi.number().min(0).max(3).optional(),
+		flagged: joi.boolean().optional(),
+		category: joi.string().required(),
+		tags: joi.array().items(joi.string()).optional()
+	});
+
+	const { error } = validationSchema.validate(requestBody);
+
+	if (error) {
+		return json(
+			{
+				success: false,
+				error: error.message
+			},
+			{
+				status: 400
+			}
+		);
+	}
 
 	try {
 		const tags = requestBody.tags || [];
@@ -166,7 +197,37 @@ export async function PATCH({ locals, request }) {
 
 	const { id, ...updatedFields } = requestBody;
 
-	// TODO: validate updated fields
+	const validationSchema = joi.object({
+		url: joi.string().uri().optional(),
+		title: joi.string().optional(),
+		description: joi.string().allow('').optional(),
+		author: joi.string().allow('').optional(),
+		content_text: joi.string().allow('').optional(),
+		content_html: joi.string().allow('').optional(),
+		content_type: joi.string().allow('').optional(),
+		content_published_date: joi.date().optional(),
+		note: joi.string().allow('').optional(),
+		main_image: joi.string().allow('').optional(),
+		icon: joi.string().allow('').optional(),
+		importance: joi.number().min(0).max(3).optional(),
+		flagged: joi.boolean().optional(),
+		category: joi.string().optional(),
+		tags: joi.array().items(joi.string()).optional()
+	});
+
+	const { error } = validationSchema.validate(requestBody);
+
+	if (error) {
+		return json(
+			{
+				success: false,
+				error: error.message
+			},
+			{
+				status: 400
+			}
+		);
+	}
 
 	try {
 		const currentBookmark = await pb.collection('bookmarks').getOne(id);
