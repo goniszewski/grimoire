@@ -266,7 +266,7 @@
 			<div class="card-actions justify-end px-2 font-medium tracking-tight gap-1">
 				<span class="font-sans font-semibold text-xs">#</span>
 				{#if bookmark.tags}
-					{#each bookmark.tags as tag}
+					{#each bookmark.tags as tag (tag.id)}
 						<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
 					{/each}
 				{/if}

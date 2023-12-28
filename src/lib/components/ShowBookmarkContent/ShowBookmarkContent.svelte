@@ -63,7 +63,7 @@
 							<h3 class="text-xl">Tags</h3>
 							<div class="flex flex-wrap gap-2 m-1">
 								{#if $bookmark.tags?.length}
-									{#each $bookmark.tags as tag}
+									{#each $bookmark.tags as tag (tag.id)}
 										<span class="badge badge-outline badge-sm whitespace-nowrap">{tag.name}</span>
 									{/each}
 								{:else}
