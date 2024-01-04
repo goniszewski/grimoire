@@ -67,7 +67,7 @@
 									</thead>
 									<!-- body -->
 									<tbody>
-										{#each data.adminData.users as user}
+										{#each data.adminData.users as user (user.id)}
 											<tr>
 												<td>{user.id}</td>
 												<td>{user.name}</td>

@@ -82,7 +82,7 @@
 				<h2 class="card-title">Latest bookmarks</h2>
 				{#if $page.data.bookmarks.length > 0}
 					<div class="flex flex-col w-full columns-sm gap-2">
-						{#each $page.data.bookmarks.slice(0, 3) as bookmark}
+						{#each $page.data.bookmarks.slice(0, 3) as bookmark (bookmark.id)}
 							<a
 								href={bookmark.url}
 								title={bookmark.url}

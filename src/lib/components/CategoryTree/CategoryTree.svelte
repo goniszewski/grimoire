@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { editCategoryStore } from '$lib/stores/edit-category.store';
 	import Icon from '$lib/components/Icon/Icon.svelte';
-	import type { Category } from '$lib/interfaces/Category.interface';
+	import type { Category } from '$lib/types/Category.type';
 
 	export let categories: (Category & { children?: Category[] })[] | [] = [];
 </script>
 
-{#each categories as category}
+{#each categories as category (category.id)}
 	<div class="flex flex-col">
 		<div class="flex items-center">
 			{#if !category.icon}
@@ -23,7 +22,7 @@
 		</div>
 
 		{#if category.children}
-			{#each category.children as categoryChild}
+			{#each category.children as categoryChild (categoryChild.id)}
 				<div class="flex items-center ml-4">
 					{#if !categoryChild.icon}
 						<div

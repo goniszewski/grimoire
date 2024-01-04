@@ -155,7 +155,7 @@
 							<div>
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
-									{#each $page.data.tags as tag}
+									{#each $page.data.tags as tag (tag.id)}
 										{#if tag.bookmarks.length > 0}
 											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
 												>#{tag.name}</a
