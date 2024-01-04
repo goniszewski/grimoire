@@ -1,10 +1,11 @@
 import PocketBase, { BaseAuthStore, ClientResponseError } from 'pocketbase';
 import { writable } from 'svelte/store';
 
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, json } from '@sveltejs/kit';
 
 import config from './config';
 
+import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
 export const pb = new PocketBase(config.POCKETBASE_URL);
@@ -109,4 +110,72 @@ export async function handlePBError(e: any, pb: PocketBase, form?: boolean) {
 		default:
 			throw error(e.status, e.message);
 	}
+}
+
+export type authenticateUserApiRequestResponse = {
+	owner: string;
+	disabled: boolean | null;
+	userRecord: RecordModel | null;
+	error: Response | null;
+};
+
+export async function authenticateUserApiRequest(
+	pb: PocketBase,
+	request: Request
+): Promise<authenticateUserApiRequestResponse> {
+	const authKey = request.headers.get('Authorization') ?? '';
+
+	const response: authenticateUserApiRequestResponse = {
+		owner: '',
+		disabled: null,
+		userRecord: null,
+		error: null
+	};
+
+	try {
+		const [login, password] = atob(authKey.split(' ')[1]).split(':');
+
+		const user = await pb
+			.collection('users')
+			.authWithPassword(login, password)
+			.then((user) => user.record);
+
+		response.owner = user.id;
+		response.disabled = !!user.disabled;
+		response.userRecord = user;
+	} catch (error: any) {
+		response.error = json(
+			{
+				success: false,
+				error: `Problem with authorization token: ${error?.message}`
+			},
+			{
+				status: 401
+			}
+		);
+	}
+
+	if (!response.owner) {
+		response.error = json(
+			{
+				success: false,
+				error: 'Unauthorized'
+			},
+			{
+				status: 401
+			}
+		);
+	} else if (response.disabled) {
+		response.error = json(
+			{
+				success: false,
+				error: 'User disabled'
+			},
+			{
+				status: 401
+			}
+		);
+	}
+
+	return response;
 }

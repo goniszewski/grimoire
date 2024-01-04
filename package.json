@@ -61,6 +61,7 @@
 		"daisyui": "^3.9.4",
 		"fuse.js": "^7.0.0",
 		"html-to-text": "^9.0.5",
+		"joi": "^17.11.0",
 		"lodash": "^4.17.21",
 		"metascraper": "^5.37.1",
 		"metascraper-author": "^5.37.1",
