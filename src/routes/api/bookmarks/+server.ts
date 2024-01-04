@@ -1,4 +1,4 @@
-import { pb } from '$lib/pb.js';
+import { authenticateUserApiRequest } from '$lib/pb';
 import { getFileUrl, prepareTags } from '$lib/utils';
 import joi from 'joi';
 
@@ -6,29 +6,23 @@ import { json } from '@sveltejs/kit';
 
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
 
-export async function GET({ locals, url }) {
-	const owner = locals.user?.id;
+export async function GET({ locals, url, request }) {
+	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (error) {
+		return error;
 	}
 
 	const { searchParams } = url;
 	const ids = JSON.parse(searchParams.get('ids') || '[]') as string[];
 
 	try {
-		const bookmarks = await pb
+		const bookmarks = await locals.pb
 			.collection('bookmarks')
 			.getFullList({
-				filter: ids.map((id) => `id="${id}"`).join('||'),
+				filter: `owner="${owner}" ${ids.length ? '&&' : ''} ${ids
+					.map((id) => `id="${id}"`)
+					.join('||')}`,
 				expand: 'category,tags'
 			})
 			.then((res) => {
@@ -60,18 +54,10 @@ export async function GET({ locals, url }) {
 }
 
 export async function POST({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
 	const requestBody = await request.json();
@@ -110,9 +96,9 @@ export async function POST({ locals, request }) {
 
 	try {
 		const tags = requestBody.tags || [];
-		const tagIds = await prepareTags(pb, tags, owner);
+		const tagIds = await prepareTags(locals.pb, tags, owner);
 
-		const bookmark = (await pb.collection('bookmarks').create({
+		const bookmark = (await locals.pb.collection('bookmarks').create({
 			owner,
 			content_html: requestBody.content_html,
 			content_published_date: requestBody.content_published_date,
@@ -156,7 +142,7 @@ export async function POST({ locals, request }) {
 				attachments.append('icon', icon);
 			}
 
-			await pb.collection('bookmarks').update(bookmark.id, attachments);
+			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
 		}
 
 		return json(
@@ -179,25 +165,16 @@ export async function POST({ locals, request }) {
 }
 
 export async function PATCH({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
 	const requestBody = await request.json();
 
-	const { id, ...updatedFields } = requestBody;
-
 	const validationSchema = joi.object({
+		id: joi.string().required(),
 		url: joi.string().uri().optional(),
 		title: joi.string().optional(),
 		description: joi.string().allow('').optional(),
@@ -229,10 +206,12 @@ export async function PATCH({ locals, request }) {
 		);
 	}
 
-	try {
-		const currentBookmark = await pb.collection('bookmarks').getOne(id);
+	const { id, ...updatedFields } = requestBody;
 
-		if (!currentBookmark) {
+	try {
+		const currentBookmark = await locals.pb.collection('bookmarks').getOne(id);
+
+		if (!currentBookmark || currentBookmark.owner !== owner) {
 			return json(
 				{
 					success: false,
@@ -246,13 +225,19 @@ export async function PATCH({ locals, request }) {
 
 		const tags = requestBody.tags || [];
 
-		const tagIds = await prepareTags(pb, tags, owner);
+		const tagIds = await prepareTags(locals.pb, tags, owner);
 
-		const bookmark = (await pb.collection('bookmarks').update(id, {
-			...updatedFields,
-			tags: tagIds,
-			flagged: requestBody.flagged ? new Date().toISOString() : null
-		})) as Bookmark;
+		const bookmark = (await locals.pb.collection('bookmarks').update(
+			id,
+			{
+				...updatedFields,
+				tags: tagIds,
+				flagged: requestBody.flagged ? new Date().toISOString() : null
+			},
+			{
+				filter: `owner="${owner}"`
+			}
+		)) as Bookmark;
 
 		if (!bookmark.id) {
 			return json(
@@ -279,7 +264,7 @@ export async function PATCH({ locals, request }) {
 				attachments.append('icon', icon);
 			}
 
-			await pb.collection('bookmarks').update(bookmark.id, attachments);
+			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
 		}
 
 		return json(
@@ -302,24 +287,33 @@ export async function PATCH({ locals, request }) {
 }
 
 export async function DELETE({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
-	const { id } = await request.json();
-
 	try {
-		const result = await pb.collection('bookmarks').delete(id);
+		const { id } = await request.json();
+		const currentBookmark = await locals.pb.collection('bookmarks').getOne(id);
+
+		if (!currentBookmark || currentBookmark.owner !== owner) {
+			return json(
+				{
+					success: false,
+					error: 'Bookmark not found'
+				},
+				{
+					status: 404
+				}
+			);
+		}
+
+		const result = await locals.pb.collection('bookmarks').delete(id, {
+			query: {
+				owner
+			}
+		});
 
 		return json(
 			{ result },

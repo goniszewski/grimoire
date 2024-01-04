@@ -1,4 +1,4 @@
-import { pb } from '$lib/pb.js';
+import { authenticateUserApiRequest, pb } from '$lib/pb.js';
 import { createSlug } from '$lib/utils';
 import joi from 'joi';
 
@@ -8,19 +8,11 @@ import type { Category } from '$lib/types/Category.type';
 
 const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i;
 
-export async function GET({ locals }) {
-	const owner = locals.user?.id;
+export async function GET({ locals, request }) {
+	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (error) {
+		return error;
 	}
 
 	try {
@@ -48,18 +40,10 @@ export async function GET({ locals }) {
 }
 
 export async function POST({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
 	const requestBody = await request.json();
@@ -131,23 +115,16 @@ export async function POST({ locals, request }) {
 }
 
 export async function PATCH({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
-	const { id, ...updatedFields } = await request.json();
+	const requestBody = await request.json();
 
 	const validationSchema = joi.object({
+		id: joi.string().required(),
 		name: joi.string().optional(),
 		icon: joi.string().allow(null).optional(),
 		description: joi.string().allow('').optional(),
@@ -157,7 +134,7 @@ export async function PATCH({ locals, request }) {
 		archived: joi.boolean().optional()
 	});
 
-	const { error } = validationSchema.validate(updatedFields);
+	const { error } = validationSchema.validate(requestBody);
 
 	if (error) {
 		return json(
@@ -170,6 +147,8 @@ export async function PATCH({ locals, request }) {
 			}
 		);
 	}
+
+	const { id, ...updatedFields } = requestBody;
 
 	if (updatedFields.name) {
 		updatedFields.slug = createSlug(updatedFields.name);
@@ -184,6 +163,20 @@ export async function PATCH({ locals, request }) {
 	}
 
 	try {
+		const currentCategory = await pb.collection('categories').getOne(id);
+
+		if (!currentCategory || currentCategory.owner !== owner) {
+			return json(
+				{
+					success: false,
+					error: 'Category not found'
+				},
+				{
+					status: 404
+				}
+			);
+		}
+
 		const category = (await pb.collection('categories').update(id, updatedFields)) as Category;
 
 		if (!category.id) {

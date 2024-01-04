@@ -1,4 +1,4 @@
-import { pb } from '$lib/pb.js';
+import { authenticateUserApiRequest, pb } from '$lib/pb';
 import { createSlug } from '$lib/utils';
 import joi from 'joi';
 
@@ -6,19 +6,11 @@ import { json } from '@sveltejs/kit';
 
 import type { Tag } from '$lib/types/Tag.type';
 
-export async function GET({ locals }) {
-	const owner = locals.user?.id;
+export async function GET({ locals, request }) {
+	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (error) {
+		return error;
 	}
 
 	try {
@@ -46,18 +38,10 @@ export async function GET({ locals }) {
 }
 
 export async function POST({ locals, request }) {
-	const owner = locals.user?.id;
+	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
-	if (!owner) {
-		return json(
-			{
-				success: false,
-				error: 'Unauthorized'
-			},
-			{
-				status: 401
-			}
-		);
+	if (authError) {
+		return authError;
 	}
 
 	const requestBody = await request.json();
