@@ -4,6 +4,7 @@
 
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import * as env from '$env/static/public';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { user } from '$lib/pb';
 	import { searchEngine, searchedValue } from '$lib/stores/search.store';
@@ -21,7 +22,6 @@
 	import _ from 'lodash';
 	import Select from 'svelte-select';
 	import { writable } from 'svelte/store';
-	import { PUBLIC_SIGNUP_DISABLED } from '$env/static/public';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -186,7 +186,7 @@
 		<h1 class="text-2xl">Initialization Wizard 🧙</h1>
 		<div class="max-w-2xl flex flex-col text-center my-4 gap-2">
 			<p class="text-lg">Looks like you're about to start using Grimoire for the first time!</p>
-			{#if PUBLIC_SIGNUP_DISABLED === 'true'}
+			{#if env?.PUBLIC_SIGNUP_DISABLED === 'true'}
 				<p class="text-lg">
 					Please enable public signup in your <code>.env</code> file and
 					<strong><a href="/signup" class="link">create your first User</a></strong> to start using Grimoire.
