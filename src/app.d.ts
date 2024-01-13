@@ -13,6 +13,7 @@ declare global {
 			tags: import('$lib/types/dto/Tag.dto').TagWithBookmarks[];
 			bookmarksForIndex: import('$lib/types/Bookmark.type').Bookmark[];
 			bookmarksCount: number;
+			noUsersFound: boolean;
 			page: number;
 			limit: number;
 		}

@@ -2,25 +2,26 @@
 	import AddBookmarkButton from '$lib/components/AddBookmarkButton/AddBookmarkButton.svelte';
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 
+	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import Pagination from '$lib/components/Pagination/Pagination.svelte';
+	import { user } from '$lib/pb';
+	import { searchEngine, searchedValue } from '$lib/stores/search.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import type { UserSettings } from '$lib/types/UserSettings.type';
+	import { initializeSearch } from '$lib/utils/search';
+	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import {
 		IconLayout2,
 		IconListDetails,
 		IconSortAscending,
 		IconSortDescending
 	} from '@tabler/icons-svelte';
-	import Select from 'svelte-select';
-	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
-	import { user } from '$lib/pb';
-	import { searchEngine, searchedValue } from '$lib/stores/search.store';
-	import { initializeSearch, searchFactory } from '$lib/utils/search';
-	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import { applyAction, enhance } from '$app/forms';
-	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { writable } from 'svelte/store';
 	import _ from 'lodash';
+	import Select from 'svelte-select';
+	import { writable } from 'svelte/store';
+	import { PUBLIC_SIGNUP_DISABLED } from '$env/static/public';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -180,6 +181,31 @@
 		items={$page.data.bookmarksCount}
 		position="right"
 	/>
+{:else if $page.data.noUsersFound}
+	<div class="flex flex-col items-center justify-center h-full">
+		<h1 class="text-2xl">Initialization Wizard 🧙</h1>
+		<div class="max-w-2xl flex flex-col text-center my-4 gap-2">
+			<p class="text-lg">Looks like you're about to start using Grimoire for the first time!</p>
+			{#if PUBLIC_SIGNUP_DISABLED === 'true'}
+				<p class="text-lg">
+					Please enable public signup in your <code>.env</code> file and
+					<strong><a href="/signup" class="link">create your first User</a></strong> to start using Grimoire.
+				</p>
+			{:else}
+				<p class="text-lg">
+					Please <strong><a href="/signup" class="link">create your first User</a></strong> or check
+					out the
+					<strong><a href="/admin/login" class="link">Admin Panel</a></strong> (use the credentials
+					you set in your
+					<code>.env</code> file).
+				</p>
+			{/if}
+			<p class="mt-4">
+				To learn about differences between Admin and User accounts, please check out
+				<a href="https://grimoire.pro/docs/admins-vs-users" class="link">this page</a>.
+			</p>
+		</div>
+	</div>
 {:else}
 	<div class="flex flex-col items-center justify-center h-full">
 		<h1 class="text-2xl">Grimoire welcomes!</h1>
