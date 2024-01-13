@@ -8,7 +8,7 @@ import { getFileUrl } from '$lib/utils';
 import { searchIndexKeys } from '$lib/utils/search';
 
 import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
-import type { Bookmark } from '$lib/types/Bookmark.type';
+
 function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
 	return tags.map((tag) => {
 		const tagBookmarks = bookmarks.reduce((acc, bookmark) => {
@@ -26,11 +26,19 @@ function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookm
 }
 
 export const load = (async ({ locals, url }) => {
+	const noUsersFound = await locals.pb
+		.collection('users')
+		.getList(1, 1, {
+			count: true
+		})
+		.then((res) => res.totalItems === 0);
+
 	if (!locals.user) {
 		return {
 			bookmarks: [] as BookmarkDto[],
 			categories: [] as Category[],
 			tags: [] as TagWithBookmarks[],
+			noUsersFound,
 			status: 401
 		};
 	}
