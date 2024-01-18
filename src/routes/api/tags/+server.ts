@@ -78,7 +78,7 @@ export async function POST({ locals, request }) {
 					error: 'Tag creation failed'
 				},
 				{
-					status: 400
+					status: 500
 				}
 			);
 		}
@@ -86,7 +86,7 @@ export async function POST({ locals, request }) {
 		return json(
 			{ tag },
 			{
-				status: 200
+				status: 201
 			}
 		);
 	} catch (error: any) {
