@@ -7,7 +7,7 @@
 	},
 	"servers": [
 		{
-			"url": "http://localhost:5137/api",
+			"url": "http://localhost:5173/api",
 			"description": "Local instance"
 		},
 		{
@@ -20,7 +20,7 @@
 					"enum": ["http", "https"]
 				},
 				"host": {
-					"default": "localhost:5137",
+					"default": "localhost:5173",
 					"description": "Host"
 				}
 			}
@@ -66,6 +66,7 @@
 					{
 						"in": "query",
 						"name": "ids",
+						"optional": true,
 						"schema": {
 							"type": "string",
 							"examples": ["id1,id2,id3"]
@@ -225,7 +226,7 @@
 				}
 			}
 		},
-		"categories": {
+		"/categories": {
 			"get": {
 				"summary": "Retrieve all User categories",
 				"parameters": [],
@@ -319,7 +320,7 @@
 				}
 			}
 		},
-		"tags": {
+		"/tags": {
 			"get": {
 				"summary": "Retrieve all User tags",
 				"parameters": [],
