@@ -6,6 +6,31 @@ import { json } from '@sveltejs/kit';
 
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
 
+type AddBookmarkRequestBody = {
+	url: string;
+	title: string;
+	description?: string;
+	author?: string;
+	content_text?: string;
+	content_html?: string;
+	content_type?: string;
+	content_published_date?: Date | null;
+	note?: string;
+	main_image_url?: string;
+	icon_url?: string;
+	importance?: number;
+	flagged?: boolean;
+	category: string;
+	tags?: {
+		label: string;
+		value: string;
+	}[];
+};
+
+type UpdateBookmarkRequestBody = AddBookmarkRequestBody & {
+	id: string;
+};
+
 export async function GET({ locals, url, request }) {
 	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
 
@@ -60,9 +85,9 @@ export async function POST({ locals, request }) {
 		return authError;
 	}
 
-	const requestBody = await request.json();
+	const requestBody: AddBookmarkRequestBody = await request.json();
 
-	const validationSchema = joi.object({
+	const validationSchema = joi.object<AddBookmarkRequestBody>({
 		url: joi.string().uri().required(),
 		title: joi.string().required(),
 		description: joi.string().allow('').optional(),
@@ -72,12 +97,20 @@ export async function POST({ locals, request }) {
 		content_type: joi.string().allow('').optional(),
 		content_published_date: joi.date().allow(null).optional(),
 		note: joi.string().allow('').optional(),
-		main_image: joi.string().allow('').optional(),
-		icon: joi.string().allow('').optional(),
+		main_image_url: joi.string().allow('').optional(),
+		icon_url: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().required(),
-		tags: joi.array().items(joi.string()).optional()
+		tags: joi
+			.array()
+			.items(
+				joi.object({
+					label: joi.string().required(),
+					value: joi.string().required()
+				})
+			)
+			.optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -105,7 +138,7 @@ export async function POST({ locals, request }) {
 			content_text: requestBody.content_text,
 			content_type: requestBody.content_type,
 			description: requestBody.description,
-			domain: requestBody.domain,
+			domain: new URL(requestBody.url).hostname,
 			icon_url: requestBody.icon_url,
 			importance: requestBody.importance,
 			main_image_url: requestBody.main_image_url,
@@ -148,7 +181,7 @@ export async function POST({ locals, request }) {
 		return json(
 			{ bookmark },
 			{
-				status: 200
+				status: 201
 			}
 		);
 	} catch (error: any) {
@@ -171,9 +204,9 @@ export async function PATCH({ locals, request }) {
 		return authError;
 	}
 
-	const requestBody = await request.json();
+	const requestBody: UpdateBookmarkRequestBody = await request.json();
 
-	const validationSchema = joi.object({
+	const validationSchema = joi.object<UpdateBookmarkRequestBody>({
 		id: joi.string().required(),
 		url: joi.string().uri().optional(),
 		title: joi.string().optional(),
@@ -184,12 +217,20 @@ export async function PATCH({ locals, request }) {
 		content_type: joi.string().allow('').optional(),
 		content_published_date: joi.date().optional(),
 		note: joi.string().allow('').optional(),
-		main_image: joi.string().allow('').optional(),
-		icon: joi.string().allow('').optional(),
+		main_image_url: joi.string().allow('').optional(),
+		icon_url: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().optional(),
-		tags: joi.array().items(joi.string()).optional()
+		tags: joi
+			.array()
+			.items(
+				joi.object({
+					label: joi.string().required(),
+					value: joi.string().required()
+				})
+			)
+			.optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -224,7 +265,6 @@ export async function PATCH({ locals, request }) {
 		}
 
 		const tags = requestBody.tags || [];
-
 		const tagIds = await prepareTags(locals.pb, tags, owner);
 
 		const bookmark = (await locals.pb.collection('bookmarks').update(
@@ -286,7 +326,7 @@ export async function PATCH({ locals, request }) {
 	}
 }
 
-export async function DELETE({ locals, request }) {
+export async function DELETE({ locals, request, url }) {
 	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 
 	if (authError) {
@@ -294,7 +334,20 @@ export async function DELETE({ locals, request }) {
 	}
 
 	try {
-		const { id } = await request.json();
+		const id = url.searchParams.get('id') || '';
+
+		if (!id) {
+			return json(
+				{
+					success: false,
+					error: 'Bookmark ID is required'
+				},
+				{
+					status: 400
+				}
+			);
+		}
+
 		const currentBookmark = await locals.pb.collection('bookmarks').getOne(id);
 
 		if (!currentBookmark || currentBookmark.owner !== owner) {
@@ -309,14 +362,14 @@ export async function DELETE({ locals, request }) {
 			);
 		}
 
-		const result = await locals.pb.collection('bookmarks').delete(id, {
+		const success = await locals.pb.collection('bookmarks').delete(id, {
 			query: {
 				owner
 			}
 		});
 
 		return json(
-			{ result },
+			{ success },
 			{
 				status: 200
 			}

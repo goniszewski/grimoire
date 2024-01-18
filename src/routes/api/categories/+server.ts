@@ -98,7 +98,7 @@ export async function POST({ locals, request }) {
 		return json(
 			{ category },
 			{
-				status: 200
+				status: 201
 			}
 		);
 	} catch (error: any) {
@@ -186,7 +186,7 @@ export async function PATCH({ locals, request }) {
 					error: 'Category update failed'
 				},
 				{
-					status: 400
+					status: 500
 				}
 			);
 		}

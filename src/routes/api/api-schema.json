@@ -1,0 +1,1014 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Grimoire Integration API",
+		"version": "0.2.0",
+		"description": "To authorize, use your user's credentials to create valid authorization header.\n\n Add `[USERNAME OR EMAIL]:[PASSWORD]` and [base64 encode it](https://www.base64encode.org/). Then use the resulting value as the `Authorization` header value, prefixed with `Bearer ` (separated by space). \n\nExample request with proper header (generated from `my-username:my-password`): \n\n```bash\ncurl --request GET \\ \n     --url http://[GRIMOIRE_URL]/api/bookmarks \\ \n     --header 'Authorization: Bearer bXktdXNlcm5hbWU6bXktcGFzc3dvcmQ='\n```"
+	},
+	"servers": [
+		{
+			"url": "http://localhost:5137/api",
+			"description": "Local instance"
+		},
+		{
+			"url": "{protocol}://{host}/api",
+			"description": "Custom URL",
+			"variables": {
+				"protocol": {
+					"default": "http",
+					"description": "Protocol",
+					"enum": ["http", "https"]
+				},
+				"host": {
+					"default": "localhost:5137",
+					"description": "Host"
+				}
+			}
+		}
+	],
+	"paths": {
+		"/bookmark/simple": {
+			"post": {
+				"summary": "Create a new quick bookmark",
+				"description": "Create a new quick bookmark. This endpoint is intended to be used by bookmarklet or as a fallback for browser extension.",
+				"operationId": "createBookmarkSimple",
+				"parameters": [
+					{
+						"in": "query",
+						"name": "url",
+						"schema": {
+							"type": "string"
+						},
+						"required": true,
+						"description": "The base64 encoded URL to bookmark."
+					}
+				],
+				"responses": {
+					"201": {
+						"$ref": "#/components/responses/BookmarkCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/BookmarkCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			}
+		},
+		"/bookmarks": {
+			"get": {
+				"summary": "Retrieve a list of bookmarks",
+				"parameters": [
+					{
+						"in": "query",
+						"name": "ids",
+						"schema": {
+							"type": "string",
+							"examples": ["id1,id2,id3"]
+						},
+						"description": "Array of bookmark IDs to retrieve"
+					}
+				],
+
+				"responses": {
+					"200": {
+						"description": "A list of bookmarks",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"bookmarks": {
+											"type": "array",
+											"items": {
+												"$ref": "#/components/schemas/Bookmark"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a new bookmark",
+				"description": "Create a new bookmark with the given data.",
+				"operationId": "createBookmark",
+				"requestBody": {
+					"description": "Bookmark details",
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BookmarkCreateDto"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"$ref": "#/components/responses/BookmarkCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/BookmarkCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"patch": {
+				"summary": "Update a bookmark",
+				"description": "Update a bookmark with the given data.",
+				"operationId": "updateBookmark",
+				"requestBody": {
+					"description": "Bookmark details",
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BookmarkUpdateDto"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"$ref": "#/components/responses/BookmarkCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/BookmarkCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"404": {
+						"$ref": "#/components/responses/NotFound"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"delete": {
+				"summary": "Delete a bookmark",
+				"description": "Delete a bookmark with the given ID.",
+				"operationId": "deleteBookmark",
+				"parameters": [
+					{
+						"in": "query",
+						"name": "id",
+						"schema": {
+							"type": "string"
+						},
+						"required": true,
+						"description": "The bookmark ID to delete."
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Bookmark deleted successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": {
+											"type": "boolean",
+											"examples": [true]
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bookmark ID is required",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": {
+											"type": "boolean",
+											"examples": [false]
+										},
+										"error": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"404": {
+						"$ref": "#/components/responses/NotFound"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			}
+		},
+		"categories": {
+			"get": {
+				"summary": "Retrieve all User categories",
+				"parameters": [],
+
+				"responses": {
+					"200": {
+						"description": "A list of categories",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"categories": {
+											"type": "array",
+											"items": {
+												"$ref": "#/components/schemas/Category"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a new category",
+				"description": "Create a new category with the given data.",
+				"operationId": "createCategory",
+				"requestBody": {
+					"description": "Category details",
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CategoryCreateDto"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"$ref": "#/components/responses/CategoryCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/CategoryCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"patch": {
+				"summary": "Update a category",
+				"description": "Update a category with the given data.",
+				"operationId": "updateCategory",
+				"requestBody": {
+					"description": "Category details",
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CategoryUpdateDto"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"$ref": "#/components/responses/CategoryCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/CategoryCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"404": {
+						"$ref": "#/components/responses/NotFound"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			}
+		},
+		"tags": {
+			"get": {
+				"summary": "Retrieve all User tags",
+				"parameters": [],
+
+				"responses": {
+					"200": {
+						"description": "A list of tags",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"tags": {
+											"type": "array",
+											"items": {
+												"$ref": "#/components/schemas/Tag"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			},
+			"post": {
+				"summary": "Create a new tag",
+				"description": "Create a new tag with the given data.",
+				"operationId": "createTag",
+				"requestBody": {
+					"description": "Tag details",
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TagCreateDto"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"$ref": "#/components/responses/TagCreatedOrUpdated"
+					},
+					"400": {
+						"$ref": "#/components/responses/TagCreationOrUpdateFailed"
+					},
+					"401": {
+						"$ref": "#/components/responses/Unauthorized"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"Bookmark": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Bookmark ID"
+					},
+					"url": {
+						"type": "string",
+						"description": "Bookmark URL"
+					},
+					"title": {
+						"type": "string",
+						"description": "Bookmark title"
+					},
+					"icon": {
+						"type": "string",
+						"description": "Bookmark icon URL"
+					},
+					"icon_url": {
+						"type": "string",
+						"description": "Bookmark icon URL"
+					},
+					"main_image": {
+						"type": "string",
+						"description": "Bookmark main image URL"
+					},
+					"main_image_url": {
+						"type": "string",
+						"description": "Bookmark main image URL"
+					},
+					"category": {
+						"$ref": "#/components/schemas/Category"
+					},
+					"tags": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Tag"
+						},
+						"description": "Bookmark tags"
+					},
+					"note": {
+						"type": "string",
+						"description": "Bookmark note"
+					},
+					"author": {
+						"type": "string",
+						"description": "Bookmark author"
+					},
+					"description": {
+						"type": "string",
+						"description": "Bookmark description"
+					},
+					"domain": {
+						"type": "string",
+						"description": "Bookmark domain"
+					},
+					"content_type": {
+						"type": "string",
+						"description": "Bookmark content type"
+					},
+					"content_text": {
+						"type": "string",
+						"description": "Bookmark content text"
+					},
+					"content_html": {
+						"type": "string",
+						"description": "Bookmark content HTML"
+					},
+					"created": {
+						"type": "string",
+						"description": "Bookmark creation date"
+					},
+					"updated": {
+						"type": "string",
+						"description": "Bookmark last update date"
+					},
+					"importance": {
+						"type": "integer",
+						"description": "Bookmark importance"
+					},
+					"flagged": {
+						"type": "string",
+						"description": "Bookmark flagged date"
+					},
+					"opened_last": {
+						"type": "string",
+						"description": "Bookmark last opened date"
+					},
+					"opened_times": {
+						"type": "integer",
+						"description": "Bookmark opened count"
+					},
+					"read": {
+						"type": "string",
+						"description": "Bookmark read date"
+					},
+					"owner": {
+						"type": "string",
+						"description": "Bookmark owner ID"
+					}
+				}
+			},
+			"Category": {
+				"type": "object",
+				"description": "Bookmark category",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Category ID"
+					},
+					"name": {
+						"type": "string",
+						"description": "Category name"
+					},
+					"slug": {
+						"type": "string",
+						"description": "Category slug (generated from name)"
+					},
+					"initial": {
+						"type": "boolean",
+						"description": "Is category the initial one, created by default with name 'Unauthorized'"
+					},
+					"description": {
+						"type": "string",
+						"description": "Category description"
+					},
+					"color": {
+						"type": "string",
+						"description": "Category color as hex value"
+					},
+					"icon": {
+						"type": "string",
+						"description": "Category icon"
+					},
+					"owner": {
+						"type": "string",
+						"description": "Category owner ID"
+					},
+					"created": {
+						"type": "string",
+						"description": "Category creation date"
+					},
+					"updated": {
+						"type": "string",
+						"description": "Category last update date"
+					},
+					"public": {
+						"type": "string",
+						"optional": true,
+						"description": "Category public"
+					},
+					"archived": {
+						"type": "string",
+						"optional": true,
+						"description": "Category archived"
+					},
+					"parent": {
+						"type": "string",
+						"optional": true,
+						"description": "Category parent ID"
+					}
+				}
+			},
+			"Tag": {
+				"type": "object",
+				"description": "Bookmark tag",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Tag ID"
+					},
+					"name": {
+						"type": "string",
+						"description": "Tag name"
+					},
+					"slug": {
+						"type": "string",
+						"description": "Tag slug"
+					},
+					"owner": {
+						"type": "string",
+						"description": "Tag owner ID"
+					},
+					"created": {
+						"type": "string",
+						"description": "Tag creation date"
+					},
+					"updated": {
+						"type": "string",
+						"description": "Tag last update date"
+					}
+				}
+			},
+			"BookmarkCreateDto": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"description": "Bookmark URL"
+					},
+					"title": {
+						"type": "string",
+						"description": "Bookmark title"
+					},
+					"description": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark description"
+					},
+					"author": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark author"
+					},
+					"content_text": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content text"
+					},
+					"content_html": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content HTML"
+					},
+					"content_type": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content type"
+					},
+					"content_published_date": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content published date"
+					},
+					"note": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark note"
+					},
+					"icon_url": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark icon URL"
+					},
+					"main_image_url": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark main image URL"
+					},
+					"importance": {
+						"type": "integer",
+						"optional": true,
+						"description": "Bookmark importance"
+					},
+					"flagged": {
+						"type": "boolean",
+						"optional": true,
+						"description": "Bookmark flagged"
+					},
+					"category": {
+						"type": "string",
+						"description": "Bookmark category ID"
+					},
+					"tags": {
+						"type": "array",
+						"optional": true,
+						"items": {
+							"$ref": "#/components/schemas/TagCreateDto"
+						}
+					}
+				}
+			},
+			"BookmarkUpdateDto": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Bookmark ID"
+					},
+					"url": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark URL"
+					},
+					"title": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark title"
+					},
+					"description": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark description"
+					},
+					"author": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark author"
+					},
+					"content_text": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content text"
+					},
+					"content_html": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content HTML"
+					},
+					"content_type": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content type"
+					},
+					"content_published_date": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark content published date"
+					},
+					"note": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark note"
+					},
+					"icon_url": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark icon URL"
+					},
+					"main_image_url": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark main image URL"
+					},
+					"importance": {
+						"type": "integer",
+						"optional": true,
+						"description": "Bookmark importance"
+					},
+					"flagged": {
+						"type": "boolean",
+						"optional": true,
+						"description": "Bookmark flagged"
+					},
+					"category": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark category ID"
+					},
+					"tags": {
+						"type": "array",
+						"optional": true,
+						"items": {
+							"$ref": "#/components/schemas/TagCreateDto"
+						}
+					}
+				}
+			},
+			"CategoryCreateDto": {
+				"type": "object",
+				"description": "Bookmark category",
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "Category name"
+					},
+					"description": {
+						"type": "string",
+						"description": "Category description"
+					},
+					"color": {
+						"type": "string",
+						"description": "Category color as hex value"
+					},
+					"icon": {
+						"type": "string",
+						"description": "Category icon"
+					},
+					"public": {
+						"type": "boolean",
+						"description": "Category public"
+					},
+					"archived": {
+						"type": "boolean",
+						"description": "Category archived"
+					},
+					"parent": {
+						"type": "string",
+						"description": "Category parent ID"
+					}
+				}
+			},
+			"CategoryUpdateDto": {
+				"type": "object",
+				"description": "Bookmark category",
+				"properties": {
+					"id": {
+						"type": "string",
+						"optional": true,
+						"description": "Category ID"
+					},
+					"name": {
+						"type": "string",
+						"optional": true,
+						"description": "Category name"
+					},
+					"description": {
+						"type": "string",
+						"optional": true,
+						"description": "Category description"
+					},
+					"color": {
+						"type": "string",
+						"optional": true,
+						"description": "Category color as hex value"
+					},
+					"icon": {
+						"type": "string",
+						"optional": true,
+						"description": "Category icon"
+					},
+					"public": {
+						"type": "boolean",
+						"optional": true,
+						"description": "Category public"
+					},
+					"archived": {
+						"type": "boolean",
+						"optional": true,
+						"description": "Category archived"
+					},
+					"parent": {
+						"type": "string",
+						"optional": true,
+						"description": "Category parent ID"
+					}
+				}
+			},
+			"TagCreateDto": {
+				"type": "object",
+				"description": "Bookmark tag",
+				"properties": {
+					"label": {
+						"type": "string",
+						"description": "Tag label"
+					},
+					"value": {
+						"type": "string",
+						"description": "Tag value"
+					}
+				}
+			}
+		},
+		"responses": {
+			"Unauthorized": {
+				"description": "Unauthorized",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"NotFound": {
+				"description": "Not found",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"ServerError": {
+				"description": "Server error",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"BookmarkCreationOrUpdateFailed": {
+				"description": "Invalid URL or Bookmark creation failed",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"CategoryCreationOrUpdateFailed": {
+				"description": "Category creation failed",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"TagCreationOrUpdateFailed": {
+				"description": "Tag creation failed",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"BookmarkCreatedOrUpdated": {
+				"description": "Bookmark created/updated successfully",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"bookmark": {
+									"$ref": "#/components/schemas/Bookmark"
+								}
+							}
+						}
+					}
+				}
+			},
+			"CategoryCreatedOrUpdated": {
+				"description": "Category created/updated successfully",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"category": {
+									"$ref": "#/components/schemas/Category"
+								}
+							}
+						}
+					}
+				}
+			},
+			"TagCreatedOrUpdated": {
+				"description": "Tag created/updated successfully",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"tag": {
+									"$ref": "#/components/schemas/Tag"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"securitySchemes": {
+			"basicAuth": {
+				"type": "http",
+				"scheme": "bearer"
+			}
+		}
+	},
+	"security": [
+		{
+			"basicAuth": []
+		}
+	]
+}
