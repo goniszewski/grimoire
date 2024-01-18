@@ -89,7 +89,7 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 		return json(
 			{ bookmark },
 			{
-				status: 200
+				status: 201
 			}
 		);
 	} catch (error: any) {
