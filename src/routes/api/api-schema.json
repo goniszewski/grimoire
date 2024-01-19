@@ -2,7 +2,7 @@
 	"openapi": "3.1.0",
 	"info": {
 		"title": "Grimoire Integration API",
-		"version": "0.2.0",
+		"version": "0.2.1",
 		"description": "To authorize, use your user's credentials to create valid authorization header.\n\n Add `[USERNAME OR EMAIL]:[PASSWORD]` and [base64 encode it](https://www.base64encode.org/). Then use the resulting value as the `Authorization` header value, prefixed with `Bearer ` (separated by space). \n\nExample request with proper header (generated from `my-username:my-password`): \n\n```bash\ncurl --request GET \\ \n     --url http://[GRIMOIRE_URL]/api/bookmarks \\ \n     --header 'Authorization: Bearer bXktdXNlcm5hbWU6bXktcGFzc3dvcmQ='\n```"
 	},
 	"servers": [
@@ -282,6 +282,9 @@
 					"401": {
 						"$ref": "#/components/responses/Unauthorized"
 					},
+					"403": {
+						"$ref": "#/components/responses/AlreadyExists"
+					},
 					"500": {
 						"$ref": "#/components/responses/ServerError"
 					}
@@ -375,6 +378,9 @@
 					},
 					"401": {
 						"$ref": "#/components/responses/Unauthorized"
+					},
+					"403": {
+						"$ref": "#/components/responses/AlreadyExists"
 					},
 					"500": {
 						"$ref": "#/components/responses/ServerError"
@@ -754,26 +760,32 @@
 					},
 					"description": {
 						"type": "string",
+						"optional": true,
 						"description": "Category description"
 					},
 					"color": {
 						"type": "string",
+						"optional": true,
 						"description": "Category color as hex value"
 					},
 					"icon": {
 						"type": "string",
+						"optional": true,
 						"description": "Category icon"
 					},
 					"public": {
 						"type": "boolean",
+						"optional": true,
 						"description": "Category public"
 					},
 					"archived": {
 						"type": "boolean",
+						"optional": true,
 						"description": "Category archived"
 					},
 					"parent": {
 						"type": "string",
+						"optional": true,
 						"description": "Category parent ID"
 					}
 				}
@@ -784,7 +796,6 @@
 				"properties": {
 					"id": {
 						"type": "string",
-						"optional": true,
 						"description": "Category ID"
 					},
 					"name": {
@@ -828,13 +839,9 @@
 				"type": "object",
 				"description": "Bookmark tag",
 				"properties": {
-					"label": {
+					"name": {
 						"type": "string",
-						"description": "Tag label"
-					},
-					"value": {
-						"type": "string",
-						"description": "Tag value"
+						"description": "Tag name"
 					}
 				}
 			}
@@ -842,6 +849,25 @@
 		"responses": {
 			"Unauthorized": {
 				"description": "Unauthorized",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"AlreadyExists": {
+				"description": "Already exists",
 				"content": {
 					"application/json": {
 						"schema": {
