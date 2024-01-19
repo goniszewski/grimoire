@@ -2,7 +2,7 @@
 	"openapi": "3.1.0",
 	"info": {
 		"title": "Grimoire Integration API",
-		"version": "0.2.0",
+		"version": "0.2.1",
 		"description": "To authorize, use your user's credentials to create valid authorization header.\n\n Add `[USERNAME OR EMAIL]:[PASSWORD]` and [base64 encode it](https://www.base64encode.org/). Then use the resulting value as the `Authorization` header value, prefixed with `Bearer ` (separated by space). \n\nExample request with proper header (generated from `my-username:my-password`): \n\n```bash\ncurl --request GET \\ \n     --url http://[GRIMOIRE_URL]/api/bookmarks \\ \n     --header 'Authorization: Bearer bXktdXNlcm5hbWU6bXktcGFzc3dvcmQ='\n```"
 	},
 	"servers": [
