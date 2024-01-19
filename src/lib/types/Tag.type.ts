@@ -5,6 +5,4 @@ export type Tag = {
 	name: string;
 	slug: string;
 	owner: User;
-	created: Date;
-	updated: Date;
 };
