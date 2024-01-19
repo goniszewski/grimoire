@@ -1,10 +1,14 @@
-import { authenticateUserApiRequest, pb } from '$lib/pb.js';
+import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb.js';
 import { createSlug } from '$lib/utils';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
 import type { Category } from '$lib/types/Category.type';
+import type {
+	AddCategoryRequestBody,
+	UpdateCategoryRequestBody
+} from '$lib/types/api/Categories.type';
 
 const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i;
 
@@ -16,9 +20,11 @@ export async function GET({ locals, request }) {
 	}
 
 	try {
-		const categories = await pb.collection('categories').getFullList({
+		const records = await pb.collection('categories').getFullList<Category>({
 			filter: `owner="${owner}"`
 		});
+
+		const categories = removePocketbaseFields(records);
 
 		return json(
 			{ categories },
@@ -46,7 +52,7 @@ export async function POST({ locals, request }) {
 		return authError;
 	}
 
-	const requestBody = await request.json();
+	const requestBody = (await request.json()) as AddCategoryRequestBody;
 
 	const validationSchema = joi.object({
 		name: joi.string().required(),
@@ -72,16 +78,30 @@ export async function POST({ locals, request }) {
 	}
 
 	try {
-		const category = (await pb.collection('categories').create({
-			name: requestBody.name,
-			icon: requestBody.icon,
-			description: requestBody.description,
-			color: requestBody.color,
-			parent: requestBody.parent,
-			public: requestBody.public ? new Date() : null,
+		const existingCategory = await pb.collection('categories').getFullList({
+			filter: `owner="${owner}" && name="${requestBody.name}"`,
+			fields: 'id'
+		});
+
+		if (existingCategory[0]?.id) {
+			return json(
+				{
+					success: false,
+					error: 'Category with this name already exists'
+				},
+				{
+					status: 403
+				}
+			);
+		}
+
+		if (requestBody.public) requestBody.public = new Date();
+
+		const category = await pb.collection('categories').create<Category>({
+			...requestBody,
 			slug: createSlug(requestBody.name),
 			owner
-		})) as Category;
+		});
 
 		if (!category.id) {
 			return json(
@@ -121,7 +141,7 @@ export async function PATCH({ locals, request }) {
 		return authError;
 	}
 
-	const requestBody = await request.json();
+	const requestBody = (await request.json()) as UpdateCategoryRequestBody;
 
 	const validationSchema = joi.object({
 		id: joi.string().required(),

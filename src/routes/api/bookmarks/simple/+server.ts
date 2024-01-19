@@ -1,4 +1,4 @@
-import { authenticateUserApiRequest } from '$lib/pb';
+import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
 import { getMetadata } from '$lib/utils';
 import joi from 'joi';
 
@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 				fields: 'id'
 			});
 
-		const bookmark = (await locals.pb.collection('bookmarks').create({
+		const record = await locals.pb.collection('bookmarks').create<Bookmark>({
 			owner,
 			category: defaultCategory?.id,
 			content_html: metadata.content_html,
@@ -56,7 +56,9 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 			title: metadata.title,
 			url: bookmarkUrl,
 			author: metadata.author
-		})) as Bookmark;
+		});
+
+		const bookmark = removePocketbaseFields(record);
 
 		if (!bookmark.id) {
 			return json(

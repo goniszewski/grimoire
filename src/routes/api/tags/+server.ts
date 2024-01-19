@@ -1,4 +1,4 @@
-import { authenticateUserApiRequest, pb } from '$lib/pb';
+import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb';
 import { createSlug } from '$lib/utils';
 import joi from 'joi';
 
@@ -14,9 +14,11 @@ export async function GET({ locals, request }) {
 	}
 
 	try {
-		const tags = await pb.collection('tags').getFullList({
+		const records = await pb.collection('tags').getFullList<Tag>({
 			filter: `owner="${owner}"`
 		});
+
+		const tags = removePocketbaseFields(records);
 
 		return json(
 			{ tags },
@@ -65,11 +67,30 @@ export async function POST({ locals, request }) {
 	}
 
 	try {
-		const tag = (await pb.collection('tags').create({
+		const existingTag = await pb.collection('tags').getFullList<Tag>({
+			filter: `owner="${owner}" && name="${requestBody.name}"`,
+			fields: 'id'
+		});
+
+		if (existingTag[0]?.id) {
+			return json(
+				{
+					success: false,
+					error: 'Tag with this name already exists'
+				},
+				{
+					status: 403
+				}
+			);
+		}
+
+		const record = await pb.collection('tags').create<Tag>({
 			name: requestBody.name,
 			slug: createSlug(requestBody.name),
 			owner
-		})) as Tag;
+		});
+
+		const tag = removePocketbaseFields(record);
 
 		if (!tag.id) {
 			return json(
