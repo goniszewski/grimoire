@@ -8,7 +8,8 @@ import config from './config';
 import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
-export const pb = new PocketBase(config.POCKETBASE_URL);
+
+export const pb = new PocketBase(config.ORIGIN + '/internal');
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {
@@ -179,3 +180,28 @@ export async function authenticateUserApiRequest(
 
 	return response;
 }
+
+export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<RecordModel>[]>(
+	record: T
+): T => {
+	const keys = ['collectionId', 'collectionName'];
+	const removeFields = <T>(obj: T): T => {
+		if (Array.isArray(obj)) {
+			return obj.map((item) => removeFields(item)) as unknown as T;
+		}
+
+		if (typeof obj === 'object' && obj !== null) {
+			for (const key in obj) {
+				if (keys.includes(key)) {
+					delete obj[key];
+				} else {
+					obj[key] = removeFields(obj[key]);
+				}
+			}
+		}
+
+		return obj;
+	};
+
+	return removeFields(record) as T;
+};

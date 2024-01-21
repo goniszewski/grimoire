@@ -1,34 +1,40 @@
-import { authenticateUserApiRequest } from '$lib/pb';
+import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
 import { getFileUrl, prepareTags } from '$lib/utils';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
+import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto.js';
+import type {
+	AddBookmarkRequestBody,
+	UpdateBookmarkRequestBody
+} from '$lib/types/api/Bookmarks.type';
 
-type AddBookmarkRequestBody = {
-	url: string;
-	title: string;
-	description?: string;
-	author?: string;
-	content_text?: string;
-	content_html?: string;
-	content_type?: string;
-	content_published_date?: Date | null;
-	note?: string;
-	main_image_url?: string;
-	icon_url?: string;
-	importance?: number;
-	flagged?: boolean;
-	category: string;
-	tags?: {
-		label: string;
-		value: string;
-	}[];
-};
+const prepareRequestedTags = (
+	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
+	userTags: { id: string; name: string }[]
+): {
+	label: string;
+	value: string;
+}[] => {
+	return (
+		requestBody.tags?.reduce(
+			(acc, tag) => {
+				const existingTag = userTags.find((userTag) => userTag.name === tag.name);
 
-type UpdateBookmarkRequestBody = AddBookmarkRequestBody & {
-	id: string;
+				if (!existingTag) {
+					acc.push({
+						label: tag.name,
+						value: tag.name
+					});
+				}
+
+				return acc;
+			},
+			[] as { label: string; value: string }[]
+		) || []
+	);
 };
 
 export async function GET({ locals, url, request }) {
@@ -39,15 +45,17 @@ export async function GET({ locals, url, request }) {
 	}
 
 	const { searchParams } = url;
-	const ids = JSON.parse(searchParams.get('ids') || '[]') as string[];
+	const ids = (searchParams.get('ids') || '').split(',') as string[];
+
+	const filterExpression = ids[0]
+		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
+		: `owner="${owner}"`;
 
 	try {
-		const bookmarks = await locals.pb
+		const records = await locals.pb
 			.collection('bookmarks')
-			.getFullList({
-				filter: `owner="${owner}" ${ids.length ? '&&' : ''} ${ids
-					.map((id) => `id="${id}"`)
-					.join('||')}`,
+			.getFullList<BookmarkDto>({
+				filter: filterExpression,
 				expand: 'category,tags'
 			})
 			.then((res) => {
@@ -58,6 +66,8 @@ export async function GET({ locals, url, request }) {
 					...(expand || {})
 				}));
 			});
+
+		const bookmarks = removePocketbaseFields(records);
 
 		return json(
 			{ bookmarks },
@@ -106,8 +116,7 @@ export async function POST({ locals, request }) {
 			.array()
 			.items(
 				joi.object({
-					label: joi.string().required(),
-					value: joi.string().required()
+					name: joi.string().required()
 				})
 			)
 			.optional()
@@ -128,11 +137,17 @@ export async function POST({ locals, request }) {
 	}
 
 	try {
-		const tags = requestBody.tags || [];
+		const userTags = await locals.pb.collection('tags').getFullList<{ id: string; name: string }>({
+			fields: 'id,name',
+			filter: `owner="${owner}"`
+		});
+
+		const tags = prepareRequestedTags(requestBody, userTags);
 		const tagIds = await prepareTags(locals.pb, tags, owner);
 
-		const bookmark = (await locals.pb.collection('bookmarks').create({
+		const record = await locals.pb.collection('bookmarks').create<Bookmark>({
 			owner,
+			category: requestBody.category,
 			content_html: requestBody.content_html,
 			content_published_date: requestBody.content_published_date,
 			content_text: requestBody.content_text,
@@ -148,7 +163,9 @@ export async function POST({ locals, request }) {
 			author: requestBody.author,
 			tags: tagIds,
 			flagged: requestBody.flagged ? new Date().toISOString() : null
-		})) as Bookmark;
+		});
+
+		const bookmark = removePocketbaseFields(record);
 
 		if (!bookmark.id) {
 			return json(
@@ -226,8 +243,7 @@ export async function PATCH({ locals, request }) {
 			.array()
 			.items(
 				joi.object({
-					label: joi.string().required(),
-					value: joi.string().required()
+					name: joi.string().required()
 				})
 			)
 			.optional()
@@ -250,7 +266,9 @@ export async function PATCH({ locals, request }) {
 	const { id, ...updatedFields } = requestBody;
 
 	try {
-		const currentBookmark = await locals.pb.collection('bookmarks').getOne(id);
+		const currentBookmark = await locals.pb
+			.collection('bookmarks')
+			.getOne<Bookmark & { owner: string }>(id);
 
 		if (!currentBookmark || currentBookmark.owner !== owner) {
 			return json(
@@ -264,20 +282,37 @@ export async function PATCH({ locals, request }) {
 			);
 		}
 
-		const tags = requestBody.tags || [];
-		const tagIds = await prepareTags(locals.pb, tags, owner);
+		const userTags = await locals.pb.collection('tags').getFullList<{ id: string; name: string }>({
+			fields: 'id,name',
+			filter: `owner="${owner}"`
+		});
 
-		const bookmark = (await locals.pb.collection('bookmarks').update(
+		const preparedTags = prepareRequestedTags(requestBody, userTags);
+		const newTags = await prepareTags(locals.pb, preparedTags, owner);
+
+		console.log({
+			userTags,
+			preparedTags,
+			newTags
+		});
+
+		const tags = [...userTags.map((tag) => tag.id), ...newTags];
+
+		console.log({ tags });
+
+		const record = await locals.pb.collection('bookmarks').update<Bookmark>(
 			id,
 			{
 				...updatedFields,
-				tags: tagIds,
+				tags,
 				flagged: requestBody.flagged ? new Date().toISOString() : null
 			},
 			{
 				filter: `owner="${owner}"`
 			}
-		)) as Bookmark;
+		);
+
+		const bookmark = removePocketbaseFields(record);
 
 		if (!bookmark.id) {
 			return json(
@@ -348,7 +383,9 @@ export async function DELETE({ locals, request, url }) {
 			);
 		}
 
-		const currentBookmark = await locals.pb.collection('bookmarks').getOne(id);
+		const currentBookmark = await locals.pb
+			.collection('bookmarks')
+			.getOne<Bookmark & { owner: string }>(id);
 
 		if (!currentBookmark || currentBookmark.owner !== owner) {
 			return json(
@@ -381,7 +418,7 @@ export async function DELETE({ locals, request, url }) {
 				error: error?.message
 			},
 			{
-				status: 500
+				status: 404
 			}
 		);
 	}
