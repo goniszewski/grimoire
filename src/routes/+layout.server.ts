@@ -29,7 +29,8 @@ export const load = (async ({ locals, url }) => {
 	const noUsersFound = await locals.pb
 		.collection('users')
 		.getList(1, 1, {
-			count: true
+			count: true,
+			requestKey: null
 		})
 		.then((res) => res.totalItems === 0);
 
@@ -49,25 +50,29 @@ export const load = (async ({ locals, url }) => {
 	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
 		expand: 'parent',
 		filter: `owner="${locals.user!.id}"`,
-		sort: 'name'
+		sort: 'name',
+		requestKey: `categories-${locals.user!.id}`
 	})) as { items: CategoryDto[] };
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner="${locals.user!.id}"`,
-		sort: 'name'
+		sort: 'name',
+		requestKey: `tags-${locals.user!.id}`
 	});
 
 	const bookmarks = (await locals.pb.collection('bookmarks').getList(page, limit, {
 		expand: 'tags,category',
 		filter: `owner="${locals.user!.id}"`,
-		sort: '-created'
+		sort: '-created',
+		requestKey: `bookmarks-${locals.user!.id}`
 	})) as { items: BookmarkDto[] };
 
 	const bookmarksCount = await locals.pb
 		.collection('bookmarks')
 		.getList(1, 1, {
 			filter: `owner="${locals.user!.id}"`,
-			count: true
+			count: true,
+			requestKey: `bookmarksCount-${locals.user!.id}`
 		})
 		.then((res) => res.totalItems);
 
@@ -79,7 +84,8 @@ export const load = (async ({ locals, url }) => {
 			fields: 'id,' + searchIndexKeys.join(','),
 			expand: 'tags',
 			filter: `owner.id="${locals.user!.id}"`,
-			batchSize: 100000
+			batchSize: 100000,
+			requestKey: `bookmarksForIndex-${locals.user!.id}`
 		})
 		.then((res) =>
 			res.map(({ expand, ...b }) => ({
