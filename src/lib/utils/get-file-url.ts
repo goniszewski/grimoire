@@ -1,3 +1,5 @@
+import config from '$lib/config';
+
 export function getFileUrl(collectionName: string, entityId: string, filename: string) {
-	return `/internal/api/files/${collectionName}/${entityId}/${filename}`;
+	return `${config.BACKEND_URL}/api/files/${collectionName}/${entityId}/${filename}`;
 }
