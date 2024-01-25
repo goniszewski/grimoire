@@ -11,6 +11,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-l
 
 FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+ENV NODE_OPTIONS=--max_old_space_size=4096
 RUN pnpm run build
 
 FROM base
@@ -20,6 +21,7 @@ ARG ROOT_ADMIN_PASSWORD
 ARG ORIGIN="http://localhost:5173"
 ARG PORT=5173
 ARG PUBLIC_HTTPS_ONLY="false"
+ARG PUBLIC_SIGNUP_DISABLED="false"
 
 ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
 ENV ROOT_ADMIN_EMAIL=$ROOT_ADMIN_EMAIL
@@ -27,10 +29,11 @@ ENV ROOT_ADMIN_PASSWORD=$ROOT_ADMIN_PASSWORD
 ENV ORIGIN=$ORIGIN
 ENV PORT=$PORT
 ENV PUBLIC_HTTPS_ONLY=$PUBLIC_HTTPS_ONLY
+ENV PUBLIC_SIGNUP_DISABLED=$PUBLIC_SIGNUP_DISABLED
 
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app/build
 COPY --from=build /app/package.json /app/package.json
 ENV NODE_ENV=production
 EXPOSE $PORT
-CMD [ "node", "build" ]
+CMD [ "node", "-r", "dotenv/config", "build" ]
