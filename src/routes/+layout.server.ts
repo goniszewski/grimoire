@@ -59,7 +59,8 @@ export const load = (async ({ locals, url }) => {
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner="${locals.user!.id}"`,
-		sort: 'name'
+		sort: 'name',
+		requestKey: `tags-${locals.user!.id}`
 	});
 	const bookmarks = await locals.pb.collection('bookmarks').getList<BookmarkDto>(page, limit, {
 		expand: 'tags,category',
@@ -71,7 +72,8 @@ export const load = (async ({ locals, url }) => {
 		.collection('bookmarks')
 		.getList(1, 1, {
 			filter: `owner="${locals.user!.id}"`,
-			count: true
+			count: true,
+			requestKey: `bookmarksCount-${locals.user!.id}`
 		})
 		.then((res) => res.totalItems);
 
@@ -83,7 +85,8 @@ export const load = (async ({ locals, url }) => {
 			fields: 'id,' + searchIndexKeys.join(','),
 			expand: 'tags',
 			filter: `owner.id="${locals.user!.id}"`,
-			batchSize: 100000
+			batchSize: 100000,
+			requestKey: `bookmarksForIndex-${locals.user!.id}`
 		})
 		.then((res) =>
 			res.map(({ expand, ...b }) => ({
