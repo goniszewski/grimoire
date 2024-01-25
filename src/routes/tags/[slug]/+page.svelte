@@ -3,9 +3,8 @@
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-	import type { Category } from '$lib/interfaces/Category.interface';
-	import type { Tag } from '$lib/interfaces/Tag.interface';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import type { Tag } from '$lib/types/Tag.type';
 
 	let slug: string;
 	let tag: Tag | undefined;

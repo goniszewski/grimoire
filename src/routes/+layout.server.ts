@@ -29,9 +29,14 @@ export const load = (async ({ locals, url }) => {
 	const noUsersFound = await locals.pb
 		.collection('users')
 		.getList(1, 1, {
-			count: true
+			fields: 'collectionName',
+			requestKey: null,
+			headers: {
+				RequestFor: 'user-count'
+			}
 		})
-		.then((res) => res.totalItems === 0);
+		.then((res) => res.totalItems === 0)
+		.catch(() => true);
 
 	if (!locals.user) {
 		return {
@@ -46,22 +51,21 @@ export const load = (async ({ locals, url }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '20');
 
-	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
+	const categories = await locals.pb.collection('categories').getList<CategoryDto>(1, 1000, {
 		expand: 'parent',
 		filter: `owner="${locals.user!.id}"`,
 		sort: 'name'
-	})) as { items: CategoryDto[] };
+	});
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner="${locals.user!.id}"`,
 		sort: 'name'
 	});
-
-	const bookmarks = (await locals.pb.collection('bookmarks').getList(page, limit, {
+	const bookmarks = await locals.pb.collection('bookmarks').getList<BookmarkDto>(page, limit, {
 		expand: 'tags,category',
 		filter: `owner="${locals.user!.id}"`,
 		sort: '-created'
-	})) as { items: BookmarkDto[] };
+	});
 
 	const bookmarksCount = await locals.pb
 		.collection('bookmarks')
@@ -87,7 +91,6 @@ export const load = (async ({ locals, url }) => {
 				...b
 			}))
 		);
-
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({

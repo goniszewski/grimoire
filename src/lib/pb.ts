@@ -9,7 +9,7 @@ import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
 
-export const pb = new PocketBase(config.ORIGIN + '/internal');
+export const pb = new PocketBase(config.POCKETBASE_URL);
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {

@@ -1,3 +1,3 @@
 export function getFileUrl(collectionName: string, entityId: string, filename: string) {
-	return `/internal/api/files/${collectionName}/${entityId}/${filename}`;
+	return `/internal/files/${collectionName}/${entityId}/${filename}`;
 }
