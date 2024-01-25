@@ -4,7 +4,7 @@
 
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import * as env from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { user } from '$lib/pb';
 	import { searchEngine, searchedValue } from '$lib/stores/search.store';

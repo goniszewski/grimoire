@@ -29,10 +29,14 @@ export const load = (async ({ locals, url }) => {
 	const noUsersFound = await locals.pb
 		.collection('users')
 		.getList(1, 1, {
-			count: true,
-			requestKey: null
+			fields: 'collectionName',
+			requestKey: null,
+			headers: {
+				RequestFor: 'user-count'
+			}
 		})
-		.then((res) => res.totalItems === 0);
+		.then((res) => res.totalItems === 0)
+		.catch(() => true);
 
 	if (!locals.user) {
 		return {
@@ -47,25 +51,22 @@ export const load = (async ({ locals, url }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '20');
 
-	const categories = (await locals.pb.collection('categories').getList(1, 1000, {
+	const categories = await locals.pb.collection('categories').getList<CategoryDto>(1, 1000, {
 		expand: 'parent',
 		filter: `owner="${locals.user!.id}"`,
-		sort: 'name',
-		requestKey: `categories-${locals.user!.id}`
-	})) as { items: CategoryDto[] };
+		sort: 'name'
+	});
 
 	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
 		filter: `owner="${locals.user!.id}"`,
 		sort: 'name',
 		requestKey: `tags-${locals.user!.id}`
 	});
-
-	const bookmarks = (await locals.pb.collection('bookmarks').getList(page, limit, {
+	const bookmarks = await locals.pb.collection('bookmarks').getList<BookmarkDto>(page, limit, {
 		expand: 'tags,category',
 		filter: `owner="${locals.user!.id}"`,
-		sort: '-created',
-		requestKey: `bookmarks-${locals.user!.id}`
-	})) as { items: BookmarkDto[] };
+		sort: '-created'
+	});
 
 	const bookmarksCount = await locals.pb
 		.collection('bookmarks')
@@ -93,7 +94,6 @@ export const load = (async ({ locals, url }) => {
 				...b
 			}))
 		);
-
 	return {
 		bookmarks: structuredClone(
 			bookmarks.items.map((bookmark) => ({

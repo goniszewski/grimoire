@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { Bookmark } from '$lib/interfaces/Bookmark.interface';
-
 	import { showBookmarkStore as bookmark } from '$lib/stores/show-bookmark.store';
 	import { writable } from 'svelte/store';
 	import { onMount } from 'svelte';

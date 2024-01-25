@@ -60,6 +60,7 @@
 		"@types/lodash": "^4.14.200",
 		"@types/sanitize-html": "^2.9.3",
 		"daisyui": "^3.9.4",
+		"dotenv": "^16.4.1",
 		"fuse.js": "^7.0.0",
 		"html-to-text": "^9.0.5",
 		"joi": "^17.11.0",
