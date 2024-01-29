@@ -3,17 +3,17 @@
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import type { Tag } from '$lib/types/Tag.type';
 
 	let slug: string;
 	let tag: Tag | undefined;
-	let bookmarks: Bookmark[] = [];
 
 	$: {
 		slug = $page.params.slug;
 		tag = $page.data.tags.find((c) => c.slug === slug);
-		bookmarks = $page.data.bookmarks.filter((b) => b.tags.find((t) => t.id === tag?.id));
+		bookmarksStore.set($page.data.bookmarks.filter((b) => b.tags.find((t) => t.id === tag?.id)));
 	}
 </script>
 
@@ -22,9 +22,9 @@
 
 	<EditBookmarkModal />
 
-	{#if bookmarks.length > 0}
+	{#if $bookmarksStore.length > 0}
 		<div class="flex flex-wrap gap-4">
-			<BookmarkList {bookmarks} />
+			<BookmarkList bookmarks={$bookmarksStore} />
 			<Pagination
 				page={$page.data.page}
 				limit={$page.data.limit}

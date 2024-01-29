@@ -19,6 +19,7 @@
 	import { user } from '$lib/pb';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { searchEngine } from '$lib/stores/search.store';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -306,11 +307,13 @@
 										showToast.success('Bookmark deleted', {
 											position: 'bottom-center'
 										});
-										removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
 										await applyAction(result);
+
+										removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
+										bookmarksStore.remove(bookmark.id);
 									}
 
-									invalidate('/');
+									// invalidate('/');
 								};
 							}}
 						>
