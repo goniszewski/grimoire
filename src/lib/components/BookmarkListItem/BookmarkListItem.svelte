@@ -316,8 +316,6 @@
 											removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
 											bookmarksStore.remove(bookmark.id);
 										}
-
-										// invalidate('/');
 									};
 								}}
 							>
