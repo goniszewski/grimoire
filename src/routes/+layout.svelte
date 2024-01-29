@@ -2,21 +2,21 @@
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
+	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
 	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
 	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
+	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
-	import type { Category } from '$lib/types/Category.type';
+	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
 	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
+	import type { Category } from '$lib/types/Category.type';
+	import { ToastNode } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
-	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
-	import { ToastNode } from '$lib/utils/show-toast';
-	import Footer from '$lib/components/Footer/Footer.svelte';
-	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
 
 	onMount(async () => {
 		$user.loadFromCookie(document.cookie);
