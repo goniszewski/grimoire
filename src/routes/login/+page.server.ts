@@ -31,6 +31,6 @@ export const actions: Actions = {
 			return handlePBError(e, locals.pb, true);
 		}
 
-		throw redirect(303, '/');
+		redirect(303, '/');
 	}
 };
