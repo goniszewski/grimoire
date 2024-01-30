@@ -87,7 +87,7 @@
 				{:else}
 					<div class="dropdown dropdown-end z-10">
 						<label for="avatar" tabindex="-1" class="btn btn-ghost btn-circle avatar placeholder">
-							<div class="bg-neutral-focus text-neutral-content rounded-full w-10">
+							<div class="bg-neutral text-neutral-content rounded-full w-10">
 								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
 							</div>
 						</label>
@@ -199,14 +199,14 @@
 		border: 0 !important;
 		border-color: rgba(209, 213, 219, 0.5) !important;
 		max-width: 10rem;
-		background: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+		background: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
 	}
 	:global(.svelte-select-list) {
-		background-color: hsl(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+		background-color: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
 		box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
 	}
 	:global(.svelte-select-list .list-item .item.hover) {
-		background-color: hsl(var(--pf) / var(--tw-bg-opacity, 1)) !important;
+		background-color: oklch(var(--pf) / var(--tw-bg-opacity, 1)) !important;
 	}
 	:global(.svelte-select .value-container .multi-item) {
 		background-color: oklch(var(--nc)) !important;
