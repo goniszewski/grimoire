@@ -22,6 +22,7 @@
 	import _ from 'lodash';
 	import Select from 'svelte-select';
 	import { writable } from 'svelte/store';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
@@ -31,8 +32,6 @@
 		{ label: 'opened times (desc)', value: 'opened_times_desc' },
 		{ label: 'opened times (asc)', value: 'opened_times_asc' }
 	];
-
-	export let bookmarks: Bookmark[] = [];
 
 	$searchEngine = initializeSearch($page.data.bookmarksForIndex);
 
@@ -69,7 +68,7 @@
 			$bookmarksToDisplay,
 			$userSettingsStore.bookmarksSortedBy
 		);
-		bookmarks = filterBookmarks(sortedBookmarks, $userSettingsStore);
+		bookmarksStore.set(filterBookmarks(sortedBookmarks, $userSettingsStore));
 	}
 
 	let bookmarksViewForm: HTMLFormElement;
@@ -168,13 +167,13 @@
 				</div>
 			</div>
 			<span class="ml-auto text-sm text-gray-500"
-				>{`Showing ${bookmarks.length} out of ${$page.data.bookmarks.length}`}</span
+				>{`Showing ${$bookmarksStore.length} out of ${$page.data.bookmarks.length}`}</span
 			>
 		</form>
 		<AddBookmarkButton />
 	</div>
 
-	<BookmarkList {bookmarks} />
+	<BookmarkList bookmarks={$bookmarksStore} />
 	<Pagination
 		page={$page.data.page}
 		limit={$page.data.limit}

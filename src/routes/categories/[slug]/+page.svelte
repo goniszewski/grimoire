@@ -3,19 +3,18 @@
 	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
-	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import type { Category } from '$lib/types/Category.type';
 
 	let slug: string;
 	let category: Category | undefined;
-	let bookmarks: Bookmark[] = [];
 
 	$: {
 		slug = $page.params.slug;
 		category = $page.data.categories.find((c) => c.slug === slug);
-		bookmarks = $page.data.bookmarks.filter((b) => b.category.id === category?.id);
+		bookmarksStore.set($page.data.bookmarks.filter((b) => b.category.id === category?.id));
 	}
 </script>
 
@@ -65,9 +64,9 @@
 			</div>
 		</div>
 
-		{#if bookmarks.length > 0}
+		{#if $bookmarksStore.length > 0}
 			<div class="flex flex-wrap gap-4">
-				<BookmarkList {bookmarks} />
+				<BookmarkList bookmarks={$bookmarksStore} />
 				<Pagination
 					page={$page.data.page}
 					limit={$page.data.limit}

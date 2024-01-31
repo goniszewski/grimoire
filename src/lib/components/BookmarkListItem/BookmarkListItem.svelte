@@ -19,6 +19,8 @@
 	import { user } from '$lib/pb';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { searchEngine } from '$lib/stores/search.store';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -37,7 +39,7 @@
 
 <div
 	class={`flex flex-col justify-between border border-base-content border-opacity-20 p-2 rounded-md min-h-[6rem] gap-1 hover:border-secondary  ${
-		$user?.model?.settings?.uiAnimations
+		$userSettingsStore.uiAnimations
 			? 'transition hover:-translate-x-1 duration-300 ease-in-out'
 			: ''
 	}`}
@@ -310,12 +312,11 @@
 											showToast.success('Bookmark deleted', {
 												position: 'bottom-center'
 											});
-											removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
-
 											await applyAction(result);
-										}
 
-										invalidate('/');
+											removeBookmarkFromSearchIndex($searchEngine, bookmark.id);
+											bookmarksStore.remove(bookmark.id);
+										}
 									};
 								}}
 							>

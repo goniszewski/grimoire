@@ -40,7 +40,6 @@
 	</div>
 	<div class="flex flex-col lg:flex-row gap-4">
 		{#if $bookmark?.id}
-			<!-- Display div with white background on top of other content -->
 			<div class="flex flex-col gap-2">
 				<div class="flex flex-col md:flex-row gap-2">
 					<div class="flex flex-col flex-1 gap-2 min-w-fit">
