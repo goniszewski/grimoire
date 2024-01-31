@@ -35,8 +35,6 @@ export const actions = {
 				return null;
 			});
 
-		console.log('updatedSettings', updatedUser?.settings);
-
 		return {
 			updatedSettings: updatedUser?.settings
 		};
