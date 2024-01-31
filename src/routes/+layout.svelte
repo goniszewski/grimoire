@@ -206,7 +206,7 @@
 		box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
 	}
 	:global(.svelte-select-list .list-item .item.hover) {
-		background-color: oklch(var(--pf) / var(--tw-bg-opacity, 1)) !important;
+		background-color: oklch(var(--s) / var(--tw-bg-opacity, 1)) !important;
 	}
 	:global(.svelte-select .value-container .multi-item) {
 		background-color: oklch(var(--nc)) !important;

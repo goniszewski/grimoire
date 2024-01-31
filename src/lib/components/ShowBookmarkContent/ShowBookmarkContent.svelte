@@ -187,9 +187,9 @@
 			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
 				<h3 class="text-xl">Content</h3>
 				<div class="flex flex-col">
-					<div class="tabs tabs-lifted min-w-full">
+					<div class="tabs tabs-bordered min-w-full">
 						<div
-							class={`tab ${$contentTab === 'html' ? 'tab-active' : ''}`}
+							class={`tab ${$contentTab === 'html' ? 'tab-active' : 'text-gray-500'}`}
 							on:click={() => ($contentTab = 'html')}
 							on:keydown={() => ($contentTab = 'html')}
 							role="tab"
@@ -198,7 +198,7 @@
 							HTML
 						</div>
 						<div
-							class={`tab ${$contentTab === 'text' ? 'tab-active' : ''}`}
+							class={`tab ${$contentTab === 'text' ? 'tab-active' : 'text-gray-500'}`}
 							on:click={() => ($contentTab = 'text')}
 							on:keydown={() => ($contentTab = 'text')}
 							role="tab"
@@ -208,10 +208,8 @@
 						</div>
 					</div>
 					<div
-						class={`flex flex-col overflow-y-scroll pt-1 pl-1 ${
-							$bookmark.content_html || $bookmark.content_text
-								? 'h-60 border border-t-0 '
-								: 'text-gray-500  '
+						class={`flex flex-col overflow-y-scroll pt-1 pl-1 w-full border border-t-0 border-gray-500 rounded-b-sm ${
+							$bookmark.content_html || $bookmark.content_text ? 'h-60 ' : 'justify-items-center   '
 						}`}
 					>
 						{#if $contentTab === 'html' && $bookmark.content_html}
@@ -219,7 +217,7 @@
 						{:else if $contentTab === 'text' && $bookmark.content_text}
 							{$bookmark.content_text}
 						{:else}
-							<p>No content</p>
+							<div class="w-fit px-4 py-2 text-gray-500">No content</div>
 						{/if}
 					</div>
 				</div>
