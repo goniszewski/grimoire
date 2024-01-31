@@ -87,7 +87,7 @@
 								href={bookmark.url}
 								title={bookmark.url}
 								target="_blank"
-								class="hover:bg-slate-100 p-2 rounded-md"
+								class="hover:bg-base-300 p-2 rounded-md"
 								><div class="flex flex-col gap-2 md:flex-row">
 									<div class="flex gap-2">
 										<img

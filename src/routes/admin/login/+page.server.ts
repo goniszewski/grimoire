@@ -20,6 +20,6 @@ export const actions: Actions = {
 			});
 		}
 
-		throw redirect(303, '/admin/');
+		redirect(303, '/admin/');
 	}
 } satisfies Actions;
