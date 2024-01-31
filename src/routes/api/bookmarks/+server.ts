@@ -38,14 +38,20 @@ const prepareRequestedTags = (
 };
 
 export async function GET({ locals, url, request }) {
-	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
+	let owner = locals.pb.authStore.model?.id;
 
-	if (error) {
-		return error;
+	if (!owner) {
+		const { owner: apiOwner, error } = await authenticateUserApiRequest(locals.pb, request);
+
+		owner = apiOwner;
+
+		if (error) {
+			return error;
+		}
 	}
 
 	const { searchParams } = url;
-	const ids = (searchParams.get('ids') || '').split(',') as string[];
+	const ids = JSON.parse(searchParams.get('ids') || '[]') as string[];
 
 	const filterExpression = ids[0]
 		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`

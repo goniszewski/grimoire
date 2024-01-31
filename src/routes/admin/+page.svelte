@@ -36,10 +36,10 @@
 			{#if !data.adminData}
 				<p>Loading...</p>
 			{:else}
-				<div class="tabs">
+				<div class="tabs tabs-lifted">
 					{#each tabs as tab}
 						<button
-							class={`tab tab-lifted ${tab === $activeTab ? 'tab-active' : ''}`}
+							class={`tab ${tab === $activeTab ? 'tab-active' : ''}`}
 							on:click={() => ($activeTab = tab)}>{tab}</button
 						>
 					{/each}
