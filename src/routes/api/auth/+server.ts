@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				error: error?.message
 			},
 			{
-				status: 401
+				status: 400
 			}
 		);
 	}
@@ -49,7 +49,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				error: error?.message
 			},
 			{
-				status: 400
+				status: error?.status || 500
 			}
 		);
 	}

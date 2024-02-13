@@ -58,6 +58,9 @@
 					},
 					"400": {
 						"$ref": "#/components/responses/AuthFailed"
+					},
+					"500": {
+						"$ref": "#/components/responses/ServerError"
 					}
 				}
 			}
