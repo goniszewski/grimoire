@@ -3,7 +3,7 @@
 	"info": {
 		"title": "Grimoire Integration API",
 		"version": "0.2.3",
-		"description": "To authorize, use your user's credentials to create valid authorization header.\n\n Add `[USERNAME OR EMAIL]:[PASSWORD]` and [base64 encode it](https://www.base64encode.org/). Then use the resulting value as the `Authorization` header value, prefixed with `Bearer ` (separated by space). \n\nExample request with proper header (generated from `my-username:my-password`): \n\n```bash\ncurl --request GET \\ \n     --url http://[GRIMOIRE_URL]/api/bookmarks \\ \n     --header 'Authorization: Bearer bXktdXNlcm5hbWU6bXktcGFzc3dvcmQ='\n```"
+		"description": "To authorize, pass your user's credentials in a POST request to `/api/auth` to receive the token.\n\nThen use it as the `Authorization` header value, prefixed with `Bearer ` (separated by space). \n\nExample request with proper header: \n\n```bash\ncurl --request GET \\ \n     --url http://[GRIMOIRE_URL]/api/bookmarks \\ \n     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'\n```"
 	},
 	"servers": [
 		{
@@ -27,6 +27,41 @@
 		}
 	],
 	"paths": {
+		"/auth": {
+			"post": {
+				"summary": "Authenticate user",
+				"description": "Authenticate with your user credentials.",
+				"operationId": "authenticate",
+				"requestBody": {
+					"description": "User credentials",
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"username": {
+										"type": "string",
+										"description": "User's username or email"
+									},
+									"password": {
+										"type": "string",
+										"description": "User's password"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"$ref": "#/components/responses/AuthSuccess"
+					},
+					"400": {
+						"$ref": "#/components/responses/AuthFailed"
+					}
+				}
+			}
+		},
 		"/bookmark/simple": {
 			"post": {
 				"summary": "Create a new quick bookmark",
@@ -847,6 +882,45 @@
 			}
 		},
 		"responses": {
+			"AuthFailed": {
+				"description": "Invalid credentials",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [false]
+								},
+								"error": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			},
+			"AuthSuccess": {
+				"description": "User authenticated",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"success": {
+									"type": "boolean",
+									"examples": [true]
+								},
+								"token": {
+									"type": "string",
+									"description": "User token"
+								}
+							}
+						}
+					}
+				}
+			},
 			"Unauthorized": {
 				"description": "Unauthorized",
 				"content": {

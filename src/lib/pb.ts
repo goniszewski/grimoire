@@ -124,7 +124,24 @@ export async function authenticateUserApiRequest(
 	pb: PocketBase,
 	request: Request
 ): Promise<authenticateUserApiRequestResponse> {
-	const authKey = request.headers.get('Authorization') ?? '';
+	const authKey = request.headers.get('Authorization')?.split(' ')[1];
+
+	if (!authKey) {
+		return {
+			owner: '',
+			disabled: null,
+			userRecord: null,
+			error: json(
+				{
+					success: false,
+					error: 'Unauthorized'
+				},
+				{
+					status: 401
+				}
+			)
+		};
+	}
 
 	const response: authenticateUserApiRequestResponse = {
 		owner: '',
@@ -134,11 +151,10 @@ export async function authenticateUserApiRequest(
 	};
 
 	try {
-		const [login, password] = atob(authKey.split(' ')[1]).split(':');
-
+		pb.authStore.save(authKey);
 		const user = await pb
 			.collection('users')
-			.authWithPassword(login, password)
+			.authRefresh()
 			.then((user) => user.record);
 
 		response.owner = user.id;
