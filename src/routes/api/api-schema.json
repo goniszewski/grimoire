@@ -107,7 +107,7 @@
 						"required": false,
 						"schema": {
 							"type": "string",
-							"examples": "id1,id2,id3"
+							"examples": ["id1,id2,id3"]
 						},
 						"description": "Comma separated bookmark IDs to retrieve"
 					}
