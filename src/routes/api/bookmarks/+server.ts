@@ -50,8 +50,7 @@ export async function GET({ locals, url, request }) {
 		}
 	}
 
-	const { searchParams } = url;
-	const ids = JSON.parse(searchParams.get('ids') || '[]') as string[];
+	const ids = url.searchParams.get('ids')?.split(',') || [];
 
 	const filterExpression = ids[0]
 		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
