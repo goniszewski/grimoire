@@ -23,7 +23,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:unit": "vitest --coverage",
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
+		"format": "prettier --plugin-search-dir . --write .",
+		"release": "release-it"
 	},
 	"type": "module",
 	"devDependencies": {
@@ -44,6 +45,7 @@
 		"postcss": "^8.4.33",
 		"prettier": "^3.2.4",
 		"prettier-plugin-svelte": "^3.1.2",
+		"release-it": "^17.0.3",
 		"svelte": "^4.2.9",
 		"svelte-check": "^3.6.3",
 		"tailwindcss": "^3.4.1",
