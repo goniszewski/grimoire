@@ -40,8 +40,8 @@ const metascraperScraper = async (html: string, url: string): Promise<Partial<Me
 	};
 };
 
-const articleExtractorScraper = async (html: string, _url: string): Promise<Partial<Metadata>> => {
-	const articleExtractorMetadata = await extract(html);
+const articleExtractorScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
+	const articleExtractorMetadata = await extract(html || url);
 
 	return {
 		url: articleExtractorMetadata?.url,
