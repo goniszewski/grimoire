@@ -1,6 +1,8 @@
 # Grimoire
 
-![Grimoire Logo](static/grimoire_logo_300.webp)
+<p align="center">
+  <img alt="Grimoire Logo" src="static/grimoire_logo_300.webp">
+</p>
 
 Glimpse into the magical book of _your_ forbidden knowledge - **Grimoire!** 📖💫
 
@@ -20,6 +22,7 @@ It's time to conjure up some organization! 📚✨
 - supports tags and categories 🏷️
 - fetch metadata from websites, store it locally and update it when needed 🌐
 - add your personal notes to bookmarks 📝
+- integration API to add bookmarks from other sources 🧰
 
 ## Installation
 
@@ -50,17 +53,17 @@ Check out the [development guide](https://grimoire.pro/docs/getting-started/deve
 
 ## Roadmap
 
-- sharing bookmarks with other users or publicly 🤸
-- Flows - keep your bookmarks in a session-like order with related notes (e.g. for learning, research, etc.) 🔥
-- import bookmarks from popular formats files 📤
-- export bookmarks as HTML, CSV and JSON 📦
-- add universal bookmarklet to add bookmarks from any browser 📎
-- quickly change bookmark categories and tags from the bookmarks list ⏩
-- the official browser extension 🌐
+- [x] Initial relase (0.1.0) 🚀
+- [x] Official Docker image 🐳
+- [x] Add Integration API 🧰
+- [ ] Official browser extension 🪄
+- [ ] Bookmark import and export features 💼
+- [ ] AI features, like generated descriptions and tags suggestions 🤖
+- [ ] Public User profiles & bookmark sharing 🌍
+- [ ] Flows - a way to keep bookmarks in a session-like order with related notes (e.g. for learning, research, etc.) ✨
+- [ ] ...and more to come! 🧙
 
-## Feature requests
-
-If you have an idea for a feature, please [open an issue](https://github.com/goniszewski/grimoire/issues) and describe it in detail. If you have a mockup, please attach it to the issue.
+We're open to suggestions and feature requests! If you have an idea for a feature, please [open an issue](https://github.com/goniszewski/grimoire/issues) or [start a discussion](https://github.com/goniszewski/grimoire/discussions/categories/ideas).
 
 ## Contributing
 
