@@ -1,5 +1,5 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
-import { getFileUrl, prepareTags } from '$lib/utils';
+import { getFileUrl, getMetadataFromHtml, prepareTags } from '$lib/utils';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
@@ -150,22 +150,25 @@ export async function POST({ locals, request }) {
 		const tags = prepareRequestedTags(requestBody, userTags);
 		const tagIds = await prepareTags(locals.pb, tags, owner);
 
+		const metadata = await getMetadataFromHtml(requestBody?.content_html || '', requestBody.url);
+
 		const record = await locals.pb.collection('bookmarks').create<Bookmark>({
 			owner,
 			category: requestBody.category,
-			content_html: requestBody.content_html,
-			content_published_date: requestBody.content_published_date,
-			content_text: requestBody.content_text,
-			content_type: requestBody.content_type,
-			description: requestBody.description,
+			content_html: metadata?.content_html || requestBody.content_html,
+			content_published_date:
+				requestBody.content_published_date || metadata?.content_published_date,
+			content_text: requestBody.content_text || metadata?.content_text,
+			content_type: requestBody.content_type || metadata?.content_type,
+			description: requestBody.description || metadata?.description,
 			domain: new URL(requestBody.url).hostname,
-			icon_url: requestBody.icon_url,
+			icon_url: requestBody.icon_url || metadata?.icon_url,
 			importance: requestBody.importance,
-			main_image_url: requestBody.main_image_url,
+			main_image_url: requestBody.main_image_url || metadata?.main_image_url,
 			note: requestBody.note,
-			title: requestBody.title,
+			title: requestBody.title || metadata?.title,
 			url: requestBody.url,
-			author: requestBody.author,
+			author: requestBody.author || metadata?.author,
 			tags: tagIds,
 			flagged: requestBody.flagged ? new Date().toISOString() : null
 		});
@@ -184,16 +187,16 @@ export async function POST({ locals, request }) {
 			);
 		}
 
-		if (requestBody.main_image_url || requestBody.icon_url) {
+		if (record.main_image_url || record.icon_url) {
 			const attachments = new FormData();
 
-			if (requestBody.main_image_url) {
-				const main_image = await fetch(requestBody.main_image_url as string).then((r) => r.blob());
+			if (record.main_image_url) {
+				const main_image = await fetch(record.main_image_url as string).then((r) => r.blob());
 				attachments.append('main_image', main_image);
 			}
 
-			if (requestBody.icon_url) {
-				const icon = await fetch(requestBody.icon_url as string).then((r) => r.blob());
+			if (record.icon_url) {
+				const icon = await fetch(record.icon_url as string).then((r) => r.blob());
 				attachments.append('icon', icon);
 			}
 
@@ -207,6 +210,8 @@ export async function POST({ locals, request }) {
 			}
 		);
 	} catch (error: any) {
+		console.error('Error creating bookmark from API request', error?.message);
+
 		return json(
 			{
 				success: false,
