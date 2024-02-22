@@ -11,7 +11,7 @@ import metascraperTitle from 'metascraper-title';
 import metascraperUrl from 'metascraper-url';
 import sanitize from 'sanitize-html';
 
-import { extract } from '@extractus/article-extractor';
+import { extract, extractFromHtml } from '@extractus/article-extractor';
 
 import type { Metadata } from '$lib/types/Metadata.type';
 
@@ -41,7 +41,19 @@ const metascraperScraper = async (html: string, url: string): Promise<Partial<Me
 };
 
 const articleExtractorScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
-	const articleExtractorMetadata = await extract(html || url);
+	let articleExtractorMetadata;
+
+	if (html !== '') {
+		articleExtractorMetadata = await extractFromHtml(html, url).catch((error) => {
+			console.error('articleExtractorScraper.extractFromHtml', error);
+			return null;
+		});
+	} else {
+		articleExtractorMetadata = await extract(url).catch((error) => {
+			console.error('articleExtractorScraper.extract', error);
+			return null;
+		});
+	}
 
 	return {
 		url: articleExtractorMetadata?.url,
@@ -119,6 +131,40 @@ export async function getMetadata(url: string) {
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
 		content_text,
 		content_html: articleExtractorMetadata?.content_html || '',
+		content_type: '',
+		content_published_date: metascraperMetadata?.content_published_date || '',
+		main_image: '',
+		main_image_url:
+			metascraperMetadata?.main_image_url || articleExtractorMetadata?.main_image_url || '',
+		icon: '',
+		icon_url: faviconMetadata?.icon_url || ''
+	};
+}
+
+export async function getMetadataFromHtml(html: string, url: string) {
+	const metascraperMetadata = await metascraperScraper(html, url);
+	const articleExtractorMetadata = await articleExtractorScraper(html, url);
+	const faviconMetadata = await faviconScraper(html, url);
+
+	const firstParagraph = faviconMetadata.content_html?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
+
+	const domain = new URL(url).hostname.replace('www.', '');
+	const content_text = articleExtractorMetadata?.content_html
+		? htmlToText(articleExtractorMetadata.content_html) || htmlToText(html)
+		: '';
+
+	return {
+		url: metascraperMetadata?.url || articleExtractorMetadata?.url || '',
+		domain,
+		title: metascraperMetadata?.title || articleExtractorMetadata?.title || '',
+		description:
+			metascraperMetadata?.description ||
+			articleExtractorMetadata?.description ||
+			firstParagraph ||
+			'',
+		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
+		content_text,
+		content_html: articleExtractorMetadata?.content_html || sanitizeHtml(html) || '',
 		content_type: '',
 		content_published_date: metascraperMetadata?.content_published_date || '',
 		main_image: '',
