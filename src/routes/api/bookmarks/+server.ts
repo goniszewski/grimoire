@@ -21,12 +21,17 @@ const prepareRequestedTags = (
 	return (
 		requestBody.tags?.reduce(
 			(acc, tag) => {
-				const existingTag = userTags.find((userTag) => userTag.name === tag.name);
+				const existingTag = userTags.find((userTag) => userTag.name === tag);
 
 				if (!existingTag) {
 					acc.push({
-						label: tag.name,
-						value: tag.name
+						label: tag,
+						value: tag
+					});
+				} else {
+					acc.push({
+						label: existingTag.name,
+						value: existingTag.id
 					});
 				}
 
@@ -117,14 +122,7 @@ export async function POST({ locals, request }) {
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().required(),
-		tags: joi
-			.array()
-			.items(
-				joi.object({
-					name: joi.string().required()
-				})
-			)
-			.optional()
+		tags: joi.array().items(joi.string().required()).optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -249,14 +247,7 @@ export async function PATCH({ locals, request }) {
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().optional(),
-		tags: joi
-			.array()
-			.items(
-				joi.object({
-					name: joi.string().required()
-				})
-			)
-			.optional()
+		tags: joi.array().items(joi.string().required()).optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -300,15 +291,7 @@ export async function PATCH({ locals, request }) {
 		const preparedTags = prepareRequestedTags(requestBody, userTags);
 		const newTags = await prepareTags(locals.pb, preparedTags, owner);
 
-		console.log({
-			userTags,
-			preparedTags,
-			newTags
-		});
-
 		const tags = [...userTags.map((tag) => tag.id), ...newTags];
-
-		console.log({ tags });
 
 		const record = await locals.pb.collection('bookmarks').update<Bookmark>(
 			id,

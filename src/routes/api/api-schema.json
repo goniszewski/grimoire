@@ -874,14 +874,8 @@
 				}
 			},
 			"TagCreateDto": {
-				"type": "object",
-				"description": "Bookmark tag",
-				"properties": {
-					"name": {
-						"type": "string",
-						"description": "Tag name"
-					}
-				}
+				"type": "string",
+				"description": "Bookmark tag"
 			}
 		},
 		"responses": {

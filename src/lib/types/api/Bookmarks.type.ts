@@ -13,9 +13,7 @@ export type AddBookmarkRequestBody = {
 	importance?: number;
 	flagged?: boolean;
 	category: string;
-	tags?: {
-		name: string;
-	}[];
+	tags?: string[];
 };
 
 export type UpdateBookmarkRequestBody = AddBookmarkRequestBody & {
