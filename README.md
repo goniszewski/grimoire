@@ -118,8 +118,10 @@ git clone https://github.com/goniszewski/grimoire
 # Install the dependencies
 pnpm i
 
-# Run the Pocketbase container using Docker Compose and start the app
-chmod +x ./run-dev.sh && ./run-dev.sh
+# Build and start the app
+pnpm build && node -r dotenv/config build
+
+# To start the app again, just run `node -r dotenv/config build`
 ```
 
 </details>
