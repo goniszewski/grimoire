@@ -529,6 +529,10 @@
 					"owner": {
 						"type": "string",
 						"description": "Bookmark owner ID"
+					},
+					"screenshot": {
+						"type": "string",
+						"description": "Bookmarked page screenshot URL"
 					}
 				}
 			},
@@ -699,6 +703,11 @@
 						"items": {
 							"$ref": "#/components/schemas/TagCreateDto"
 						}
+					},
+					"screenshot": {
+						"type": "string",
+						"optional": true,
+						"description": "Screenshot of bookmarked page, mainly used by web extension (data URL, max 300kb)"
 					}
 				}
 			},
@@ -785,6 +794,11 @@
 						"items": {
 							"$ref": "#/components/schemas/TagCreateDto"
 						}
+					},
+					"screenshot": {
+						"type": "string",
+						"optional": true,
+						"description": "Screenshot of bookmarked page, mainly used by web extension (data URL, max 300kb)"
 					}
 				}
 			},
