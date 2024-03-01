@@ -29,9 +29,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	const { login, password } = value;
 
 	try {
-		const authReponse = await locals.pb.collection('users').authWithPassword(login, password);
+		const authResponse = await locals.pb.collection('users').authWithPassword(login, password);
 
-		const { token } = authReponse;
+		const { token } = authResponse;
 
 		return json(
 			{
