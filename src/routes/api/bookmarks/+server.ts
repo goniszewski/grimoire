@@ -1,5 +1,6 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
 import { getFileUrl, getMetadataFromHtml, prepareTags } from '$lib/utils';
+import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
@@ -10,7 +11,6 @@ import type {
 	AddBookmarkRequestBody,
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
-
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
 	userTags: { id: string; name: string }[]
@@ -71,8 +71,13 @@ export async function GET({ locals, url, request }) {
 			.then((res) => {
 				return res.map(({ expand, ...bookmark }) => ({
 					...bookmark,
-					icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
-					main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
+					icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
+					main_image: bookmark.main_image
+						? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
+						: '',
+					screenshot: bookmark.screenshot
+						? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
+						: '',
 					...(expand || {})
 				}));
 			});
@@ -122,7 +127,8 @@ export async function POST({ locals, request }) {
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().required(),
-		tags: joi.array().items(joi.string().required()).optional()
+		tags: joi.array().items(joi.string().optional()).optional(),
+		screenshot: joi.string().allow('').optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -185,7 +191,7 @@ export async function POST({ locals, request }) {
 			);
 		}
 
-		if (record.main_image_url || record.icon_url) {
+		if (record.main_image_url || record.icon_url || requestBody.screenshot) {
 			const attachments = new FormData();
 
 			if (record.main_image_url) {
@@ -196,6 +202,12 @@ export async function POST({ locals, request }) {
 			if (record.icon_url) {
 				const icon = await fetch(record.icon_url as string).then((r) => r.blob());
 				attachments.append('icon', icon);
+			}
+
+			if (requestBody.screenshot) {
+				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+
+				attachments.append('screenshot', screenshot);
 			}
 
 			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
@@ -247,7 +259,8 @@ export async function PATCH({ locals, request }) {
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().optional(),
-		tags: joi.array().items(joi.string().required()).optional()
+		tags: joi.array().items(joi.string().required()).optional(),
+		screenshot: joi.string().allow('').optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -330,6 +343,12 @@ export async function PATCH({ locals, request }) {
 			if (requestBody.icon_url) {
 				const icon = await fetch(requestBody.icon_url as string).then((r) => r.blob());
 				attachments.append('icon', icon);
+			}
+
+			if (requestBody.screenshot) {
+				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+
+				attachments.append('screenshot', screenshot);
 			}
 
 			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
