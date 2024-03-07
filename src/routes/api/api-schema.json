@@ -678,6 +678,11 @@
 						"optional": true,
 						"description": "Bookmark icon URL"
 					},
+					"icon": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark icon, mainly used by web extension (data URL)"
+					},
 					"main_image_url": {
 						"type": "string",
 						"optional": true,
