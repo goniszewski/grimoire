@@ -1,5 +1,6 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
-import { getFileUrl, prepareTags } from '$lib/utils';
+import { getFileUrl, getMetadataFromHtml, prepareTags } from '$lib/utils';
+import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
@@ -10,6 +11,7 @@ import type {
 	AddBookmarkRequestBody,
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
+import type Client from 'pocketbase';
 
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
@@ -21,12 +23,17 @@ const prepareRequestedTags = (
 	return (
 		requestBody.tags?.reduce(
 			(acc, tag) => {
-				const existingTag = userTags.find((userTag) => userTag.name === tag.name);
+				const existingTag = userTags.find((userTag) => userTag.name === tag);
 
 				if (!existingTag) {
 					acc.push({
-						label: tag.name,
-						value: tag.name
+						label: tag,
+						value: tag
+					});
+				} else {
+					acc.push({
+						label: existingTag.name,
+						value: existingTag.id
 					});
 				}
 
@@ -37,8 +44,68 @@ const prepareRequestedTags = (
 	);
 };
 
+const getBookmarksByIds = async (ids: string[], owner: string, pb: Client) => {
+	const filterExpression = ids[0]
+		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
+		: `owner="${owner}"`;
+
+	const records = await pb
+		.collection('bookmarks')
+		.getFullList<BookmarkDto>({
+			filter: filterExpression,
+			expand: 'category,tags'
+		})
+		.then((res) => {
+			return res.map(({ expand, ...bookmark }) => ({
+				...bookmark,
+				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
+				main_image: bookmark.main_image
+					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
+					: '',
+				screenshot: bookmark.screenshot
+					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
+					: '',
+				...(expand || {})
+			}));
+		});
+
+	return removePocketbaseFields(records);
+};
+
+const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
+	const cleanUrl = new URL(url);
+	cleanUrl.hash = '';
+	cleanUrl.search = '';
+
+	const filterExpression = `url~"${cleanUrl.toString()}%" && owner="${owner}"`;
+
+	const records = await pb
+		.collection('bookmarks')
+		.getFirstListItem<BookmarkDto>(filterExpression, {
+			expand: 'category,tags'
+		})
+		.then((res) => {
+			const { expand, ...bookmark } = res || {};
+
+			return {
+				...bookmark,
+				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
+				main_image: bookmark.main_image
+					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
+					: '',
+				screenshot: bookmark.screenshot
+					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
+					: '',
+				...(expand || {})
+			};
+		});
+
+	return removePocketbaseFields(records);
+};
+
 export async function GET({ locals, url, request }) {
 	let owner = locals.pb.authStore.model?.id;
+	let bookmarks: Bookmark[] = [];
 
 	if (!owner) {
 		const { owner: apiOwner, error } = await authenticateUserApiRequest(locals.pb, request);
@@ -50,29 +117,17 @@ export async function GET({ locals, url, request }) {
 		}
 	}
 
-	const ids = url.searchParams.get('ids')?.split(',') || [];
-
-	const filterExpression = ids[0]
-		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
-		: `owner="${owner}"`;
+	const idsParam = url.searchParams.get('ids')?.split(',') || [];
+	const urlParam = url.searchParams.get('url');
 
 	try {
-		const records = await locals.pb
-			.collection('bookmarks')
-			.getFullList<BookmarkDto>({
-				filter: filterExpression,
-				expand: 'category,tags'
-			})
-			.then((res) => {
-				return res.map(({ expand, ...bookmark }) => ({
-					...bookmark,
-					icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
-					main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
-					...(expand || {})
-				}));
-			});
+		if (urlParam) {
+			const bookmark = await getBookmarkByUrl(urlParam, owner, locals.pb);
 
-		const bookmarks = removePocketbaseFields(records);
+			bookmarks = bookmark ? [bookmark] : [];
+		} else {
+			bookmarks = await getBookmarksByIds(idsParam, owner, locals.pb);
+		}
 
 		return json(
 			{ bookmarks },
@@ -114,17 +169,12 @@ export async function POST({ locals, request }) {
 		note: joi.string().allow('').optional(),
 		main_image_url: joi.string().allow('').optional(),
 		icon_url: joi.string().allow('').optional(),
+		icon: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().required(),
-		tags: joi
-			.array()
-			.items(
-				joi.object({
-					name: joi.string().required()
-				})
-			)
-			.optional()
+		tags: joi.array().items(joi.string().optional()).optional(),
+		screenshot: joi.string().allow('').optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -150,22 +200,25 @@ export async function POST({ locals, request }) {
 		const tags = prepareRequestedTags(requestBody, userTags);
 		const tagIds = await prepareTags(locals.pb, tags, owner);
 
+		const metadata = await getMetadataFromHtml(requestBody?.content_html || '', requestBody.url);
+
 		const record = await locals.pb.collection('bookmarks').create<Bookmark>({
 			owner,
 			category: requestBody.category,
-			content_html: requestBody.content_html,
-			content_published_date: requestBody.content_published_date,
-			content_text: requestBody.content_text,
-			content_type: requestBody.content_type,
-			description: requestBody.description,
+			content_html: metadata?.content_html || requestBody.content_html,
+			content_published_date:
+				requestBody.content_published_date || metadata?.content_published_date,
+			content_text: requestBody.content_text || metadata?.content_text,
+			content_type: requestBody.content_type || metadata?.content_type,
+			description: requestBody.description || metadata?.description,
 			domain: new URL(requestBody.url).hostname,
-			icon_url: requestBody.icon_url,
+			icon_url: requestBody.icon_url || metadata?.icon_url,
 			importance: requestBody.importance,
-			main_image_url: requestBody.main_image_url,
+			main_image_url: requestBody.main_image_url || metadata?.main_image_url,
 			note: requestBody.note,
-			title: requestBody.title,
+			title: requestBody.title || metadata?.title,
 			url: requestBody.url,
-			author: requestBody.author,
+			author: requestBody.author || metadata?.author,
 			tags: tagIds,
 			flagged: requestBody.flagged ? new Date().toISOString() : null
 		});
@@ -184,16 +237,28 @@ export async function POST({ locals, request }) {
 			);
 		}
 
-		if (requestBody.main_image_url || requestBody.icon_url) {
+		if (record.main_image_url || record.icon_url || requestBody.screenshot) {
 			const attachments = new FormData();
 
-			if (requestBody.main_image_url) {
-				const main_image = await fetch(requestBody.main_image_url as string).then((r) => r.blob());
+			if (record.main_image_url) {
+				const main_image = await fetch(record.main_image_url as string).then((r) => r.blob());
 				attachments.append('main_image', main_image);
 			}
 
-			if (requestBody.icon_url) {
-				const icon = await fetch(requestBody.icon_url as string).then((r) => r.blob());
+			if (record.icon_url) {
+				const icon = await fetch(record.icon_url as string).then((r) => r.blob());
+				attachments.append('icon', icon);
+			}
+
+			if (requestBody.screenshot) {
+				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+
+				attachments.append('screenshot', screenshot);
+			}
+
+			if (requestBody.icon) {
+				const icon = urlDataToBlobConverter(requestBody.icon);
+
 				attachments.append('icon', icon);
 			}
 
@@ -207,6 +272,8 @@ export async function POST({ locals, request }) {
 			}
 		);
 	} catch (error: any) {
+		console.error('Error creating bookmark from API request', error?.message);
+
 		return json(
 			{
 				success: false,
@@ -244,14 +311,8 @@ export async function PATCH({ locals, request }) {
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().optional(),
-		tags: joi
-			.array()
-			.items(
-				joi.object({
-					name: joi.string().required()
-				})
-			)
-			.optional()
+		tags: joi.array().items(joi.string().required()).optional(),
+		screenshot: joi.string().allow('').optional()
 	});
 
 	const { error } = validationSchema.validate(requestBody);
@@ -295,15 +356,7 @@ export async function PATCH({ locals, request }) {
 		const preparedTags = prepareRequestedTags(requestBody, userTags);
 		const newTags = await prepareTags(locals.pb, preparedTags, owner);
 
-		console.log({
-			userTags,
-			preparedTags,
-			newTags
-		});
-
 		const tags = [...userTags.map((tag) => tag.id), ...newTags];
-
-		console.log({ tags });
 
 		const record = await locals.pb.collection('bookmarks').update<Bookmark>(
 			id,
@@ -342,6 +395,12 @@ export async function PATCH({ locals, request }) {
 			if (requestBody.icon_url) {
 				const icon = await fetch(requestBody.icon_url as string).then((r) => r.blob());
 				attachments.append('icon', icon);
+			}
+
+			if (requestBody.screenshot) {
+				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+
+				attachments.append('screenshot', screenshot);
 			}
 
 			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);

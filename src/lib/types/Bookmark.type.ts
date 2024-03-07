@@ -27,4 +27,5 @@ export type Bookmark = {
 	owner: User;
 	opened_last: null | Date;
 	opened_times: number;
+	screenshot: string;
 };

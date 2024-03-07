@@ -529,6 +529,10 @@
 					"owner": {
 						"type": "string",
 						"description": "Bookmark owner ID"
+					},
+					"screenshot": {
+						"type": "string",
+						"description": "Bookmarked page screenshot URL"
 					}
 				}
 			},
@@ -674,6 +678,11 @@
 						"optional": true,
 						"description": "Bookmark icon URL"
 					},
+					"icon": {
+						"type": "string",
+						"optional": true,
+						"description": "Bookmark icon, mainly used by web extension (data URL)"
+					},
 					"main_image_url": {
 						"type": "string",
 						"optional": true,
@@ -699,6 +708,11 @@
 						"items": {
 							"$ref": "#/components/schemas/TagCreateDto"
 						}
+					},
+					"screenshot": {
+						"type": "string",
+						"optional": true,
+						"description": "Screenshot of bookmarked page, mainly used by web extension (data URL, max 300kb)"
 					}
 				}
 			},
@@ -785,6 +799,11 @@
 						"items": {
 							"$ref": "#/components/schemas/TagCreateDto"
 						}
+					},
+					"screenshot": {
+						"type": "string",
+						"optional": true,
+						"description": "Screenshot of bookmarked page, mainly used by web extension (data URL, max 300kb)"
 					}
 				}
 			},
@@ -874,14 +893,8 @@
 				}
 			},
 			"TagCreateDto": {
-				"type": "object",
-				"description": "Bookmark tag",
-				"properties": {
-					"name": {
-						"type": "string",
-						"description": "Tag name"
-					}
-				}
+				"type": "string",
+				"description": "Bookmark tag"
 			}
 		},
 		"responses": {
