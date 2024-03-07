@@ -10,6 +10,7 @@ export type AddBookmarkRequestBody = {
 	note?: string;
 	main_image_url?: string;
 	icon_url?: string;
+	icon?: string;
 	importance?: number;
 	flagged?: boolean;
 	category: string;

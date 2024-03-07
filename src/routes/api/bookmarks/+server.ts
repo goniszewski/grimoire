@@ -11,6 +11,8 @@ import type {
 	AddBookmarkRequestBody,
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
+import type Client from 'pocketbase';
+
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
 	userTags: { id: string; name: string }[]
@@ -42,8 +44,68 @@ const prepareRequestedTags = (
 	);
 };
 
+const getBookmarksByIds = async (ids: string[], owner: string, pb: Client) => {
+	const filterExpression = ids[0]
+		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
+		: `owner="${owner}"`;
+
+	const records = await pb
+		.collection('bookmarks')
+		.getFullList<BookmarkDto>({
+			filter: filterExpression,
+			expand: 'category,tags'
+		})
+		.then((res) => {
+			return res.map(({ expand, ...bookmark }) => ({
+				...bookmark,
+				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
+				main_image: bookmark.main_image
+					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
+					: '',
+				screenshot: bookmark.screenshot
+					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
+					: '',
+				...(expand || {})
+			}));
+		});
+
+	return removePocketbaseFields(records);
+};
+
+const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
+	const cleanUrl = new URL(url);
+	cleanUrl.hash = '';
+	cleanUrl.search = '';
+
+	const filterExpression = `url~"${cleanUrl.toString()}%" && owner="${owner}"`;
+
+	const records = await pb
+		.collection('bookmarks')
+		.getFirstListItem<BookmarkDto>(filterExpression, {
+			expand: 'category,tags'
+		})
+		.then((res) => {
+			const { expand, ...bookmark } = res || {};
+
+			return {
+				...bookmark,
+				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
+				main_image: bookmark.main_image
+					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
+					: '',
+				screenshot: bookmark.screenshot
+					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
+					: '',
+				...(expand || {})
+			};
+		});
+
+	return removePocketbaseFields(records);
+};
+
 export async function GET({ locals, url, request }) {
 	let owner = locals.pb.authStore.model?.id;
+	let bookmarks: Bookmark[] = [];
 
 	if (!owner) {
 		const { owner: apiOwner, error } = await authenticateUserApiRequest(locals.pb, request);
@@ -55,34 +117,17 @@ export async function GET({ locals, url, request }) {
 		}
 	}
 
-	const ids = url.searchParams.get('ids')?.split(',') || [];
-
-	const filterExpression = ids[0]
-		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
-		: `owner="${owner}"`;
+	const idsParam = url.searchParams.get('ids')?.split(',') || [];
+	const urlParam = url.searchParams.get('url');
 
 	try {
-		const records = await locals.pb
-			.collection('bookmarks')
-			.getFullList<BookmarkDto>({
-				filter: filterExpression,
-				expand: 'category,tags'
-			})
-			.then((res) => {
-				return res.map(({ expand, ...bookmark }) => ({
-					...bookmark,
-					icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
-					main_image: bookmark.main_image
-						? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
-						: '',
-					screenshot: bookmark.screenshot
-						? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
-						: '',
-					...(expand || {})
-				}));
-			});
+		if (urlParam) {
+			const bookmark = await getBookmarkByUrl(urlParam, owner, locals.pb);
 
-		const bookmarks = removePocketbaseFields(records);
+			bookmarks = bookmark ? [bookmark] : [];
+		} else {
+			bookmarks = await getBookmarksByIds(idsParam, owner, locals.pb);
+		}
 
 		return json(
 			{ bookmarks },
@@ -124,6 +169,7 @@ export async function POST({ locals, request }) {
 		note: joi.string().allow('').optional(),
 		main_image_url: joi.string().allow('').optional(),
 		icon_url: joi.string().allow('').optional(),
+		icon: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().required(),
@@ -208,6 +254,12 @@ export async function POST({ locals, request }) {
 				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
 
 				attachments.append('screenshot', screenshot);
+			}
+
+			if (requestBody.icon) {
+				const icon = urlDataToBlobConverter(requestBody.icon);
+
+				attachments.append('icon', icon);
 			}
 
 			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
