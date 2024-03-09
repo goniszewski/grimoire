@@ -8,6 +8,9 @@
 
 	export let closeModal: () => void;
 	let contentTab = writable<'text' | 'html'>('html');
+	let imageTab = writable<'main' | 'screenshot'>(
+		$showBookmarkStore.main_image || $showBookmarkStore.main_image_url ? 'main' : 'screenshot'
+	);
 
 	function onEditBookmark() {
 		closeModal();
@@ -50,12 +53,31 @@
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
 						</div>
 						<div class="">
-							{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
-								<img
-									src={$bookmark.main_image || $bookmark.main_image_url}
-									alt="Main"
-									class="rounded-md max-w-[70vw] md:max-w-sm"
-								/>
+							<div class="carousel rounded-md max-w-[70vw] md:max-w-sm">
+								{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
+									<div id="main-image" class="carousel-item w-full">
+										<img
+											src={$bookmark.main_image || $bookmark.main_image_url}
+											class="w-full object-contain"
+											alt="Main"
+										/>
+									</div>
+								{/if}
+								{#if $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
+									<div id="screenshot" class="carousel-item w-full">
+										<img
+											src={$bookmark.screenshot}
+											class="w-full object-contain"
+											alt="Screenshot"
+										/>
+									</div>
+								{/if}
+							</div>
+							{#if (($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url) && $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
+								<div class="flex justify-center w-full py-2 gap-2">
+									<a href="#main-image" class="btn btn-xs">Main image</a>
+									<a href="#screenshot" class="btn btn-xs">Screenshot</a>
+								</div>
 							{/if}
 						</div>
 						<div>
