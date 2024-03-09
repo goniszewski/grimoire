@@ -1,26 +1,24 @@
 <script lang="ts">
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 
-	import { enhance, applyAction } from '$app/forms';
+	import { applyAction, enhance } from '$app/forms';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+	import { searchEngine } from '$lib/stores/search.store';
+	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
+	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
 	import {
+		IconBookmark,
+		IconBookmarkFilled,
+		IconClipboardText,
+		IconDots,
+		IconExternalLink,
 		IconEyeCheck,
 		IconEyeClosed,
-		IconBookmarkFilled,
-		IconBookmark,
-		IconDots,
-		IconPhotoX,
-		IconExternalLink,
-		IconClipboardText
+		IconPhotoX
 	} from '@tabler/icons-svelte';
-	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
-	import { invalidate } from '$app/navigation';
-	import { showToast } from '$lib/utils/show-toast';
-	import { user } from '$lib/pb';
-	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
-	import { searchEngine } from '$lib/stores/search.store';
-	import { bookmarksStore } from '$lib/stores/bookmarks.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -53,8 +51,19 @@
 			on:keydown={onShowBookmark}
 		>
 			<div class="w-full h-36 flex items-center justify-center bg-base hover:bg-base-100">
-				{#if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
+				{#if ((!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url) && !bookmark.screenshot.endsWith('/') && bookmark.screenshot}
+					<img
+						src={bookmark.main_image || bookmark.main_image_url}
+						on:mouseover={(e) => (e.target.src = bookmark.screenshot)}
+						on:mouseleave={(e) => (e.target.src = bookmark.main_image || bookmark.main_image_url)}
+						on:focus={(e) => (e.target.src = bookmark.screenshot)}
+						class="w-full h-full object-cover transition duration-300 ease-in-out"
+						alt="Main"
+					/>
+				{:else if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
 					<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+				{:else if !bookmark.screenshot.endsWith('/') || bookmark.screenshot}
+					<img src={bookmark.screenshot} alt="Screenshot" />
 				{:else}
 					<IconPhotoX class="m-auto my-16" />
 				{/if}
