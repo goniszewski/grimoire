@@ -80,7 +80,7 @@
 		"metascraper-title": "^5.43.4",
 		"metascraper-url": "^5.43.4",
 		"pocketbase": "^0.21.0",
-		"sanitize-html": "^2.11.0",
+		"sanitize-html": "^2.12.1",
 		"svelte-french-toast": "^1.2.0",
 		"svelte-select": "^5.8.3",
 		"swagger-ui": "^5.11.2"

@@ -81,8 +81,8 @@ dependencies:
     specifier: ^0.21.0
     version: 0.21.0
   sanitize-html:
-    specifier: ^2.11.0
-    version: 2.11.0
+    specifier: ^2.12.1
+    version: 2.12.1
   svelte-french-toast:
     specifier: ^1.2.0
     version: 1.2.0(svelte@4.2.9)
@@ -6541,6 +6541,17 @@ packages:
 
   /sanitize-html@2.11.0:
     resolution: {integrity: sha512-BG68EDHRaGKqlsNjJ2xUB7gpInPA8gVx/mvjO743hZaeMCZ2DwzW7xvsqZ+KNU4QKwj86HJ3uu2liISf2qBBUA==}
+    dependencies:
+      deepmerge: 4.3.1
+      escape-string-regexp: 4.0.0
+      htmlparser2: 8.0.2
+      is-plain-object: 5.0.0
+      parse-srcset: 1.0.2
+      postcss: 8.4.33
+    dev: false
+
+  /sanitize-html@2.12.1:
+    resolution: {integrity: sha512-Plh+JAn0UVDpBRP/xEjsk+xDCoOvMBwQUf/K+/cBAVuTbtX8bj2VB7S1sL1dssVpykqp0/KPSesHrqXtokVBpA==}
     dependencies:
       deepmerge: 4.3.1
       escape-string-regexp: 4.0.0
