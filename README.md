@@ -28,6 +28,8 @@ It's time to conjure up some organization! 📚✨
 - fetch metadata from websites, store it locally and update it when needed 🌐
 - add your personal notes to bookmarks 📝
 - integration API to add bookmarks from other sources 🧰
+- embrace the night with a dark mode 🌙
+- and stay productive using our official browser extension, _grimoire companion_ ([available here](https://github.com/goniszewski/grimoire-web-extension)) 🪄
 
 ## Installation
 
