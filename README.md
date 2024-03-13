@@ -140,7 +140,7 @@ Check out the [development guide](https://grimoire.pro/docs/getting-started/deve
 - [x] Initial relase (0.1.0) 🚀
 - [x] Official Docker image 🐳
 - [x] Add Integration API 🧰
-- [ ] Official browser extension ([status](https://github.com/users/goniszewski/projects/1/views/1?pane=issue&itemId=46043693)) 🪄
+- [x] Official browser extension ([repository](https://github.com/goniszewski/grimoire-web-extension)) 🪄
 - [ ] Bookmark import and export features 💼
 - [ ] AI features, like generated descriptions and tags suggestions 🤖
 - [ ] Public User profiles & bookmark sharing 🌍
