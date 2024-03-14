@@ -21,10 +21,6 @@ on:
       - 'tailwind.config.cjs'
       - 'tsconfig.json'
       - 'vite.config.cjs'
-  pull_request:
-    branches:
-      - 'main'
-
 
 jobs:
   docker:
@@ -38,8 +34,8 @@ jobs:
         with:
           images: goniszewski/grimoire
           tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
       - name: Set up QEMU
