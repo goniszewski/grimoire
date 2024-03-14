@@ -20,3 +20,6 @@ package
 pb_data
 pb_migrations
 coverage
+CONTRIBUTING.md
+run-dev.sh
+build.sh
