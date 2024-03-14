@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { writable, type Writable } from 'svelte/store';
-	import { page } from '$app/stores';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
@@ -13,9 +12,7 @@
 		closeModal();
 		editBookmarkStore.set($bookmark);
 	}
-	const bookmark = writable<Partial<Bookmark>>({});
-
-	$: $bookmark = { ...$showBookmarkStore };
+	const bookmark = writable<Bookmark>();
 
 	const bookmarkTagsInput: Writable<
 		| {
@@ -26,6 +23,7 @@
 		| null
 	> = writable(null);
 
+	$: $bookmark = { ...$showBookmarkStore };
 	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
 </script>
 
@@ -49,15 +47,42 @@
 							{/if}
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
 						</div>
-						<div class="">
+						<div
+							class="carousel carousel-center max-w-md space-x-4 bg-neutral rounded-box mx-auto h-72 p-1"
+						>
 							{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
-								<img
-									src={$bookmark.main_image || $bookmark.main_image_url}
-									alt="Main"
-									class="rounded-md max-w-[70vw] md:max-w-sm"
-								/>
+								<div id="main-image" class="carousel-item w-full">
+									<a
+										href={$bookmark.main_image || $bookmark.main_image_url}
+										target="_blank"
+										class="flex w-full"
+									>
+										<img
+											src={$bookmark.main_image || $bookmark.main_image_url}
+											class="w-full object-scale-down justify-self-center"
+											alt="Main"
+										/>
+									</a>
+								</div>
+							{/if}
+							{#if $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
+								<div id="screenshot" class="carousel-item w-full">
+									<a href={$bookmark.screenshot} target="_blank" class="flex w-full">
+										<img
+											src={$bookmark.screenshot}
+											class="w-full object-scale-down justify-self-center"
+											alt="Screenshot"
+										/>
+									</a>
+								</div>
 							{/if}
 						</div>
+						{#if (($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url) && $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
+							<div class="flex justify-center w-full py-2 gap-2">
+								<a href="#main-image" class="btn btn-xs">Main image</a>
+								<a href="#screenshot" class="btn btn-xs">Screenshot</a>
+							</div>
+						{/if}
 						<div>
 							<h3 class="text-xl">Tags</h3>
 							<div class="flex flex-wrap gap-2 m-1">
