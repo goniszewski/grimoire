@@ -221,3 +221,9 @@ export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<
 
 	return removeFields(record) as T;
 };
+
+export const checkPocketbaseConnection = async (): Promise<boolean> =>
+	pb.health
+		.check()
+		.then((res) => res.code === 200)
+		.catch(() => false);
