@@ -60,9 +60,9 @@
 						class="w-full h-full object-cover transition duration-300 ease-in-out"
 						alt="Main"
 					/>
-				{:else if (!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url}
+				{:else if (bookmark.main_image && !bookmark.main_image.endsWith('/')) || bookmark.main_image_url}
 					<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
-				{:else if !bookmark.screenshot.endsWith('/') || bookmark.screenshot}
+				{:else if bookmark.screenshot && !bookmark.screenshot.endsWith('/')}
 					<img src={bookmark.screenshot} alt="Screenshot" />
 				{:else}
 					<IconPhotoX class="m-auto my-16" />
