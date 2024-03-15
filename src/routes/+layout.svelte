@@ -9,17 +9,35 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { user } from '$lib/pb';
+	import { checkPocketbaseConnection, pb, user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
-	import { ToastNode } from '$lib/utils/show-toast';
+	import { ToastNode, showToast } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
+	import { env } from '$env/dynamic/public';
+
+	let checkPbConnectionInterval: NodeJS.Timeout;
+	let isPocketbaseAvailable: boolean;
 
 	onMount(async () => {
 		$user.loadFromCookie(document.cookie);
+
+		isPocketbaseAvailable = await checkPocketbaseConnection();
+
+		checkPbConnectionInterval = setInterval(async () => {
+			isPocketbaseAvailable = await checkPocketbaseConnection();
+
+			if (!isPocketbaseAvailable) {
+				showToast.error('Could not connect to Pocketbase. Is it running?');
+			}
+		}, 10_000);
+	});
+
+	onDestroy(() => {
+		clearInterval(checkPbConnectionInterval);
 	});
 
 	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
@@ -41,6 +59,16 @@
 </script>
 
 <div class="flex flex-col min-h-screen">
+	{#if isPocketbaseAvailable === false}
+		<div class="flex items-center justify-center">
+			<div class="alert alert-error fixed z-50 max-w-fit mt-16 opacity-90">
+				<p>
+					Could not connect to <strong>Pocketbase</strong> on {env.PUBLIC_POCKETBASE_URL}. Is it
+					running? 🧙
+				</p>
+			</div>
+		</div>
+	{/if}
 	<head>
 		<title>Grimoire</title>
 	</head>
