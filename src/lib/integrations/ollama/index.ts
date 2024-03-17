@@ -1,8 +1,8 @@
-import type { llmSettings } from '$lib/types/UserSettings.type';
+import type { ollamaSettings } from '$lib/types/UserSettings.type';
 import { validateUrlRegex } from '$lib/utils/regex-library';
 
 export const defaultConfig = {
-	url: 'http://localhost:11434/api',
+	url: 'http://localhost:11434',
 	defaultOptions: {
 		stream: false
 	},
@@ -18,8 +18,21 @@ export const defaultConfig = {
 	}
 };
 
-export async function listAvailableModels() {
-	return fetch(`${defaultConfig.url}/tags`)
+const getValidApiUrl = (url: string) => {
+	switch (url.length > 0) {
+		case url.endsWith('/api/'):
+			return url.slice(0, -5);
+		case url.endsWith('/api'):
+			return url.slice(0, -4);
+		case url.endsWith('/'):
+			return url.slice(0, -1);
+		default:
+			return url;
+	}
+};
+
+export async function listAvailableModels(providedConfig: Partial<ollamaSettings> = {}) {
+	return fetch(`${getValidApiUrl(providedConfig?.url || defaultConfig.url)}/api/tags`)
 		.then((res) => res.json())
 		.then(
 			(res: {
@@ -34,17 +47,13 @@ export async function listAvailableModels() {
 async function generate(
 	prompt: string,
 	model: string,
-	options: {
-		system?: string;
-	} = {
-		...defaultConfig.roles.summarize
-	}
+	providedConfig: Partial<ollamaSettings> = {}
 ): Promise<string> {
-	return fetch(`${defaultConfig.url}/generate`, {
+	return fetch(`${getValidApiUrl(providedConfig?.url || defaultConfig.url)}/api/generate`, {
 		method: 'POST',
 		body: JSON.stringify({
 			...defaultConfig.defaultOptions,
-			system: options.system || defaultConfig.roles.summarize.system,
+			system: providedConfig?.summarize?.system || defaultConfig.roles.summarize.system,
 			prompt,
 			model
 		})
@@ -56,42 +65,22 @@ async function generate(
 export async function summarize(
 	prompt: string,
 	model: string,
-	options: {
-		system?: string;
-	} = {}
+	providedConfig: Partial<ollamaSettings> = {}
 ) {
-	return generate(prompt, model, options);
+	return generate(prompt, model, providedConfig);
 }
 
-export async function generateTags(prompt: string, options: llmSettings) {
+export async function generateTags(prompt: string, options: ollamaSettings) {
 	const serializedPrompt = prompt.replace(validateUrlRegex, '');
 
-	switch (options.provider) {
-		case 'ollama':
-			const response = await generate(
-				serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
-				options.ollama?.model || 'orca-mini',
-				{
-					system: defaultConfig.roles.generateTags.system
-				}
-			);
+	const response = await generate(
+		serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
+		options?.model || 'orca-mini',
+		options
+	);
 
-			return response
-				.split(',')
-				.slice(0, 3)
-				.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
-	}
-}
-
-export async function getModels(url: string) {
-	return fetch(`${url}/api/tags`)
-		.then((res) => res.json())
-		.then(
-			(res: {
-				models: {
-					name: string;
-					description: string;
-				}[];
-			}) => res.models.map((model) => model.name)
-		);
+	return response
+		.split(',')
+		.slice(0, 3)
+		.map((tag) => (tag.split(':')[1] || tag).toLowerCase().trim());
 }
