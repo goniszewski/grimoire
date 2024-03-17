@@ -1,18 +1,18 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import { page } from '$app/stores';
+	import { generateTags } from '$lib/integrations/ollama';
+	import { searchEngine } from '$lib/stores/search.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Metadata } from '$lib/types/Metadata.type';
+	import { validateUrlRegex } from '$lib/utils/regex-library';
+	import { addBookmarkToSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
+	import { IconInfoCircle } from '@tabler/icons-svelte';
 	import _ from 'lodash';
+	import { onDestroy } from 'svelte';
 	import Select from 'svelte-select';
 	import { writable, type Writable } from 'svelte/store';
-	import { page } from '$app/stores';
-	import { enhance } from '$app/forms';
-	import { onDestroy } from 'svelte';
-	import { generateTags } from '$lib/integrations/ollama';
-	import { showToast } from '$lib/utils/show-toast';
-	import { validateUrlRegex } from '$lib/utils/regex-library';
-	import { user } from '$lib/pb';
-	import { IconInfoCircle } from '@tabler/icons-svelte';
-	import { searchEngine } from '$lib/stores/search.store';
-	import { addBookmarkToSearchIndex } from '$lib/utils/search';
 
 	const defaultFormValues: Metadata = {
 		url: '',
@@ -136,18 +136,14 @@
 				.then((data) => {
 					metadata = data?.metadata || { ...defaultFormValues };
 
-					if (
-						!metadata.content_text ||
-						!$user.model.settings?.llm ||
-						!$user.model.settings.llm.enabled
-					)
+					if (!metadata.content_text || !$userSettingsStore?.llm || !$userSettingsStore.llm.enabled)
 						return;
 
 					$loadingTags = true;
 
 					const generateTagsPromise = generateTags(
 						metadata.content_text,
-						$user.model.settings?.llm
+						$userSettingsStore?.llm?.ollama
 					);
 
 					showToast

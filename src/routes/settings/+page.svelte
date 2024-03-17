@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
-	import { defaultConfig, getModels } from '$lib/integrations/ollama';
+	import { defaultConfig, listAvailableModels } from '$lib/integrations/ollama';
 	import { user } from '$lib/pb';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
@@ -22,7 +22,7 @@
 		const url =
 			document.querySelector<HTMLInputElement>('[name="llmOllamaUrl"]')?.value ||
 			'http://localhost:11434';
-		const models = await getModels(url);
+		const models = await listAvailableModels({ url });
 		llmModels.set({ models, fetched: true });
 		showToast.success('Connection successful!');
 	}
