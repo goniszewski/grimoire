@@ -28,6 +28,17 @@ It's time to conjure up some organization! 📚✨
 - fetch metadata from websites, store it locally and update it when needed 🌐
 - add your personal notes to bookmarks 📝
 - integration API to add bookmarks from other sources 🧰
+- embrace the night with a dark mode 🌙
+- and stay productive using our official browser extension, _grimoire companion_ ([available here](https://github.com/goniszewski/grimoire-web-extension)) 🪄
+
+## Screenshots
+
+| Light Mode                                                                      | Dark Mode                                                                            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| ![Only unread](screenshots/only-unread-white.png) Show only unread              | ![Adding new bookmark](screenshots/adding-new-bookmark-dark.png) Adding new bookmark |
+| ![User Profile view](screenshots/user-profile-view-white.png) User Profile view | ![Bookmark details](screenshots/bookmark-details-dark.png) Bookmark details          |
+
+More screenshots can be found in the [screenshots directory](screenshots).
 
 ## Installation
 
@@ -138,7 +149,7 @@ Check out the [development guide](https://grimoire.pro/docs/getting-started/deve
 - [x] Initial relase (0.1.0) 🚀
 - [x] Official Docker image 🐳
 - [x] Add Integration API 🧰
-- [ ] Official browser extension ([status](https://github.com/users/goniszewski/projects/1/views/1?pane=issue&itemId=46043693)) 🪄
+- [x] Official browser extension ([repository](https://github.com/goniszewski/grimoire-web-extension)) 🪄
 - [ ] Bookmark import and export features 💼
 - [ ] AI features, like generated descriptions and tags suggestions 🤖
 - [ ] Public User profiles & bookmark sharing 🌍

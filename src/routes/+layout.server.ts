@@ -101,6 +101,7 @@ export const load = (async ({ locals, url }) => {
 				...bookmark,
 				icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
 				main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
+				screenshot: getFileUrl('bookmarks', bookmark.id, bookmark.screenshot),
 				...bookmark.expand
 			}))
 		),

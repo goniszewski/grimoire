@@ -19,3 +19,7 @@ package
 **/.env
 pb_data
 coverage
+pb_migrations
+CONTRIBUTING.md
+run-dev.sh
+build.sh

@@ -17,7 +17,10 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
-		version: { name: PKG.version }
+		version: { name: PKG.version },
+		csrf: {
+			checkOrigin: false
+		}
 	}
 };
 
