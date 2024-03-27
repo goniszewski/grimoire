@@ -18,8 +18,8 @@ build
 package
 **/.env
 pb_data
-pb_migrations
 coverage
+pb_migrations
 CONTRIBUTING.md
 run-dev.sh
 build.sh
