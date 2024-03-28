@@ -4,14 +4,10 @@ const getProcessEnvValue = (key: string) =>
 	typeof process === 'object' ? process.env[key] : undefined;
 
 const config = {
-	BACKEND_URL:
-		env.PUBLIC_POCKETBASE_URL ||
-		getProcessEnvValue('PUBLIC_POCKETBASE_URL') ||
-		'http://localhost:8090',
 	POCKETBASE_URL:
 		env.PUBLIC_POCKETBASE_URL ||
 		getProcessEnvValue('PUBLIC_POCKETBASE_URL') ||
-		'http://pocketbase:80',
+		'http://localhost:8090',
 	HTTPS_ONLY:
 		(env.PUBLIC_HTTPS_ONLY || getProcessEnvValue('PUBLIC_HTTPS_ONLY')) === 'true' || false,
 	SIGNUP_DISABLED:
