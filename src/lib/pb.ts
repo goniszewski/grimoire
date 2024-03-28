@@ -1,14 +1,15 @@
+import config from '$lib/config';
 import PocketBase, { BaseAuthStore, ClientResponseError } from 'pocketbase';
 import { writable } from 'svelte/store';
 
 import { error, fail, json } from '@sveltejs/kit';
 
-import config from './config';
+import { urls } from './enums/urls';
 
 import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
-export const pb = new PocketBase(config.POCKETBASE_URL);
+export const pb = new PocketBase(config.ORIGIN + urls.INTERNAL_PB);
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {
@@ -197,9 +198,7 @@ export async function authenticateUserApiRequest(
 	return response;
 }
 
-export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<RecordModel>[]>(
-	record: T
-): T => {
+export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<RecordModel>[]>(record: T): T => {
 	const keys = ['collectionId', 'collectionName'];
 	const removeFields = <T>(obj: T): T => {
 		if (Array.isArray(obj)) {
@@ -223,7 +222,4 @@ export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<
 };
 
 export const checkPocketbaseConnection = async (): Promise<boolean> =>
-	pb.health
-		.check()
-		.then((res) => res.code === 200)
-		.catch(() => false);
+	fetch(config.ORIGIN + `${urls.INTERNAL_PB}/api/health`).then((res) => res.ok);
