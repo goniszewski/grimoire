@@ -75,9 +75,9 @@
 </script>
 
 {#if $user.isValid && $user.model}
-	<div class="flex flex-col sm:flex-row justify-center ml-auto w-full m-4">
+	<div class="m-4 ml-auto flex w-full flex-col justify-center sm:flex-row">
 		<form
-			class="flex flex-1 w-full pr-5 items-center flex-wrap"
+			class="flex w-full flex-1 flex-wrap items-center pr-5"
 			bind:this={bookmarksViewForm}
 			method="POST"
 			action="/settings/?/updateUserSettings"
@@ -110,8 +110,8 @@
 							bookmarksViewForm.requestSubmit();
 						}}
 					/>
-					<IconLayout2 class="w-5 h-5 swap-on" />
-					<IconListDetails class="w-5 h-5 swap-off" />
+					<IconLayout2 class="swap-on h-5 w-5" />
+					<IconListDetails class="swap-off h-5 w-5" />
 				</label>
 			</div>
 			<div class="tooltip" data-tip="Sort items">
@@ -129,9 +129,9 @@
 				>
 					<div slot="prepend">
 						{#if $userSettingsStore.bookmarksSortedBy.includes('_asc')}
-							<IconSortAscending class="w-5 h-5" />
+							<IconSortAscending class="h-5 w-5" />
 						{:else}
-							<IconSortDescending class="w-5 h-5" />
+							<IconSortDescending class="h-5 w-5" />
 						{/if}
 					</div>
 				</Select>
@@ -181,9 +181,9 @@
 		position="right"
 	/>
 {:else if $page.data.noUsersFound}
-	<div class="flex flex-col items-center justify-center h-full">
+	<div class="flex h-full flex-col items-center justify-center">
 		<h1 class="text-2xl">Initialization Wizard 🧙</h1>
-		<div class="max-w-2xl flex flex-col text-center my-4 gap-2">
+		<div class="my-4 flex max-w-2xl flex-col gap-2 text-center">
 			<p class="text-lg">Looks like you're about to start using Grimoire for the first time!</p>
 			{#if env?.PUBLIC_SIGNUP_DISABLED === 'true'}
 				<p class="text-lg">
@@ -206,7 +206,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="flex flex-col items-center justify-center h-full">
+	<div class="flex h-full flex-col items-center justify-center">
 		<h1 class="text-2xl">Grimoire welcomes!</h1>
 		<p class="text-lg">
 			Please <a href="/login" class="link">login</a> or
