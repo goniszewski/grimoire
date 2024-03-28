@@ -58,10 +58,10 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col">
 	{#if isPocketbaseAvailable === false}
 		<div class="flex items-center justify-center">
-			<div class="alert alert-error fixed z-50 max-w-fit mt-16 opacity-90">
+			<div class="alert alert-error fixed z-50 mt-16 max-w-fit opacity-90">
 				<p>
 					Could not connect to <strong>Pocketbase</strong> on {env.PUBLIC_POCKETBASE_URL}. Is it
 					running? 🧙
@@ -72,13 +72,13 @@
 	<head>
 		<title>Grimoire</title>
 	</head>
-	<div class="flex flex-col min-w-screen flex-1">
-		<div class="navbar z-1">
+	<div class="min-w-screen flex flex-1 flex-col">
+		<div class="z-1 navbar">
 			<div class="flex">
-				<a href="/" class="btn btn-ghost normal-case text-xl">grimoire</a>
+				<a href="/" class="btn btn-ghost text-xl normal-case">grimoire</a>
 			</div>
 			<div class="navbar-center flex-1">
-				<div class="form-control flex mx-auto w-10/12 join join-horizontal">
+				<div class="form-control join join-horizontal mx-auto flex w-10/12">
 					<input
 						type="text"
 						placeholder="Search"
@@ -110,18 +110,18 @@
 							};
 						}}
 					>
-						<button class="btn btn-sm btn-outline btn-error w-28">Log out admin</button>
+						<button class="btn btn-outline btn-error btn-sm w-28">Log out admin</button>
 					</form>
 				{:else}
 					<div class="dropdown dropdown-end z-10">
-						<label for="avatar" tabindex="-1" class="btn btn-ghost btn-circle avatar placeholder">
-							<div class="bg-neutral text-neutral-content rounded-full w-10">
+						<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
+							<div class="w-10 rounded-full bg-neutral text-neutral-content">
 								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
 							</div>
 						</label>
 						<ul
 							tabindex="-1"
-							class="mt-3 p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-auto gap-2"
+							class="menu dropdown-content menu-sm mt-3 w-auto gap-2 rounded-box bg-base-100 p-2 shadow"
 						>
 							<li>
 								<a href="/profile" class="justify-between">
@@ -140,39 +140,39 @@
 									};
 								}}
 							>
-								<button class="btn btn-sm btn-outline btn-error w-24">Log out</button>
+								<button class="btn btn-outline btn-error btn-sm w-24">Log out</button>
 							</form>
 						</ul>
 					</div>
 				{/if}
 			</div>
 		</div>
-		<div class="flex flex-1 min-w-full z-2 mb-20 sm:mb-0">
+		<div class="z-2 mb-20 flex min-w-full flex-1 sm:mb-0">
 			{#if user && !$user.isAdmin}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
-					<div class="drawer-content flex flex-1 flex-col items-center justify-top m-2 sm:m-8">
+					<div class="justify-top drawer-content m-2 flex flex-1 flex-col items-center sm:m-8">
 						<slot />
 						<label
 							for="my-drawer-2"
-							class="btn btn-primary drawer-button lg:hidden fixed bottom-4 right-4"
+							class="btn btn-primary drawer-button fixed bottom-4 right-4 lg:hidden"
 							><IconMenu /></label
 						>
 					</div>
-					<div class="drawer-side min-w-screen min-h-full">
-						<div class="flex flex-col items-end justify-center h-14">
+					<div class="min-w-screen drawer-side min-h-full">
+						<div class="flex h-14 flex-col items-end justify-center">
 							{#if $page.url.pathname !== '/'}
 								<a href="/" class="link">{'< Back to Home'}</a>
 							{/if}
 						</div>
 						<label for="my-drawer-2" class="drawer-overlay" />
-						<ul class="menu p-4 w-64 h-auto bg-base-200 text-base-content rounded-r-xl gap-4">
+						<ul class="menu h-auto w-64 gap-4 rounded-r-xl bg-base-200 p-4 text-base-content">
 							<!-- Sidebar content here -->
 							<div>
 								<div class="flex">
 									<h3 class="text-xl">Categories</h3>
 									<button
-										class="link link-hover opacity-50 hover:opacity-90 ml-auto"
+										class="link-hover link ml-auto opacity-50 hover:opacity-90"
 										onclick="addCategoryModal.showModal()">➕</button
 									>
 								</div>
@@ -200,7 +200,7 @@
 					</div>
 				</div>
 			{:else}
-				<div class="flex flex-1 flex-col items-center justify-top m-2 sm:m-8">
+				<div class="justify-top m-2 flex flex-1 flex-col items-center sm:m-8">
 					<slot />
 				</div>
 			{/if}
