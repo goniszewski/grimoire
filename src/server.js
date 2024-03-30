@@ -2,20 +2,20 @@ import express from 'express';
 import proxy from 'express-http-proxy';
 
 import { handler } from '../build/handler.js';
-import { urls } from '$lib/enums/urls.js';
 
 const app = express();
 
 const config = {
 	POCKETBASE_URL: process.env.PUBLIC_POCKETBASE_URL || 'http://pocketbase',
-	PORT: process.env.PORT || 5137
+	PORT: process.env.PORT || 5137,
+	INTERNAL_PATH: '/internal/pb'
 };
 
 app.use(
-	urls.INTERNAL_PB,
+	config.INTERNAL_PATH,
 	proxy(config.POCKETBASE_URL, {
 		proxyReqPathResolver: function (req) {
-			return req.url.replace(urls.INTERNAL_PB, '');
+			return req.url.replace(config.INTERNAL_PATH, '');
 		}
 	})
 );

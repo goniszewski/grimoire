@@ -4,6 +4,7 @@ const getProcessEnvValue = (key: string) =>
 	typeof process === 'object' ? process.env[key] : undefined;
 
 const config = {
+	IS_DEV: import.meta.env.DEV,
 	ORIGIN: env.PUBLIC_ORIGIN || getProcessEnvValue('PUBLIC_ORIGIN') || 'http://localhost:5173',
 	POCKETBASE_URL:
 		env.PUBLIC_POCKETBASE_URL || getProcessEnvValue('PUBLIC_POCKETBASE_URL') || 'http://pocketbase',

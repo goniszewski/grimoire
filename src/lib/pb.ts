@@ -9,7 +9,14 @@ import { urls } from './enums/urls';
 import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
-export const pb = new PocketBase(config.ORIGIN + urls.INTERNAL_PB);
+
+const pbUrl = config.IS_DEV
+	? config.POCKETBASE_URL === 'http://pocketbase'
+		? 'http://localhost:5173'
+		: config.POCKETBASE_URL
+	: config.ORIGIN + urls.INTERNAL_PB;
+
+export const pb = new PocketBase(pbUrl);
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {
@@ -198,7 +205,9 @@ export async function authenticateUserApiRequest(
 	return response;
 }
 
-export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<RecordModel>[]>(record: T): T => {
+export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<RecordModel>[]>(
+	record: T
+): T => {
 	const keys = ['collectionId', 'collectionName'];
 	const removeFields = <T>(obj: T): T => {
 		if (Array.isArray(obj)) {
@@ -222,4 +231,6 @@ export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<
 };
 
 export const checkPocketbaseConnection = async (): Promise<boolean> =>
-	fetch(config.ORIGIN + `${urls.INTERNAL_PB}/api/health`).then((res) => res.ok);
+	fetch(
+		config.IS_DEV ? 'http://localhost:5173' : config.ORIGIN + `${urls.INTERNAL_PB}/api/health`
+	).then((res) => res.ok);
