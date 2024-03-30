@@ -1,15 +1,22 @@
+import config from '$lib/config';
 import PocketBase, { BaseAuthStore, ClientResponseError } from 'pocketbase';
 import { writable } from 'svelte/store';
 
 import { error, fail, json } from '@sveltejs/kit';
 
-import config from './config';
+import { urls } from './enums/urls';
 
 import type { RecordModel } from 'pocketbase';
 import type { User } from './types/User.type';
 import type { UserSettings } from './types/UserSettings.type';
 
-export const pb = new PocketBase(config.POCKETBASE_URL);
+const pbUrl = config.IS_DEV
+	? config.POCKETBASE_URL === 'http://pocketbase'
+		? 'http://localhost:5173'
+		: config.POCKETBASE_URL
+	: config.ORIGIN + urls.INTERNAL_PB;
+
+export const pb = new PocketBase(pbUrl);
 
 export const user = writable(
 	pb.authStore as BaseAuthStore & {
@@ -224,7 +231,6 @@ export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<
 };
 
 export const checkPocketbaseConnection = async (): Promise<boolean> =>
-	pb.health
-		.check()
-		.then((res) => res.code === 200)
-		.catch(() => false);
+	fetch(
+		config.IS_DEV ? 'http://localhost:5173' : config.ORIGIN + `${urls.INTERNAL_PB}/api/health`
+	).then((res) => res.ok);
