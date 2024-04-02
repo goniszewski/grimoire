@@ -35,7 +35,8 @@ It's time to conjure up some organization! 📚✨
 
 | Light Mode                                                                      | Dark Mode                                                                            |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| ![Only unread](screenshots/only-unread-white.png) Show only unread              | ![Adding new bookmark](screenshots/adding-new-bookmark-dark.png) Adding new bookmark |
+| ![Only unread](screenshots/only-unread-white.png) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgoniszewski%2Fgrimoire.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgoniszewski%2Fgrimoire?ref=badge_shield)
+Show only unread              | ![Adding new bookmark](screenshots/adding-new-bookmark-dark.png) Adding new bookmark |
 | ![User Profile view](screenshots/user-profile-view-white.png) User Profile view | ![Bookmark details](screenshots/bookmark-details-dark.png) Bookmark details          |
 
 More screenshots can be found in the [screenshots directory](screenshots).
@@ -165,6 +166,9 @@ If you want to contribute to the project, please read the [contributing guide](C
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fgoniszewski%2Fgrimoire.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fgoniszewski%2Fgrimoire?ref=badge_large)
 
 ## Credits
 
