@@ -1,8 +1,12 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import type { Category } from '$lib/types/Category.type';
+	import CategoryTreeItem from '../CategoryTreeItem/CategoryTreeItem.svelte';
 
-	export let categories: (Category & { children?: Category[] })[] | [] = [];
+	// CategoryWithChildren type is a recursive type that includes the children property
+	type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
+
+	export let categories: CategoryWithChildren[] | [] = [];
 </script>
 
 {#each categories as category (category.id)}
@@ -10,7 +14,7 @@
 		<div class="flex items-center">
 			{#if !category.icon}
 				<div
-					class="w-4 h-4 my-auto rounded-full"
+					class="my-auto h-4 w-4 rounded-full"
 					style={`background-color: ${category?.color || '#a0a0a0'};`}
 				/>
 			{:else}
@@ -22,20 +26,8 @@
 		</div>
 
 		{#if category.children}
-			{#each category.children as categoryChild (categoryChild.id)}
-				<div class="flex items-center ml-4">
-					{#if !categoryChild.icon}
-						<div
-							class="w-4 h-4 my-auto rounded-full"
-							style={`background-color: ${categoryChild?.color || '#a0a0a0'};`}
-						/>
-					{:else}
-						<Icon name={categoryChild.icon} size={16} color={categoryChild?.color} />
-					{/if}
-					<a href={`/categories/${categoryChild.slug}`} class="link m-1 hover:text-primary"
-						>{categoryChild.name}</a
-					>
-				</div>
+			{#each category.children as child (child.id)}
+				<CategoryTreeItem children={category.children} {...child} />
 			{/each}
 		{/if}
 	</div>
