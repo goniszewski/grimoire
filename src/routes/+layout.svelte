@@ -13,6 +13,7 @@
 	import { checkPocketbaseConnection, user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
+	import { buildCategoryTree } from '$lib/utils/build-category-tree';
 	import { ToastNode, showToast } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -44,17 +45,8 @@
 
 	$: {
 		const categories = $page.data.categories;
-		const categoriesTreeData = categories
-			.filter((c) => !c.parent)
-			.map((c) => ({
-				...c,
-				children: categories
-					.filter((c2) => c2.parent?.id === c.id)
-					.map((c2) => ({
-						...c2
-					}))
-			}));
-		categoriesTree.set(categoriesTreeData);
+
+		categoriesTree.set(buildCategoryTree(categories));
 	}
 </script>
 
