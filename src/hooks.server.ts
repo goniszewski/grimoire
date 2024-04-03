@@ -13,12 +13,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 					console.info('Admin logged:', res?.admin.email);
 				});
 			} else {
-				await pb
-					.collection('users')
-					.authRefresh()
-					.then((res) => {
-						console.info('User logged:', res.record.username);
-					});
+				await pb.collection('users').authRefresh();
 			}
 		} catch (_) {
 			pb.authStore.clear();
