@@ -5,8 +5,7 @@
 	import { user } from '$lib/pb';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { showToast } from '$lib/utils/show-toast';
-	import { themeChange } from '$lib/utils/theme-change';
+	import { showToast, themeChange } from '$lib/utils';
 	import { IconPlug, IconPlugConnected } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 

@@ -1,6 +1,5 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
-import { getFileUrl, getMetadataFromHtml, prepareTags } from '$lib/utils';
-import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
+import { getFileUrl, getMetadataFromHtml, prepareTags, urlDataToBlobConverter } from '$lib/utils';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';

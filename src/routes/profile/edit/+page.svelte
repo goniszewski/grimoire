@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { user } from '$lib/pb';
-	import { showToast } from '$lib/utils/show-toast';
+	import { showToast } from '$lib/utils';
 
 	let showPasswordForm = false;
 
@@ -24,7 +24,6 @@
 
 			return async ({ result }) => {
 				if (result.type === 'success') {
-					console.log('result', result);
 					showToast.success('User details updated!');
 				}
 			};

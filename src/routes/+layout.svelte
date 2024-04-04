@@ -13,8 +13,7 @@
 	import { checkPocketbaseConnection, user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
-	import { buildCategoryTree } from '$lib/utils/build-category-tree';
-	import { ToastNode, showToast } from '$lib/utils/show-toast';
+	import { ToastNode, buildCategoryTree, showToast } from '$lib/utils';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { writable } from 'svelte/store';

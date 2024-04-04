@@ -7,12 +7,12 @@
 	import { env } from '$env/dynamic/public';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
 	import { user } from '$lib/pb';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { searchEngine, searchedValue } from '$lib/stores/search.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { initializeSearch } from '$lib/utils/search';
-	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
+	import { initializeSearch, sortBookmarks } from '$lib/utils';
 	import {
 		IconLayout2,
 		IconListDetails,
@@ -22,7 +22,6 @@
 	import _ from 'lodash';
 	import Select from 'svelte-select';
 	import { writable } from 'svelte/store';
-	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 
 	const sortByOptions = [
 		{ label: 'added (desc)', value: 'created_desc' },
