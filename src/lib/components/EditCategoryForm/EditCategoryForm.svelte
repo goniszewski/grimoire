@@ -1,14 +1,14 @@
 <script lang="ts">
-	import Select from 'svelte-select';
-	import { writable } from 'svelte/store';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import Select from 'svelte-select';
+	import { writable } from 'svelte/store';
 
-	import { editCategoryStore } from '$lib/stores/edit-category.store';
-	import { icons } from '$lib/enums/icons';
 	import Icon from '$lib/components/Icon/Icon.svelte';
-	import { showToast } from '$lib/utils/show-toast';
+	import { icons } from '$lib/enums/icons';
+	import { editCategoryStore } from '$lib/stores/edit-category.store';
 	import type { Category } from '$lib/types/Category.type';
+	import { showToast } from '$lib/utils';
 
 	const category = writable<Partial<Category>>({});
 	$: $category = { ...$editCategoryStore };
@@ -84,8 +84,8 @@
 		>
 			<input type="text" class="hidden" name="id" value={$category.id} />
 			<input type="text" class="hidden" name="icon" value={$category.icon} />
-			<div class="flex flex-col w-full gap-2">
-				<div class="flex flex-col w-full">
+			<div class="flex w-full flex-col gap-2">
+				<div class="flex w-full flex-col">
 					<label for="name" class="label">Name</label>
 					<input
 						type="text"
@@ -100,13 +100,13 @@
 						}}
 					/>
 				</div>
-				<div class="flex flex-col w-full">
+				<div class="flex w-full flex-col">
 					<label for="icon" class="label">Icon</label>
 					<div class="flex gap-1">
 						{#each icons as icon}
 							<div
-								class={`btn btn-circle btn-ghost btn-sm flex justify-center items-center p-1
-								${$category.icon === icon.id ? 'ring-primary ring-2 bg-primary bg-opacity-20' : ''}
+								class={`btn btn-circle btn-ghost btn-sm flex items-center justify-center p-1
+								${$category.icon === icon.id ? 'bg-primary bg-opacity-20 ring-2 ring-primary' : ''}
 								`}
 								title={icon.title}
 								role="button"
@@ -126,8 +126,8 @@
 							</div>
 						{/each}
 						<div
-							class={`btn btn-ghost btn-sm flex justify-center items-center p-1 text-xs
-									${$category.icon === '' ? 'ring-primary ring-2 bg-primary bg-opacity-20' : ''}
+							class={`btn btn-ghost btn-sm flex items-center justify-center p-1 text-xs
+									${$category.icon === '' ? 'bg-primary bg-opacity-20 ring-2 ring-primary' : ''}
 									`}
 							title="None"
 							role="button"
@@ -147,7 +147,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex flex-col w-auto">
+				<div class="flex w-auto flex-col">
 					<label for="description" class="label">Description</label>
 					<textarea
 						class="textarea textarea-bordered"
@@ -164,11 +164,11 @@
 					<label for="color" class="label">Color</label>
 
 					<div class="flex gap-2">
-						<div class="flex flex-wrap max-w-[12rem] gap-1">
+						<div class="flex max-w-[12rem] flex-wrap gap-1">
 							{#each categoryColors as color}
 								<div
-									class={`w-6 h-6 rounded-full ${
-										$category.color === color ? 'ring-primary ring-2 bg-primary bg-opacity-20' : ''
+									class={`h-6 w-6 rounded-full ${
+										$category.color === color ? 'bg-primary bg-opacity-20 ring-2 ring-primary' : ''
 									}`}
 									style={`background-color: ${color};`}
 									role="button"
@@ -189,13 +189,13 @@
 						<div class="join">
 							<div class="tooltip" data-tip="Color preview">
 								<div
-									class="join-item border border-slate-600 w-6 h-12 flex flex-col justify-end"
+									class="join-item flex h-12 w-6 flex-col justify-end border border-slate-600"
 									style={`background-color: ${$category.color};`}
 								/>
 							</div>
 							<input
 								type="text"
-								class="join-item input input-bordered w-9/12 backdrop-invert"
+								class="input join-item input-bordered w-9/12 backdrop-invert"
 								name="color"
 								value={$category.color}
 								placeholder="E.g. #00FFFF"
@@ -207,7 +207,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex flex-col w-auto">
+				<div class="flex w-auto flex-col">
 					<label for="parent" class="label">Parent</label>
 					<div class="tooltip" data-tip="Select parent category">
 						<Select
@@ -259,7 +259,7 @@
 					>
 						<input type="text" class="hidden" name="id" value={$category.id} />
 						<button
-							class="btn btn-error my-6 mx-auto w-full max-w-xs"
+							class="btn btn-error mx-auto my-6 w-full max-w-xs"
 							formaction="/?/deleteCategory"
 							disabled={$category.initial}
 						>

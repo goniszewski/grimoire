@@ -5,9 +5,7 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Metadata } from '$lib/types/Metadata.type';
-	import { validateUrlRegex } from '$lib/utils/regex-library';
-	import { addBookmarkToSearchIndex } from '$lib/utils/search';
-	import { showToast } from '$lib/utils/show-toast';
+	import { addBookmarkToSearchIndex, showToast, validateUrlRegex } from '$lib/utils';
 	import { IconInfoCircle } from '@tabler/icons-svelte';
 	import _ from 'lodash';
 	import { onDestroy } from 'svelte';
@@ -230,7 +228,7 @@
 				<input
 					type="text"
 					placeholder="Paste link here..."
-					class="join-item input input-secondary input-bordered w-full"
+					class="input join-item input-bordered input-secondary w-full"
 					name="url"
 					value={metadata.url}
 					on:input={onGetMetadata}
@@ -238,7 +236,7 @@
 				/>
 				{#if metadata.url}
 					<button
-						class="join-item btn btn-primary"
+						class="btn btn-primary join-item"
 						on:click={() => {
 							// @ts-ignore-next-line
 							metadata.url = '';
@@ -254,9 +252,9 @@
 				<div class="loading loading-lg m-auto my-10" />
 			{/if}
 			{#if !$loading && metadata.url}
-				<div class="flex flex-col w-full">
-					<div class="flex flex-col md:flex-row items-start justify-between w-full gap-2">
-						<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+				<div class="flex w-full flex-col">
+					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
+						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
 								<label for="category" class="label">Category</label>
 								<Select
@@ -271,7 +269,7 @@
 									class="this-select input input-bordered w-full"
 								/>
 							</div>
-							<div class="flex flex-1 flex-col w-full">
+							<div class="flex w-full flex-1 flex-col">
 								<label for="tags" class="label">Tags</label>
 								<Select
 									name="tags"
@@ -294,8 +292,8 @@
 								</Select>
 							</div>
 						</div>
-						<div class="flex w-full md:w-4/12 gap-4 ml-4">
-							<div class="flex flex-col w-full">
+						<div class="ml-4 flex w-full gap-4 md:w-4/12">
+							<div class="flex w-full flex-col">
 								<label for="importance" class="label">Importance</label>
 								<div class="rating rating-md">
 									<input type="radio" name="importance" class="rating-hidden" value="" checked />
@@ -319,16 +317,16 @@
 									/>
 								</div>
 							</div>
-							<div class="flex flex-col w-full">
+							<div class="flex w-full flex-col">
 								<label for="flag" class="label whitespace-nowrap">Flag it?</label>
-								<label class="cursor-pointer label max-w-fit gap-2">
+								<label class="label max-w-fit cursor-pointer gap-2">
 									<!-- <span class="label-text">Flag</span> -->
-									<input type="checkbox" name="flagged" class="checkbox checkbox-error" />
+									<input type="checkbox" name="flagged" class="checkbox-error checkbox" />
 								</label>
 							</div>
 						</div>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="title" class="label">Title</label>
 						<input
 							type="text"
@@ -342,7 +340,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="icon" class="label">Icon</label>
 						<div class="flex gap-2">
 							<input
@@ -356,11 +354,11 @@
 								}}
 							/>
 							{#if metadata.icon_url}
-								<img class="w-8 h-8 m-auto md:ml-8" src={metadata.icon_url} alt={metadata.title} />
+								<img class="m-auto h-8 w-8 md:ml-8" src={metadata.icon_url} alt={metadata.title} />
 							{/if}
 						</div>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="description" class="label">Description</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -376,7 +374,7 @@
 						<label for="main image" class="label">Main image</label>
 						{#if metadata.main_image_url}
 							<img
-								class="rounded-md m-auto max-h-64"
+								class="m-auto max-h-64 rounded-md"
 								src={metadata.main_image_url}
 								alt={metadata.title}
 							/>
@@ -392,7 +390,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="content_text" class="label">Content (text)</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -405,7 +403,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="author" class="label">Author</label>
 						<input
 							type="text"
@@ -415,7 +413,7 @@
 							placeholder="Extracted if possible..."
 						/>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="note" class="label">Your note</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -432,7 +430,7 @@
 			{/if}
 
 			<button
-				class="btn btn-primary my-6 mx-auto w-full max-w-xs"
+				class="btn btn-primary mx-auto my-6 w-full max-w-xs"
 				disabled={$loading || !metadata.url || !metadata.title}>Add</button
 			>
 		</div>
