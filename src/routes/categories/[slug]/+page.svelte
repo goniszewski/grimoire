@@ -13,27 +13,27 @@
 
 	$: {
 		slug = $page.params.slug;
-		category = $page.data.categories.find((c) => c.slug === slug);
-		bookmarksStore.set($page.data.bookmarks.filter((b) => b.category.id === category?.id));
+		category = $page.data.category;
+		bookmarksStore.set($page.data.bookmarks);
 	}
 </script>
 
 {#if !category}
 	<p>Category not found.</p>
 {:else}
-	<div class="flex flex-col gap-8 w-full">
+	<div class="flex w-full flex-col gap-8">
 		<div class="flex items-center gap-2">
 			<h1 class="text-2xl">Category: {category?.name}</h1>
 			{#if !category.icon}
 				<div
-					class="w-4 h-4 my-auto rounded-full"
+					class="my-auto h-4 w-4 rounded-full"
 					style={`background-color: ${category?.color || '#a0a0a0'};`}
 				/>
 			{:else}
 				<Icon name={category.icon} size={16} color={category?.color} />
 			{/if}
 			<button
-				class="link link-hover opacity-80 hover:opacity-10s px-2"
+				class="hover:opacity-10s link-hover link px-2 opacity-80"
 				on:click={() => {
 					// @ts-ignore
 					editCategoryStore.set(category);
