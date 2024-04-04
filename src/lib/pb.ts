@@ -12,7 +12,7 @@ import type { UserSettings } from './types/UserSettings.type';
 
 const pbUrl = config.IS_DEV
 	? config.POCKETBASE_URL === 'http://pocketbase'
-		? 'http://localhost:5173'
+		? 'http://localhost:8090'
 		: config.POCKETBASE_URL
 	: config.ORIGIN + urls.INTERNAL_PB;
 
