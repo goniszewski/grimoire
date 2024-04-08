@@ -16,6 +16,18 @@ app.use(
 	proxy(config.POCKETBASE_URL, {
 		proxyReqPathResolver: function (req) {
 			return req.url.replace(config.INTERNAL_PATH, '');
+		},
+		proxyReqOptDecorator: function (proxyReqOpts, _srcReq) {
+			const customHeaders = process.env.CUSTOM_PROXY_HEADERS;
+
+			if (customHeaders) {
+				proxyReqOpts.headers = {
+					...JSON.parse(customHeaders),
+					...(proxyReqOpts.headers || {})
+				};
+			}
+
+			return proxyReqOpts;
 		}
 	})
 );
