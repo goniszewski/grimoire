@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
+	import { env } from '$env/dynamic/public';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
@@ -9,15 +10,14 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { checkPocketbaseConnection, pb, user } from '$lib/pb';
+	import { checkPocketbaseConnection, user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
-	import { ToastNode, showToast } from '$lib/utils/show-toast';
+	import { ToastNode, buildCategoryTree, showToast } from '$lib/utils';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
-	import { env } from '$env/dynamic/public';
 
 	let checkPbConnectionInterval: NodeJS.Timeout;
 	let isPocketbaseAvailable: boolean;
@@ -44,17 +44,8 @@
 
 	$: {
 		const categories = $page.data.categories;
-		const categoriesTreeData = categories
-			.filter((c) => !c.parent)
-			.map((c) => ({
-				...c,
-				children: categories
-					.filter((c2) => c2.parent?.id === c.id)
-					.map((c2) => ({
-						...c2
-					}))
-			}));
-		categoriesTree.set(categoriesTreeData);
+
+		categoriesTree.set(buildCategoryTree(categories));
 	}
 </script>
 

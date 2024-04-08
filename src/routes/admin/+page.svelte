@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { user } from '$lib/pb';
+	import type { UserSettings } from '$lib/types/UserSettings.type';
+	import { showToast } from '$lib/utils';
+	import { IconInfoCircle, IconLock, IconLockOpen, IconTrash } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 	import type { PageData } from './$types';
-	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { IconInfoCircle, IconLock, IconLockOpen, IconTrash } from '@tabler/icons-svelte';
-	import { showToast } from '$lib/utils/show-toast';
-	import { enhance } from '$app/forms';
 
 	export let data: PageData;
 	const activeTab = writable('Users');
@@ -24,15 +24,15 @@
 </script>
 
 {#if !$user.isAdmin}
-	<div class="flex flex-col gap-4 h-full w-full items-center justify-center">
+	<div class="flex h-full w-full flex-col items-center justify-center gap-4">
 		<span> You are not logged in as admin. </span>
 		<a href="/admin/login" class="btn btn-primary">Go to admin login page</a>
 	</div>
 {:else}
-	<div class="flex flex-col w-full gap-4">
-		<h1 class="text-2xl m-auto">Admin Panel</h1>
+	<div class="flex w-full flex-col gap-4">
+		<h1 class="m-auto text-2xl">Admin Panel</h1>
 		<p class="ml-auto">Logged as <strong>{$user.model.email}</strong></p>
-		<div class="flex flex-col my-4 gap-2">
+		<div class="my-4 flex flex-col gap-2">
 			{#if !data.adminData}
 				<p>Loading...</p>
 			{:else}
@@ -50,7 +50,7 @@
 						<input type="checkbox" checked />
 						<div class="collapse-title text-xl font-medium">Users</div>
 						<div class="collapse-content">
-							<div class="overflow-x-auto bg-base-100 rounded-md p-4">
+							<div class="overflow-x-auto rounded-md bg-base-100 p-4">
 								<table class="table table-zebra table-sm">
 									<!-- head -->
 									<thead>
@@ -119,7 +119,7 @@
 																		user.disabled
 																	).toLocaleString()}"
 																>
-																	<button class="btn btn-sm btn-ghost">
+																	<button class="btn btn-ghost btn-sm">
 																		<IconLockOpen size={22} class="text-green-400" />
 																	</button>
 																</div>
@@ -128,7 +128,7 @@
 																	class="tooltip tooltip-left"
 																	data-tip="Lock user - user will not be able to log in, can be changed later"
 																>
-																	<button class="btn btn-sm btn-ghost">
+																	<button class="btn btn-ghost btn-sm">
 																		<IconLock size={22} class="text-red-400" />
 																	</button>
 																</div>
@@ -152,7 +152,7 @@
 																class="tooltip tooltip-left"
 																data-tip="Delete user - this action is irreversible!"
 															>
-																<button class="btn btn-sm btn-ghost">
+																<button class="btn btn-ghost btn-sm">
 																	<IconTrash size={22} class="text-red-400" />
 																</button>
 															</div>
@@ -308,7 +308,7 @@
 										type="checkbox"
 										name="smtpEnabled"
 										checked={data.adminData.settings.smtp.enabled}
-										class="checkbox checkbox-accent ml-4"
+										class="checkbox-accent checkbox ml-4"
 										disabled
 										placeholder="-"
 									/>
@@ -388,7 +388,7 @@
 										type="checkbox"
 										name="smtpTls"
 										checked={data.adminData.settings.smtp.tls}
-										class="checkbox checkbox-accent ml-4"
+										class="checkbox-accent checkbox ml-4"
 										disabled
 										placeholder="-"
 									/>
@@ -423,7 +423,7 @@
 										type="checkbox"
 										name="s3StorageEnabled"
 										checked={data.adminData.settings.s3.enabled}
-										class="checkbox checkbox-accent ml-4"
+										class="checkbox-accent checkbox ml-4"
 										disabled
 										placeholder="-"
 									/>
@@ -501,7 +501,7 @@
 										type="checkbox"
 										name="s3StorageForcePathStyle"
 										checked={data.adminData.settings.s3.forcePathStyle}
-										class="checkbox checkbox-accent ml-4"
+										class="checkbox-accent checkbox ml-4"
 										disabled
 										placeholder="-"
 									/>
@@ -541,7 +541,7 @@
 										placeholder="-"
 									/>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<div>
 										<label for="backupsS3Enabled" class="label">
 											<span class="label-text">S3 Enabled?</span>
@@ -550,7 +550,7 @@
 											type="checkbox"
 											name="backupsS3Enabled"
 											checked={data.adminData.settings.backups.s3.enabled}
-											class="checkbox checkbox-accent ml-4"
+											class="checkbox-accent checkbox ml-4"
 											disabled
 											placeholder="-"
 										/>
@@ -628,7 +628,7 @@
 											type="checkbox"
 											name="backupsS3ForcePathStyle"
 											checked={data.adminData.settings.backups.s3.forcePathStyle}
-											class="checkbox checkbox-accent ml-4"
+											class="checkbox-accent checkbox ml-4"
 											disabled
 											placeholder="-"
 										/>
@@ -643,7 +643,7 @@
 						<div class="collapse-title text-xl font-medium">Security</div>
 						<div class="collapse-content">
 							<div class="overflow-x-auto">
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Admin Auth Token</h3>
 									<div>
 										<label for="securityAdminAuthTokenSecret" class="label">
@@ -672,7 +672,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Admin Password Reset Token</h3>
 									<div>
 										<label for="securityAdminPasswordResetTokenSecret" class="label">
@@ -699,7 +699,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Admin File Token</h3>
 									<div>
 										<label for="securityAdminFileTokenSecret" class="label">
@@ -729,7 +729,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Record Auth Token</h3>
 									<div>
 										<label for="securityRecordAuthTokenSecret" class="label">
@@ -758,7 +758,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Record Password Reset Token</h3>
 									<div>
 										<label for="securityRecordPasswordResetTokenSecret" class="label">
@@ -787,7 +787,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Record Email Change Token</h3>
 									<div>
 										<label for="securityRecordEmailChangeTokenSecret" class="label">
@@ -816,7 +816,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Record Verification Token</h3>
 									<div>
 										<label for="securityRecordVerificationTokenSecret" class="label">
@@ -845,7 +845,7 @@
 										/>
 									</div>
 								</div>
-								<div class="p-2 m-2 border border-base-300 rounded-md bg-base-200">
+								<div class="m-2 rounded-md border border-base-300 bg-base-200 p-2">
 									<h3>Record File Token</h3>
 									<div>
 										<label for="securityRecordFileTokenSecret" class="label">

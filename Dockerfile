@@ -18,18 +18,21 @@ FROM base
 ARG PUBLIC_POCKETBASE_URL
 ARG ROOT_ADMIN_EMAIL
 ARG ROOT_ADMIN_PASSWORD
-ARG ORIGIN="http://localhost:5173"
+ARG PUBLIC_ORIGIN="http://localhost:5173"
 ARG PORT=5173
 ARG PUBLIC_HTTPS_ONLY="false"
 ARG PUBLIC_SIGNUP_DISABLED="false"
+ARG BODY_SIZE_LIMIT="5000000"
 
 ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
 ENV ROOT_ADMIN_EMAIL=$ROOT_ADMIN_EMAIL
 ENV ROOT_ADMIN_PASSWORD=$ROOT_ADMIN_PASSWORD
-ENV ORIGIN=$ORIGIN
+ENV PUBLIC_ORIGIN=$PUBLIC_ORIGIN
+ENV ORIGIN=$PUBLIC_ORIGIN
 ENV PORT=$PORT
 ENV PUBLIC_HTTPS_ONLY=$PUBLIC_HTTPS_ONLY
 ENV PUBLIC_SIGNUP_DISABLED=$PUBLIC_SIGNUP_DISABLED
+ENV BODY_SIZE_LIMIT=$BODY_SIZE_LIMIT
 
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app/build
@@ -37,4 +40,4 @@ COPY --from=build /app/package.json /app/package.json
 COPY --from=base /app/pb_migrations /app/pb_migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
-CMD [ "node", "-r", "dotenv/config", "build" ]
+CMD [ "node", "-r", "dotenv/config", "src/server.js" ]

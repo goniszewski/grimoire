@@ -4,8 +4,7 @@ import type { Category } from '$lib/types/Category.type';
 import type { Tag } from '$lib/types/Tag.type';
 import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
 import type { CategoryDto } from '$lib/types/dto/Category.dto';
-import { getFileUrl } from '$lib/utils';
-import { searchIndexKeys } from '$lib/utils/search';
+import { searchIndexKeys, serializeBookmarkList } from '$lib/utils';
 
 import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
 
@@ -95,16 +94,7 @@ export const load = (async ({ locals, url }) => {
 			}))
 		);
 	return {
-		bookmarks: structuredClone(
-			bookmarks.items.map((bookmark) => ({
-				// TODO: export this logic to a function
-				...bookmark,
-				icon: getFileUrl('bookmarks', bookmark.id, bookmark.icon),
-				main_image: getFileUrl('bookmarks', bookmark.id, bookmark.main_image),
-				screenshot: getFileUrl('bookmarks', bookmark.id, bookmark.screenshot),
-				...bookmark.expand
-			}))
-		),
+		bookmarks: serializeBookmarkList(bookmarks.items),
 		categories: structuredClone(
 			categories.items.map((category) => ({ ...category, ...category.expand }))
 		),

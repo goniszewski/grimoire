@@ -1,15 +1,14 @@
 <script lang="ts">
-	import Select from 'svelte-select';
-	import _ from 'lodash';
 	import { enhance } from '$app/forms';
-	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
+	import _ from 'lodash';
+	import Select from 'svelte-select';
+	import { writable, type Writable } from 'svelte/store';
 
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import { showToast } from '$lib/utils/show-toast';
-	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { updateBookmarkInSearchIndex } from '$lib/utils/search';
 	import { searchEngine } from '$lib/stores/search.store';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import { showToast, updateBookmarkInSearchIndex } from '$lib/utils';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
@@ -176,7 +175,7 @@
 					<input
 						type="text"
 						placeholder="Paste link here..."
-						class="join-item input input-secondary input-bordered w-full"
+						class="input join-item input-bordered input-secondary w-full"
 						name="url"
 						value={$bookmark.url}
 						on:input={onGetMetadata}
@@ -187,9 +186,9 @@
 				{#if $loading}
 					<div class="loading loading-lg m-auto my-10" />
 				{/if}
-				<div class="flex flex-col w-full">
-					<div class="flex flex-col md:flex-row items-start justify-between w-full gap-2">
-						<div class="flex flex-col md:flex-row items-center justify-between w-full gap-2">
+				<div class="flex w-full flex-col">
+					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
+						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
 								{#if $bookmark.category?.id}
 									<label for="category" class="label">Category</label>
@@ -205,7 +204,7 @@
 									/>
 								{/if}
 							</div>
-							<div class="flex flex-1 flex-col w-full">
+							<div class="flex w-full flex-1 flex-col">
 								<label for="tags" class="label">Tags</label>
 								<Select
 									name="tags"
@@ -227,8 +226,8 @@
 								</Select>
 							</div>
 						</div>
-						<div class="flex w-full md:w-4/12 gap-4 ml-4">
-							<div class="flex flex-col w-full">
+						<div class="ml-4 flex w-full gap-4 md:w-4/12">
+							<div class="flex w-full flex-col">
 								<label for="importance" class="label">Importance</label>
 								<div class="rating rating-md">
 									<input
@@ -261,21 +260,21 @@
 									/>
 								</div>
 							</div>
-							<div class="flex flex-col w-full">
+							<div class="flex w-full flex-col">
 								<label for="flag" class="label whitespace-nowrap">Flag it?</label>
-								<label class="cursor-pointer label max-w-fit gap-2">
+								<label class="label max-w-fit cursor-pointer gap-2">
 									<!-- <span class="label-text">Flag</span> -->
 									<input
 										type="checkbox"
 										name="flagged"
-										class="checkbox checkbox-error"
+										class="checkbox-error checkbox"
 										checked={!!$bookmark.flagged}
 									/>
 								</label>
 							</div>
 						</div>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="title" class="label">Title</label>
 						<input
 							type="text"
@@ -289,7 +288,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="icon" class="label">Icon</label>
 						<div class="flex gap-2">
 							<input
@@ -304,14 +303,14 @@
 							/>
 							{#if $bookmark.icon_url}
 								<img
-									class="w-8 h-8 m-auto md:ml-8"
+									class="m-auto h-8 w-8 md:ml-8"
 									src={$bookmark.icon_url}
 									alt={$bookmark.title}
 								/>
 							{/if}
 						</div>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="description" class="label">Description</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -327,7 +326,7 @@
 						<label for="main image" class="label">Main image</label>
 						{#if $bookmark.main_image_url}
 							<img
-								class="rounded-md m-auto max-h-64"
+								class="m-auto max-h-64 rounded-md"
 								src={$bookmark.main_image_url}
 								alt={$bookmark.title}
 							/>
@@ -343,7 +342,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="content_text" class="label">Content (text)</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -356,7 +355,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-full">
+					<div class="flex w-full flex-col">
 						<label for="author" class="label">Author</label>
 						<input
 							type="text"
@@ -370,7 +369,7 @@
 							}}
 						/>
 					</div>
-					<div class="flex flex-col w-auto">
+					<div class="flex w-auto flex-col">
 						<label for="note" class="label">Your note</label>
 						<textarea
 							class="textarea textarea-bordered"
@@ -386,7 +385,7 @@
 				</div>
 
 				<button
-					class="btn btn-primary my-6 mx-auto w-full max-w-xs"
+					class="btn btn-primary mx-auto my-6 w-full max-w-xs"
 					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button
 				>
 			</div>

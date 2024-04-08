@@ -1,4 +1,4 @@
-import type { sortByType } from '$lib/utils/sort-bookmarks';
+import type { sortByType } from '$lib/utils';
 
 export type ollamaSettings = {
 	url: string;

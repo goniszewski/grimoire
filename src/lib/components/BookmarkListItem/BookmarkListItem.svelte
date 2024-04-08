@@ -1,26 +1,23 @@
 <script lang="ts">
-	import { enhance, applyAction } from '$app/forms';
+	import { applyAction, enhance } from '$app/forms';
+	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+	import { searchEngine } from '$lib/stores/search.store';
+	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
+	import { userSettingsStore } from '$lib/stores/user-settings.store';
+	import type { Bookmark } from '$lib/types/Bookmark.type';
+	import { removeBookmarkFromSearchIndex, showToast } from '$lib/utils';
 	import {
+		IconBackspace,
+		IconBookmark,
+		IconBookmarkFilled,
+		IconClipboardText,
+		IconExternalLink,
 		IconEyeCheck,
 		IconEyeClosed,
-		IconBookmarkFilled,
-		IconBookmark,
-		IconExternalLink,
-		IconClipboardText,
 		IconMenu,
-		IconBackspace,
 		IconPencil
 	} from '@tabler/icons-svelte';
-	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
-	import { invalidate } from '$app/navigation';
-	import { showToast } from '$lib/utils/show-toast';
-	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { user } from '$lib/pb';
-	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
-	import { searchEngine } from '$lib/stores/search.store';
-	import { bookmarksStore } from '$lib/stores/bookmarks.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
 
 	export let bookmark: Bookmark = {} as Bookmark;
 	let importanceForm: HTMLFormElement;
@@ -38,9 +35,9 @@
 </script>
 
 <div
-	class={`flex flex-col justify-between border border-base-content border-opacity-20 p-2 rounded-md min-h-[6rem] gap-1 hover:border-secondary  ${
+	class={`flex min-h-[6rem] flex-col justify-between gap-1 rounded-md border border-base-content border-opacity-20 p-2 hover:border-secondary  ${
 		$userSettingsStore.uiAnimations
-			? 'transition hover:-translate-x-1 duration-300 ease-in-out'
+			? 'transition duration-300 ease-in-out hover:-translate-x-1'
 			: ''
 	}`}
 >
@@ -50,7 +47,7 @@
 				<img
 					src={bookmark.icon || bookmark.icon_url}
 					alt={`${bookmark.domain}'s favicon`}
-					class="avatar w-4 h-4 rounded-sm"
+					class="avatar h-4 w-4 rounded-sm"
 				/>
 				<div class="tooltip text-left" data-tip="open in current tab">
 					<form
@@ -65,7 +62,7 @@
 						href={bookmark.url}
 						title={bookmark.title}
 						target="_self"
-						class="link link-hover text-sm line-clamp-1"
+						class="link-hover link line-clamp-1 text-sm"
 						on:click={(el) => {
 							el.preventDefault();
 							increaseOpenedTimesForm.requestSubmit();
@@ -80,7 +77,7 @@
 							href={bookmark.url}
 							title="open in a new tab"
 							target="_blank"
-							class=" btn btn-xs btn-circle btn-ghost"
+							class=" btn btn-circle btn-ghost btn-xs"
 							on:click={() => {
 								increaseOpenedTimesForm.requestSubmit();
 							}}
@@ -91,7 +88,7 @@
 					<div class="tooltip text-left" data-tip="copy URL to clipboard">
 						<button
 							title="copy URL to clipboard"
-							class="btn btn-xs btn-circle btn-ghost"
+							class="btn btn-circle btn-ghost btn-xs"
 							on:click={() => {
 								navigator.clipboard.writeText(bookmark.url);
 								showToast.success('URL copied to clipboard', {
@@ -105,7 +102,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="badge badge-ghost bg-opacity-75 h-6 ml-auto line-clamp-1 max-w-[8rem] md:max-w-fit">
+		<div class="badge badge-ghost ml-auto line-clamp-1 h-6 max-w-[8rem] bg-opacity-75 md:max-w-fit">
 			{bookmark.domain}
 		</div>
 	</div>
@@ -118,11 +115,11 @@
 	>
 		<div class="tooltip text-left" data-tip={bookmark.description}>
 			{#if bookmark.description}
-				<p class="font-light text-sm opacity-90 line-clamp-2 w-full md:w-10/12">
+				<p class="line-clamp-2 w-full text-sm font-light opacity-90 md:w-10/12">
 					{bookmark.description}
 				</p>
 			{:else}
-				<p class="font-light text-sm opacity-80 italic">No description...</p>
+				<p class="text-sm font-light italic opacity-80">No description...</p>
 			{/if}
 		</div>
 	</div>
@@ -134,22 +131,22 @@
 				style={`border-color: ${bookmark.category.color};`}
 			>
 				<span
-					class="w-full whitespace-nowrap overflow-hidden overflow-ellipsis text-opacity-90"
+					class="w-full overflow-hidden overflow-ellipsis whitespace-nowrap text-opacity-90"
 					style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
 				>
 			</a>
 			<div class="flex w-full gap-1">
-				<span class="font-sans font-semibold text-xs">#</span>
+				<span class="font-sans text-xs font-semibold">#</span>
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag (tag.id)}
 						<a
 							href={`/tags/${tag.name}`}
-							class="link font-sans text-xs w-full whitespace-nowrap max-w-[8rem] hover:text-secondary"
+							class="link w-full max-w-[8rem] whitespace-nowrap font-sans text-xs hover:text-secondary"
 							>{tag.name}</a
 						>
 					{/each}
 				{/if}
-				<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400"
+				<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"
 					>+</button
 				>
 			</div>
@@ -223,7 +220,7 @@
 					<IconMenu size={14} />
 				</button>
 				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-				<ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+				<ul tabindex="0" class="menu dropdown-content z-[1] rounded-box bg-base-100 shadow">
 					<li>
 						<div class="tooltip text-left" data-tip="Mark bookmark as read">
 							<form
@@ -244,7 +241,7 @@
 								}}
 							>
 								<input type="hidden" name="id" value={bookmark.id} />
-								<label class="swap btn btn-circle">
+								<label class="btn btn-circle swap">
 									<input
 										type="checkbox"
 										name="read"
@@ -279,7 +276,7 @@
 								}}
 							>
 								<input type="hidden" name="id" value={bookmark.id} />
-								<label class="swap btn btn-circle">
+								<label class="btn btn-circle swap">
 									<input
 										type="checkbox"
 										name="flagged"

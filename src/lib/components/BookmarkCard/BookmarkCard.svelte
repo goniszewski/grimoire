@@ -7,8 +7,7 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
-	import { showToast } from '$lib/utils/show-toast';
+	import { removeBookmarkFromSearchIndex, showToast } from '$lib/utils';
 	import {
 		IconBookmark,
 		IconBookmarkFilled,
@@ -36,9 +35,9 @@
 </script>
 
 <div
-	class={`relative flex flex-col justify-between card w-full bg-base-100 shadow-xl mb-4 break-inside-avoid h-64 min-w-[20rem] border border-base-100 hover:border-secondary ${
+	class={`card relative mb-4 flex h-64 w-full min-w-[20rem] break-inside-avoid flex-col justify-between border border-base-100 bg-base-100 shadow-xl hover:border-secondary ${
 		$userSettingsStore.uiAnimations
-			? 'transition hover:-translate-y-1 duration-300 ease-in-out hover:shadow-2xl'
+			? 'transition duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl'
 			: ''
 	}`}
 >
@@ -50,14 +49,14 @@
 			tabindex="0"
 			on:keydown={onShowBookmark}
 		>
-			<div class="w-full h-36 flex items-center justify-center bg-base hover:bg-base-100">
+			<div class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100">
 				{#if ((!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url) && !bookmark.screenshot.endsWith('/') && bookmark.screenshot}
 					<img
 						src={bookmark.main_image || bookmark.main_image_url}
 						on:mouseover={(e) => (e.target.src = bookmark.screenshot)}
 						on:mouseleave={(e) => (e.target.src = bookmark.main_image || bookmark.main_image_url)}
 						on:focus={(e) => (e.target.src = bookmark.screenshot)}
-						class="w-full h-full object-cover transition duration-300 ease-in-out"
+						class="h-full w-full object-cover transition duration-300 ease-in-out"
 						alt="Main"
 					/>
 				{:else if (bookmark.main_image && !bookmark.main_image.endsWith('/')) || bookmark.main_image_url}
@@ -70,7 +69,7 @@
 			</div>
 		</div>
 		<div
-			class="badge badge-xl absolute top-1 left-1"
+			class="badge-xl badge absolute left-1 top-1"
 			style={`border-color: ${bookmark.category.color};`}
 		>
 			<span class="text-opacity-90" style={`_color: ${bookmark.category.color};`}
@@ -96,7 +95,7 @@
 			}}
 		>
 			<input type="hidden" name="id" value={bookmark.id} />
-			<div class="badge rating rating-sm opacity-90 absolute bottom-1 left-1">
+			<div class="badge rating rating-sm absolute bottom-1 left-1 opacity-90">
 				<input
 					type="radio"
 					name="importance"
@@ -142,7 +141,7 @@
 			</div>
 		</form>
 
-		<div class="absolute flex bottom-1 right-1 scale-90 gap-1">
+		<div class="absolute bottom-1 right-1 flex scale-90 gap-1">
 			<form
 				bind:this={readForm}
 				method="POST"
@@ -161,7 +160,7 @@
 				}}
 			>
 				<input type="hidden" name="id" value={bookmark.id} />
-				<label class="swap btn btn-circle btn-xs p-4">
+				<label class="btn btn-circle swap btn-xs p-4">
 					<input
 						type="checkbox"
 						name="read"
@@ -192,7 +191,7 @@
 				}}
 			>
 				<input type="hidden" name="id" value={bookmark.id} />
-				<label class="swap btn btn-circle btn-xs p-4">
+				<label class="btn btn-circle swap btn-xs p-4">
 					<input
 						type="checkbox"
 						name="flagged"
@@ -211,7 +210,7 @@
 		<div class="card-body p-2">
 			<div class="h-20">
 				<div class="flex flex-wrap items-baseline">
-					<div class="flex items-baseline gap-2 w-full">
+					<div class="flex w-full items-baseline gap-2">
 						<img
 							src={bookmark.icon || bookmark.icon_url}
 							alt={`${bookmark.domain}'s favicon`}
@@ -229,7 +228,7 @@
 							href={bookmark.url}
 							title={bookmark.title}
 							target="_self"
-							class="link link-hover card-title text-lg line-clamp-1"
+							class="link-hover link card-title line-clamp-1 text-lg"
 							on:click={(el) => {
 								el.preventDefault();
 								increaseOpenedTimesForm.requestSubmit();
@@ -237,12 +236,12 @@
 								window.open(bookmark.url, '_self');
 							}}>{bookmark.title}</a
 						>
-						<div class="flex ml-auto">
+						<div class="ml-auto flex">
 							<a
 								href={bookmark.url}
 								title="open in a new tab"
 								target="_blank"
-								class="btn btn-xs btn-circle btn-ghost"
+								class="btn btn-circle btn-ghost btn-xs"
 								on:click={() => {
 									increaseOpenedTimesForm.requestSubmit();
 								}}
@@ -251,7 +250,7 @@
 							</a>
 							<button
 								title="copy URL to clipboard"
-								class="btn btn-xs btn-circle btn-ghost"
+								class="btn btn-circle btn-ghost btn-xs"
 								on:click={() => {
 									navigator.clipboard.writeText(bookmark.url);
 									showToast.success('URL copied to clipboard', {
@@ -266,29 +265,29 @@
 				</div>
 				<div class="tooltip text-left" data-tip={bookmark.description}>
 					{#if bookmark.description}
-						<p class="font-light text-sm opacity-90 line-clamp-2">
+						<p class="line-clamp-2 text-sm font-light opacity-90">
 							{bookmark.description}
 						</p>
 					{:else}
-						<p class="font-light text-sm opacity-80 italic">No description...</p>
+						<p class="text-sm font-light italic opacity-80">No description...</p>
 					{/if}
 				</div>
 			</div>
-			<div class="card-actions justify-end px-2 font-medium tracking-tight gap-1">
-				<span class="font-sans font-semibold text-xs">#</span>
+			<div class="card-actions justify-end gap-1 px-2 font-medium tracking-tight">
+				<span class="font-sans text-xs font-semibold">#</span>
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag (tag.id)}
 						<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
 					{/each}
 				{/if}
-				<button title="Add new tag" class="link link-hover font-sans text-xs text-gray-400"
+				<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"
 					>+</button
 				>
 			</div>
 		</div>
-		<div class="absolute top-1 right-1 flex items-center gap-1">
+		<div class="absolute right-1 top-1 flex items-center gap-1">
 			<div class="tooltip tooltip-top" data-tip={bookmark.domain}>
-				<div class="badge badge-ghost bg-opacity-75 h-6 justify-start max-w-[8rem] truncate">
+				<div class="badge badge-ghost h-6 max-w-[8rem] justify-start truncate bg-opacity-75">
 					{bookmark.domain}
 				</div>
 			</div>
@@ -299,7 +298,7 @@
 						<IconDots size={16} stroke={1.5} class="" />
 					</button>
 				</label>
-				<ul class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-28">
+				<ul class="menu dropdown-content z-[1] w-28 rounded-box bg-base-100 p-2 shadow">
 					<!-- <li> -->
 					<!-- <button type="button" class="btn btn-xs btn-ghost" on:click={onEditBookmark} tabindex="0"
 					>Edit</button> -->

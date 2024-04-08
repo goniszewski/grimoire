@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
 	import { defaultConfig, listAvailableModels } from '$lib/integrations/ollama';
 	import { user } from '$lib/pb';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { showToast } from '$lib/utils/show-toast';
-	import { themeChange } from '$lib/utils/theme-change';
+	import { showToast, themeChange } from '$lib/utils';
 	import { IconPlug, IconPlugConnected } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 
@@ -30,14 +30,14 @@
 	let form: HTMLFormElement;
 </script>
 
-<div class="flex flex-col gap-8 w-full">
+<div class="flex w-full flex-col gap-8">
 	<h1 class="text-2xl font-bold">User settings</h1>
 	{#if !$user || !$user.isValid}
 		<p>Not logged in.</p>
 	{:else}
 		<form
 			bind:this={form}
-			class="flex flex-col gap-8 w-full"
+			class="flex w-full flex-col gap-8"
 			method="POST"
 			action="?/updateUserSettings"
 			use:enhance={({ formData }) => {
@@ -53,6 +53,7 @@
 						themeChange(result.data.updatedSettings.theme);
 						showToast.success('Settings updated!');
 
+						await invalidate('/');
 						await applyAction(result);
 					}
 				};
@@ -60,7 +61,7 @@
 		>
 			<div class="flex flex-col gap-4">
 				<h2 class="text-xl font-bold">UI</h2>
-				<div class="flex border rounded-md p-4 gap-2">
+				<div class="flex gap-2 rounded-md border p-4">
 					<table class="table table-xs max-w-[25rem]">
 						<tr>
 							<td><span class="label-text min-w-[8rem]">Theme (save to keep)</span></td>
@@ -85,7 +86,7 @@
 								><input
 									type="checkbox"
 									name="uiAnimations"
-									class="checkbox checkbox-accent"
+									class="checkbox-accent checkbox"
 									checked={$userSettingsStore.uiAnimations}
 									on:change={(e) => {
 										// @ts-ignore
@@ -100,7 +101,7 @@
 
 			<div class="flex flex-col gap-4">
 				<h2 class="text-xl font-bold">AI Features</h2>
-				<div class="flex border rounded-md p-4 gap-2">
+				<div class="flex gap-2 rounded-md border p-4">
 					<table class="table table-xs w-full">
 						<tr>
 							<td><span class="label-text min-w-[8rem]">Enabled</span></td>
@@ -108,7 +109,7 @@
 								><input
 									type="checkbox"
 									name="llmEnabled"
-									class="checkbox checkbox-accent"
+									class="checkbox-accent checkbox"
 									checked={$userSettingsStore.llm.enabled}
 									on:change={(e) => {
 										// @ts-ignore
@@ -163,9 +164,9 @@
 										}}
 										>Test
 										{#if $llmModels.fetched}
-											<IconPlugConnected class="w-4 h-4" />
+											<IconPlugConnected class="h-4 w-4" />
 										{:else}
-											<IconPlug class="w-4 h-4" />
+											<IconPlug class="h-4 w-4" />
 										{/if}
 									</button>
 								</td>
@@ -230,7 +231,7 @@
 										type="checkbox"
 										name="llmOllamaSummarizeEnabled"
 										checked={$userSettingsStore.llm.ollama.summarize.enabled}
-										class="checkbox checkbox-accent"
+										class="checkbox-accent checkbox"
 										on:change={(e) => {
 											// @ts-ignore
 											$updatedSettings.llm.ollama.summarize.enabled = e.target.checked;
@@ -257,7 +258,7 @@
 										type="checkbox"
 										name="llmOllamaGenerateTagsEnabled"
 										checked={$userSettingsStore.llm.ollama.generateTags.enabled}
-										class="checkbox checkbox-accent"
+										class="checkbox-accent checkbox"
 										on:change={(e) => {
 											// @ts-ignore
 											$updatedSettings.llm.ollama.generateTags.enabled = e.target.checked;

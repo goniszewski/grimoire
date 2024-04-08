@@ -1,27 +1,33 @@
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { IconMenu } from '@tabler/icons-svelte';
+	import { enhance } from '$app/forms';
 	import { user } from '$lib/pb';
+	import { showToast } from '$lib/utils';
 
 	let showPasswordForm = false;
+
+	let form: HTMLFormElement;
 </script>
 
 {#if !$user.isValid && $user.model}
 	<p>Not logged in</p>
 {:else}
 	<form
+		bind:this={form}
 		method="POST"
 		class="w-full sm:w-96"
-		use:enhance={() =>
-			({ formData, update }) => {
-				if (!showPasswordForm) {
-					formData.delete('current_password');
-					formData.delete('new_password');
-					formData.delete('new_password_repeat');
+		use:enhance={({ formData }) => {
+			if (!showPasswordForm) {
+				formData.delete('current_password');
+				formData.delete('new_password');
+				formData.delete('new_password_repeat');
+			}
+
+			return async ({ result }) => {
+				if (result.type === 'success') {
+					showToast.success('User details updated!');
 				}
-				// update();
-			}}
+			};
+		}}
 	>
 		<div class="form-control flex w-full gap-4">
 			<div>
@@ -30,7 +36,7 @@
 				</label>
 				<input
 					type="text"
-					class="input input-secondary input-bordered w-full"
+					class="input input-bordered input-secondary w-full"
 					name="name"
 					value={$user.model?.name}
 				/>
@@ -41,7 +47,7 @@
 				</label>
 				<input
 					type="text"
-					class="input input-secondary input-bordered w-full"
+					class="input input-bordered input-secondary w-full"
 					name="username"
 					value={$user.model?.username}
 					required
@@ -53,7 +59,7 @@
 				</label>
 				<input
 					type="text"
-					class="input input-secondary input-bordered w-full"
+					class="input input-bordered input-secondary w-full"
 					name="email"
 					value={$user.model?.email}
 					placeholder="none"
@@ -76,7 +82,7 @@
 					</label>
 					<input
 						type="password"
-						class="input input-secondary input-bordered w-full"
+						class="input input-bordered input-secondary w-full"
 						name="current_password"
 						placeholder="Password"
 					/>
@@ -87,7 +93,7 @@
 					</label>
 					<input
 						type="password"
-						class="input input-secondary input-bordered w-full"
+						class="input input-bordered input-secondary w-full"
 						name="new_password"
 						placeholder="New password"
 					/>
@@ -98,7 +104,7 @@
 					</label>
 					<input
 						type="password"
-						class="input input-secondary input-bordered w-full"
+						class="input input-bordered input-secondary w-full"
 						name="new_password_repeat"
 						placeholder="Repeat new password"
 					/>

@@ -23,12 +23,27 @@
 		| null
 	> = writable(null);
 
+	let mainImage: string;
+	let screenshot: string;
+
+	$: {
+		if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) {
+			mainImage = $bookmark.main_image;
+		} else {
+			mainImage = $bookmark.main_image_url;
+		}
+
+		if ($bookmark.screenshot && !$bookmark.screenshot.endsWith('/')) {
+			screenshot = $bookmark.screenshot;
+		}
+	}
+
 	$: $bookmark = { ...$showBookmarkStore };
 	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
 </script>
 
-<div class="flex flex-col gap-8 max-w-5xl">
-	<button class="btn btn-sm btn-link absolute right-8 top-8" on:click={onEditBookmark} tabindex="0"
+<div class="flex max-w-5xl flex-col gap-8">
+	<button class="btn btn-link btn-sm absolute right-8 top-8" on:click={onEditBookmark} tabindex="0"
 		>Edit</button
 	>
 	<div class="flex justify-between gap-2">
@@ -36,56 +51,58 @@
 			{$bookmark.title}
 		</h1>
 	</div>
-	<div class="flex flex-col lg:flex-row gap-4">
+	<div class="flex flex-col gap-4 lg:flex-row">
 		{#if $bookmark?.id}
 			<div class="flex flex-col gap-2">
-				<div class="flex flex-col md:flex-row gap-2">
-					<div class="flex flex-col flex-1 gap-2 min-w-fit">
-						<div class="flex gap-2 items-center">
+				<div class="flex flex-col gap-2 md:flex-row">
+					<div class="flex min-w-fit flex-1 flex-col gap-2">
+						<div class="flex items-center gap-2">
 							{#if $bookmark.icon || $bookmark.icon_url}
-								<img src={$bookmark.icon || $bookmark.icon_url} alt="Icon" class="w-8 h-8" />
+								<img src={$bookmark.icon || $bookmark.icon_url} alt="Icon" class="h-8 w-8" />
 							{/if}
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
 						</div>
-						<div
-							class="carousel carousel-center max-w-md space-x-4 bg-neutral rounded-box mx-auto h-72 p-1"
-						>
-							{#if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url}
-								<div id="main-image" class="carousel-item w-full">
-									<a
-										href={$bookmark.main_image || $bookmark.main_image_url}
-										target="_blank"
-										class="flex w-full"
-									>
-										<img
-											src={$bookmark.main_image || $bookmark.main_image_url}
-											class="w-full object-scale-down justify-self-center"
-											alt="Main"
-										/>
-									</a>
-								</div>
-							{/if}
-							{#if $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
-								<div id="screenshot" class="carousel-item w-full">
-									<a href={$bookmark.screenshot} target="_blank" class="flex w-full">
-										<img
-											src={$bookmark.screenshot}
-											class="w-full object-scale-down justify-self-center"
-											alt="Screenshot"
-										/>
-									</a>
-								</div>
-							{/if}
-						</div>
+						{#if mainImage || screenshot}
+							<div
+								class="carousel carousel-center mx-auto h-72 max-w-md space-x-4 rounded-box bg-neutral p-1"
+							>
+								{#if mainImage}
+									<div id="main-image" class="carousel-item w-full">
+										<a
+											href={$bookmark.main_image || $bookmark.main_image_url}
+											target="_blank"
+											class="flex w-full"
+										>
+											<img
+												src={$bookmark.main_image || $bookmark.main_image_url}
+												class="w-full justify-self-center object-scale-down"
+												alt="Main"
+											/>
+										</a>
+									</div>
+								{/if}
+								{#if screenshot}
+									<div id="screenshot" class="carousel-item w-full">
+										<a href={$bookmark.screenshot} target="_blank" class="flex w-full">
+											<img
+												src={$bookmark.screenshot}
+												class="w-full justify-self-center object-scale-down"
+												alt="Screenshot"
+											/>
+										</a>
+									</div>
+								{/if}
+							</div>
+						{/if}
 						{#if (($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url) && $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
-							<div class="flex justify-center w-full py-2 gap-2">
+							<div class="flex w-full justify-center gap-2 py-2">
 								<a href="#main-image" class="btn btn-xs">Main image</a>
 								<a href="#screenshot" class="btn btn-xs">Screenshot</a>
 							</div>
 						{/if}
 						<div>
 							<h3 class="text-xl">Tags</h3>
-							<div class="flex flex-wrap gap-2 m-1">
+							<div class="m-1 flex flex-wrap gap-2">
 								{#if $bookmark.tags?.length}
 									{#each $bookmark.tags as tag (tag.id)}
 										<span class="badge badge-outline badge-sm whitespace-nowrap">{tag.name}</span>
@@ -110,7 +127,7 @@
 									<input
 										type="radio"
 										name="importance"
-										class="mask mask-star-2 bg-orange-400 cursor-default"
+										class="mask mask-star-2 cursor-default bg-orange-400"
 										checked={$bookmark.importance === 1}
 										value="1"
 										disabled
@@ -118,7 +135,7 @@
 									<input
 										type="radio"
 										name="importance"
-										class="mask mask-star-2 bg-orange-400 cursor-default"
+										class="mask mask-star-2 cursor-default bg-orange-400"
 										checked={$bookmark.importance === 2}
 										value="2"
 										disabled
@@ -126,7 +143,7 @@
 									<input
 										type="radio"
 										name="importance"
-										class="mask mask-star-2 bg-orange-400 cursor-default"
+										class="mask mask-star-2 cursor-default bg-orange-400"
 										checked={$bookmark.importance === 3}
 										value="3"
 										disabled
@@ -187,7 +204,7 @@
 
 				<div>
 					<h3 class="text-xl">Description</h3>
-					<p class="break-words lg:max-w-xl max-w-xs">
+					<p class="max-w-xs break-words lg:max-w-xl">
 						{$bookmark.description}
 					</p>
 				</div>
@@ -208,7 +225,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 min-w-[20rem] w-full">
+			<div class="flex w-full min-w-[20rem] flex-col gap-4">
 				<h3 class="text-xl">Content</h3>
 				<div class="flex flex-col">
 					<div class="tabs tabs-bordered min-w-full">
@@ -232,7 +249,7 @@
 						</div>
 					</div>
 					<div
-						class={`flex flex-col overflow-y-scroll pt-1 pl-1 w-full border border-t-0 border-gray-500 rounded-b-sm ${
+						class={`flex w-full flex-col overflow-y-scroll rounded-b-sm border border-t-0 border-gray-500 pl-1 pt-1 ${
 							$bookmark.content_html || $bookmark.content_text ? 'h-60 ' : 'justify-items-center   '
 						}`}
 					>
@@ -248,7 +265,7 @@
 
 				<div>
 					<h3 class="text-xl">Note</h3>
-					<p class={`overflow-y-scroll ${$bookmark.note ? 'h-14' : 'text-gray-500 m-2 '}`}>
+					<p class={`overflow-y-scroll ${$bookmark.note ? 'h-14' : 'm-2 text-gray-500 '}`}>
 						{#if $bookmark.note}
 							{$bookmark.note}
 						{:else}
