@@ -63,7 +63,7 @@ git clone https://github.com/goniszewski/grimoire
 # (admins are separate from regular users)
 
 # Build and run the containers
-docker-compose up
+docker compose up
 ```
 
 </details>
