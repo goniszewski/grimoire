@@ -1,4 +1,4 @@
-import { getMetadata } from '$lib/utils';
+import { getMetadata } from '$lib/utils/get-metadata';
 
 import { json } from '@sveltejs/kit';
 

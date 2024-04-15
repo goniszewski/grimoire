@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { user } from '$lib/pb';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { showToast } from '$lib/utils';
+	import { showToast } from '$lib/utils/show-toast';
 	import { IconInfoCircle, IconLock, IconLockOpen, IconTrash } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 	import type { PageData } from './$types';

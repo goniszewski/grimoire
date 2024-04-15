@@ -7,7 +7,8 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import { removeBookmarkFromSearchIndex, showToast } from '$lib/utils';
+	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
 	import {
 		IconBookmark,
 		IconBookmarkFilled,

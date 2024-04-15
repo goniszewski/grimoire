@@ -1,5 +1,5 @@
 import type { ollamaSettings } from '$lib/types/UserSettings.type';
-import { validateUrlRegex } from '$lib/utils';
+import { validateUrlRegex } from '$lib/utils/regex-library';
 
 export const defaultConfig = {
 	url: 'http://localhost:11434',

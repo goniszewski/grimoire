@@ -12,7 +12,8 @@
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { initializeSearch, sortBookmarks } from '$lib/utils';
+	import { initializeSearch } from '$lib/utils/search';
+	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import {
 		IconLayout2,
 		IconListDetails,

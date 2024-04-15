@@ -8,7 +8,8 @@
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { searchEngine } from '$lib/stores/search.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { showToast, updateBookmarkInSearchIndex } from '$lib/utils';
+	import { updateBookmarkInSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
 
 	let form: HTMLFormElement;
 	export let closeModal: () => void;

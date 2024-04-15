@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { user } from '$lib/pb';
-	import { showToast } from '$lib/utils';
+	import { showToast } from '$lib/utils/show-toast';
 
 	let showPasswordForm = false;
 

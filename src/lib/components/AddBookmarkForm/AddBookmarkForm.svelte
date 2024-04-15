@@ -5,7 +5,10 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Metadata } from '$lib/types/Metadata.type';
-	import { addBookmarkToSearchIndex, showToast, validateUrlRegex } from '$lib/utils';
+	import { validateUrlRegex } from '$lib/utils/regex-library';
+	import { addBookmarkToSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
+
 	import { IconInfoCircle } from '@tabler/icons-svelte';
 	import _ from 'lodash';
 	import { onDestroy } from 'svelte';

@@ -4,9 +4,10 @@ import type { Category } from '$lib/types/Category.type';
 import type { Tag } from '$lib/types/Tag.type';
 import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
 import type { CategoryDto } from '$lib/types/dto/Category.dto';
-import { searchIndexKeys, serializeBookmarkList } from '$lib/utils';
 
 import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
+import { searchIndexKeys } from '$lib/utils/search';
+import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
 
 function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
 	return tags.map((tag) => {

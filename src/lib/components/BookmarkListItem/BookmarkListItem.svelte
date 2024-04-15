@@ -6,7 +6,8 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { removeBookmarkFromSearchIndex, showToast } from '$lib/utils';
+	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
 	import {
 		IconBackspace,
 		IconBookmark,

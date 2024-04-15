@@ -1,5 +1,5 @@
 import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb';
-import { createSlug } from '$lib/utils';
+import { createSlug } from '$lib/utils/create-slug';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';

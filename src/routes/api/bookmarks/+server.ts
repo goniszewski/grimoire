@@ -1,5 +1,8 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
-import { getFileUrl, getMetadataFromHtml, prepareTags, urlDataToBlobConverter } from '$lib/utils';
+import { getFileUrl } from '$lib/utils/get-file-url';
+import { getMetadataFromHtml } from '$lib/utils/get-metadata';
+import { prepareTags } from '$lib/utils/handle-tags-input';
+import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
@@ -11,7 +14,6 @@ import type {
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
 import type Client from 'pocketbase';
-
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
 	userTags: { id: string; name: string }[]
