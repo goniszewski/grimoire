@@ -1,5 +1,5 @@
 import express from 'express';
-import proxy from 'express-http-proxy';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 import { handler } from '../build/handler.js';
 
@@ -13,10 +13,11 @@ const config = {
 
 app.use(
 	config.INTERNAL_PATH,
-	proxy(config.POCKETBASE_URL, {
-		proxyReqPathResolver: function (req) {
-			return req.url.replace(config.INTERNAL_PATH, '');
-		}
+	createProxyMiddleware({
+		target: config.POCKETBASE_URL,
+		changeOrigin: true,
+		ws: true,
+		pathRewrite: (path) => path.replace(config.INTERNAL_PATH, '')
 	})
 );
 
