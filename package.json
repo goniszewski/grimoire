@@ -1,6 +1,6 @@
 {
 	"name": "grimoire",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Bookmark manager for the wizards 🧙",
 	"author": "Robert Goniszewski <robert@goniszewski.com>",
 	"main": "./build/index.js",
