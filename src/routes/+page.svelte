@@ -53,7 +53,7 @@
 		if ($searchedValue.trim()) {
 			const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
 			_.throttle(() => {
-				fetch(`/api/bookmarks?ids=${JSON.stringify(searchedBookmarksIds)}`)
+				fetch(`/api/bookmarks?ids=${searchedBookmarksIds.join(',')}`)
 					.then((r) => r.json())
 					.then((r) => {
 						$bookmarksToDisplay = r.bookmarks;
