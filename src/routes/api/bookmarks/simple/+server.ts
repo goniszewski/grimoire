@@ -1,12 +1,11 @@
 import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
-import { getMetadata } from '$lib/utils';
+import { getMetadata } from '$lib/utils/get-metadata';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
 import type { RequestHandler } from '@sveltejs/kit';
-
 export const POST: RequestHandler = async ({ locals, request, url }) => {
 	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
 

@@ -7,7 +7,7 @@
 	import Icon from '$lib/components/Icon/Icon.svelte';
 	import { icons } from '$lib/enums/icons';
 	import type { Category } from '$lib/types/Category.type';
-	import { showToast } from '$lib/utils';
+	import { showToast } from '$lib/utils/show-toast';
 
 	const category = writable<
 		Partial<

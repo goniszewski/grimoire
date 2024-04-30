@@ -8,7 +8,7 @@
 	import { icons } from '$lib/enums/icons';
 	import { editCategoryStore } from '$lib/stores/edit-category.store';
 	import type { Category } from '$lib/types/Category.type';
-	import { showToast } from '$lib/utils';
+	import { showToast } from '$lib/utils/show-toast';
 
 	const category = writable<Partial<Category>>({});
 	$: $category = { ...$editCategoryStore };

@@ -1,6 +1,6 @@
 {
 	"name": "grimoire",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Bookmark manager for the wizards 🧙",
 	"author": "Robert Goniszewski <robert@goniszewski.com>",
 	"main": "./build/index.js",
@@ -69,9 +69,9 @@
 		"daisyui": "^4.6.1",
 		"dotenv": "^16.4.1",
 		"express": "^4.19.2",
-		"express-http-proxy": "^2.0.0",
 		"fuse.js": "^7.0.0",
 		"html-to-text": "^9.0.5",
+		"http-proxy-middleware": "^3.0.0",
 		"joi": "^17.12.1",
 		"lodash": "^4.17.21",
 		"metascraper": "^5.43.4",

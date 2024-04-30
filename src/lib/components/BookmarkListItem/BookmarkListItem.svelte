@@ -6,7 +6,8 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { removeBookmarkFromSearchIndex, showToast } from '$lib/utils';
+	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+	import { showToast } from '$lib/utils/show-toast';
 	import {
 		IconBackspace,
 		IconBookmark,
@@ -140,7 +141,7 @@
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag (tag.id)}
 						<a
-							href={`/tags/${tag.name}`}
+							href={`/tags/${tag.slug}`}
 							class="link w-full max-w-[8rem] whitespace-nowrap font-sans text-xs hover:text-secondary"
 							>{tag.name}</a
 						>

@@ -1,6 +1,7 @@
 import type { Actions } from './$types';
 import { handlePBError, pb } from '$lib/pb';
-import { createSlug, prepareTags } from '$lib/utils';
+import { createSlug } from '$lib/utils/create-slug';
+import { prepareTags } from '$lib/utils/handle-tags-input';
 
 import type { Bookmark } from '$lib/types/Bookmark.type';
 export const actions = {

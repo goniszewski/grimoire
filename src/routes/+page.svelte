@@ -12,7 +12,8 @@
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { initializeSearch, sortBookmarks } from '$lib/utils';
+	import { initializeSearch } from '$lib/utils/search';
+	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
 	import {
 		IconLayout2,
 		IconListDetails,
@@ -52,7 +53,7 @@
 		if ($searchedValue.trim()) {
 			const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
 			_.throttle(() => {
-				fetch(`/api/bookmarks?ids=${JSON.stringify(searchedBookmarksIds)}`)
+				fetch(`/api/bookmarks?ids=${searchedBookmarksIds.join(',')}`)
 					.then((r) => r.json())
 					.then((r) => {
 						$bookmarksToDisplay = r.bookmarks;
