@@ -278,7 +278,7 @@
 				<span class="font-sans text-xs font-semibold">#</span>
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag (tag.id)}
-						<a href={`/tags/${tag.name}`} class="link font-sans text-xs">{tag.name}</a>
+						<a href={`/tags/${tag.slug}`} class="link font-sans text-xs">{tag.name}</a>
 					{/each}
 				{/if}
 				<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"

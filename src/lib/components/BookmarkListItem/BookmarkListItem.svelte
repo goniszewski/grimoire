@@ -141,7 +141,7 @@
 				{#if bookmark.tags}
 					{#each bookmark.tags as tag (tag.id)}
 						<a
-							href={`/tags/${tag.name}`}
+							href={`/tags/${tag.slug}`}
 							class="link w-full max-w-[8rem] whitespace-nowrap font-sans text-xs hover:text-secondary"
 							>{tag.name}</a
 						>
