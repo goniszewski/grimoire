@@ -15,6 +15,8 @@ services:
       timeout: 5s
       retries: 5
     env_file: .env
+    depends_on:
+      - grimoire
   grimoire:
     image: goniszewski/grimoire:latest
     container_name: grimoire
@@ -32,8 +34,6 @@ services:
       retries: 5
     ports:
       - '$PORT:$PORT'
-    depends_on:
-      - pocketbase
 volumes:
   pb_data:
   pb_migrations:
