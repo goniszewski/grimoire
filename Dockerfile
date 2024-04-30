@@ -37,6 +37,7 @@ ENV BODY_SIZE_LIMIT=$BODY_SIZE_LIMIT
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app/build
 COPY --from=build /app/package.json /app/package.json
+COPY --from=base /app/pb_migrations /app/pb_migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
 CMD [ "node", "-r", "dotenv/config", "src/server.js" ]
