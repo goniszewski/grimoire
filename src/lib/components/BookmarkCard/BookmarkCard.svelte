@@ -7,6 +7,7 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
+	import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -51,7 +52,7 @@
 			on:keydown={onShowBookmark}
 		>
 			<div class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100">
-				{#if ((!bookmark.main_image.endsWith('/') && bookmark.main_image) || bookmark.main_image_url) && !bookmark.screenshot.endsWith('/') && bookmark.screenshot}
+				{#if (bookmark.main_image || (bookmark.main_image_url && checkIfImageURL(bookmark.main_image_url))) && bookmark.screenshot}
 					<img
 						src={bookmark.main_image || bookmark.main_image_url}
 						on:mouseover={(e) => (e.target.src = bookmark.screenshot)}
@@ -60,9 +61,9 @@
 						class="h-full w-full object-cover transition duration-300 ease-in-out"
 						alt="Main"
 					/>
-				{:else if (bookmark.main_image && !bookmark.main_image.endsWith('/')) || bookmark.main_image_url}
+				{:else if bookmark.main_image || (bookmark.main_image_url && checkIfImageURL(bookmark.main_image_url))}
 					<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
-				{:else if bookmark.screenshot && !bookmark.screenshot.endsWith('/')}
+				{:else if bookmark.screenshot}
 					<img src={bookmark.screenshot} alt="Screenshot" />
 				{:else}
 					<IconPhotoX class="m-auto my-16" />
@@ -212,11 +213,13 @@
 			<div class="h-20">
 				<div class="flex flex-wrap items-baseline">
 					<div class="flex w-full items-baseline gap-2">
-						<img
-							src={bookmark.icon || bookmark.icon_url}
-							alt={`${bookmark.domain}'s favicon`}
-							class="avatar w-4"
-						/>
+						{#if bookmark.icon || (bookmark.icon_url && checkIfImageURL(bookmark.icon_url))}
+							<img
+								src={bookmark.icon || bookmark.icon_url}
+								alt={`${bookmark.domain}'s favicon`}
+								class="avatar w-4"
+							/>
+						{/if}
 						<form
 							bind:this={increaseOpenedTimesForm}
 							method="POST"
@@ -289,7 +292,7 @@
 		<div class="absolute right-1 top-1 flex items-center gap-1">
 			<div class="tooltip tooltip-top" data-tip={bookmark.domain}>
 				<div class="badge badge-ghost h-6 max-w-[8rem] justify-start truncate bg-opacity-75">
-					{bookmark.domain}
+					{bookmark.domain.split('.').slice(-2).join('.')}
 				</div>
 			</div>
 

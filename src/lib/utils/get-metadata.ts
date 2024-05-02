@@ -13,6 +13,8 @@ import sanitize from 'sanitize-html';
 
 import { extract, extractFromHtml } from '@extractus/article-extractor';
 
+import { checkIfImageURL } from './check-if-image-url';
+
 import type { Metadata } from '$lib/types/Metadata.type';
 
 const metascraperScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
@@ -85,7 +87,9 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 
 		let faviconUrl = hrefMatch[1];
 
-		if (faviconUrl.startsWith('/')) {
+		if (checkIfImageURL(faviconUrl.split('?')[0])) {
+			faviconUrl = '';
+		} else if (faviconUrl.startsWith('/')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
 		} else if (faviconUrl.startsWith('./')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('./', '/')}`;
