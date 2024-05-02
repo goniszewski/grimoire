@@ -2,7 +2,7 @@ FROM node:20-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
-RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 python3-pip wget && rm -rf /var/lib/apt/lists/*
 COPY . /app
 WORKDIR /app
 
@@ -40,4 +40,4 @@ COPY --from=build /app/package.json /app/package.json
 COPY --from=base /app/pb_migrations /app/pb_migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
-CMD [ "node", "-r", "dotenv/config", "src/server.js" ]
+ENTRYPOINT [ "node", "-r", "dotenv/config", "src/server.js" ]
