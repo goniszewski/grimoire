@@ -1,9 +1,11 @@
 import type { Actions } from './$types';
 import { handlePBError, pb } from '$lib/pb';
+import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 import { createSlug } from '$lib/utils/create-slug';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 
 import type { Bookmark } from '$lib/types/Bookmark.type';
+
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
 		const owner = locals.user?.id;
@@ -26,8 +28,8 @@ export const actions = {
 			const content_html = data.get('content_html');
 			const content_type = data.get('content_type');
 			const content_published_date = data.get('content_published_date');
-			const main_image_url = data.get('main_image_url');
-			const icon_url = data.get('icon_url');
+			const main_image_url = data.get('main_image_url') as string;
+			const icon_url = data.get('icon_url') as string;
 			const note = data.get('note');
 			const importance = data.get('importance');
 			const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
@@ -63,12 +65,12 @@ export const actions = {
 			if (main_image_url || icon_url) {
 				const attachments = new FormData();
 
-				if (main_image_url) {
+				if (main_image_url && checkIfImageURL(main_image_url)) {
 					const main_image = await fetch(main_image_url as string).then((r) => r.blob());
 					attachments.append('main_image', main_image);
 				}
 
-				if (icon_url) {
+				if (icon_url && checkIfImageURL(icon_url)) {
 					const icon = await fetch(icon_url as string).then((r) => r.blob());
 					attachments.append('icon', icon);
 				}
@@ -126,8 +128,8 @@ export const actions = {
 		const content_html = data.get('content_html');
 		const content_type = data.get('content_type');
 		const content_published_date = data.get('content_published_date');
-		const main_image_url = data.get('main_image_url');
-		const icon_url = data.get('icon_url');
+		const main_image_url = data.get('main_image_url') as string;
+		const icon_url = data.get('icon_url') as string;
 		const note = data.get('note');
 		const importance = data.get('importance');
 		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
@@ -171,12 +173,12 @@ export const actions = {
 		if (main_image_url || icon_url) {
 			const attachments = new FormData();
 
-			if (main_image_url) {
+			if (main_image_url && checkIfImageURL(main_image_url)) {
 				const main_image = await fetch(main_image_url as string).then((r) => r.blob());
 				attachments.append('main_image', main_image);
 			}
 
-			if (icon_url) {
+			if (icon_url && checkIfImageURL(icon_url)) {
 				const icon = await fetch(icon_url as string).then((r) => r.blob());
 				attachments.append('icon', icon);
 			}
