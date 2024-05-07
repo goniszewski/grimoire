@@ -14,6 +14,7 @@ import type {
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
 import type Client from 'pocketbase';
+import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
 	userTags: { id: string; name: string }[]
@@ -104,6 +105,28 @@ const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
 	return removePocketbaseFields(records);
 };
 
+const getBookmarksByFilter = async (filter: string, owner: string, pb: Client) => {
+	let records = await pb
+		.collection('bookmarks')
+		.getFullList({
+			fields: 'id,' + searchIndexKeys.join(','),
+			expand: 'tags',
+			filter: `owner="${owner}"`,
+			batchSize: 100000
+		})
+		.then((res) =>
+			res.map(({ expand, ...b }) => ({
+				...expand,
+				...b
+			}))
+		);
+	records = removePocketbaseFields(records);
+	const searchEngine = initializeSearch(records);
+	const res = searchEngine.search(filter).map((b) => b.item);
+	console.log(res);
+	return res;
+}
+
 export async function GET({ locals, url, request }) {
 	let owner = locals.pb.authStore.model?.id;
 	let bookmarks: Bookmark[] = [];
@@ -120,12 +143,15 @@ export async function GET({ locals, url, request }) {
 
 	const idsParam = url.searchParams.get('ids')?.split(',') || [];
 	const urlParam = url.searchParams.get('url');
+	const filterParam = url.searchParams.get('filter');
 
 	try {
 		if (urlParam) {
 			const bookmark = await getBookmarkByUrl(urlParam, owner, locals.pb);
 
 			bookmarks = bookmark ? [bookmark] : [];
+		} else if (filterParam) {
+			bookmarks = await getBookmarksByFilter(filterParam, owner, locals.pb);
 		} else {
 			bookmarks = await getBookmarksByIds(idsParam, owner, locals.pb);
 		}
