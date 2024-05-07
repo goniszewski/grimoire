@@ -39,7 +39,7 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"username": {
+									"login": {
 										"type": "string",
 										"description": "User's username or email"
 									},
@@ -107,12 +107,37 @@
 						"required": false,
 						"schema": {
 							"type": "string",
-							"examples": ["id1,id2,id3"]
+							"examples": [
+								"id1,id2,id3"
+							]
 						},
 						"description": "Comma separated bookmark IDs to retrieve"
+					},
+					{
+						"in": "query",
+						"name": "url",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"examples": [
+								"https://www.google.com"
+							]
+						},
+						"description": "URL of the bookmark to retrieve"
+					},
+					{
+						"in": "query",
+						"name": "filter",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"examples": [
+								"Grimoire github"
+							]
+						},
+						"description": "A search term to filter the bookmarks to retrieve"
 					}
 				],
-
 				"responses": {
 					"200": {
 						"description": "A list of bookmarks",
