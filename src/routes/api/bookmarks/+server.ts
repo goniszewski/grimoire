@@ -123,7 +123,6 @@ const getBookmarksByFilter = async (filter: string, owner: string, pb: Client) =
 	records = removePocketbaseFields(records);
 	const searchEngine = initializeSearch(records);
 	const res = searchEngine.search(filter).map((b) => b.item);
-	console.log(res);
 	return res;
 }
 
