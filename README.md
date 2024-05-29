@@ -9,6 +9,12 @@
 </div>
 <br>
 
+> [!IMPORTANT]
+> This application is undergoing a comprehensive overhaul to simplify its architecture, deliver an enhanced user experience, and have a more efficient development cycle.
+> 
+> Read the [Refactoring and streamlining effort](https://github.com/users/goniszewski/projects/1/views/1?pane=issue&itemId=65225221) for more information.
+
+
 Glimpse into the magical book of _your_ forbidden knowledge - **Grimoire!** 📖💫
 
 Unleash your inner sorcerer and conquer the chaos of bookmarks! With Grimoire, you'll have a bewitching way to store and sort your enchanted links.
