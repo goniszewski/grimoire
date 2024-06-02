@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { env } from '$env/dynamic/public';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
@@ -10,35 +9,18 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { checkPocketbaseConnection, user } from '$lib/pb';
+	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
 	import { buildCategoryTree } from '$lib/utils/build-category-tree';
-	import { ToastNode, showToast } from '$lib/utils/show-toast';
+	import { ToastNode } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
 
-	let checkPbConnectionInterval: NodeJS.Timeout;
-	let isPocketbaseAvailable: boolean;
-
 	onMount(async () => {
 		$user.loadFromCookie(document.cookie);
-
-		isPocketbaseAvailable = await checkPocketbaseConnection();
-
-		checkPbConnectionInterval = setInterval(async () => {
-			isPocketbaseAvailable = await checkPocketbaseConnection();
-
-			if (!isPocketbaseAvailable) {
-				showToast.error('Could not connect to Pocketbase. Is it running?');
-			}
-		}, 10_000);
-	});
-
-	onDestroy(() => {
-		clearInterval(checkPbConnectionInterval);
 	});
 
 	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
@@ -51,16 +33,6 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	{#if isPocketbaseAvailable === false}
-		<div class="flex items-center justify-center">
-			<div class="alert alert-error fixed z-50 mt-16 max-w-fit opacity-90">
-				<p>
-					Could not connect to <strong>Pocketbase</strong> on {env.PUBLIC_POCKETBASE_URL}. Is it
-					running? 🧙
-				</p>
-			</div>
-		</div>
-	{/if}
 	<head>
 		<title>Grimoire</title>
 	</head>

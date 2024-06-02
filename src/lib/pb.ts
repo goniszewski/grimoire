@@ -229,8 +229,3 @@ export const removePocketbaseFields = <T extends Partial<RecordModel> | Partial<
 
 	return removeFields(record) as T;
 };
-
-export const checkPocketbaseConnection = async (): Promise<boolean> =>
-	fetch(
-		config.IS_DEV ? 'http://localhost:5173' : config.ORIGIN + `${urls.INTERNAL_PB}/api/health`
-	).then((res) => res.ok);
