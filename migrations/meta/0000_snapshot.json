@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f870d247-1d8a-4ffc-888d-292b167cfbb5",
+  "id": "a961f577-a33e-4533-a6f9-5f030224d0b1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {
@@ -299,29 +299,37 @@
     "bookmarks_to_tags": {
       "name": "bookmarks_to_tags",
       "columns": {
-        "bookmarksToTagst_bookmark_id": {
-          "name": "bookmarksToTagst_bookmark_id",
+        "bookmark_id": {
+          "name": "bookmark_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "bookmarksToTagst_tag_id": {
-          "name": "bookmarksToTagst_tag_id",
+        "tag_id": {
+          "name": "tag_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "bookmarks_to_tags_bookmark_id_index": {
+          "name": "bookmarks_to_tags_bookmark_id_index",
+          "columns": [
+            "bookmark_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
-        "bookmarks_to_tags_bookmarksToTagst_bookmark_id_bookmark_id_fk": {
-          "name": "bookmarks_to_tags_bookmarksToTagst_bookmark_id_bookmark_id_fk",
+        "bookmarks_to_tags_bookmark_id_bookmark_id_fk": {
+          "name": "bookmarks_to_tags_bookmark_id_bookmark_id_fk",
           "tableFrom": "bookmarks_to_tags",
           "tableTo": "bookmark",
           "columnsFrom": [
-            "bookmarksToTagst_bookmark_id"
+            "bookmark_id"
           ],
           "columnsTo": [
             "id"
@@ -329,12 +337,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "bookmarks_to_tags_bookmarksToTagst_tag_id_tag_id_fk": {
-          "name": "bookmarks_to_tags_bookmarksToTagst_tag_id_tag_id_fk",
+        "bookmarks_to_tags_tag_id_tag_id_fk": {
+          "name": "bookmarks_to_tags_tag_id_tag_id_fk",
           "tableFrom": "bookmarks_to_tags",
           "tableTo": "tag",
           "columnsFrom": [
-            "bookmarksToTagst_tag_id"
+            "tag_id"
           ],
           "columnsTo": [
             "id"
@@ -343,7 +351,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "bookmarks_to_tags_bookmark_id_tag_id_pk": {
+          "columns": [
+            "bookmark_id",
+            "tag_id"
+          ],
+          "name": "bookmarks_to_tags_bookmark_id_tag_id_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "category": {
@@ -421,6 +437,21 @@
         },
         "initial": {
           "name": "initial",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created": {
+          "name": "created",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(CURRENT_TIMESTAMP)"
+        },
+        "updated": {
+          "name": "updated",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -616,6 +647,13 @@
           "notNull": false,
           "autoincrement": false,
           "default": "(CURRENT_TIMESTAMP)"
+        },
+        "updated": {
+          "name": "updated",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -755,5 +793,8 @@
     "schemas": {},
     "tables": {},
     "columns": {}
+  },
+  "internal": {
+    "indexes": {}
   }
 }

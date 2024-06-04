@@ -33,10 +33,11 @@ CREATE TABLE `bookmark` (
 );
 --> statement-breakpoint
 CREATE TABLE `bookmarks_to_tags` (
-	`bookmarksToTagst_bookmark_id` integer NOT NULL,
-	`bookmarksToTagst_tag_id` integer NOT NULL,
-	FOREIGN KEY (`bookmarksToTagst_bookmark_id`) REFERENCES `bookmark`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`bookmarksToTagst_tag_id`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE no action
+	`bookmark_id` integer NOT NULL,
+	`tag_id` integer NOT NULL,
+	PRIMARY KEY(`bookmark_id`, `tag_id`),
+	FOREIGN KEY (`bookmark_id`) REFERENCES `bookmark`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `category` (
@@ -51,6 +52,8 @@ CREATE TABLE `category` (
 	`public` integer,
 	`icon` text,
 	`initial` integer,
+	`created` integer DEFAULT (CURRENT_TIMESTAMP),
+	`updated` integer,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -75,6 +78,7 @@ CREATE TABLE `tag` (
 	`slug` text,
 	`owner_id` integer NOT NULL,
 	`created` integer DEFAULT (CURRENT_TIMESTAMP),
+	`updated` integer,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -93,6 +97,7 @@ CREATE INDEX `bookmarkt_url_owner_index` ON `bookmark` (`url`,`owner_id`);--> st
 CREATE INDEX `bookmarkt_title_owner_index` ON `bookmark` (`title`,`owner_id`);--> statement-breakpoint
 CREATE INDEX `bookmarkt_domain_owner_index` ON `bookmark` (`domain`,`owner_id`);--> statement-breakpoint
 CREATE INDEX `bookmarkt_created_owner_index` ON `bookmark` (`created`,`owner_id`);--> statement-breakpoint
+CREATE INDEX `bookmarks_to_tags_bookmark_id_index` ON `bookmarks_to_tags` (`bookmark_id`);--> statement-breakpoint
 CREATE INDEX `categoryt_user_name_index` ON `category` (`owner_id`,`name`);--> statement-breakpoint
 CREATE INDEX `categoryt_user_slug_index` ON `category` (`owner_id`,`slug`);--> statement-breakpoint
 CREATE INDEX `filet_owner_id_index` ON `file` (`owner_id`);--> statement-breakpoint

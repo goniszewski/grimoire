@@ -1,12 +1,7 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-	bookmarkSchema,
-	bookmarksToTagsSchema,
-	categorySchema,
-	fileSchema,
-	tagSchema,
-	userSchema
+    bookmarkSchema, bookmarksToTagsSchema, categorySchema, userSchema
 } from '$lib/database/schema';
 import { handlePBError, pb } from '$lib/pb';
 import { Storage } from '$lib/storage/storage';
@@ -14,7 +9,7 @@ import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 import { createSlug } from '$lib/utils/create-slug';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 import { file } from 'bun';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { UserSettings } from '$lib/types/UserSettings.type';
 
@@ -142,9 +137,9 @@ export const actions = {
 		};
 	},
 	updateBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -171,7 +166,7 @@ export const actions = {
 		const category = JSON.parse(data.get('category') as string);
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 
-		const tagIds = await prepareTags(db, tags, owner);
+		const tagIds = await prepareTags(db, tags, ownerId);
 
 		const bookmarkData = {
 			author,
@@ -188,7 +183,7 @@ export const actions = {
 			importance,
 			mainImageUrl,
 			note,
-			owner,
+			owner: ownerId,
 			title,
 			url
 		};
@@ -196,7 +191,7 @@ export const actions = {
 		const [bookmark] = await db
 			.update(bookmarkSchema)
 			.set(bookmarkData)
-			.where(eq(bookmarkSchema.id, id))
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)))
 			.returning();
 
 		await Promise.all(
@@ -208,8 +203,8 @@ export const actions = {
 			)
 		);
 
-		const mainImageId = await storeImage(mainImageUrl, title, owner);
-		const iconId = await storeImage(iconUrl, title, owner);
+		const mainImageId = await storeImage(mainImageUrl, title, ownerId);
+		const iconId = await storeImage(iconUrl, title, ownerId);
 
 		if (mainImageId || iconId) {
 			await db
@@ -227,9 +222,9 @@ export const actions = {
 		};
 	},
 	updateFlagged: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -240,16 +235,19 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const flagged = data.get('flagged') === 'on' ? new Date() : null;
 
-		await db.update(bookmarkSchema).set({ flagged }).where(eq(bookmarkSchema.id, id));
+		await db
+			.update(bookmarkSchema)
+			.set({ flagged })
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
 
 		return {
 			success: true
 		};
 	},
 	updateImportance: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -260,7 +258,10 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const importance = parseInt((data.get('importance') || '0') as string);
 
-		await db.update(bookmarkSchema).set({ importance }).where(eq(bookmarkSchema.id, id));
+		await db
+			.update(bookmarkSchema)
+			.set({ importance })
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
 
 		return {
 			success: true
@@ -268,9 +269,9 @@ export const actions = {
 	},
 
 	updateRead: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -281,7 +282,10 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const read = data.get('read') === 'on' ? new Date() : null;
 
-		await db.update(bookmarkSchema).set({ read }).where(eq(bookmarkSchema.id, id));
+		await db
+			.update(bookmarkSchema)
+			.set({ read })
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
 
 		return {
 			success: true
@@ -289,9 +293,9 @@ export const actions = {
 	},
 
 	updateIncreasedOpenedCount: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -306,21 +310,24 @@ export const actions = {
 				opened_times: bookmarkSchema.openedTimes
 			})
 			.from(bookmarkSchema)
-			.where(eq(bookmarkSchema.id, id));
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
 
-		await db.update(bookmarkSchema).set({
-			openedTimes: opened_times ?? 0 + 1,
-			openedLast: new Date()
-		});
+		await db
+			.update(bookmarkSchema)
+			.set({
+				openedTimes: opened_times ?? 0 + 1,
+				openedLast: new Date()
+			})
+			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
 
 		return {
 			success: true
 		};
 	},
 	addNewCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -337,22 +344,20 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const requestBody: categorySchema.$insertInput = {
+		const categoryBody: typeof categorySchema.$inferInsert = {
 			name,
 			slug: createSlug(name),
 			description,
 			icon,
 			color,
-			parent: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue === 'null' ? null : parentValue,
 			archived,
 			public: setPublic,
-			owner,
-			initial: false,
-			created: new Date(),
-			updated: new Date()
+			ownerId,
+			initial: false
 		};
 
-		const [{ id }] = await db.insert(categorySchema).values(requestBody).returning({
+		const [{ id }] = await db.insert(categorySchema).values(categoryBody).returning({
 			id: categorySchema.id
 		});
 
@@ -362,9 +367,9 @@ export const actions = {
 		};
 	},
 	updateCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -383,28 +388,30 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const requestBody: categorySchema.$insertInput = {
+		const categoryBody: Partial<typeof categorySchema.$inferInsert> = {
 			name,
 			slug: createSlug(name),
 			description,
 			icon,
 			color,
-			parent: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue === 'null' ? null : parentValue,
 			archived,
-			public: setPublic,
-			updated: new Date()
+			public: setPublic
 		};
 
-		await db.update(categorySchema).set(requestBody).where(eq(categorySchema.id, id));
+		await db
+			.update(categorySchema)
+			.set(categoryBody)
+			.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)));
 
 		return {
 			success: true
 		};
 	},
 	deleteCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false
 			};
@@ -413,7 +420,9 @@ export const actions = {
 		const data = await request.formData();
 		const id = parseInt(data.get('id') as string, 10);
 
-		await db.delete(categorySchema).where(eq(categorySchema.id, id));
+		await db
+			.delete(categorySchema)
+			.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)));
 
 		return {
 			success: true

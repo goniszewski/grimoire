@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { FileSourceEnum, FileStorageTypeEnum } from '../enums/files';
 
@@ -62,7 +62,9 @@ export const categorySchema = sqliteTable(
 		archived: integer('archived', { mode: 'timestamp' }),
 		public: integer('public', { mode: 'timestamp' }),
 		icon: text('icon'),
-		initial: integer('initial', { mode: 'boolean' })
+		initial: integer('initial', { mode: 'boolean' }),
+		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
+		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
 	},
 	(table) => ({
 		userIdNameIdx: index('categoryt_user_name_index').on(table.ownerId, table.name),
@@ -79,7 +81,8 @@ export const tagSchema = sqliteTable(
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`)
+		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
+		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
 	},
 	(table) => ({
 		userIdNameIdx: index('tagt_user_name_index').on(table.ownerId, table.name),
@@ -119,7 +122,7 @@ export const bookmarkSchema = sqliteTable(
 		openedLast: integer('opened_last', { mode: 'timestamp' }),
 		openedTimes: integer('opened_times').default(0),
 		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
-		updated: integer('updated', { mode: 'timestamp' })
+		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
 	},
 	(table) => ({
 		urlOwnerIdx: index('bookmarkt_url_owner_index').on(table.url, table.ownerId),
@@ -130,20 +133,42 @@ export const bookmarkSchema = sqliteTable(
 );
 
 // many-to-many tables
-export const bookmarksToTagsSchema = sqliteTable('bookmarks_to_tags', {
-	bookmarkId: integer('bookmarksToTagst_bookmark_id')
-		.notNull()
-		.references(() => bookmarkSchema.id),
-	tagId: integer('bookmarksToTagst_tag_id')
-		.notNull()
-		.references(() => tagSchema.id)
-});
+export const bookmarksToTagsSchema = sqliteTable(
+	'bookmarks_to_tags',
+	{
+		bookmarkId: integer('bookmark_id')
+			.notNull()
+			.references(() => bookmarkSchema.id),
+		tagId: integer('tag_id')
+			.notNull()
+			.references(() => tagSchema.id)
+	},
+	(table) => ({
+		bookmarkId: index('bookmarks_to_tags_bookmark_id_index').on(table.bookmarkId),
+		pk: primaryKey({ columns: [table.bookmarkId, table.tagId] })
+	})
+);
 
 // relations
-export const bookmarksToTagsRelationsSchema = relations(bookmarksToTagsSchema, ({ many }) => ({
-	bookmark: many(bookmarkSchema),
-	tag: many(tagSchema)
+export const bookmarksRelations = relations(bookmarkSchema, ({ many }) => ({
+	bookmarksToTags: many(bookmarksToTagsSchema)
 }));
+
+export const tagRelations = relations(tagSchema, ({ many }) => ({
+	bookmarksToTags: many(bookmarksToTagsSchema)
+}));
+
+export const bookmarkToTagsRelations = relations(bookmarksToTagsSchema, ({ one }) => ({
+	bookmark: one(bookmarkSchema, {
+		fields: [bookmarksToTagsSchema.bookmarkId],
+		references: [bookmarkSchema.id]
+	}),
+	tag: one(tagSchema, {
+		fields: [bookmarksToTagsSchema.tagId],
+		references: [tagSchema.id]
+	})
+}));
+
 export const userRelationsSchema = relations(userSchema, ({ many }) => ({
 	bookmarks: many(bookmarkSchema),
 	categories: many(categorySchema),
@@ -151,6 +176,10 @@ export const userRelationsSchema = relations(userSchema, ({ many }) => ({
 	files: many(fileSchema)
 }));
 
-export const categoryRelationsSchema = relations(categorySchema, ({ many }) => ({
-	bookmarks: many(bookmarkSchema)
+export const categoryRelationsSchema = relations(categorySchema, ({ many, one }) => ({
+	bookmarks: many(bookmarkSchema),
+	parent: one(categorySchema, {
+		fields: [categorySchema.parentId],
+		references: [categorySchema.id]
+	})
 }));

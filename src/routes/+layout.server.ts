@@ -1,14 +1,15 @@
 import type { LayoutServerLoad } from './$types';
+import { db } from '$lib/database/db';
+import { bookmarkSchema, categorySchema, tagSchema, userSchema } from '$lib/database/schema';
+import { searchIndexKeys } from '$lib/utils/search';
+import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 import type { Category } from '$lib/types/Category.type';
 import type { Tag } from '$lib/types/Tag.type';
 import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
-import type { CategoryDto } from '$lib/types/dto/Category.dto';
 
 import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
-import { searchIndexKeys } from '$lib/utils/search';
-import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
-
 function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
 	return tags.map((tag) => {
 		const tagBookmarks = bookmarks.reduce((acc, bookmark) => {
@@ -51,33 +52,42 @@ export const load = (async ({ locals, url }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '20');
 
-	const categories = await locals.pb.collection('categories').getList<CategoryDto>(1, 1000, {
-		expand: 'parent',
-		filter: `owner="${locals.user!.id}"`,
-		sort: 'name'
+	const [{ categories, tags }] = await db.query.userSchema.findMany({
+		where: eq(userSchema.id, locals.user.id),
+		with: {
+			categories: {
+				orderBy: desc(categorySchema.created),
+				with: {
+					parent: true
+				}
+			},
+			tags: { orderBy: asc(tagSchema.name) }
+		}
 	});
 
-	const tags = await locals.pb.collection('tags').getList<Tag>(1, 1000, {
-		filter: `owner="${locals.user!.id}"`,
-		sort: 'name',
-		requestKey: `tags-${locals.user!.id}`
-	});
-	const bookmarks = await locals.pb.collection('bookmarks').getList<BookmarkDto>(page, limit, {
-		expand: 'tags,category',
-		filter: `owner="${locals.user!.id}"`,
-		sort: '-created'
+	const bookmarksWithTagsQuery = await db.query.bookmarkSchema.findMany({
+		limit,
+		offset: (page - 1) * limit,
+		where: eq(bookmarkSchema.ownerId, locals.user.id),
+		orderBy: desc(bookmarkSchema.created),
+		with: {
+			bookmarksToTags: true
+		}
 	});
 
-	const bookmarksCount = await locals.pb
-		.collection('bookmarks')
-		.getList(1, 1, {
-			filter: `owner="${locals.user!.id}"`,
-			count: true,
-			requestKey: `bookmarksCount-${locals.user!.id}`
-		})
-		.then((res) => res.totalItems);
+	const bookmarks = bookmarksWithTagsQuery.map((b) => {
+		const { bookmarksToTags, ...bookmark } = b;
 
-	const tagsWithBookmarks = tagWithBookmarkIds(bookmarks.items, tags.items);
+		return {
+			...bookmark,
+			tags: tags.filter((t) => bookmarksToTags.some((bt) => bt.tagId === t.id))
+		};
+	});
+
+	const bookmarksCount = await db
+		.select({ count: count() })
+		.from(bookmarkSchema)
+		.where(eq(bookmarkSchema.ownerId, locals.user!.id));
 
 	const bookmarksForIndex = await locals.pb
 		.collection('bookmarks')
@@ -95,11 +105,9 @@ export const load = (async ({ locals, url }) => {
 			}))
 		);
 	return {
-		bookmarks: serializeBookmarkList(bookmarks.items),
-		categories: structuredClone(
-			categories.items.map((category) => ({ ...category, ...category.expand }))
-		),
-		tags: structuredClone(tagsWithBookmarks),
+		bookmarks: serializeBookmarkList(bookmarks), // todo: provide URL's for local images
+		categories,
+		tags,
 		bookmarksForIndex,
 		bookmarksCount,
 		page,
