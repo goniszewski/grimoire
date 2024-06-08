@@ -8,8 +8,10 @@ export const userSchema = sqliteTable(
 	'user',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		name: text('name').unique(),
+		name: text('name'),
+		username: text('username').unique(),
 		email: text('email').unique(),
+		passwordHash: text('password_hash'),
 		avatar: integer('avatar'),
 		settings: text('settings', { mode: 'json' }),
 		disabled: integer('disabled', { mode: 'timestamp' }),
@@ -183,3 +185,12 @@ export const categoryRelationsSchema = relations(categorySchema, ({ many, one })
 		references: [categorySchema.id]
 	})
 }));
+
+// auth
+export const sessionSchema = sqliteTable('session', {
+	id: text('id').notNull().primaryKey(),
+	userId: integer('user_id')
+		.notNull()
+		.references(() => userSchema.id),
+	expiresAt: integer('expires_at').notNull()
+});

@@ -19,5 +19,11 @@ declare global {
 		}
 	}
 }
+declare module 'lucia' {
+	interface Register {
+		Lucia: typeof lucia;
+		UserId: number;
+	}
+}
 
 export {};

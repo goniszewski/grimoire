@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a961f577-a33e-4533-a6f9-5f030224d0b1",
+  "id": "b2ac3050-71c6-405f-ae18-66c3aa770fe9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {
@@ -609,6 +609,50 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "session": {
+      "name": "session",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "tag": {
       "name": "tag",
       "columns": {
@@ -709,8 +753,22 @@
           "notNull": false,
           "autoincrement": false
         },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "email": {
           "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -754,10 +812,10 @@
         }
       },
       "indexes": {
-        "user_name_unique": {
-          "name": "user_name_unique",
+        "user_username_unique": {
+          "name": "user_username_unique",
           "columns": [
-            "name"
+            "username"
           ],
           "isUnique": true
         },

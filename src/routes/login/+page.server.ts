@@ -1,36 +1,67 @@
-import { handlePBError } from '$lib/pb';
+import { db } from '$lib/database/db';
+import { userSchema } from '$lib/database/schema';
+import { lucia } from '$lib/server/auth';
+import { and, eq } from 'drizzle-orm';
 
-import { error, fail, redirect } from '@sveltejs/kit';
+import { verify } from '@node-rs/argon2';
+import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
 export const actions: Actions = {
-	default: async ({ locals, request }) => {
-		const data = await request.formData();
-		const usernameOrEmail = data.get('usernameOrEmail') as string;
-		const password = data.get('password') as string;
+	default: async (event) => {
+		const formData = await event.request.formData();
+		const username = formData.get('username');
+		const password = formData.get('password');
 
-		if (!usernameOrEmail || !password) {
+		if (
+			typeof username !== 'string' ||
+			username.length < 3 ||
+			username.length > 31 ||
+			!/^[a-z0-9_-]+$/.test(username)
+		) {
 			return fail(400, {
-				usernameOrEmail: !usernameOrEmail,
-				password: !password,
-				missing: true
+				message: 'Invalid username'
+			});
+		}
+		if (typeof password !== 'string' || password.length < 6 || password.length > 255) {
+			return fail(400, {
+				message: 'Invalid password'
 			});
 		}
 
-		try {
-			const user = await locals.pb.collection('users').authWithPassword(usernameOrEmail, password);
+		const [existingUser] = await db
+			.select()
+			.from(userSchema)
+			.where(and(eq(userSchema.username, username.toLowerCase())));
+		if (!existingUser || existingUser.passwordHash === null) {
+			const randomMs = Math.floor(Math.random() * 10000);
 
-			if (user.record.disabled) {
-				return fail(401, {
-					usernameOrEmail,
-					password,
-					disabled: true
+			setTimeout(() => {
+				return fail(400, {
+					message: 'Invalid username'
 				});
-			}
-		} catch (e) {
-			return handlePBError(e, locals.pb, true);
+			}, randomMs);
 		}
 
-		redirect(303, '/');
+		const validPassword = await verify(existingUser.passwordHash!, password, {
+			memoryCost: 19456,
+			timeCost: 2,
+			outputLen: 32,
+			parallelism: 1
+		});
+		if (!validPassword) {
+			return fail(400, {
+				message: 'Incorrect username or password'
+			});
+		}
+
+		const session = await lucia.createSession(existingUser.id, {});
+		const sessionCookie = lucia.createSessionCookie(session.id);
+		event.cookies.set(sessionCookie.name, sessionCookie.value, {
+			path: '.',
+			...sessionCookie.attributes
+		});
+
+		redirect(302, '/');
 	}
 };

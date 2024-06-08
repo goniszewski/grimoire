@@ -72,6 +72,13 @@ CREATE TABLE `file` (
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE TABLE `session` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` integer NOT NULL,
+	`expires_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `tag` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text,
@@ -85,7 +92,9 @@ CREATE TABLE `tag` (
 CREATE TABLE `user` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text,
+	`username` text,
 	`email` text,
+	`password_hash` text,
 	`avatar` integer,
 	`settings` text,
 	`disabled` integer,
@@ -103,7 +112,7 @@ CREATE INDEX `categoryt_user_slug_index` ON `category` (`owner_id`,`slug`);--> s
 CREATE INDEX `filet_owner_id_index` ON `file` (`owner_id`);--> statement-breakpoint
 CREATE INDEX `tagt_user_name_index` ON `tag` (`owner_id`,`name`);--> statement-breakpoint
 CREATE INDEX `tagt_user_slug_index` ON `tag` (`owner_id`,`slug`);--> statement-breakpoint
-CREATE UNIQUE INDEX `user_name_unique` ON `user` (`name`);--> statement-breakpoint
+CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
 CREATE INDEX `usert_name_index` ON `user` (`name`);--> statement-breakpoint
 CREATE INDEX `usert_email_index` ON `user` (`email`);
