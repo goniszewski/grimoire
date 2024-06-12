@@ -3,47 +3,24 @@ import { db } from '$lib/database/db';
 import { bookmarkSchema, categorySchema, tagSchema, userSchema } from '$lib/database/schema';
 import { searchIndexKeys } from '$lib/utils/search';
 import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { asc, count, desc, eq } from 'drizzle-orm';
 
 import type { Category } from '$lib/types/Category.type';
+
+import type { Bookmark } from '$lib/types/Bookmark.type';
 import type { Tag } from '$lib/types/Tag.type';
-import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
-
-import type { TagWithBookmarks } from '$lib/types/dto/Tag.dto';
-function tagWithBookmarkIds(bookmarks: BookmarkDto[], tags: Tag[]): TagWithBookmarks[] {
-	return tags.map((tag) => {
-		const tagBookmarks = bookmarks.reduce((acc, bookmark) => {
-			if (bookmark.expand?.tags?.find((t) => t.id === tag.id)) {
-				acc.push(bookmark.id);
-			}
-			return acc;
-		}, [] as string[]);
-
-		return {
-			...tag,
-			bookmarks: tagBookmarks
-		};
-	});
-}
 
 export const load = (async ({ locals, url }) => {
-	const noUsersFound = await locals.pb
-		.collection('users')
-		.getList(1, 1, {
-			fields: 'collectionName',
-			requestKey: null,
-			headers: {
-				RequestFor: 'user-count'
-			}
-		})
-		.then((res) => res.totalItems === 0)
-		.catch(() => true);
+	const noUsersFound = await db
+		.select({ count: count(userSchema.id) })
+		.from(userSchema)
+		.then((r) => r[0].count === 0);
 
 	if (!locals.user) {
 		return {
-			bookmarks: [] as BookmarkDto[],
+			bookmarks: [] as Bookmark[],
 			categories: [] as Category[],
-			tags: [] as TagWithBookmarks[],
+			tags: [] as Tag[],
 			noUsersFound,
 			status: 401
 		};
@@ -71,7 +48,16 @@ export const load = (async ({ locals, url }) => {
 		where: eq(bookmarkSchema.ownerId, locals.user.id),
 		orderBy: desc(bookmarkSchema.created),
 		with: {
-			bookmarksToTags: true
+			bookmarksToTags: true,
+			mainImage: true,
+			icon: true,
+			screenshot: true,
+			category: {
+				with: {
+					parent: true
+				}
+			},
+			owner: true
 		}
 	});
 
@@ -89,21 +75,32 @@ export const load = (async ({ locals, url }) => {
 		.from(bookmarkSchema)
 		.where(eq(bookmarkSchema.ownerId, locals.user!.id));
 
-	const bookmarksForIndex = await locals.pb
-		.collection('bookmarks')
-		.getFullList({
-			fields: 'id,' + searchIndexKeys.join(','),
-			expand: 'tags',
-			filter: `owner.id="${locals.user!.id}"`,
-			batchSize: 100000,
-			requestKey: `bookmarksForIndex-${locals.user!.id}`
-		})
-		.then((res) =>
-			res.map(({ expand, ...b }) => ({
-				...expand,
-				...b
-			}))
-		);
+	const bookmarksForIndexQuery = await db.query.bookmarkSchema.findMany({
+		with: {
+			bookmarksToTags: {
+				with: {
+					tag: true
+				}
+			}
+		},
+		columns: {
+			id: true,
+			...searchIndexKeys.reduce((acc, key) => {
+				acc[key] = true;
+				return acc;
+			}, {} as any)
+		}
+	});
+
+	const bookmarksForIndex = bookmarksForIndexQuery.map((b) => {
+		const { bookmarksToTags, ...bookmark } = b;
+
+		return {
+			...bookmark,
+			tags: bookmarksToTags.map((bt) => bt.tag)
+		};
+	});
+
 	return {
 		bookmarks: serializeBookmarkList(bookmarks), // todo: provide URL's for local images
 		categories,

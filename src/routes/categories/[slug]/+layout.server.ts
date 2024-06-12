@@ -1,5 +1,3 @@
-import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto';
-import type { CategoryDto } from '$lib/types/dto/Category.dto';
 import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
 
 export const load = async ({ locals, url, parent }) => {

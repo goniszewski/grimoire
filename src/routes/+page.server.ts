@@ -31,9 +31,9 @@ const storeImage = async (url: string, title: string, ownerId: number) => {
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -59,10 +59,10 @@ export const actions = {
 			const category = JSON.parse(data.get('category') as string);
 			const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 
-			const tagIds = await prepareTags(db, tags, owner);
+			const tagIds = await prepareTags(db, tags, ownerId);
 
 			const bookmarkData: typeof bookmarkSchema.$inferInsert = {
-				ownerId: owner,
+				ownerId,
 				url,
 				author,
 				categoryId: category?.value ? category.value : category,
@@ -95,8 +95,8 @@ export const actions = {
 				)
 			);
 
-			const mainImageId = await storeImage(mainImageUrl, title, owner);
-			const iconId = await storeImage(iconUrl, title, owner);
+			const mainImageId = await storeImage(mainImageUrl, title, ownerId);
+			const iconId = await storeImage(iconUrl, title, ownerId);
 
 			if (mainImageId || iconId) {
 				await db
@@ -117,9 +117,9 @@ export const actions = {
 		}
 	},
 	deleteBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -429,9 +429,9 @@ export const actions = {
 		};
 	},
 	changeTheme: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false
 			};
@@ -444,7 +444,7 @@ export const actions = {
 				settings: userSchema.settings
 			})
 			.from(userSchema)
-			.where(eq(userSchema.id, owner));
+			.where(eq(userSchema.id, ownerId));
 
 		try {
 			await db
@@ -455,7 +455,7 @@ export const actions = {
 						theme
 					}
 				})
-				.where(eq(userSchema.id, owner));
+				.where(eq(userSchema.id, ownerId));
 
 			return {
 				success: true

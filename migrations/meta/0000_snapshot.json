@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b2ac3050-71c6-405f-ae18-66c3aa770fe9",
+  "id": "35556450-a96d-4010-be77-b534f8ec334c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {
@@ -18,21 +18,21 @@
           "name": "url",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "domain": {
           "name": "domain",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "title": {
           "name": "title",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "description": {
@@ -91,8 +91,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "main_image": {
-          "name": "main_image",
+        "main_image_id": {
+          "name": "main_image_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -105,15 +105,15 @@
           "notNull": false,
           "autoincrement": false
         },
-        "icon": {
-          "name": "icon",
+        "icon_id": {
+          "name": "icon_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "screenshot": {
-          "name": "screenshot",
+        "screenshotId": {
+          "name": "screenshotId",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -172,7 +172,7 @@
           "name": "opened_times",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": 0
         },
@@ -180,7 +180,7 @@
           "name": "created",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": "(CURRENT_TIMESTAMP)"
         },
@@ -188,7 +188,7 @@
           "name": "updated",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -227,12 +227,12 @@
         }
       },
       "foreignKeys": {
-        "bookmark_main_image_file_id_fk": {
-          "name": "bookmark_main_image_file_id_fk",
+        "bookmark_main_image_id_file_id_fk": {
+          "name": "bookmark_main_image_id_file_id_fk",
           "tableFrom": "bookmark",
           "tableTo": "file",
           "columnsFrom": [
-            "main_image"
+            "main_image_id"
           ],
           "columnsTo": [
             "id"
@@ -240,12 +240,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "bookmark_icon_file_id_fk": {
-          "name": "bookmark_icon_file_id_fk",
+        "bookmark_icon_id_file_id_fk": {
+          "name": "bookmark_icon_id_file_id_fk",
           "tableFrom": "bookmark",
           "tableTo": "file",
           "columnsFrom": [
-            "icon"
+            "icon_id"
           ],
           "columnsTo": [
             "id"
@@ -253,12 +253,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "bookmark_screenshot_file_id_fk": {
-          "name": "bookmark_screenshot_file_id_fk",
+        "bookmark_screenshotId_file_id_fk": {
+          "name": "bookmark_screenshotId_file_id_fk",
           "tableFrom": "bookmark",
           "tableTo": "file",
           "columnsFrom": [
-            "screenshot"
+            "screenshotId"
           ],
           "columnsTo": [
             "id"
@@ -376,14 +376,14 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "slug": {
           "name": "slug",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "description": {
@@ -439,14 +439,15 @@
           "name": "initial",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "created": {
           "name": "created",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": "(CURRENT_TIMESTAMP)"
         },
@@ -454,7 +455,7 @@
           "name": "updated",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -521,21 +522,21 @@
           "name": "file_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "storage_type": {
           "name": "storage_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "relative_path": {
           "name": "relative_path",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "size": {
@@ -549,14 +550,14 @@
           "name": "mime-type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "source": {
           "name": "source",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "owner_id": {
@@ -667,14 +668,14 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "slug": {
           "name": "slug",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "owner_id": {
@@ -688,7 +689,7 @@
           "name": "created",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": "(CURRENT_TIMESTAMP)"
         },
@@ -696,7 +697,7 @@
           "name": "updated",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
@@ -750,32 +751,32 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "username": {
           "name": "username",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "password_hash": {
           "name": "password_hash",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
-        "avatar": {
-          "name": "avatar",
+        "avatar_id": {
+          "name": "avatar_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -785,8 +786,17 @@
           "name": "settings",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "initial": {
+          "name": "initial",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "disabled": {
           "name": "disabled",
@@ -799,7 +809,7 @@
           "name": "created",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": "(CURRENT_TIMESTAMP)"
         },
@@ -807,7 +817,7 @@
           "name": "updated",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         }
       },

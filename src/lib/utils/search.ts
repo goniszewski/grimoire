@@ -51,7 +51,7 @@ export const addBookmarkToSearchIndex = async ($searchInstance: Fuse<any>, bookm
 
 export const removeBookmarkFromSearchIndex = async (
 	$searchInstance: Fuse<any>,
-	bookmarkId: string
+	bookmarkId: number
 ) => $searchInstance.remove((b) => b.id === bookmarkId);
 
 export const updateBookmarkInSearchIndex = async (

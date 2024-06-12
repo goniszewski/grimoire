@@ -4,19 +4,25 @@ import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlit
 import { FileSourceEnum, FileStorageTypeEnum } from '../enums/files';
 
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import type { UserSettings } from '$lib/types/UserSettings.type';
 export const userSchema = sqliteTable(
 	'user',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		name: text('name'),
-		username: text('username').unique(),
-		email: text('email').unique(),
-		passwordHash: text('password_hash'),
-		avatar: integer('avatar'),
-		settings: text('settings', { mode: 'json' }),
+		name: text('name').notNull(),
+		username: text('username').unique().notNull(),
+		email: text('email').unique().notNull(),
+		passwordHash: text('password_hash').notNull(),
+		avatarId: integer('avatar_id'),
+		settings: text('settings', { mode: 'json' }).default('{}').notNull().$type<UserSettings>(),
+		verified: integer('initial', { mode: 'boolean' }).default(false).notNull(),
 		disabled: integer('disabled', { mode: 'timestamp' }),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+		created: integer('created', { mode: 'timestamp' })
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.notNull(),
+		updated: integer('updated', { mode: 'timestamp' })
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+			.notNull()
 	},
 	(table) => ({
 		nameIdx: index('usert_name_index').on(table.name),
@@ -28,16 +34,16 @@ export const fileSchema = sqliteTable(
 	'file',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		fileName: text('file_name'),
+		fileName: text('file_name').notNull(),
 		storageType: text('storage_type', {
 			enum: [FileStorageTypeEnum.Local, FileStorageTypeEnum.S3]
-		}),
-		relativePath: text('relative_path'),
+		}).notNull(),
+		relativePath: text('relative_path').notNull(),
 		size: integer('size'),
-		mimeType: text('mime-type'),
+		mimeType: text('mime-type').notNull(),
 		source: text('source', {
 			enum: [FileSourceEnum.Url, FileSourceEnum.Upload, FileSourceEnum.WebExtension]
-		}),
+		}).notNull(),
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id),
@@ -53,8 +59,8 @@ export const categorySchema = sqliteTable(
 	'category',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		name: text('name'),
-		slug: text('slug'),
+		name: text('name').notNull(),
+		slug: text('slug').notNull(),
 		description: text('description'),
 		color: text('color'),
 		ownerId: integer('owner_id')
@@ -64,9 +70,13 @@ export const categorySchema = sqliteTable(
 		archived: integer('archived', { mode: 'timestamp' }),
 		public: integer('public', { mode: 'timestamp' }),
 		icon: text('icon'),
-		initial: integer('initial', { mode: 'boolean' }),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+		initial: integer('initial', { mode: 'boolean' }).default(false).notNull(),
+		created: integer('created', { mode: 'timestamp' })
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.notNull(),
+		updated: integer('updated', { mode: 'timestamp' })
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+			.notNull()
 	},
 	(table) => ({
 		userIdNameIdx: index('categoryt_user_name_index').on(table.ownerId, table.name),
@@ -78,13 +88,17 @@ export const tagSchema = sqliteTable(
 	'tag',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		name: text('name'),
-		slug: text('slug'),
+		name: text('name').notNull(),
+		slug: text('slug').notNull(),
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+		created: integer('created', { mode: 'timestamp' })
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.notNull(),
+		updated: integer('updated', { mode: 'timestamp' })
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+			.notNull()
 	},
 	(table) => ({
 		userIdNameIdx: index('tagt_user_name_index').on(table.ownerId, table.name),
@@ -96,9 +110,9 @@ export const bookmarkSchema = sqliteTable(
 	'bookmark',
 	{
 		id: integer('id').primaryKey({ autoIncrement: true }),
-		url: text('url'),
-		domain: text('domain'),
-		title: text('title'),
+		url: text('url').notNull(),
+		domain: text('domain').notNull(),
+		title: text('title').notNull(),
 		description: text('description'),
 		author: text('author'),
 		contentText: text('content_text'),
@@ -107,10 +121,10 @@ export const bookmarkSchema = sqliteTable(
 		contentPublishedDate: text('content_published_date'),
 		note: text('note'),
 		mainImageUrl: text('main_image_url'),
-		mainImageId: integer('main_image').references(() => fileSchema.id),
+		mainImageId: integer('main_image_id').references(() => fileSchema.id),
 		iconUrl: text('icon_url'),
-		iconId: integer('icon').references(() => fileSchema.id),
-		screenshot: integer('screenshot').references(() => fileSchema.id),
+		iconId: integer('icon_id').references(() => fileSchema.id),
+		screenshotId: integer('screenshotId').references(() => fileSchema.id),
 		importance: integer('importance'),
 		flagged: integer('flagged', { mode: 'timestamp' }),
 		read: integer('read', { mode: 'timestamp' }),
@@ -122,9 +136,13 @@ export const bookmarkSchema = sqliteTable(
 			.notNull()
 			.references(() => categorySchema.id),
 		openedLast: integer('opened_last', { mode: 'timestamp' }),
-		openedTimes: integer('opened_times').default(0),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+		openedTimes: integer('opened_times').default(0).notNull(),
+		created: integer('created', { mode: 'timestamp' })
+			.default(sql`(CURRENT_TIMESTAMP)`)
+			.notNull(),
+		updated: integer('updated', { mode: 'timestamp' })
+			.$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
+			.notNull()
 	},
 	(table) => ({
 		urlOwnerIdx: index('bookmarkt_url_owner_index').on(table.url, table.ownerId),
@@ -152,8 +170,16 @@ export const bookmarksToTagsSchema = sqliteTable(
 );
 
 // relations
-export const bookmarksRelations = relations(bookmarkSchema, ({ many }) => ({
-	bookmarksToTags: many(bookmarksToTagsSchema)
+export const bookmarksRelations = relations(bookmarkSchema, ({ many, one }) => ({
+	bookmarksToTags: many(bookmarksToTagsSchema),
+	mainImage: one(fileSchema),
+	icon: one(fileSchema),
+	screenshot: one(fileSchema),
+	category: one(categorySchema),
+	owner: one(userSchema, {
+		fields: [bookmarkSchema.ownerId],
+		references: [userSchema.id]
+	})
 }));
 
 export const tagRelations = relations(tagSchema, ({ many }) => ({

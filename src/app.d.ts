@@ -4,8 +4,8 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			pb: import('pocketbase').default;
-			user: import('pocketbase').default['authStore']['model'];
+			user: import('lucia').User | null;
+			session: import('lucia').Session | null;
 		}
 		interface PageData {
 			categories: import('$lib/types/Category.type').Category[];
