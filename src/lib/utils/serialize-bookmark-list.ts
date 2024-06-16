@@ -1,8 +1,8 @@
 import type { Bookmark } from '$lib/types/Bookmark.type';
-import { checkIfImageURL } from './check-if-image-url';
+import type { BookmarkDbo } from '$lib/types/dbo/BookmarkDbo.type';
 import { getFileUrl } from './get-file-url';
 
-export const serializeBookmarkList = (bookmarks: Bookmark[]) =>
+export const serializeBookmarkList = (bookmarks: BookmarkDbo[]) =>
 	structuredClone(
 		bookmarks.map((bookmark) => {
 			const icon = getFileUrl(bookmark.icon?.relativePath);

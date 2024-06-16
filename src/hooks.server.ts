@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 import type { Theme } from '$lib/enums/themes';
 import type { Handle } from '@sveltejs/kit';
-import type { UserSettings } from '$lib/types/UserSettings.type';
+import type { User } from '$lib/types/User.type';
 export const handle: Handle = async ({ event, resolve }) => {
 	const sessionId = event.cookies.get(lucia.sessionCookieName);
 	if (!sessionId) {
@@ -32,16 +32,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 			...sessionCookie.attributes
 		});
 	}
-	let userSettings: UserSettings | null = null;
-	if (user?.id)
-		userSettings = await db
-			.select()
-			.from(userSchema)
-			.where(eq(userSchema.id, user.id))
-			.then((user) => user[0]?.settings as UserSettings);
-	const theme: Theme = userSettings?.theme || (event.cookies.get('theme') as Theme) || 'light';
+	let userData: User | null = null;
+	if (user?.id) [userData] = await db.select().from(userSchema).where(eq(userSchema.id, user.id));
 
-	event.locals.user = user;
+	if (!userData) throw new Error('User not found');
+	const theme: Theme = userData.settings.theme || (event.cookies.get('theme') as Theme) || 'light';
+
+	event.locals.user = userData;
 	event.locals.session = session;
 
 	const response = await resolve(event, {

@@ -172,43 +172,91 @@ export const bookmarksToTagsSchema = sqliteTable(
 // relations
 export const bookmarksRelations = relations(bookmarkSchema, ({ many, one }) => ({
 	bookmarksToTags: many(bookmarksToTagsSchema),
-	mainImage: one(fileSchema),
-	icon: one(fileSchema),
-	screenshot: one(fileSchema),
-	category: one(categorySchema),
+	mainImage: one(fileSchema, {
+		fields: [bookmarkSchema.mainImageId],
+		references: [fileSchema.id],
+		relationName: 'mainImage'
+	}),
+	icon: one(fileSchema, {
+		fields: [bookmarkSchema.iconId],
+		references: [fileSchema.id],
+		relationName: 'icon'
+	}),
+	screenshot: one(fileSchema, {
+		fields: [bookmarkSchema.screenshotId],
+		references: [fileSchema.id],
+		relationName: 'screenshot'
+	}),
+	category: one(categorySchema, {
+		fields: [bookmarkSchema.categoryId],
+		references: [categorySchema.id],
+		relationName: 'userCategories'
+	}),
 	owner: one(userSchema, {
 		fields: [bookmarkSchema.ownerId],
-		references: [userSchema.id]
+		references: [userSchema.id],
+		relationName: 'userBookmarks'
 	})
 }));
 
-export const tagRelations = relations(tagSchema, ({ many }) => ({
-	bookmarksToTags: many(bookmarksToTagsSchema)
+export const tagRelations = relations(tagSchema, ({ many, one }) => ({
+	bookmarksToTags: many(bookmarksToTagsSchema, {
+		relationName: 'bookmarks'
+	}),
+	owner: one(userSchema, {
+		fields: [tagSchema.ownerId],
+		references: [userSchema.id],
+		relationName: 'userTags'
+	})
 }));
 
 export const bookmarkToTagsRelations = relations(bookmarksToTagsSchema, ({ one }) => ({
 	bookmark: one(bookmarkSchema, {
 		fields: [bookmarksToTagsSchema.bookmarkId],
-		references: [bookmarkSchema.id]
+		references: [bookmarkSchema.id],
+		relationName: 'bookmarks'
 	}),
 	tag: one(tagSchema, {
 		fields: [bookmarksToTagsSchema.tagId],
-		references: [tagSchema.id]
+		references: [tagSchema.id],
+		relationName: 'tags'
+	})
+}));
+
+export const fileRelationsSchema = relations(fileSchema, ({ many, one }) => ({
+	owner: one(userSchema, {
+		fields: [fileSchema.ownerId],
+		references: [userSchema.id],
+		relationName: 'userFiles'
 	})
 }));
 
 export const userRelationsSchema = relations(userSchema, ({ many }) => ({
-	bookmarks: many(bookmarkSchema),
-	categories: many(categorySchema),
-	tags: many(tagSchema),
-	files: many(fileSchema)
+	bookmarks: many(bookmarkSchema, {
+		relationName: 'userBookmarks'
+	}),
+	categories: many(categorySchema, {
+		relationName: 'userCategories'
+	}),
+	tags: many(tagSchema, {
+		relationName: 'userTags'
+	}),
+	files: many(fileSchema, {
+		relationName: 'userFiles'
+	})
 }));
 
 export const categoryRelationsSchema = relations(categorySchema, ({ many, one }) => ({
 	bookmarks: many(bookmarkSchema),
 	parent: one(categorySchema, {
 		fields: [categorySchema.parentId],
-		references: [categorySchema.id]
+		references: [categorySchema.id],
+		relationName: 'children'
+	}),
+	owner: one(userSchema, {
+		fields: [categorySchema.ownerId],
+		references: [userSchema.id],
+		relationName: 'userCategories'
 	})
 }));
 

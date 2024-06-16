@@ -7,7 +7,6 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -52,17 +51,17 @@
 			on:keydown={onShowBookmark}
 		>
 			<div class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100">
-				{#if (bookmark.main_image || (bookmark.main_image_url && checkIfImageURL(bookmark.main_image_url))) && bookmark.screenshot}
+				{#if (bookmark.mainImageId || bookmark.mainImage) && bookmark.screenshot}
 					<img
-						src={bookmark.main_image || bookmark.main_image_url}
+						src={bookmark.mainImageId || bookmark.mainImageUrl}
 						on:mouseover={(e) => (e.target.src = bookmark.screenshot)}
-						on:mouseleave={(e) => (e.target.src = bookmark.main_image || bookmark.main_image_url)}
+						on:mouseleave={(e) => (e.target.src = bookmark.mainImageId || bookmark.mainImageUrl)}
 						on:focus={(e) => (e.target.src = bookmark.screenshot)}
 						class="h-full w-full object-cover transition duration-300 ease-in-out"
 						alt="Main"
 					/>
-				{:else if bookmark.main_image || (bookmark.main_image_url && checkIfImageURL(bookmark.main_image_url))}
-					<img src={bookmark.main_image || bookmark.main_image_url} alt="Main" />
+				{:else if bookmark.mainImageId || bookmark.mainImageUrl}
+					<img src={bookmark.mainImageId || bookmark.mainImageUrl} alt="Main" />
 				{:else if bookmark.screenshot}
 					<img src={bookmark.screenshot} alt="Screenshot" />
 				{:else}
@@ -213,7 +212,7 @@
 			<div class="h-20">
 				<div class="flex flex-wrap items-baseline">
 					<div class="flex w-full items-baseline gap-2">
-						{#if bookmark.icon || (bookmark.icon_url && checkIfImageURL(bookmark.icon_url))}
+						{#if bookmark.icon || bookmark.icon_url}
 							<img
 								src={bookmark.icon || bookmark.icon_url}
 								alt={`${bookmark.domain}'s favicon`}

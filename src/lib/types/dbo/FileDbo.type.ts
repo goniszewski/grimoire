@@ -1,7 +1,7 @@
 import type { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
-import type { User } from './User.type';
+import type { UserDbo } from './UserDbo.type';
 
-export type File = {
+export type FileDbo = {
 	id: number;
 	fileName: string;
 	storageType: FileStorageTypeEnum;
@@ -10,7 +10,7 @@ export type File = {
 	mimeType: string;
 	source: FileSourceEnum;
 	ownerId: number;
-	owner?: User | null;
+	owner?: UserDbo | null;
 	created: Date | null;
 	updated: Date | null;
 };

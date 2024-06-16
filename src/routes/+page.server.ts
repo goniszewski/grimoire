@@ -5,18 +5,18 @@ import {
 } from '$lib/database/schema';
 import { handlePBError, pb } from '$lib/pb';
 import { Storage } from '$lib/storage/storage';
-import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 import { createSlug } from '$lib/utils/create-slug';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 import { file } from 'bun';
 import { and, eq } from 'drizzle-orm';
 
 import type { UserSettings } from '$lib/types/UserSettings.type';
+import type { Theme } from '$lib/enums/themes';
 
 const storeImage = async (url: string, title: string, ownerId: number) => {
 	const storage = new Storage();
 
-	if (url && checkIfImageURL(url)) {
+	if (url && url.length > 0) {
 		const arrayBuffer = await fetch(url).then((r) => r.arrayBuffer());
 		const fileName = `${createSlug(title)}.${url.split('.').pop()}`;
 		const imageFile = file(arrayBuffer);
@@ -438,7 +438,7 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const theme = data.get('theme') as string;
+		const theme = data.get('theme') as Theme;
 		const existingSettings = await db
 			.select({
 				settings: userSchema.settings
@@ -451,7 +451,7 @@ export const actions = {
 				.update(userSchema)
 				.set({
 					settings: {
-						...(JSON.parse(existingSettings[0].settings as string) as UserSettings),
+						...existingSettings[0].settings,
 						theme
 					}
 				})

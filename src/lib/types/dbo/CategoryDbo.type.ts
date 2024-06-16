@@ -1,6 +1,6 @@
-import type { User } from './User.type';
+import type { UserDbo } from './UserDbo.type';
 
-export type Category = {
+export type CategoryDbo = {
 	id: number;
 	name: string;
 	slug: string;
@@ -8,8 +8,9 @@ export type Category = {
 	description: string | null;
 	color: string | null;
 	ownerId: number;
-	owner: User | null;
-	parent: Category | null;
+	owner?: UserDbo | null;
+	parentId: number | null;
+	parent?: CategoryDbo | null;
 	archived: Date | null;
 	public: Date | null;
 	initial: boolean;

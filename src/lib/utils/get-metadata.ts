@@ -13,8 +13,6 @@ import sanitize from 'sanitize-html';
 
 import { extract, extractFromHtml } from '@extractus/article-extractor';
 
-import { checkIfImageURL } from './check-if-image-url';
-
 import type { Metadata } from '$lib/types/Metadata.type';
 
 const metascraperScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
@@ -37,8 +35,8 @@ const metascraperScraper = async (html: string, url: string): Promise<Partial<Me
 		title: metascraperMetadata?.title,
 		description: metascraperMetadata?.description,
 		author: metascraperMetadata?.author,
-		content_published_date: metascraperMetadata?.date ? new Date(metascraperMetadata?.date) : null,
-		main_image_url: metascraperMetadata?.image
+		contentPublishedDate: metascraperMetadata?.date ? new Date(metascraperMetadata?.date) : null,
+		mainImageUrl: metascraperMetadata?.image
 	};
 };
 
@@ -62,11 +60,11 @@ const articleExtractorScraper = async (html: string, url: string): Promise<Parti
 		title: articleExtractorMetadata?.title,
 		description: articleExtractorMetadata?.description,
 		author: articleExtractorMetadata?.author,
-		main_image_url: articleExtractorMetadata?.image,
-		content_html: articleExtractorMetadata?.content
+		mainImageUrl: articleExtractorMetadata?.image,
+		contentHtml: articleExtractorMetadata?.content
 			? sanitizeHtml(articleExtractorMetadata?.content)
 			: '',
-		content_published_date: articleExtractorMetadata?.published
+		contentPublishedDate: articleExtractorMetadata?.published
 			? new Date(articleExtractorMetadata?.published)
 			: null
 	};
@@ -87,7 +85,7 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 
 		let faviconUrl = hrefMatch[1];
 
-		if (checkIfImageURL(faviconUrl.split('?')[0])) {
+		if (faviconUrl.split('?')[0]) {
 			faviconUrl = '';
 		} else if (faviconUrl.startsWith('/')) {
 			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
@@ -101,7 +99,7 @@ const faviconScraper = async (html: string, url: string): Promise<Partial<Metada
 	}, '');
 
 	return {
-		icon_url: favicon || ''
+		iconUrl: favicon || ''
 	};
 };
 
@@ -119,8 +117,8 @@ export async function getMetadata(url: string) {
 	const faviconMetadata = await faviconScraper(html, url);
 
 	const domain = new URL(url).hostname.replace('www.', '');
-	const content_text = articleExtractorMetadata?.content_html
-		? htmlToText(articleExtractorMetadata.content_html)
+	const content_text = articleExtractorMetadata?.contentHtml
+		? htmlToText(articleExtractorMetadata.contentHtml)
 		: '';
 
 	return {
@@ -134,14 +132,14 @@ export async function getMetadata(url: string) {
 			'',
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
 		content_text,
-		content_html: articleExtractorMetadata?.content_html || '',
+		content_html: articleExtractorMetadata?.contentHtml || '',
 		content_type: '',
-		content_published_date: metascraperMetadata?.content_published_date || '',
+		content_published_date: metascraperMetadata?.contentPublishedDate || '',
 		main_image: '',
 		main_image_url:
-			metascraperMetadata?.main_image_url || articleExtractorMetadata?.main_image_url || '',
+			metascraperMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
 		icon: '',
-		icon_url: faviconMetadata?.icon_url || ''
+		icon_url: faviconMetadata?.iconUrl || ''
 	};
 }
 
@@ -150,11 +148,11 @@ export async function getMetadataFromHtml(html: string, url: string) {
 	const articleExtractorMetadata = await articleExtractorScraper(html, url);
 	const faviconMetadata = await faviconScraper(html, url);
 
-	const firstParagraph = faviconMetadata.content_html?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
+	const firstParagraph = faviconMetadata.contentHtml?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
 
 	const domain = new URL(url).hostname.replace('www.', '');
-	const content_text = articleExtractorMetadata?.content_html
-		? htmlToText(articleExtractorMetadata.content_html) || htmlToText(html)
+	const contentText = articleExtractorMetadata?.contentHtml
+		? htmlToText(articleExtractorMetadata.contentHtml) || htmlToText(html)
 		: '';
 
 	return {
@@ -167,14 +165,13 @@ export async function getMetadataFromHtml(html: string, url: string) {
 			firstParagraph ||
 			'',
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
-		content_text,
-		content_html: articleExtractorMetadata?.content_html || sanitizeHtml(html) || '',
-		content_type: '',
-		content_published_date: metascraperMetadata?.content_published_date || '',
-		main_image: '',
-		main_image_url:
-			metascraperMetadata?.main_image_url || articleExtractorMetadata?.main_image_url || '',
+		contentText,
+		contentHtml: articleExtractorMetadata?.contentHtml || sanitizeHtml(html) || '',
+		contentType: '',
+		contentPublishedDate: metascraperMetadata?.contentPublishedDate || '',
+		mainImage: '',
+		mainImageUrl: metascraperMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
 		icon: '',
-		icon_url: faviconMetadata?.icon_url || ''
+		iconUrl: faviconMetadata?.iconUrl || ''
 	};
 }

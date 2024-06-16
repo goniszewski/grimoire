@@ -1,8 +1,9 @@
-import type { Category } from './Category.type';
-import type { Tag } from './Tag.type';
-import type { User } from './User.type';
+import type { CategoryDbo } from './CategoryDbo.type';
+import type { TagDbo } from './TagDbo.type';
+import type { UserDbo } from './UserDbo.type';
+import type { FileDbo } from './FileDbo.type';
 
-export type Bookmark = {
+export type BookmarkDbo = {
 	id: number;
 	url: string;
 	domain: string;
@@ -14,22 +15,23 @@ export type Bookmark = {
 	contentType: string | null;
 	contentPublishedDate: string | null;
 	note: string | null;
-	mainImage: string | null;
+	mainImage?: FileDbo | null;
 	mainImageId: number | null;
 	mainImageUrl: string | null;
-	icon: string | null;
+	icon?: FileDbo | null;
+	iconId: number | null;
 	iconUrl: string | null;
 	importance: number | null;
 	flagged: null | Date;
 	read: null | Date;
 	archived: null | Date;
-	category: Category | null;
-	tags: Tag[];
-	owner: User;
+	category: CategoryDbo | null;
+	tags: TagDbo[];
+	owner: UserDbo;
 	openedLast: null | Date;
 	openedTimes: number;
 	screenshotId: number | null;
-	screenshot: string | null;
+	screenshot?: FileDbo | null;
 	created: Date;
 	updated: Date;
 };
