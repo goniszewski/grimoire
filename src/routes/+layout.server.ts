@@ -1,20 +1,20 @@
 import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/database/db';
-import { bookmarkSchema, categorySchema, tagSchema, userSchema } from '$lib/database/schema';
+import {
+    fetchBookmarkCountByUserId, getBookmarksByUserId
+} from '$lib/database/repositories/Bookmark.repository';
+import {
+    fetchUserCategoryAndTags, fetchUserCount
+} from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';
-import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
-import { asc, count, desc, eq } from 'drizzle-orm';
 
 import type { Category } from '$lib/types/Category.type';
 
 import type { Bookmark } from '$lib/types/Bookmark.type';
 import type { Tag } from '$lib/types/Tag.type';
-
 export const load = (async ({ locals, url }) => {
-	const noUsersFound = await db
-		.select({ count: count(userSchema.id) })
-		.from(userSchema)
-		.then((r) => r[0].count === 0);
+	const userCount = await fetchUserCount();
+	const noUsersFound = userCount === 0;
 
 	if (!locals.user) {
 		return {
@@ -29,51 +29,14 @@ export const load = (async ({ locals, url }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const limit = parseInt(url.searchParams.get('limit') || '20');
 
-	const [{ categories, tags }] = await db.query.userSchema.findMany({
-		where: eq(userSchema.id, locals.user.id),
-		with: {
-			categories: {
-				orderBy: desc(categorySchema.created),
-				with: {
-					parent: true
-				}
-			},
-			tags: { orderBy: asc(tagSchema.name) }
-		}
-	});
-
-	const bookmarksWithTagsQuery = await db.query.bookmarkSchema.findMany({
+	const { categories, tags } = await fetchUserCategoryAndTags(locals.user.id);
+	const bookmarks = await getBookmarksByUserId(locals.user.id, {
+		page,
 		limit,
-		offset: (page - 1) * limit,
-		where: eq(bookmarkSchema.ownerId, locals.user.id),
-		orderBy: desc(bookmarkSchema.created),
-		with: {
-			bookmarksToTags: true,
-			mainImage: true,
-			icon: true,
-			screenshot: true,
-			category: {
-				with: {
-					parent: true
-				}
-			},
-			owner: true
-		}
+		orderBy: 'created',
+		orderDirection: 'desc'
 	});
-
-	const bookmarks = bookmarksWithTagsQuery.map((b) => {
-		const { bookmarksToTags, ...bookmark } = b;
-
-		return {
-			...bookmark,
-			tags: tags.filter((t) => bookmarksToTags.some((bt) => bt.tagId === t.id))
-		};
-	});
-
-	const bookmarksCount = await db
-		.select({ count: count() })
-		.from(bookmarkSchema)
-		.where(eq(bookmarkSchema.ownerId, locals.user!.id));
+	const bookmarksCount = await fetchBookmarkCountByUserId(locals.user.id);
 
 	const bookmarksForIndexQuery = await db.query.bookmarkSchema.findMany({
 		with: {
@@ -102,11 +65,12 @@ export const load = (async ({ locals, url }) => {
 	});
 
 	return {
-		bookmarks: serializeBookmarkList(bookmarks), // todo: provide URL's for local images
+		bookmarks,
 		categories,
 		tags,
 		bookmarksForIndex,
 		bookmarksCount,
+		user: locals.user,
 		page,
 		limit
 	};

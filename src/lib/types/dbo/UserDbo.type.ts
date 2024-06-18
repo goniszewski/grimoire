@@ -9,6 +9,7 @@ export type UserDbo = {
 	username: string;
 	verified: boolean;
 	disabled: Date | null;
+	isAdmin: boolean;
 	created: Date;
 	updated: Date;
 };

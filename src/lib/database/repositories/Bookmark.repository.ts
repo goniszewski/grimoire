@@ -1,0 +1,141 @@
+import { serializeBookmark } from '$lib/utils/serialize-dbo-entity';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
+
+import { db } from '../db';
+import { bookmarkSchema, bookmarksToTagsSchema, tagSchema } from '../schema';
+import { mapRelationsToWithStatements } from './common';
+
+import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { BookmarkDbo } from '$lib/types/dbo/BookmarkDbo.type';
+import type { Tag } from '$lib/types/Tag.type';
+enum BookmarkRelations {
+	CATEGORY = 'category',
+	CATEGORY__PARENT = 'category.parent',
+	TAGS = 'tags',
+	OWNER = 'owner',
+	MAIN_IMAGE = 'mainImage',
+	ICON = 'icon',
+	SCREENSHOT = 'screenshot'
+}
+const allBookmarkRelations: BookmarkRelations[] = Object.values(BookmarkRelations);
+
+export const getBookmarkById = async (
+	id: number,
+	ownerId: number,
+	relations: BookmarkRelations[] = allBookmarkRelations
+): Promise<Bookmark | null> => {
+	const bookmark = await db.query.bookmarkSchema.findFirst({
+		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)),
+		with: mapRelationsToWithStatements(relations)
+	});
+
+	return bookmark ? serializeBookmark(bookmark) : null;
+};
+const orderKeys = {
+	created: bookmarkSchema.created,
+	title: bookmarkSchema.title,
+	url: bookmarkSchema.url,
+	description: bookmarkSchema.description
+};
+export const getBookmarksByUserId = async (
+	userId: number,
+	options?: {
+		orderBy?: keyof typeof orderKeys;
+		orderDirection?: 'asc' | 'desc';
+		limit?: number;
+		page?: number;
+	},
+	relations: BookmarkRelations[] = allBookmarkRelations
+): Promise<Bookmark[]> => {
+	const bookmarks = await db.query.bookmarkSchema.findMany({
+		limit: options?.limit,
+		offset: options?.page && options?.limit && (options.page - 1) * options.limit,
+		// orderBy: desc(bookmarkSchema.created),
+		orderBy:
+			options?.orderBy &&
+			(options.orderDirection === 'asc'
+				? asc(orderKeys[options.orderBy])
+				: desc(orderKeys[options.orderBy])),
+		where: eq(bookmarkSchema.ownerId, userId),
+		with: mapRelationsToWithStatements(relations)
+	});
+
+	return bookmarks.map(serializeBookmark);
+};
+
+export const createBookmark = async (
+	bookmarkData: typeof bookmarkSchema.$inferInsert
+): Promise<Bookmark> => {
+	const [bookmark]: BookmarkDbo[] = await db
+		.insert(bookmarkSchema)
+		.values(bookmarkData)
+		.returning();
+
+	return serializeBookmark(bookmark);
+};
+
+export const updateBookmark = async (
+	id: number,
+	ownerId: number,
+	bookmarkData: Partial<typeof bookmarkSchema.$inferInsert>
+): Promise<Bookmark> => {
+	const [bookmark]: BookmarkDbo[] = await db
+		.update(bookmarkSchema)
+		.set(bookmarkData)
+		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)))
+		.returning();
+
+	return serializeBookmark(bookmark);
+};
+
+export const deleteBookmark = async (id: number, ownerId: number): Promise<void> => {
+	await db
+		.delete(bookmarkSchema)
+		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+};
+
+export const fetchBookmarkCountByUserId = async (userId: number): Promise<number> => {
+	const [{ count: bookmarkCount }] = await db
+		.select({ count: count(bookmarkSchema.id) })
+		.from(bookmarkSchema)
+		.where(eq(bookmarkSchema.ownerId, userId));
+
+	return bookmarkCount;
+};
+
+export const fetchBookmarkTags = async (id: number, ownerId: number): Promise<{ tags: Tag[] }> => {
+	const [{ bookmarksToTags }] = await db.query.bookmarkSchema.findMany({
+		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)),
+		with: {
+			bookmarksToTags: {
+				with: {
+					tag: true
+				}
+			}
+		}
+	});
+
+	const tags: Tag[] = bookmarksToTags.map((bookmarksToTag) => bookmarksToTag.tag);
+
+	return { tags };
+};
+
+export const addTagToBookmark = async (
+	id: number,
+	ownerId: number,
+	tagId: number
+): Promise<void> => {
+	const bookmarkExists = await db.query.bookmarkSchema.findFirst({
+		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId))
+	});
+	const tagExists = await db.query.tagSchema.findFirst({
+		where: and(eq(tagSchema.id, tagId), eq(tagSchema.ownerId, ownerId))
+	});
+
+	if (!bookmarkExists || !tagExists) throw new Error('Bookmark or tag does not exist');
+
+	await db.insert(bookmarksToTagsSchema).values({
+		bookmarkId: id,
+		tagId
+	});
+};

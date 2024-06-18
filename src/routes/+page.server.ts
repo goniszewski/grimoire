@@ -1,16 +1,17 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-    bookmarkSchema, bookmarksToTagsSchema, categorySchema, userSchema
-} from '$lib/database/schema';
-import { handlePBError, pb } from '$lib/pb';
+    addTagToBookmark, createBookmark, deleteBookmark, getBookmarkById, updateBookmark
+} from '$lib/database/repositories/Bookmark.repository';
+import {
+    createCategory, deleteCategory, updateCategory
+} from '$lib/database/repositories/Category.repository';
+import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
 import { createSlug } from '$lib/utils/create-slug';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 import { file } from 'bun';
-import { and, eq } from 'drizzle-orm';
 
-import type { UserSettings } from '$lib/types/UserSettings.type';
 import type { Theme } from '$lib/enums/themes';
 
 const storeImage = async (url: string, title: string, ownerId: number) => {
@@ -61,7 +62,10 @@ export const actions = {
 
 			const tagIds = await prepareTags(db, tags, ownerId);
 
-			const bookmarkData: typeof bookmarkSchema.$inferInsert = {
+			const mainImageId = await storeImage(mainImageUrl, title, ownerId);
+			const iconId = await storeImage(iconUrl, title, ownerId);
+
+			const bookmarkData = {
 				ownerId,
 				url,
 				author,
@@ -77,43 +81,31 @@ export const actions = {
 				iconUrl,
 				importance,
 				mainImageUrl,
-				note
+				note,
+				mainImageId,
+				iconId
 			};
 
-			const [bookmark] = await db.insert(bookmarkSchema).values(bookmarkData).returning();
+			const bookmark = await createBookmark(bookmarkData);
 
 			if (!bookmark.id) {
-				return handlePBError(bookmark, pb, true);
+				return {
+					success: false,
+					error: 'Failed to add bookmark'
+				};
 			}
 
-			await Promise.all(
-				tagIds.map((tagId) =>
-					db.insert(bookmarksToTagsSchema).values({
-						bookmarkId: bookmark.id,
-						tagId
-					})
-				)
-			);
-
-			const mainImageId = await storeImage(mainImageUrl, title, ownerId);
-			const iconId = await storeImage(iconUrl, title, ownerId);
-
-			if (mainImageId || iconId) {
-				await db
-					.update(bookmarkSchema)
-					.set({
-						mainImageId: mainImageId,
-						iconId: iconId
-					})
-					.where(eq(bookmarkSchema.id, bookmark.id));
-			}
+			await Promise.all(tagIds.map((tagId) => addTagToBookmark(bookmark.id, ownerId, tagId)));
 
 			return {
 				bookmark,
 				success: true
 			};
 		} catch (e: any) {
-			return handlePBError(e, pb, true);
+			return {
+				success: false,
+				error: e.message
+			};
 		}
 	},
 	deleteBookmark: async ({ locals, request }) => {
@@ -129,7 +121,7 @@ export const actions = {
 		const data = await request.formData();
 		const id = parseInt(data.get('id') as string, 10);
 
-		await db.delete(bookmarkSchema).where(eq(bookmarkSchema.id, id));
+		await deleteBookmark(id, ownerId);
 
 		return {
 			id,
@@ -168,6 +160,9 @@ export const actions = {
 
 		const tagIds = await prepareTags(db, tags, ownerId);
 
+		const mainImageId = await storeImage(mainImageUrl, title, ownerId);
+		const iconId = await storeImage(iconUrl, title, ownerId);
+
 		const bookmarkData = {
 			author,
 			category: category?.value ? category.value : category,
@@ -185,36 +180,14 @@ export const actions = {
 			note,
 			owner: ownerId,
 			title,
-			url
+			url,
+			...(mainImageId ? { mainImageId } : {}),
+			...(iconId ? { iconId } : {})
 		};
 
-		const [bookmark] = await db
-			.update(bookmarkSchema)
-			.set(bookmarkData)
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)))
-			.returning();
+		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
 
-		await Promise.all(
-			tagIds.map((tagId) =>
-				db.insert(bookmarksToTagsSchema).values({
-					bookmarkId: bookmark.id,
-					tagId
-				})
-			)
-		);
-
-		const mainImageId = await storeImage(mainImageUrl, title, ownerId);
-		const iconId = await storeImage(iconUrl, title, ownerId);
-
-		if (mainImageId || iconId) {
-			await db
-				.update(bookmarkSchema)
-				.set({
-					mainImageId: mainImageId,
-					iconId: iconId
-				})
-				.where(eq(bookmarkSchema.id, bookmark.id));
-		}
+		await Promise.all(tagIds.map((tagId) => addTagToBookmark(bookmark.id, ownerId, tagId)));
 
 		return {
 			bookmark,
@@ -235,10 +208,7 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const flagged = data.get('flagged') === 'on' ? new Date() : null;
 
-		await db
-			.update(bookmarkSchema)
-			.set({ flagged })
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+		await updateBookmark(id, ownerId, { flagged });
 
 		return {
 			success: true
@@ -258,10 +228,7 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const importance = parseInt((data.get('importance') || '0') as string);
 
-		await db
-			.update(bookmarkSchema)
-			.set({ importance })
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+		await updateBookmark(id, ownerId, { importance });
 
 		return {
 			success: true
@@ -282,10 +249,7 @@ export const actions = {
 		const id = parseInt(data.get('id') as string, 10);
 		const read = data.get('read') === 'on' ? new Date() : null;
 
-		await db
-			.update(bookmarkSchema)
-			.set({ read })
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+		await updateBookmark(id, ownerId, { read });
 
 		return {
 			success: true
@@ -305,20 +269,19 @@ export const actions = {
 		const data = await request.formData();
 		const id = parseInt(data.get('id') as string, 10);
 
-		const [{ opened_times }] = await db
-			.select({
-				opened_times: bookmarkSchema.openedTimes
-			})
-			.from(bookmarkSchema)
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+		const bookmark = await getBookmarkById(id, ownerId);
 
-		await db
-			.update(bookmarkSchema)
-			.set({
-				openedTimes: opened_times ?? 0 + 1,
-				openedLast: new Date()
-			})
-			.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+		if (!bookmark) {
+			return {
+				success: false,
+				error: 'Bookmark not found'
+			};
+		}
+
+		await updateBookmark(id, ownerId, {
+			openedTimes: bookmark.openedTimes + 1,
+			openedLast: new Date()
+		});
 
 		return {
 			success: true
@@ -344,7 +307,7 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const categoryBody: typeof categorySchema.$inferInsert = {
+		const categoryBody = {
 			name,
 			slug: createSlug(name),
 			description,
@@ -357,9 +320,7 @@ export const actions = {
 			initial: false
 		};
 
-		const [{ id }] = await db.insert(categorySchema).values(categoryBody).returning({
-			id: categorySchema.id
-		});
+		const { id } = await createCategory(categoryBody);
 
 		return {
 			id,
@@ -388,7 +349,7 @@ export const actions = {
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const categoryBody: Partial<typeof categorySchema.$inferInsert> = {
+		const categoryBody = {
 			name,
 			slug: createSlug(name),
 			description,
@@ -399,10 +360,7 @@ export const actions = {
 			public: setPublic
 		};
 
-		await db
-			.update(categorySchema)
-			.set(categoryBody)
-			.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)));
+		await updateCategory(id, ownerId, categoryBody);
 
 		return {
 			success: true
@@ -420,9 +378,7 @@ export const actions = {
 		const data = await request.formData();
 		const id = parseInt(data.get('id') as string, 10);
 
-		await db
-			.delete(categorySchema)
-			.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)));
+		await deleteCategory(id, ownerId);
 
 		return {
 			success: true
@@ -439,23 +395,11 @@ export const actions = {
 
 		const data = await request.formData();
 		const theme = data.get('theme') as Theme;
-		const existingSettings = await db
-			.select({
-				settings: userSchema.settings
-			})
-			.from(userSchema)
-			.where(eq(userSchema.id, ownerId));
 
 		try {
-			await db
-				.update(userSchema)
-				.set({
-					settings: {
-						...existingSettings[0].settings,
-						theme
-					}
-				})
-				.where(eq(userSchema.id, ownerId));
+			await updateUserSettings(ownerId, {
+				theme
+			});
 
 			return {
 				success: true

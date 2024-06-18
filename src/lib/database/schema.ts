@@ -17,6 +17,7 @@ export const userSchema = sqliteTable(
 		settings: text('settings', { mode: 'json' }).default('{}').notNull().$type<UserSettings>(),
 		verified: integer('initial', { mode: 'boolean' }).default(false).notNull(),
 		disabled: integer('disabled', { mode: 'timestamp' }),
+		isAdmin: integer('is_admin', { mode: 'boolean' }).default(false).notNull(),
 		created: integer('created', { mode: 'timestamp' })
 			.default(sql`(CURRENT_TIMESTAMP)`)
 			.notNull(),

@@ -1,5 +1,8 @@
 import { env } from '$env/dynamic/public';
 
+import type { User } from './types/User.type';
+import type { UserSettings } from './types/UserSettings.type';
+
 const getProcessEnvValue = (key: string) =>
 	typeof process === 'object' ? process.env[key] : undefined;
 
@@ -19,3 +22,41 @@ const config = {
 console.info('Configuration used', config);
 
 export default config;
+
+export const defaultUserSettings: UserSettings = {
+	theme: 'light',
+	uiAnimations: true,
+	bookmarksView: 'grid',
+	bookmarksSortedBy: 'created_desc',
+	bookmarksOnlyShowFlagged: false,
+	bookmarksOnlyShowRead: false,
+	llm: {
+		enabled: false,
+		provider: 'ollama',
+		ollama: {
+			url: '',
+			model: '',
+			generateTags: {
+				enabled: false,
+				system: ''
+			},
+			summarize: {
+				enabled: false,
+				system: ''
+			}
+		},
+		openai: {
+			apiKey: ''
+		}
+	}
+};
+
+export const defaultUser: Omit<User, 'id' | 'created' | 'updated'> = {
+	avatarId: null,
+	email: '',
+	name: '',
+	username: '',
+	disabled: null,
+	verified: false,
+	settings: defaultUserSettings
+};

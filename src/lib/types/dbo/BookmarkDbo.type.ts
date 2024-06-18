@@ -25,9 +25,9 @@ export type BookmarkDbo = {
 	flagged: null | Date;
 	read: null | Date;
 	archived: null | Date;
-	category: CategoryDbo | null;
-	tags: TagDbo[];
-	owner: UserDbo;
+	category?: CategoryDbo | null;
+	tags?: TagDbo[];
+	owner?: UserDbo;
 	openedLast: null | Date;
 	openedTimes: number;
 	screenshotId: number | null;

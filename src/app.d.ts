@@ -15,6 +15,7 @@ declare global {
 			bookmarksForIndex: import('$lib/types/Bookmark.type').Bookmark[];
 			bookmarksCount: number;
 			noUsersFound: boolean;
+			user: import('$lib/types/User.type').User | null;
 			page: number;
 			limit: number;
 		}

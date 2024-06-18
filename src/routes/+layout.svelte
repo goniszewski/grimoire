@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
@@ -9,21 +9,16 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
 	import { buildCategoryTree } from '$lib/utils/build-category-tree';
 	import { ToastNode } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
 
-	onMount(async () => {
-		$user.loadFromCookie(document.cookie);
-	});
-
 	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
+	const user = $page.data.user;
 
 	$: {
 		const categories = $page.data.categories;
@@ -58,29 +53,20 @@
 			</div>
 			<div class="flex-none gap-2 md:mr-6">
 				<ThemeSwitch />
-				{#if !$user.isValid}
+				{#if !user}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
 					</ul>
-				{:else if $user.isValid && $user.isAdmin}
-					<form
-						method="POST"
-						action="/logout"
-						use:enhance={() => {
-							return async ({ result }) => {
-								$user.clear();
-								await applyAction(result);
-							};
-						}}
-					>
+				{:else if user && user.isAdmin}
+					<form method="POST" action="/logout" use:enhance>
 						<button class="btn btn-outline btn-error btn-sm w-28">Log out admin</button>
 					</form>
 				{:else}
 					<div class="dropdown dropdown-end z-10">
 						<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
 							<div class="w-10 rounded-full bg-neutral text-neutral-content">
-								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
+								<span> {user.name[0] || user.username[0]} </span>
 							</div>
 						</label>
 						<ul
@@ -94,16 +80,7 @@
 								</a>
 							</li>
 							<li><a href="/settings">Settings</a></li>
-							<form
-								method="POST"
-								action="/logout"
-								use:enhance={() => {
-									return async ({ result }) => {
-										$user.clear();
-										await applyAction(result);
-									};
-								}}
-							>
+							<form method="POST" action="/logout" use:enhance>
 								<button class="btn btn-outline btn-error btn-sm w-24">Log out</button>
 							</form>
 						</ul>
@@ -112,7 +89,7 @@
 			</div>
 		</div>
 		<div class="z-2 mb-20 flex min-w-full flex-1 sm:mb-0">
-			{#if user && !$user.isAdmin}
+			{#if user && user.isAdmin}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 					<div class="justify-top drawer-content m-2 flex flex-1 flex-col items-center sm:m-8">

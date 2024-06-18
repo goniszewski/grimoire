@@ -1,20 +1,22 @@
-import { authenticateUserApiRequest, removePocketbaseFields } from '$lib/pb';
+import { db } from '$lib/database/db';
+import { bookmarkSchema } from '$lib/database/schema';
 import { getFileUrl } from '$lib/utils/get-file-url';
 import { getMetadataFromHtml } from '$lib/utils/get-metadata';
 import { prepareTags } from '$lib/utils/handle-tags-input';
+import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
+import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
 import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
+import { sql } from 'drizzle-orm';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
-import type { BookmarkDto } from '$lib/types/dto/Bookmark.dto.js';
 import type {
 	AddBookmarkRequestBody,
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
 import type Client from 'pocketbase';
-import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
 	userTags: { id: string; name: string }[]
@@ -46,32 +48,35 @@ const prepareRequestedTags = (
 	);
 };
 
-const getBookmarksByIds = async (ids: string[], owner: string, pb: Client) => {
-	const filterExpression = ids[0]
-		? `(${ids.map((id) => `id="${id}"`).join('||')} && owner="${owner}")`
-		: `owner="${owner}"`;
+const getBookmarksByIds = async (ids: string[], owner: number) => {
+	const filterExpression =
+		ids.length > 0
+			? sql`id IN (${sql.join(ids, sql`, `)}) AND owner=${owner}`
+			: sql`owner=${owner}`;
 
-	const records = await pb
-		.collection('bookmarks')
-		.getFullList<BookmarkDto>({
-			filter: filterExpression,
-			expand: 'category,tags'
-		})
-		.then((res) => {
-			return res.map(({ expand, ...bookmark }) => ({
-				...bookmark,
-				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
-				main_image: bookmark.main_image
-					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
-					: '',
-				screenshot: bookmark.screenshot
-					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
-					: '',
-				...(expand || {})
-			}));
-		});
+	const recordsRaw = await db.query.bookmarkSchema.findMany({
+		where: sql`${filterExpression}`,
+		with: {
+			category: true,
+			owner: true,
+			bookmarksToTags: {
+				with: {
+					tag: true
+				}
+			}
+		}
+	});
 
-	return removePocketbaseFields(records);
+	const records = recordsRaw.map((record) => {
+		const { bookmarksToTags, ...rest } = record;
+
+		return {
+			...rest,
+			tags: bookmarksToTags.map((bookmarkToTag) => bookmarkToTag.tag)
+		};
+	});
+
+	return serializeBookmarkList(records);
 };
 
 const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
@@ -79,52 +84,61 @@ const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
 	cleanUrl.hash = '';
 	cleanUrl.search = '';
 
-	const filterExpression = `url~"${cleanUrl.toString()}%" && owner="${owner}"`;
+	const filterExpression = `url LIKE '${cleanUrl.toString()}%' AND owner = '${owner}'`;
 
-	const records = await pb
-		.collection('bookmarks')
-		.getFirstListItem<BookmarkDto>(filterExpression, {
-			expand: 'category,tags'
-		})
-		.then((res) => {
-			const { expand, ...bookmark } = res || {};
+	const recordsRaw = await db.query.bookmarkSchema.findMany({
+		where: sql`${filterExpression}`,
+		with: {
+			category: true,
+			owner: true,
+			bookmarksToTags: {
+				with: {
+					tag: true
+				}
+			}
+		}
+	});
 
-			return {
-				...bookmark,
-				icon: bookmark.icon ? getFileUrl('bookmarks', bookmark.id, bookmark.icon) : '',
-				main_image: bookmark.main_image
-					? getFileUrl('bookmarks', bookmark.id, bookmark.main_image)
-					: '',
-				screenshot: bookmark.screenshot
-					? getFileUrl('bookmarks', bookmark.id, bookmark.screenshot)
-					: '',
-				...(expand || {})
-			};
-		});
+	const records = recordsRaw.map((record) => {
+		const { bookmarksToTags, ...rest } = record;
 
-	return removePocketbaseFields(records);
+		return {
+			...rest,
+			tags: bookmarksToTags.map((bookmarkToTag) => bookmarkToTag.tag)
+		};
+	});
+
+	return serializeBookmarkList(records);
 };
 
-const getBookmarksByFilter = async (filter: string, owner: string, pb: Client) => {
-	let records = await pb
-		.collection('bookmarks')
-		.getFullList({
-			fields: 'id,' + searchIndexKeys.join(','),
-			expand: 'tags',
-			filter: `owner="${owner}"`,
-			batchSize: 100000
-		})
-		.then((res) =>
-			res.map(({ expand, ...b }) => ({
-				...expand,
-				...b
-			}))
-		);
-	records = removePocketbaseFields(records);
+const getBookmarksByFilter = async (filter: string, owner: number) => {
+	const records = await db.query.bookmarkSchema.findMany({
+		where: (bookmarks, { eq }) => eq(bookmarks.ownerId, owner),
+		columns: searchIndexKeys.reduce(
+			(acc, key) => ({
+				...acc,
+				[key]: true
+			}),
+			{ id: true }
+		),
+		with: {
+			bookmarksToTags: {
+				with: {
+					tag: true
+				}
+			}
+		}
+	});
+
+	const serializedRecords = records.map(({ bookmarksToTags, ...record }) => ({
+		...record,
+		tags: bookmarksToTags.map(({ tag }) => tag.name)
+	}));
+
 	const searchEngine = initializeSearch(records);
 	const res = searchEngine.search(filter).map((b) => b.item);
 	return res;
-}
+};
 
 export async function GET({ locals, url, request }) {
 	let owner = locals.pb.authStore.model?.id;

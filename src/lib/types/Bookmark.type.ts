@@ -23,9 +23,9 @@ export type Bookmark = {
 	flagged: null | Date;
 	read: null | Date;
 	archived: null | Date;
-	category: Category | null;
-	tags: Tag[];
-	owner: User;
+	category?: Category;
+	tags?: Tag[];
+	owner?: User;
 	openedLast: null | Date;
 	openedTimes: number;
 	screenshotId: number | null;

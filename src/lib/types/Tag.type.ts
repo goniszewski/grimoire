@@ -4,7 +4,7 @@ export type Tag = {
 	id: number;
 	name: string;
 	slug: string;
-	owner: User | null;
+	owner?: User | null;
 	created: Date;
 	updated: Date;
 };
