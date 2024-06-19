@@ -1,7 +1,5 @@
-import { db } from '$lib/database/db';
-import { userSchema } from '$lib/database/schema';
+import { getUserByUsername } from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
-import { and, eq } from 'drizzle-orm';
 
 import { verify } from '@node-rs/argon2';
 import { fail, redirect } from '@sveltejs/kit';
@@ -29,21 +27,18 @@ export const actions: Actions = {
 			});
 		}
 
-		const [existingUser] = await db
-			.select()
-			.from(userSchema)
-			.where(and(eq(userSchema.username, username.toLowerCase())));
-		if (!existingUser || existingUser.passwordHash === null) {
-			const randomMs = Math.floor(Math.random() * 10000);
+		const existingUser = await getUserByUsername(username);
+		if (!existingUser) {
+			const randomMs = Math.floor(Math.random() * 1000);
 
-			setTimeout(() => {
+			return setTimeout(() => {
 				return fail(400, {
 					message: 'Invalid username'
 				});
 			}, randomMs);
 		}
 
-		const validPassword = await verify(existingUser.passwordHash!, password, {
+		const validPassword = await verify(existingUser.passwordHash, password, {
 			memoryCost: 19456,
 			timeCost: 2,
 			outputLen: 32,

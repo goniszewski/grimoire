@@ -2,10 +2,12 @@ import type { Bookmark } from '$lib/types/Bookmark.type';
 import type { Category } from '$lib/types/Category.type';
 import type { BookmarkDbo } from '$lib/types/dbo/BookmarkDbo.type';
 import type { CategoryDbo } from '$lib/types/dbo/CategoryDbo.type';
+import type { FileDbo } from '$lib/types/dbo/FileDbo.type';
 import type { TagDbo } from '$lib/types/dbo/TagDbo.type';
 import type { UserDbo } from '$lib/types/dbo/UserDbo.type';
 import type { Tag } from '$lib/types/Tag.type';
 import type { User } from '$lib/types/User.type';
+import type { File } from '$lib/types/File.type';
 import { getFileUrl } from './get-file-url';
 
 export const serializeUser = (userData: UserDbo): User => {
@@ -52,3 +54,12 @@ export const serializeBookmark = (bookmark: BookmarkDbo): Bookmark => {
 
 export const serializeBookmarkList = (bookmarks: BookmarkDbo[]): Bookmark[] =>
 	structuredClone(bookmarks.map(serializeBookmark));
+
+export const serializeFile = (fileData: FileDbo): File => {
+	const owner = fileData.owner ? serializeUser(fileData.owner) : null;
+
+	return {
+		...fileData,
+		owner
+	};
+};

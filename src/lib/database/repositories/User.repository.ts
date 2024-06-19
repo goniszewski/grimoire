@@ -1,3 +1,4 @@
+import { defaultUser } from '$lib/config';
 import { serializeCategory, serializeTag, serializeUser } from '$lib/utils/serialize-dbo-entity';
 import { asc, count, desc, eq } from 'drizzle-orm';
 
@@ -55,7 +56,10 @@ export const getUserByEmail = async (
 };
 
 export const createUser = async (userData: typeof userSchema.$inferInsert): Promise<User> => {
-	const [user]: UserDbo[] = await db.insert(userSchema).values(userData).returning();
+	const [user]: UserDbo[] = await db
+		.insert(userSchema)
+		.values({ ...defaultUser, ...userData })
+		.returning();
 
 	return serializeUser(user);
 };

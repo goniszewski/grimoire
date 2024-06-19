@@ -1,7 +1,5 @@
-import { db } from '$lib/database/db';
-import { userSchema } from '$lib/database/schema';
+import { createUser, getUserByUsername } from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
-import { count, eq, or } from 'drizzle-orm';
 import Joi from 'joi';
 
 import { hash } from '@node-rs/argon2';
@@ -12,6 +10,7 @@ export const actions: Actions = {
 	default: async (event) => {
 		const formData = await event.request.formData();
 		const username = formData.get('username');
+		const name = formData.get('name');
 		const email = formData.get('email');
 		const password = formData.get('password');
 		const passwordConfirm = formData.get('passwordConfirm');
@@ -28,6 +27,7 @@ export const actions: Actions = {
 
 		const { error } = validationSchema.validate({
 			username,
+			name,
 			email,
 			password,
 			passwordConfirm
@@ -36,6 +36,7 @@ export const actions: Actions = {
 		if (
 			error ||
 			typeof username !== 'string' ||
+			typeof name !== 'string' ||
 			typeof email !== 'string' ||
 			typeof password !== 'string'
 		) {
@@ -52,11 +53,7 @@ export const actions: Actions = {
 			parallelism: 1
 		});
 
-		const userExists = await db
-			.select({ count: count() })
-			.from(userSchema)
-			.where(or(eq(userSchema.name, username), eq(userSchema.email, email)))
-			.then((user) => user[0].count !== 0);
+		const userExists = await getUserByUsername(username).then((user) => !!user);
 
 		if (userExists) {
 			return fail(400, {
@@ -64,14 +61,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const [user] = await db
-			.insert(userSchema)
-			.values({
-				name: username,
-				email,
-				passwordHash
-			})
-			.returning();
+		const user = await createUser({
+			username,
+			name,
+			email,
+			passwordHash
+		});
 
 		const session = await lucia.createSession(user.id, {});
 		const sessionCookie = lucia.createSessionCookie(session.id);

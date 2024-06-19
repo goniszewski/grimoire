@@ -10,24 +10,28 @@ import { searchIndexKeys } from '$lib/utils/search';
 
 import type { Category } from '$lib/types/Category.type';
 
-import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Bookmark, BookmarkForIndex } from '$lib/types/Bookmark.type';
 import type { Tag } from '$lib/types/Tag.type';
 export const load = (async ({ locals, url }) => {
 	const userCount = await fetchUserCount();
 	const noUsersFound = userCount === 0;
+
+	const page = parseInt(url.searchParams.get('page') || '1');
+	const limit = parseInt(url.searchParams.get('limit') || '20');
 
 	if (!locals.user) {
 		return {
 			bookmarks: [] as Bookmark[],
 			categories: [] as Category[],
 			tags: [] as Tag[],
+			bookmarksForIndex: [] as BookmarkForIndex[],
 			noUsersFound,
-			status: 401
+			user: null,
+			status: 401,
+			page,
+			limit
 		};
 	}
-
-	const page = parseInt(url.searchParams.get('page') || '1');
-	const limit = parseInt(url.searchParams.get('limit') || '20');
 
 	const { categories, tags } = await fetchUserCategoryAndTags(locals.user.id);
 	const bookmarks = await getBookmarksByUserId(locals.user.id, {
@@ -62,7 +66,7 @@ export const load = (async ({ locals, url }) => {
 			...bookmark,
 			tags: bookmarksToTags.map((bt) => bt.tag)
 		};
-	});
+	}) as BookmarkForIndex[];
 
 	return {
 		bookmarks,

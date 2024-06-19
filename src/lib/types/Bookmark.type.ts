@@ -33,3 +33,7 @@ export type Bookmark = {
 	created: Date;
 	updated: Date;
 };
+
+export type BookmarkForIndex = Omit<Bookmark, 'mainImage' | 'icon' | 'screenshot'> & {
+	tags: Tag[];
+};
