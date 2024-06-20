@@ -3,9 +3,7 @@ import { db } from '$lib/database/db';
 import {
     fetchBookmarkCountByUserId, getBookmarksByUserId
 } from '$lib/database/repositories/Bookmark.repository';
-import {
-    fetchUserCategoryAndTags, fetchUserCount
-} from '$lib/database/repositories/User.repository';
+import { fetchUserCategoryAndTags, getUserCount } from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';
 
 import type { Category } from '$lib/types/Category.type';
@@ -13,7 +11,7 @@ import type { Category } from '$lib/types/Category.type';
 import type { Bookmark, BookmarkForIndex } from '$lib/types/Bookmark.type';
 import type { Tag } from '$lib/types/Tag.type';
 export const load = (async ({ locals, url }) => {
-	const userCount = await fetchUserCount();
+	const userCount = await getUserCount();
 	const noUsersFound = userCount === 0;
 
 	const page = parseInt(url.searchParams.get('page') || '1');

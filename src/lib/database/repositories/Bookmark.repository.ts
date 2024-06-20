@@ -1,5 +1,5 @@
 import { serializeBookmark } from '$lib/utils/serialize-dbo-entity';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, or } from 'drizzle-orm';
 
 import { db } from '../db';
 import { bookmarkSchema, bookmarksToTagsSchema, tagSchema } from '../schema';
@@ -8,7 +8,8 @@ import { mapRelationsToWithStatements } from './common';
 import type { Bookmark } from '$lib/types/Bookmark.type';
 import type { BookmarkDbo } from '$lib/types/dbo/BookmarkDbo.type';
 import type { Tag } from '$lib/types/Tag.type';
-enum BookmarkRelations {
+
+export enum BookmarkRelations {
 	CATEGORY = 'category',
 	CATEGORY__PARENT = 'category.parent',
 	TAGS = 'tags',
@@ -18,6 +19,13 @@ enum BookmarkRelations {
 	SCREENSHOT = 'screenshot'
 }
 const allBookmarkRelations: BookmarkRelations[] = Object.values(BookmarkRelations);
+
+const orderKeys = {
+	created: bookmarkSchema.created,
+	title: bookmarkSchema.title,
+	url: bookmarkSchema.url,
+	description: bookmarkSchema.description
+};
 
 export const getBookmarkById = async (
 	id: number,
@@ -31,12 +39,23 @@ export const getBookmarkById = async (
 
 	return bookmark ? serializeBookmark(bookmark) : null;
 };
-const orderKeys = {
-	created: bookmarkSchema.created,
-	title: bookmarkSchema.title,
-	url: bookmarkSchema.url,
-	description: bookmarkSchema.description
+
+export const getBookmarksByIds = async (
+	ids: number[],
+	ownerId: number,
+	relations: BookmarkRelations[] = allBookmarkRelations
+): Promise<Bookmark[]> => {
+	const bookmarks = await db.query.bookmarkSchema.findMany({
+		where: and(
+			eq(bookmarkSchema.ownerId, ownerId),
+			or(...ids.map((id) => eq(bookmarkSchema.id, id)))
+		),
+		with: mapRelationsToWithStatements(relations)
+	});
+
+	return bookmarks.map(serializeBookmark);
 };
+
 export const getBookmarksByUserId = async (
 	userId: number,
 	options?: {
@@ -138,4 +157,13 @@ export const addTagToBookmark = async (
 		bookmarkId: id,
 		tagId
 	});
+};
+
+export const getBookmarksCountForUser = async (userId: number): Promise<number> => {
+	const [{ count: bookmarkCount }] = await db
+		.select({ count: count(bookmarkSchema.id) })
+		.from(bookmarkSchema)
+		.where(eq(bookmarkSchema.ownerId, userId));
+
+	return bookmarkCount;
 };

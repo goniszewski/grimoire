@@ -81,7 +81,7 @@ export const deleteTag = async (id: number, ownerId: number): Promise<void> => {
 	await db.delete(tagSchema).where(and(eq(tagSchema.id, id), eq(tagSchema.ownerId, ownerId)));
 };
 
-export const fetchTagCountByUserId = async (userId: number): Promise<number> => {
+export const getTagCountForUser = async (userId: number): Promise<number> => {
 	const [{ count: tagCount }] = await db
 		.select({ count: count(tagSchema.id) })
 		.from(tagSchema)

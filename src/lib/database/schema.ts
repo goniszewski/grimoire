@@ -47,7 +47,7 @@ export const fileSchema = sqliteTable(
 		}).notNull(),
 		ownerId: integer('owner_id')
 			.notNull()
-			.references(() => userSchema.id),
+			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		created: integer('created', { mode: 'timestamp' }).default(sql`(CURRENT_TIMESTAMP)`),
 		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(CURRENT_TIMESTAMP)`)
 	},
@@ -66,7 +66,7 @@ export const categorySchema = sqliteTable(
 		color: text('color'),
 		ownerId: integer('owner_id')
 			.notNull()
-			.references(() => userSchema.id),
+			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		parentId: integer('parent_id').references((): AnySQLiteColumn => categorySchema.id),
 		archived: integer('archived', { mode: 'timestamp' }),
 		public: integer('public', { mode: 'timestamp' }),
@@ -93,7 +93,7 @@ export const tagSchema = sqliteTable(
 		slug: text('slug').notNull(),
 		ownerId: integer('owner_id')
 			.notNull()
-			.references(() => userSchema.id),
+			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		created: integer('created', { mode: 'timestamp' })
 			.default(sql`(CURRENT_TIMESTAMP)`)
 			.notNull(),
@@ -132,7 +132,7 @@ export const bookmarkSchema = sqliteTable(
 		archived: integer('archived', { mode: 'timestamp' }),
 		ownerId: integer('owner_id')
 			.notNull()
-			.references(() => userSchema.id),
+			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		categoryId: integer('category_id')
 			.notNull()
 			.references(() => categorySchema.id),
@@ -152,6 +152,15 @@ export const bookmarkSchema = sqliteTable(
 		createdOwnerIdx: index('bookmarkt_created_owner_index').on(table.created, table.ownerId)
 	})
 );
+
+// auth
+export const sessionSchema = sqliteTable('session', {
+	id: text('id').notNull().primaryKey(),
+	userId: integer('user_id')
+		.notNull()
+		.references(() => userSchema.id, { onDelete: 'cascade' }),
+	expiresAt: integer('expires_at').notNull()
+});
 
 // many-to-many tables
 export const bookmarksToTagsSchema = sqliteTable(
@@ -260,12 +269,3 @@ export const categoryRelationsSchema = relations(categorySchema, ({ many, one })
 		relationName: 'userCategories'
 	})
 }));
-
-// auth
-export const sessionSchema = sqliteTable('session', {
-	id: text('id').notNull().primaryKey(),
-	userId: integer('user_id')
-		.notNull()
-		.references(() => userSchema.id),
-	expiresAt: integer('expires_at').notNull()
-});

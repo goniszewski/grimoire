@@ -89,7 +89,7 @@ export const deleteCategory = async (id: number, ownerId: number): Promise<void>
 		.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)));
 };
 
-export const fetchCategoryCountByUserId = async (userId: number): Promise<number> => {
+export const getCategoryCountForUser = async (userId: number): Promise<number> => {
 	const [{ count: categoryCount }] = await db
 		.select({ count: count(categorySchema.id) })
 		.from(categorySchema)

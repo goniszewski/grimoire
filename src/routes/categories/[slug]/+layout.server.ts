@@ -1,6 +1,11 @@
-import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
+import {
+    BookmarkRelations, getBookmarksByIds
+} from '$lib/database/repositories/Bookmark.repository';
 
-export const load = async ({ locals, url, parent }) => {
+import type { Category } from '$lib/types/Category.type';
+import type { LayoutServerLoad } from './$types';
+
+export const load: LayoutServerLoad = async ({ locals, url, parent }) => {
 	if (!locals.user) {
 		return {
 			bookmarks: []
@@ -15,7 +20,7 @@ export const load = async ({ locals, url, parent }) => {
 
 	const category = categories.find((c) => c.slug === categorySlug);
 
-	const getIdsOfCategoryAndChildren = (categories: CategoryDto[], slug: string): string[] => {
+	const getIdsOfCategoryAndChildren = (categories: Category[], slug: string): number[] => {
 		const category = categories.find((c) => c.slug === slug);
 		if (!category) return [];
 		const children = categories.filter((c) => c.parent?.id === category.id);
@@ -27,19 +32,14 @@ export const load = async ({ locals, url, parent }) => {
 
 	const nestedCategoryIds = getIdsOfCategoryAndChildren(categories, categorySlug);
 
-	const relatedBookmarks = (await locals.pb
-		.collection('bookmarks')
-		.getList(page, limit, {
-			expand: 'tags,category',
-			filter: `(${nestedCategoryIds.map((id) => `category.id="${id}"`).join('||')} && owner.id="${locals.user!.id}")`,
-			sort: '-created',
-			requestKey: `related-bookmarks-${categorySlug}`
-		})
-		.then((res) => res.items)) as BookmarkDto[];
+	const relatedBookmarks = await getBookmarksByIds(nestedCategoryIds, locals.user!.id, [
+		BookmarkRelations.CATEGORY,
+		BookmarkRelations.TAGS
+	]);
 
 	return {
 		category,
-		bookmarks: serializeBookmarkList(relatedBookmarks),
+		bookmarks: relatedBookmarks,
 		page,
 		limit
 	};

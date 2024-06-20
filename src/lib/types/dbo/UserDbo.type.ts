@@ -12,4 +12,5 @@ export type UserDbo = {
 	isAdmin: boolean;
 	created: Date;
 	updated: Date;
+	passwordHash: string;
 };

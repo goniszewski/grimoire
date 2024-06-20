@@ -119,7 +119,7 @@ export const deleteUser = async (id: number): Promise<void> => {
 	await db.delete(userSchema).where(eq(userSchema.id, id));
 };
 
-export const fetchUserCount = async (): Promise<number> => {
+export const getUserCount = async (): Promise<number> => {
 	const [{ count: userCount }] = await db.select({ count: count(userSchema.id) }).from(userSchema);
 
 	return userCount;
@@ -142,4 +142,35 @@ export const fetchUserCategoryAndTags = async (
 	});
 
 	return { categories: categories.map(serializeCategory), tags: tags.map(serializeTag) };
+};
+
+export const getUsersForAdminPanel = async () => {
+	const users = await db.query.userSchema.findMany({
+		orderBy: desc(userSchema.created),
+		columns: {
+			id: true,
+			username: true,
+			email: true,
+			created: true,
+			disabled: true
+		}
+	});
+
+	return users;
+};
+
+export const isUserDisabled = async (id: number): Promise<boolean> => {
+	const [{ disabled }] = await db.query.userSchema.findMany({
+		where: eq(userSchema.id, id)
+	});
+	return disabled ? true : false;
+};
+export const disableUser = async (id: number): Promise<User> => {
+	const [user]: UserDbo[] = await db
+		.update(userSchema)
+		.set({ disabled: new Date() })
+		.where(eq(userSchema.id, id))
+		.returning();
+
+	return serializeUser(user);
 };
