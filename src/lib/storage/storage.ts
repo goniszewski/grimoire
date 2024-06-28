@@ -1,11 +1,11 @@
 import { fileSchema } from '$lib/database/schema';
 import { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
+import { createSlug } from '$lib/utils/create-slug';
+import { BunFile, file, type } from 'bun';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import { db } from '../database/db';
-
-import type { BunFile } from 'bun';
 
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
@@ -46,5 +46,21 @@ export class Storage {
 				ownerId
 			})
 			.returning();
+	}
+
+	async storeImage(url: string, title: string, ownerId: number) {
+		const storage = new Storage();
+
+		if (url && url.length > 0) {
+			const arrayBuffer = await fetch(url).then((r) => r.arrayBuffer());
+			const fileName = `${createSlug(title)}.${url.split('.').pop()}`;
+			const imageFile = file(arrayBuffer);
+
+			const [{ id }] = await storage.storeFile(imageFile, {
+				ownerId,
+				fileName
+			});
+			return id;
+		}
 	}
 }

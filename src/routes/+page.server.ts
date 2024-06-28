@@ -10,25 +10,10 @@ import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
 import { createSlug } from '$lib/utils/create-slug';
 import { prepareTags } from '$lib/utils/handle-tags-input';
-import { file } from 'bun';
 
 import type { Theme } from '$lib/enums/themes';
 
-const storeImage = async (url: string, title: string, ownerId: number) => {
-	const storage = new Storage();
-
-	if (url && url.length > 0) {
-		const arrayBuffer = await fetch(url).then((r) => r.arrayBuffer());
-		const fileName = `${createSlug(title)}.${url.split('.').pop()}`;
-		const imageFile = file(arrayBuffer);
-
-		const [{ id }] = await storage.storeFile(imageFile, {
-			ownerId,
-			fileName
-		});
-		return id;
-	}
-};
+const storage = new Storage();
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
@@ -62,8 +47,8 @@ export const actions = {
 
 			const tagIds = await prepareTags(db, tags, ownerId);
 
-			const mainImageId = await storeImage(mainImageUrl, title, ownerId);
-			const iconId = await storeImage(iconUrl, title, ownerId);
+			const mainImageId = await storage.storeImage(mainImageUrl, title, ownerId);
+			const iconId = await storage.storeImage(iconUrl, title, ownerId);
 
 			const bookmarkData = {
 				ownerId,
@@ -86,7 +71,7 @@ export const actions = {
 				iconId
 			};
 
-			const bookmark = await createBookmark(bookmarkData);
+			const bookmark = await createBookmark(ownerId, bookmarkData);
 
 			if (!bookmark.id) {
 				return {
@@ -160,8 +145,8 @@ export const actions = {
 
 		const tagIds = await prepareTags(db, tags, ownerId);
 
-		const mainImageId = await storeImage(mainImageUrl, title, ownerId);
-		const iconId = await storeImage(iconUrl, title, ownerId);
+		const mainImageId = await storage.storeImage(mainImageUrl, title, ownerId);
+		const iconId = await storage.storeImage(iconUrl, title, ownerId);
 
 		const bookmarkData = {
 			author,

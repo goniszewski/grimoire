@@ -13,15 +13,23 @@ import type {
 const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i;
 
 export async function GET({ locals, request }) {
-	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
+	const ownerId = locals.user?.id;
 
-	if (error) {
-		return error;
+	if (!ownerId) {
+		return json(
+			{
+				success: false,
+				error: 'Unauthorized'
+			},
+			{
+				status: 401
+			}
+		);
 	}
 
 	try {
 		const records = await pb.collection('categories').getFullList<Category>({
-			filter: `owner="${owner}"`
+			filter: `owner="${ownerId}"`
 		});
 
 		const categories = removePocketbaseFields(records);
@@ -46,10 +54,18 @@ export async function GET({ locals, request }) {
 }
 
 export async function POST({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json(
+			{
+				success: false,
+				error: 'Unauthorized'
+			},
+			{
+				status: 401
+			}
+		);
 	}
 
 	const requestBody = (await request.json()) as AddCategoryRequestBody;
@@ -79,7 +95,7 @@ export async function POST({ locals, request }) {
 
 	try {
 		const existingCategory = await pb.collection('categories').getFullList({
-			filter: `owner="${owner}" && name="${requestBody.name}"`,
+			filter: `owner="${ownerId}" && name="${requestBody.name}"`,
 			fields: 'id'
 		});
 
@@ -100,7 +116,7 @@ export async function POST({ locals, request }) {
 		const category = await pb.collection('categories').create<Category>({
 			...requestBody,
 			slug: createSlug(requestBody.name),
-			owner
+			ownerId
 		});
 
 		if (!category.id) {
@@ -135,10 +151,18 @@ export async function POST({ locals, request }) {
 }
 
 export async function PATCH({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json(
+			{
+				success: false,
+				error: 'Unauthorized'
+			},
+			{
+				status: 401
+			}
+		);
 	}
 
 	const requestBody = (await request.json()) as UpdateCategoryRequestBody;

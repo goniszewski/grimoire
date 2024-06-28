@@ -97,3 +97,12 @@ export const getCategoryCountForUser = async (userId: number): Promise<number> =
 
 	return categoryCount;
 };
+
+export const getInitialCategory = async (userId: number): Promise<Category | null> => {
+	const category = await db.query.categorySchema.findFirst({
+		where: and(eq(categorySchema.ownerId, userId), eq(categorySchema.initial, true)),
+		with: mapRelationsToWithStatements([CategoryRelations.OWNER])
+	});
+
+	return category ? serializeCategory(category) : null;
+};

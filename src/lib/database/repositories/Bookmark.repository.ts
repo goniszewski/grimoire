@@ -83,11 +83,12 @@ export const getBookmarksByUserId = async (
 };
 
 export const createBookmark = async (
-	bookmarkData: typeof bookmarkSchema.$inferInsert
+	ownerId: number,
+	bookmarkData: Omit<typeof bookmarkSchema.$inferInsert, 'ownerId'>
 ): Promise<Bookmark> => {
 	const [bookmark]: BookmarkDbo[] = await db
 		.insert(bookmarkSchema)
-		.values(bookmarkData)
+		.values({ ...bookmarkData, ownerId })
 		.returning();
 
 	return serializeBookmark(bookmark);

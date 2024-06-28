@@ -117,7 +117,7 @@ export async function getMetadata(url: string) {
 	const faviconMetadata = await faviconScraper(html, url);
 
 	const domain = new URL(url).hostname.replace('www.', '');
-	const content_text = articleExtractorMetadata?.contentHtml
+	const contentText = articleExtractorMetadata?.contentHtml
 		? htmlToText(articleExtractorMetadata.contentHtml)
 		: '';
 
@@ -131,15 +131,14 @@ export async function getMetadata(url: string) {
 			firstParagraph ||
 			'',
 		author: metascraperMetadata?.author || articleExtractorMetadata?.author || '',
-		content_text,
-		content_html: articleExtractorMetadata?.contentHtml || '',
-		content_type: '',
-		content_published_date: metascraperMetadata?.contentPublishedDate || '',
-		main_image: '',
-		main_image_url:
-			metascraperMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
+		contentText,
+		contentHtml: articleExtractorMetadata?.contentHtml || '',
+		contentType: '',
+		contentPublishedDate: metascraperMetadata?.contentPublishedDate || '',
+		mainImage: '',
+		mainImageUrl: metascraperMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
 		icon: '',
-		icon_url: faviconMetadata?.iconUrl || ''
+		iconUrl: faviconMetadata?.iconUrl || ''
 	};
 }
 
