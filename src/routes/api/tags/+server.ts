@@ -1,24 +1,21 @@
-import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb';
-import { createSlug } from '$lib/utils/create-slug';
+import {
+	createTag,
+	getTagByName,
+	getTagsByUserId
+} from '$lib/database/repositories/Tag.repository';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
-import type { Tag } from '$lib/types/Tag.type';
+export async function GET({ locals }) {
+	const ownerId = locals.user?.id;
 
-export async function GET({ locals, request }) {
-	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
-
-	if (error) {
-		return error;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	try {
-		const records = await pb.collection('tags').getFullList<Tag>({
-			filter: `owner="${owner}"`
-		});
-
-		const tags = removePocketbaseFields(records);
+		const tags = await getTagsByUserId(ownerId);
 
 		return json(
 			{ tags },
@@ -40,10 +37,10 @@ export async function GET({ locals, request }) {
 }
 
 export async function POST({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const requestBody = await request.json();
@@ -67,12 +64,9 @@ export async function POST({ locals, request }) {
 	}
 
 	try {
-		const existingTag = await pb.collection('tags').getFullList<Tag>({
-			filter: `owner="${owner}" && name="${requestBody.name}"`,
-			fields: 'id'
-		});
+		const existingTag = await getTagByName(requestBody.name, ownerId);
 
-		if (existingTag[0]?.id) {
+		if (existingTag?.id) {
 			return json(
 				{
 					success: false,
@@ -84,13 +78,7 @@ export async function POST({ locals, request }) {
 			);
 		}
 
-		const record = await pb.collection('tags').create<Tag>({
-			name: requestBody.name,
-			slug: createSlug(requestBody.name),
-			owner
-		});
-
-		const tag = removePocketbaseFields(record);
+		const tag = await createTag(requestBody, ownerId);
 
 		if (!tag.id) {
 			return json(

@@ -1,3 +1,4 @@
+import { createSlug } from '$lib/utils/create-slug';
 import { serializeTag } from '$lib/utils/serialize-dbo-entity';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
@@ -7,7 +8,6 @@ import { mapRelationsToWithStatements } from './common';
 
 import type { Tag } from '$lib/types/Tag.type';
 import type { TagDbo } from '$lib/types/dbo/TagDbo.type';
-
 enum TagRelations {
 	OWNER = 'owner'
 }
@@ -57,8 +57,31 @@ export const getTagsByUserId = async (
 	return tags.map(serializeTag);
 };
 
-export const createTag = async (tagData: typeof tagSchema.$inferInsert): Promise<Tag> => {
-	const [tag]: TagDbo[] = await db.insert(tagSchema).values(tagData).returning();
+export const getTagByName = async (
+	name: string,
+	ownerId: number,
+	relations: TagRelations[] = allTagRelations
+): Promise<Tag | null> => {
+	const tag = await db.query.tagSchema.findFirst({
+		where: and(eq(tagSchema.name, name), eq(tagSchema.ownerId, ownerId)),
+		with: mapRelationsToWithStatements(relations)
+	});
+
+	return tag ? serializeTag(tag) : null;
+};
+
+export const createTag = async (
+	ownerId: number,
+	tagData: Omit<typeof tagSchema.$inferInsert, 'ownerId'>
+): Promise<Tag> => {
+	const [tag]: TagDbo[] = await db
+		.insert(tagSchema)
+		.values({
+			...tagData,
+			slug: createSlug(tagData.name),
+			ownerId
+		})
+		.returning();
 
 	return serializeTag(tag);
 };

@@ -1,25 +1,35 @@
 import { db } from '$lib/database/db';
-import { bookmarkSchema } from '$lib/database/schema';
-import { getFileUrl } from '$lib/utils/get-file-url';
+import {
+	createBookmark,
+	deleteBookmark,
+	getBookmarkById,
+	getBookmarkByUrl,
+	getBookmarksByIds,
+	updateBookmark
+} from '$lib/database/repositories/Bookmark.repository';
+import { getTagsByUserId } from '$lib/database/repositories/Tag.repository';
+import { FileSourceEnum } from '$lib/enums/files';
+import { Storage } from '$lib/storage/storage';
 import { getMetadataFromHtml } from '$lib/utils/get-metadata';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
-import { serializeBookmarkList } from '$lib/utils/serialize-bookmark-list';
 import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
-import { sql } from 'drizzle-orm';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
+import type { RequestHandler } from './$types';
 import type { Bookmark } from '$lib/types/Bookmark.type.js';
 import type {
 	AddBookmarkRequestBody,
 	UpdateBookmarkRequestBody
 } from '$lib/types/api/Bookmarks.type';
-import type Client from 'pocketbase';
+
+const storage = new Storage();
+
 const prepareRequestedTags = (
 	requestBody: AddBookmarkRequestBody | UpdateBookmarkRequestBody,
-	userTags: { id: string; name: string }[]
+	userTags: { id: number; name: string }[]
 ): {
 	label: string;
 	value: string;
@@ -37,7 +47,7 @@ const prepareRequestedTags = (
 				} else {
 					acc.push({
 						label: existingTag.name,
-						value: existingTag.id
+						value: existingTag.id.toString()
 					});
 				}
 
@@ -48,72 +58,9 @@ const prepareRequestedTags = (
 	);
 };
 
-const getBookmarksByIds = async (ids: string[], owner: number) => {
-	const filterExpression =
-		ids.length > 0
-			? sql`id IN (${sql.join(ids, sql`, `)}) AND owner=${owner}`
-			: sql`owner=${owner}`;
-
-	const recordsRaw = await db.query.bookmarkSchema.findMany({
-		where: sql`${filterExpression}`,
-		with: {
-			category: true,
-			owner: true,
-			bookmarksToTags: {
-				with: {
-					tag: true
-				}
-			}
-		}
-	});
-
-	const records = recordsRaw.map((record) => {
-		const { bookmarksToTags, ...rest } = record;
-
-		return {
-			...rest,
-			tags: bookmarksToTags.map((bookmarkToTag) => bookmarkToTag.tag)
-		};
-	});
-
-	return serializeBookmarkList(records);
-};
-
-const getBookmarkByUrl = async (url: string, owner: string, pb: Client) => {
-	const cleanUrl = new URL(url);
-	cleanUrl.hash = '';
-	cleanUrl.search = '';
-
-	const filterExpression = `url LIKE '${cleanUrl.toString()}%' AND owner = '${owner}'`;
-
-	const recordsRaw = await db.query.bookmarkSchema.findMany({
-		where: sql`${filterExpression}`,
-		with: {
-			category: true,
-			owner: true,
-			bookmarksToTags: {
-				with: {
-					tag: true
-				}
-			}
-		}
-	});
-
-	const records = recordsRaw.map((record) => {
-		const { bookmarksToTags, ...rest } = record;
-
-		return {
-			...rest,
-			tags: bookmarksToTags.map((bookmarkToTag) => bookmarkToTag.tag)
-		};
-	});
-
-	return serializeBookmarkList(records);
-};
-
-const getBookmarksByFilter = async (filter: string, owner: number) => {
+const getBookmarksByFilter = async (filter: string, ownerId: number) => {
 	const records = await db.query.bookmarkSchema.findMany({
-		where: (bookmarks, { eq }) => eq(bookmarks.ownerId, owner),
+		where: (bookmarks, { eq }) => eq(bookmarks.ownerId, ownerId),
 		columns: searchIndexKeys.reduce(
 			(acc, key) => ({
 				...acc,
@@ -140,75 +87,59 @@ const getBookmarksByFilter = async (filter: string, owner: number) => {
 	return res;
 };
 
-export async function GET({ locals, url, request }) {
-	let owner = locals.pb.authStore.model?.id;
+export const GET: RequestHandler = async ({ locals, url }) => {
 	let bookmarks: Bookmark[] = [];
+	const ownerId = locals.user?.id;
 
-	if (!owner) {
-		const { owner: apiOwner, error } = await authenticateUserApiRequest(locals.pb, request);
-
-		owner = apiOwner;
-
-		if (error) {
-			return error;
-		}
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const idsParam = url.searchParams.get('ids')?.split(',') || [];
+	const idsParam: number[] =
+		url.searchParams
+			.get('ids')
+			?.split(',')
+			.map((id: string) => parseInt(id, 10)) || [];
 	const urlParam = url.searchParams.get('url');
 	const filterParam = url.searchParams.get('filter');
 
 	try {
 		if (urlParam) {
-			const bookmark = await getBookmarkByUrl(urlParam, owner, locals.pb);
-
+			const bookmark = await getBookmarkByUrl(urlParam, ownerId);
 			bookmarks = bookmark ? [bookmark] : [];
 		} else if (filterParam) {
-			bookmarks = await getBookmarksByFilter(filterParam, owner, locals.pb);
+			bookmarks = await getBookmarksByFilter(filterParam, ownerId);
 		} else {
-			bookmarks = await getBookmarksByIds(idsParam, owner, locals.pb);
+			bookmarks = await getBookmarksByIds(idsParam, ownerId);
 		}
 
-		return json(
-			{ bookmarks },
-			{
-				status: 200
-			}
-		);
+		return json({ bookmarks }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function POST({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const POST: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const requestBody: AddBookmarkRequestBody = await request.json();
+	const requestBody = await request.json();
 
-	const validationSchema = joi.object<AddBookmarkRequestBody>({
+	const validationSchema = joi.object({
 		url: joi.string().uri().required(),
 		title: joi.string().required(),
 		description: joi.string().allow('').optional(),
 		author: joi.string().allow('').optional(),
-		content_text: joi.string().allow('').optional(),
-		content_html: joi.string().allow('').optional(),
-		content_type: joi.string().allow('').optional(),
-		content_published_date: joi.date().allow(null).optional(),
+		contentText: joi.string().allow('').optional(),
+		contentHtml: joi.string().allow('').optional(),
+		contentType: joi.string().allow('').optional(),
+		contentPublishedDate: joi.date().allow(null).optional(),
 		note: joi.string().allow('').optional(),
-		main_image_url: joi.string().allow('').optional(),
-		icon_url: joi.string().allow('').optional(),
+		mainImageUrl: joi.string().allow('').optional(),
+		iconUrl: joi.string().allow('').optional(),
 		icon: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
@@ -220,134 +151,92 @@ export async function POST({ locals, request }) {
 	const { error } = validationSchema.validate(requestBody);
 
 	if (error) {
-		return json(
-			{
-				success: false,
-				error: error.message
-			},
-			{
-				status: 400
-			}
-		);
+		return json({ success: false, error: error.message }, { status: 400 });
 	}
 
 	try {
-		const userTags = await locals.pb.collection('tags').getFullList<{ id: string; name: string }>({
-			fields: 'id,name',
-			filter: `owner="${owner}"`
-		});
+		const tags = requestBody.get('tags') ? JSON.parse(requestBody.get('tags') as string) : [];
+		const tagIds = await prepareTags(db, tags, ownerId);
 
-		const tags = prepareRequestedTags(requestBody, userTags);
-		const tagIds = await prepareTags(locals.pb, tags, owner);
+		const metadata = await getMetadataFromHtml(requestBody?.contentHtml || '', requestBody.url);
 
-		const metadata = await getMetadataFromHtml(requestBody?.content_html || '', requestBody.url);
+		const mainImageId = await storage.storeImage(
+			requestBody.mainImageUrl || metadata?.mainImageUrl,
+			requestBody.title,
+			ownerId
+		);
+		const iconId = await storage.storeImage(
+			requestBody.iconUrl || metadata?.iconUrl,
+			requestBody.title,
+			ownerId
+		);
 
-		const record = await locals.pb.collection('bookmarks').create<Bookmark>({
-			owner,
-			category: requestBody.category,
-			content_html: metadata?.content_html || requestBody.content_html,
-			content_published_date:
-				requestBody.content_published_date || metadata?.content_published_date,
-			content_text: requestBody.content_text || metadata?.content_text,
-			content_type: requestBody.content_type || metadata?.content_type,
-			description: requestBody.description || metadata?.description,
-			domain: new URL(requestBody.url).hostname,
-			icon_url: requestBody.icon_url || metadata?.icon_url,
-			importance: requestBody.importance,
-			main_image_url: requestBody.main_image_url || metadata?.main_image_url,
-			note: requestBody.note,
-			title: requestBody.title || metadata?.title,
+		const bookmarkData = {
+			ownerId,
 			url: requestBody.url,
+			categoryId: requestBody.category,
+			title: requestBody.title || metadata?.title,
+			description: requestBody.description || metadata?.description,
 			author: requestBody.author || metadata?.author,
-			tags: tagIds,
-			flagged: requestBody.flagged ? new Date().toISOString() : null
-		});
+			contentText: requestBody.contentText || metadata?.contentText,
+			contentHtml: metadata?.contentHtml || requestBody.contentHtml,
+			contentType: requestBody.contentType || metadata?.contentType,
+			contentPublishedDate: requestBody.contentPublishedDate || metadata?.contentPublishedDate,
+			domain: new URL(requestBody.url).hostname,
+			iconUrl: requestBody.iconUrl || metadata?.iconUrl,
+			importance: requestBody.importance,
+			mainImageUrl: requestBody.mainImageUrl || metadata?.mainImageUrl,
+			note: requestBody.note,
+			flagged: requestBody.flagged ? new Date() : null,
+			mainImageId,
+			iconId,
+			tags: tagIds
+		};
 
-		const bookmark = removePocketbaseFields(record);
+		const bookmark = await createBookmark(ownerId, bookmarkData);
 
 		if (!bookmark.id) {
-			return json(
-				{
-					success: false,
-					error: 'Bookmark creation failed'
-				},
-				{
-					status: 400
-				}
-			);
+			return json({ success: false, error: 'Bookmark creation failed' }, { status: 400 });
 		}
 
-		if (record.main_image_url || record.icon_url || requestBody.screenshot) {
-			const attachments = new FormData();
-
-			if (record.main_image_url) {
-				const main_image = await fetch(record.main_image_url as string).then((r) => r.blob());
-				attachments.append('main_image', main_image);
-			}
-
-			if (record.icon_url) {
-				const icon = await fetch(record.icon_url as string).then((r) => r.blob());
-				attachments.append('icon', icon);
-			}
-
-			if (requestBody.screenshot) {
-				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
-
-				attachments.append('screenshot', screenshot);
-			}
-
-			if (requestBody.icon) {
-				const icon = urlDataToBlobConverter(requestBody.icon);
-
-				attachments.append('icon', icon);
-			}
-
-			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
+		if (requestBody.screenshot) {
+			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+			await storage.storeFile(screenshot, {
+				ownerId,
+				relatedEntityId: bookmark.id,
+				source: FileSourceEnum.WebExtension
+			});
 		}
 
-		return json(
-			{ bookmark },
-			{
-				status: 201
-			}
-		);
+		return json({ bookmark }, { status: 201 });
 	} catch (error: any) {
 		console.error('Error creating bookmark from API request', error?.message);
-
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function PATCH({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const PATCH: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const requestBody: UpdateBookmarkRequestBody = await request.json();
+	const requestBody = await request.json();
 
-	const validationSchema = joi.object<UpdateBookmarkRequestBody>({
-		id: joi.string().required(),
+	const validationSchema = joi.object({
+		id: joi.number().required(),
 		url: joi.string().uri().optional(),
 		title: joi.string().optional(),
 		description: joi.string().allow('').optional(),
 		author: joi.string().allow('').optional(),
-		content_text: joi.string().allow('').optional(),
-		content_html: joi.string().allow('').optional(),
-		content_type: joi.string().allow('').optional(),
-		content_published_date: joi.date().optional(),
+		contentText: joi.string().allow('').optional(),
+		contentHtml: joi.string().allow('').optional(),
+		contentType: joi.string().allow('').optional(),
+		contentPublishedDate: joi.date().optional(),
 		note: joi.string().allow('').optional(),
-		main_image_url: joi.string().allow('').optional(),
-		icon_url: joi.string().allow('').optional(),
+		mainImageUrl: joi.string().allow('').optional(),
+		iconUrl: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
 		category: joi.string().optional(),
@@ -358,172 +247,76 @@ export async function PATCH({ locals, request }) {
 	const { error } = validationSchema.validate(requestBody);
 
 	if (error) {
-		return json(
-			{
-				success: false,
-				error: error.message
-			},
-			{
-				status: 400
-			}
-		);
+		return json({ success: false, error: error.message }, { status: 400 });
 	}
 
 	const { id, ...updatedFields } = requestBody;
 
 	try {
-		const currentBookmark = await locals.pb
-			.collection('bookmarks')
-			.getOne<Bookmark & { owner: string }>(id);
+		const currentBookmark = await getBookmarkById(id, ownerId);
 
-		if (!currentBookmark || currentBookmark.owner !== owner) {
-			return json(
-				{
-					success: false,
-					error: 'Bookmark not found'
-				},
-				{
-					status: 404
-				}
-			);
+		if (!currentBookmark) {
+			return json({ success: false, error: 'Bookmark not found' }, { status: 404 });
 		}
 
-		const userTags = await locals.pb.collection('tags').getFullList<{ id: string; name: string }>({
-			fields: 'id,name',
-			filter: `owner="${owner}"`
-		});
-
+		const userTags = await getTagsByUserId(ownerId);
 		const preparedTags = prepareRequestedTags(requestBody, userTags);
-		const newTags = await prepareTags(locals.pb, preparedTags, owner);
+		const newTags = await prepareTags(db, preparedTags, ownerId);
 
-		const tags = [...userTags.map((tag) => tag.id), ...newTags];
-
-		const record = await locals.pb.collection('bookmarks').update<Bookmark>(
-			id,
-			{
-				...updatedFields,
-				tags,
-				flagged: requestBody.flagged ? new Date().toISOString() : null
-			},
-			{
-				filter: `owner="${owner}"`
-			}
+		const mainImageId = await storage.storeImage(
+			updatedFields.mainImageUrl,
+			updatedFields.title || currentBookmark.title,
+			ownerId
+		);
+		const iconId = await storage.storeImage(
+			updatedFields.iconUrl,
+			updatedFields.title || currentBookmark.title,
+			ownerId
 		);
 
-		const bookmark = removePocketbaseFields(record);
+		const bookmarkData = {
+			...updatedFields,
+			categoryId: updatedFields.category,
+			flagged: updatedFields.flagged ? new Date() : null,
+			mainImageId,
+			iconId
+		};
 
-		if (!bookmark.id) {
-			return json(
-				{
-					success: false,
-					error: 'Bookmark update failed'
-				},
-				{
-					status: 400
-				}
-			);
+		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
+
+		if (requestBody.screenshot) {
+			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
+			await storage.storeFile(screenshot, {
+				ownerId,
+				relatedEntityId: id,
+				source: FileSourceEnum.WebExtension
+			});
 		}
 
-		if (requestBody.main_image_url || requestBody.icon_url) {
-			const attachments = new FormData();
-
-			if (requestBody.main_image_url) {
-				const main_image = await fetch(requestBody.main_image_url as string).then((r) => r.blob());
-				attachments.append('main_image', main_image);
-			}
-
-			if (requestBody.icon_url) {
-				const icon = await fetch(requestBody.icon_url as string).then((r) => r.blob());
-				attachments.append('icon', icon);
-			}
-
-			if (requestBody.screenshot) {
-				const screenshot = urlDataToBlobConverter(requestBody.screenshot);
-
-				attachments.append('screenshot', screenshot);
-			}
-
-			await locals.pb.collection('bookmarks').update(bookmark.id, attachments);
-		}
-
-		return json(
-			{ bookmark },
-			{
-				status: 200
-			}
-		);
+		return json({ bookmark }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function DELETE({ locals, request, url }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const DELETE: RequestHandler = async ({ locals, url }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	try {
-		const id = url.searchParams.get('id') || '';
+		const id = parseInt(url.searchParams.get('id') || '', 10);
 
 		if (!id) {
-			return json(
-				{
-					success: false,
-					error: 'Bookmark ID is required'
-				},
-				{
-					status: 400
-				}
-			);
+			return json({ success: false, error: 'Bookmark ID is required' }, { status: 400 });
 		}
 
-		const currentBookmark = await locals.pb
-			.collection('bookmarks')
-			.getOne<Bookmark & { owner: string }>(id);
+		const success = await deleteBookmark(id, ownerId);
 
-		if (!currentBookmark || currentBookmark.owner !== owner) {
-			return json(
-				{
-					success: false,
-					error: 'Bookmark not found'
-				},
-				{
-					status: 404
-				}
-			);
-		}
-
-		const success = await locals.pb.collection('bookmarks').delete(id, {
-			query: {
-				owner
-			}
-		});
-
-		return json(
-			{ success },
-			{
-				status: 200
-			}
-		);
+		return json({ success }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 404
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 404 });
 	}
-}
+};

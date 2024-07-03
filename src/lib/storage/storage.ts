@@ -11,10 +11,10 @@ const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
 export class Storage {
 	async storeFile(
-		fileData: BunFile,
+		fileData: BunFile | Blob,
 		details: {
 			ownerId: number;
-			relatedEntityId?: string;
+			relatedEntityId?: number;
 			source?: FileSourceEnum;
 			fileName?: string;
 		}

@@ -59,11 +59,12 @@ export const getCategoriesByUserId = async (
 };
 
 export const createCategory = async (
-	categoryData: typeof categorySchema.$inferInsert
+	ownerId: number,
+	categoryData: Omit<typeof categorySchema.$inferInsert, 'ownerId'>
 ): Promise<Category> => {
 	const [category]: CategoryDbo[] = await db
 		.insert(categorySchema)
-		.values(categoryData)
+		.values({ ...categoryData, ownerId })
 		.returning();
 
 	return serializeCategory(category);

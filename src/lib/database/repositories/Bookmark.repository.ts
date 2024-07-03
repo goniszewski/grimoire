@@ -1,5 +1,5 @@
 import { serializeBookmark } from '$lib/utils/serialize-dbo-entity';
-import { and, asc, count, desc, eq, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, like, or } from 'drizzle-orm';
 
 import { db } from '../db';
 import { bookmarkSchema, bookmarksToTagsSchema, tagSchema } from '../schema';
@@ -80,6 +80,23 @@ export const getBookmarksByUserId = async (
 	});
 
 	return bookmarks.map(serializeBookmark);
+};
+
+export const getBookmarkByUrl = async (
+	url: string,
+	ownerId: number,
+	relations: BookmarkRelations[] = allBookmarkRelations
+): Promise<Bookmark | null> => {
+	const urlObj = new URL(url);
+	const bookmark = await db.query.bookmarkSchema.findFirst({
+		where: and(
+			like(bookmarkSchema.url, `%${urlObj.host}${urlObj.pathname}%`),
+			eq(bookmarkSchema.ownerId, ownerId)
+		),
+		with: mapRelationsToWithStatements(relations)
+	});
+
+	return bookmark ? serializeBookmark(bookmark) : null;
 };
 
 export const createBookmark = async (
