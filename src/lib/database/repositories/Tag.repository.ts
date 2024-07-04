@@ -72,7 +72,7 @@ export const getTagByName = async (
 
 export const createTag = async (
 	ownerId: number,
-	tagData: Omit<typeof tagSchema.$inferInsert, 'ownerId'>
+	tagData: Omit<typeof tagSchema.$inferInsert, 'ownerId' | 'slug'>
 ): Promise<Tag> => {
 	const [tag]: TagDbo[] = await db
 		.insert(tagSchema)

@@ -5,12 +5,11 @@ import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
-import type { Bookmark } from '$lib/types/Bookmark.type.js';
 import type { RequestHandler } from '@sveltejs/kit';
 
 const storage = new Storage();
 
-export const POST: RequestHandler = async ({ locals, request, url }) => {
+export const POST: RequestHandler = async ({ locals, url }) => {
 	const ownerId = locals.user?.id;
 
 	if (!ownerId) {

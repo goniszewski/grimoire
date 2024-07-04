@@ -1,11 +1,13 @@
 import { fileSchema } from '$lib/database/schema';
 import { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
 import { createSlug } from '$lib/utils/create-slug';
-import { BunFile, file, type } from 'bun';
+import { file } from 'bun';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import { db } from '../database/db';
+
+import type { BunFile } from 'bun';
 
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
@@ -22,30 +24,29 @@ export class Storage {
 		const { ownerId, relatedEntityId, source, fileName } = details;
 		const mimeType = fileData.type;
 		const size = fileData.size;
-		const fileExt = fileName || (fileData.name?.split('.').pop() as string);
+		const fileExt = fileName || fileData.name?.split('.').pop();
 
 		const generatedId = randomUUID();
 
-		const relativePathParts = [ownerId, relatedEntityId, `${generatedId}.${fileExt}`].filter(
-			Boolean
-		) as string[];
+		const relativePathParts = [ownerId, relatedEntityId, `${generatedId}.${fileExt}`]
+			.filter(Boolean)
+			.map(String);
 		const relativePath = path.join(...relativePathParts);
 		const absoluteFilePath = `${ROOT_DIR}/${relativePath}`;
 
 		await Bun.write(absoluteFilePath, fileData);
 
-		return await db
-			.insert(fileSchema)
-			.values({
-				storageType: FileStorageTypeEnum.Local,
-				fileName: fileData.name,
-				size,
-				mimeType,
-				relativePath,
-				source,
-				ownerId
-			})
-			.returning();
+		const fileDetails: typeof fileSchema.$inferInsert = {
+			storageType: FileStorageTypeEnum.Local,
+			fileName: fileData.name || 'unknown',
+			size,
+			mimeType,
+			relativePath,
+			source: source || FileSourceEnum.Upload,
+			ownerId
+		};
+
+		return await db.insert(fileSchema).values(fileDetails).returning();
 	}
 
 	async storeImage(url: string, title: string, ownerId: number) {

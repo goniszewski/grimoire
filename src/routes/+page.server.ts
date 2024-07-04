@@ -305,7 +305,7 @@ export const actions = {
 			initial: false
 		};
 
-		const { id } = await createCategory(categoryBody);
+		const { id } = await createCategory(ownerId, categoryBody);
 
 		return {
 			id,
