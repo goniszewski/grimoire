@@ -253,6 +253,9 @@ export const userRelationsSchema = relations(userSchema, ({ many }) => ({
 	}),
 	files: many(fileSchema, {
 		relationName: 'userFiles'
+	}),
+	sessions: many(sessionSchema, {
+		relationName: 'sessions'
 	})
 }));
 
@@ -267,5 +270,13 @@ export const categoryRelationsSchema = relations(categorySchema, ({ many, one })
 		fields: [categorySchema.ownerId],
 		references: [userSchema.id],
 		relationName: 'userCategories'
+	})
+}));
+
+export const sessionRelationsSchema = relations(sessionSchema, ({ one }) => ({
+	user: one(userSchema, {
+		fields: [sessionSchema.userId],
+		references: [userSchema.id],
+		relationName: 'sessions'
 	})
 }));

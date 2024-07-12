@@ -28,10 +28,9 @@ CREATE TABLE `bookmark` (
 	FOREIGN KEY (`main_image_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`icon_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`screenshotId`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`category_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
 );
-
 --> statement-breakpoint
 CREATE TABLE `bookmarks_to_tags` (
 	`bookmark_id` integer NOT NULL,
@@ -40,7 +39,6 @@ CREATE TABLE `bookmarks_to_tags` (
 	FOREIGN KEY (`bookmark_id`) REFERENCES `bookmark`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE no action
 );
-
 --> statement-breakpoint
 CREATE TABLE `category` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -56,10 +54,9 @@ CREATE TABLE `category` (
 	`initial` integer DEFAULT false NOT NULL,
 	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
 	`updated` integer NOT NULL,
-	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
 );
-
 --> statement-breakpoint
 CREATE TABLE `file` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -72,17 +69,15 @@ CREATE TABLE `file` (
 	`owner_id` integer NOT NULL,
 	`created` integer DEFAULT (CURRENT_TIMESTAMP),
 	`updated` integer,
-	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
-
 --> statement-breakpoint
 CREATE TABLE `session` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` integer NOT NULL,
 	`expires_at` integer NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
-
 --> statement-breakpoint
 CREATE TABLE `tag` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -91,9 +86,8 @@ CREATE TABLE `tag` (
 	`owner_id` integer NOT NULL,
 	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
 	`updated` integer NOT NULL,
-	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
-
 --> statement-breakpoint
 CREATE TABLE `user` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -105,48 +99,22 @@ CREATE TABLE `user` (
 	`settings` text DEFAULT '{}' NOT NULL,
 	`initial` integer DEFAULT false NOT NULL,
 	`disabled` integer,
+	`is_admin` integer DEFAULT false NOT NULL,
 	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
 	`updated` integer NOT NULL
 );
-
 --> statement-breakpoint
-CREATE INDEX `bookmarkt_url_owner_index` ON `bookmark` (`url`, `owner_id`);
-
---> statement-breakpoint
-CREATE INDEX `bookmarkt_title_owner_index` ON `bookmark` (`title`, `owner_id`);
-
---> statement-breakpoint
-CREATE INDEX `bookmarkt_domain_owner_index` ON `bookmark` (`domain`, `owner_id`);
-
---> statement-breakpoint
-CREATE INDEX `bookmarkt_created_owner_index` ON `bookmark` (`created`, `owner_id`);
-
---> statement-breakpoint
-CREATE INDEX `bookmarks_to_tags_bookmark_id_index` ON `bookmarks_to_tags` (`bookmark_id`);
-
---> statement-breakpoint
-CREATE INDEX `categoryt_user_name_index` ON `category` (`owner_id`, `name`);
-
---> statement-breakpoint
-CREATE INDEX `categoryt_user_slug_index` ON `category` (`owner_id`, `slug`);
-
---> statement-breakpoint
-CREATE INDEX `filet_owner_id_index` ON `file` (`owner_id`);
-
---> statement-breakpoint
-CREATE INDEX `tagt_user_name_index` ON `tag` (`owner_id`, `name`);
-
---> statement-breakpoint
-CREATE INDEX `tagt_user_slug_index` ON `tag` (`owner_id`, `slug`);
-
---> statement-breakpoint
-CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);
-
---> statement-breakpoint
-CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);
-
---> statement-breakpoint
-CREATE INDEX `usert_name_index` ON `user` (`name`);
-
---> statement-breakpoint
+CREATE INDEX `bookmarkt_url_owner_index` ON `bookmark` (`url`,`owner_id`);--> statement-breakpoint
+CREATE INDEX `bookmarkt_title_owner_index` ON `bookmark` (`title`,`owner_id`);--> statement-breakpoint
+CREATE INDEX `bookmarkt_domain_owner_index` ON `bookmark` (`domain`,`owner_id`);--> statement-breakpoint
+CREATE INDEX `bookmarkt_created_owner_index` ON `bookmark` (`created`,`owner_id`);--> statement-breakpoint
+CREATE INDEX `bookmarks_to_tags_bookmark_id_index` ON `bookmarks_to_tags` (`bookmark_id`);--> statement-breakpoint
+CREATE INDEX `categoryt_user_name_index` ON `category` (`owner_id`,`name`);--> statement-breakpoint
+CREATE INDEX `categoryt_user_slug_index` ON `category` (`owner_id`,`slug`);--> statement-breakpoint
+CREATE INDEX `filet_owner_id_index` ON `file` (`owner_id`);--> statement-breakpoint
+CREATE INDEX `tagt_user_name_index` ON `tag` (`owner_id`,`name`);--> statement-breakpoint
+CREATE INDEX `tagt_user_slug_index` ON `tag` (`owner_id`,`slug`);--> statement-breakpoint
+CREATE UNIQUE INDEX `user_username_unique` ON `user` (`username`);--> statement-breakpoint
+CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
+CREATE INDEX `usert_name_index` ON `user` (`name`);--> statement-breakpoint
 CREATE INDEX `usert_email_index` ON `user` (`email`);

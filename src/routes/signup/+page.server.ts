@@ -16,10 +16,9 @@ export const actions: Actions = {
 		const passwordConfirm = formData.get('passwordConfirm');
 		// username must be between 4 ~ 31 characters, and only consists of lowercase letters, 0-9, -, and _
 		const validationSchema = Joi.object({
-			username: Joi.string()
-				.min(3)
-				.max(31)
-				.regex(/^[a-z0-9_-]+$/),
+			name: Joi.string().min(3).max(31),
+			username: Joi.string().min(3).max(31),
+			// .regex(/^[a-z0-9_-]+$/),
 			email: Joi.string().email(),
 			password: Joi.string().min(6).max(255),
 			passwordConfirm: Joi.string().valid(Joi.ref('password'))
