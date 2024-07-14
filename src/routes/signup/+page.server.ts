@@ -15,16 +15,21 @@ export const actions: Actions = {
 		const password = formData.get('password');
 		const passwordConfirm = formData.get('passwordConfirm');
 		// username must be between 4 ~ 31 characters, and only consists of lowercase letters, 0-9, -, and _
-		const validationSchema = Joi.object({
-			name: Joi.string().min(3).max(31),
+		const validationSchema = Joi.object<{
+			name: string;
+			username: string;
+			email: string;
+			password: string;
+			passwordConfirm: string;
+		}>({
+			name: Joi.string().min(3).max(31).optional(),
 			username: Joi.string().min(3).max(31),
-			// .regex(/^[a-z0-9_-]+$/),
-			email: Joi.string().email(),
+			email: Joi.string().email().optional(),
 			password: Joi.string().min(6).max(255),
 			passwordConfirm: Joi.string().valid(Joi.ref('password'))
 		});
 
-		const { error } = validationSchema.validate({
+		const { error, value } = validationSchema.validate({
 			username,
 			name,
 			email,
@@ -32,19 +37,13 @@ export const actions: Actions = {
 			passwordConfirm
 		});
 
-		if (
-			error ||
-			typeof username !== 'string' ||
-			typeof name !== 'string' ||
-			typeof email !== 'string' ||
-			typeof password !== 'string'
-		) {
+		if (error) {
 			return fail(400, {
 				message: error!.message
 			});
 		}
 
-		const passwordHash = await hash(password, {
+		const passwordHash = await hash(value.password, {
 			// recommended minimum parameters
 			memoryCost: 19456,
 			timeCost: 2,
@@ -52,7 +51,7 @@ export const actions: Actions = {
 			parallelism: 1
 		});
 
-		const userExists = await getUserByUsername(username).then((user) => !!user);
+		const userExists = await getUserByUsername(value.username).then((user) => !!user);
 
 		if (userExists) {
 			return fail(400, {
@@ -61,9 +60,9 @@ export const actions: Actions = {
 		}
 
 		const user = await createUser({
-			username,
-			name,
-			email,
+			username: value.username,
+			name: value.name,
+			email: value.email,
 			passwordHash
 		});
 

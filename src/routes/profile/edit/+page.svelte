@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { user } from '$lib/pb';
 	import { showToast } from '$lib/utils/show-toast';
 
 	let showPasswordForm = false;
@@ -8,7 +7,7 @@
 	let form: HTMLFormElement;
 </script>
 
-{#if !$user.isValid && $user.model}
+{#if !$page.data.user}
 	<p>Not logged in</p>
 {:else}
 	<form

@@ -12,7 +12,7 @@ import type { Tag } from '$lib/types/Tag.type';
 export enum BookmarkRelations {
 	CATEGORY = 'category',
 	CATEGORY__PARENT = 'category.parent',
-	TAGS = 'tags',
+	TAGS = 'bookmarksToTags',
 	OWNER = 'owner',
 	MAIN_IMAGE = 'mainImage',
 	ICON = 'icon',

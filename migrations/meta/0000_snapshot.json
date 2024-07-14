@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0af5bc06-2793-4ae5-8493-bf972a21bf62",
+  "id": "c5ccc4d3-ab32-4d61-8a49-bfffa05d93f9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {

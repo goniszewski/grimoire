@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { IconBookmarks, IconBookmarkPlus, IconEyeCheck } from '@tabler/icons-svelte';
+	import { IconBookmarkPlus, IconBookmarks, IconEyeCheck } from '@tabler/icons-svelte';
 
 	import { page } from '$app/stores';
-	import { user } from '$lib/pb';
 
-	const accountCreated = new Date($user.model?.created || '').toLocaleDateString();
+	const accountCreated = new Date($page.data.user?.created || '').toLocaleDateString();
 	const addedInLastSevenDays = $page.data.bookmarks.filter(
 		(b) => new Date(b.created).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
 	).length;
@@ -12,7 +11,7 @@
 		(addedInLastSevenDays / $page.data.bookmarks.length) *
 		100
 	).toFixed(2);
-	const bookmarksOpenedTimes = $page.data.bookmarks.reduce((acc, b) => acc + b.opened_times, 0);
+	const bookmarksOpenedTimes = $page.data.bookmarks.reduce((acc, b) => acc + b.openedTimes, 0);
 	const bookmarksOpenedTimesPerBookmark = (
 		bookmarksOpenedTimes / $page.data.bookmarks.length
 	).toFixed(2);
@@ -26,18 +25,18 @@
 	};
 </script>
 
-{#if !user}
+{#if !$page.data.user}
 	<p>Not logged in</p>
 {:else}
 	<div>
-		<div class="card lg:card-side bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-xl lg:card-side">
 			<div class="card-body gap-5">
 				<h2 class="card-title gap-0">
-					Hello <span class="text-blue-600 ml-1">{$user.model?.name}</span>!
+					Hello <span class="ml-1 text-blue-600">{$page.data.user?.name}</span>!
 				</h2>
 				<p>Welcome to your profile page. Here you can see your stats and latest bookmarks.</p>
 				<h2 class="card-title">Your stats</h2>
-				<div class=" shadow flex-col md:stats">
+				<div class=" flex-col shadow md:stats">
 					<div class="stat">
 						<div class="stat-figure text-secondary">
 							<IconBookmarks size={32} />
@@ -81,25 +80,25 @@
 				</div>
 				<h2 class="card-title">Latest bookmarks</h2>
 				{#if $page.data.bookmarks.length > 0}
-					<div class="flex flex-col w-full columns-sm gap-2">
+					<div class="flex w-full columns-sm flex-col gap-2">
 						{#each $page.data.bookmarks.slice(0, 3) as bookmark (bookmark.id)}
 							<a
 								href={bookmark.url}
 								title={bookmark.url}
 								target="_blank"
-								class="hover:bg-base-300 p-2 rounded-md"
+								class="rounded-md p-2 hover:bg-base-300"
 								><div class="flex flex-col gap-2 md:flex-row">
 									<div class="flex gap-2">
 										<img
-											src={bookmark.icon || bookmark.icon_url}
+											src={bookmark.icon || bookmark.iconUrl}
 											alt={`${bookmark.domain}'s favicon`}
-											class="avatar w-6 h-6"
+											class="avatar h-6 w-6"
 										/>
-										<h3 class="max-w-sm text-md text-ellipsis overflow-hidden whitespace-nowrap">
+										<h3 class="text-md max-w-sm overflow-hidden text-ellipsis whitespace-nowrap">
 											{bookmark.title}
 										</h3>
 									</div>
-									<div class="flex ml-8 sm:ml-auto gap-1">
+									<div class="ml-8 flex gap-1 sm:ml-auto">
 										<span
 											style={`color: ${bookmark.category.color || '#a0a0a0'};`}
 											title={bookmark.category.description ? bookmark.category.description : ''}
@@ -120,7 +119,7 @@
 				{:else}
 					<p>No bookmarks yet.</p>
 				{/if}
-				<div class="card-actions justify-end mt-4">
+				<div class="card-actions mt-4 justify-end">
 					<a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
 				</div>
 			</div>

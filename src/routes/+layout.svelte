@@ -89,7 +89,7 @@
 			</div>
 		</div>
 		<div class="z-2 mb-20 flex min-w-full flex-1 sm:mb-0">
-			{#if user && user.isAdmin}
+			{#if user}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 					<div class="justify-top drawer-content m-2 flex flex-1 flex-col items-center sm:m-8">

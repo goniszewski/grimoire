@@ -12,7 +12,7 @@ class DbConnection {
 
 	private constructor() {
 		this.db = new Database('data/db.sqlite', { create: true });
-		this.db.exec('PRAGMA journal_mode = WAL;');
+		// this.db.exec('PRAGMA journal_mode = WAL;');
 	}
 
 	public static getInstance(): DbConnection {
@@ -24,7 +24,9 @@ class DbConnection {
 	}
 
 	public getClient(): DB {
-		return drizzle(this.db, { schema });
+		return drizzle(this.db, {
+			schema
+		});
 	}
 }
 
