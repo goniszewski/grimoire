@@ -34,7 +34,22 @@ export class Storage {
 		const relativePath = path.join(...relativePathParts);
 		const absoluteFilePath = `${ROOT_DIR}/${relativePath}`;
 
-		await Bun.write(absoluteFilePath, fileData);
+		console.log('Storing file', {
+			ownerId,
+			relatedEntityId,
+			source,
+			fileName,
+			mimeType,
+			size,
+			fileExt,
+			generatedId,
+			relativePath,
+			absoluteFilePath
+		});
+
+		await Bun.write(absoluteFilePath, fileData).catch((e) => {
+			console.error('Error storing file', e);
+		});
 
 		const fileDetails: typeof fileSchema.$inferInsert = {
 			storageType: FileStorageTypeEnum.Local,
