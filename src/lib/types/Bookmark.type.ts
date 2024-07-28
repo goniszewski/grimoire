@@ -1,6 +1,7 @@
 import type { Category } from './Category.type';
 import type { Tag } from './Tag.type';
 import type { User } from './User.type';
+import type { File } from './File.type';
 
 export type Bookmark = {
 	id: number;
@@ -14,22 +15,22 @@ export type Bookmark = {
 	contentType: string | null;
 	contentPublishedDate: string | null;
 	note: string | null;
-	mainImage: string | null;
+	mainImage: File | null;
 	mainImageId: number | null;
 	mainImageUrl: string | null;
-	icon: string | null;
+	icon: File | null;
 	iconUrl: string | null;
 	importance: number | null;
 	flagged: null | Date;
 	read: null | Date;
 	archived: null | Date;
-	category?: Category;
+	category: Category;
 	tags?: Tag[];
 	owner?: User;
 	openedLast: null | Date;
 	openedTimes: number;
 	screenshotId: number | null;
-	screenshot: string | null;
+	screenshot: File | null;
 	created: Date;
 	updated: Date;
 };

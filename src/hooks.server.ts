@@ -5,48 +5,66 @@ import { lucia } from '$lib/server/auth';
 import type { Theme } from '$lib/enums/themes';
 import type { Handle } from '@sveltejs/kit';
 import type { User } from '$lib/types/User.type';
+import type { Session, User as LuciaUser } from 'lucia';
+import type { Cookies } from '@sveltejs/kit';
+
 export const handle: Handle = async ({ event, resolve }) => {
-	const sessionId = event.cookies.get(lucia.sessionCookieName);
-	if (!sessionId) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
-
+	const sessionId = event.cookies.get(lucia.sessionCookieName) ?? '';
 	const { session, user } = await lucia.validateSession(sessionId);
-	if (session && session.fresh) {
-		const sessionCookie = lucia.createSessionCookie(session.id);
 
-		event.cookies.set(sessionCookie.name, sessionCookie.value, {
-			path: '.',
-			...sessionCookie.attributes
-		});
-	}
-	if (!session) {
-		const sessionCookie = lucia.createBlankSessionCookie();
-		event.cookies.set(sessionCookie.name, sessionCookie.value, {
-			path: '.',
-			...sessionCookie.attributes
-		});
-	}
+	const { userData, theme } = await getUserDataAndTheme(session, user, event.cookies);
+
+	setEventLocals(event, userData, session);
+	setSessionCookie(event, session);
+
+	return await resolveWithTheme(event, resolve, theme);
+};
+
+async function getUserDataAndTheme(
+	session: Session | null,
+	user: LuciaUser | null,
+	cookies: Cookies
+): Promise<{ userData: User | null; theme: Theme }> {
 	let userData: User | null = null;
-	if (user?.id) userData = await getUserById(user.id);
+	let theme: Theme = 'light';
 
-	if (!userData) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
+	if (session && user?.id) {
+		userData = await getUserById(user.id);
+		theme = userData?.settings.theme || 'light';
+	} else {
+		theme = (cookies.get('theme') as Theme) || 'light';
 	}
-	const theme: Theme = userData.settings.theme || (event.cookies.get('theme') as Theme) || 'light';
 
+	return { userData, theme };
+}
+
+function setEventLocals(
+	event: { locals: Record<string, any> },
+	userData: User | null,
+	session: Session | null
+): void {
 	event.locals.user = userData;
 	event.locals.session = session;
+}
 
-	const response = await resolve(event, {
+function setSessionCookie(event: { cookies: Cookies }, session: Session | null): void {
+	const cookieOptions = {
+		path: '.',
+		...(session ? lucia.createSessionCookie(session.id) : lucia.createBlankSessionCookie())
+			.attributes
+	};
+
+	event.cookies.set(lucia.sessionCookieName, session ? session.id : '', cookieOptions);
+}
+
+async function resolveWithTheme(
+	event: Parameters<Handle>[0]['event'],
+	resolve: Parameters<Handle>[0]['resolve'],
+	theme: Theme
+): Promise<Response> {
+	return await resolve(event, {
 		transformPageChunk({ html }) {
 			return html.replace('data-theme=""', `data-theme="${themes[theme]}"`);
 		}
 	});
-
-	return response;
-};
+}

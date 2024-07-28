@@ -6,6 +6,25 @@ import { extract, extractFromHtml } from '@extractus/article-extractor';
 
 import type { Metadata } from '$lib/types/Metadata.type';
 
+const getIconUrl = (pageUrl: string, iconPath: string): string => {
+	const baseUrl = new URL(pageUrl).origin;
+	iconPath = iconPath.split('?')[0];
+
+	if (iconPath.startsWith('/')) {
+		iconPath = `${baseUrl}${iconPath.replace('//', '/')}`;
+	} else if (iconPath.startsWith('./')) {
+		iconPath = `${baseUrl}${iconPath.replace('./', '/')}`;
+	} else if (!iconPath.startsWith('http')) {
+		iconPath = `${baseUrl}/${iconPath}`;
+	}
+
+	return iconPath || '';
+};
+
+const removeExtraEmptyLines = (html: string) => html.replace(/\n\s*\n/g, '\n');
+const htmlToText = (html: string) => removeExtraEmptyLines(convert(html, { wordwrap: false }));
+const sanitizeHtml = (html: string) => sanitize(html);
+
 const articleExtractorScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
 	let articleExtractorMetadata;
 
@@ -36,85 +55,6 @@ const articleExtractorScraper = async (html: string, url: string): Promise<Parti
 	};
 };
 
-const faviconScraper = async (html: string, url: string): Promise<Partial<Metadata>> => {
-	const getFaviconElementsRegex =
-		/<link[^>]*rel=["'](?:icon|shortcut icon|apple-touch-icon-precomposed|apple-touch-icon|mask-icon|fluid-icon|manifest)["'][^>]*>/gim;
-	const getUrlRegex = /href="([^"]*)"/;
-	const baseUrl = new URL(url).origin;
-	const matchedElements = html.match(getFaviconElementsRegex);
-
-	const favicon = matchedElements?.reduce((acc, element) => {
-		if (acc) return acc;
-
-		const hrefMatch = element.match(getUrlRegex);
-		if (!hrefMatch) return '';
-
-		let faviconUrl = hrefMatch[1];
-
-		if (faviconUrl.split('?')[0]) {
-			faviconUrl = '';
-		} else if (faviconUrl.startsWith('/')) {
-			faviconUrl = `${baseUrl}${faviconUrl.replace('//', '/')}`;
-		} else if (faviconUrl.startsWith('./')) {
-			faviconUrl = `${baseUrl}${faviconUrl.replace('./', '/')}`;
-		} else if (!faviconUrl.startsWith('http')) {
-			faviconUrl = `${baseUrl}/${faviconUrl}`;
-		}
-
-		return faviconUrl;
-	}, '');
-
-	return {
-		iconUrl: favicon || ''
-	};
-};
-
-const removeExtraEmptyLines = (html: string) => html.replace(/\n\s*\n/g, '\n');
-
-const htmlToText = (html: string) => removeExtraEmptyLines(convert(html, { wordwrap: false }));
-const sanitizeHtml = (html: string) => sanitize(html);
-
-export async function getMetadata(url: string) {
-	console.log('getMetadata for', url);
-	const html = await fetch(url).then((res) => res.text());
-	const firstParagraph = html.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
-	console.log('firstParagraph', firstParagraph);
-	const articleExtractorMetadata = await articleExtractorScraper(html, url);
-	console.log('articleExtractorMetadata', articleExtractorMetadata);
-	const faviconMetadata = await faviconScraper(html, url);
-	console.log('faviconMetadata', faviconMetadata);
-	const urlMetadataMetadata = await urlMetadataScraper(html, url);
-	console.log('urlMetadataMetadata', urlMetadataMetadata);
-
-	const domain = new URL(url).hostname.replace('www.', '');
-	console.log('domain', domain);
-	const contentText = articleExtractorMetadata?.contentHtml
-		? htmlToText(articleExtractorMetadata.contentHtml)
-		: '';
-
-	console.log('contentText', contentText);
-
-	return {
-		url: urlMetadataMetadata?.url || articleExtractorMetadata?.url || '',
-		domain,
-		title: urlMetadataMetadata?.title || articleExtractorMetadata?.title || '',
-		description:
-			urlMetadataMetadata?.description ||
-			articleExtractorMetadata?.description ||
-			firstParagraph ||
-			'',
-		author: urlMetadataMetadata?.author || articleExtractorMetadata?.author || '',
-		contentText,
-		contentHtml: articleExtractorMetadata?.contentHtml || '',
-		contentType: '',
-		contentPublishedDate: urlMetadataMetadata?.contentPublishedDate || '',
-		mainImage: '',
-		mainImageUrl: urlMetadataMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
-		icon: '',
-		iconUrl: faviconMetadata?.iconUrl || ''
-	};
-}
-
 async function urlMetadataScraper(html: string, url: string): Promise<Partial<Metadata>> {
 	let urlMetadataMetadata: urlMetadata.Result;
 
@@ -131,22 +71,35 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 		urlMetadataMetadata = await urlMetadata(url);
 	}
 
+	const iconUrls = urlMetadataMetadata?.favicons?.map(
+		(favicon: { rel: string; href: string; sizes: string }) => {
+			const isPng = favicon.href.endsWith('.png');
+			const faviconSize = +favicon.sizes?.split('x')?.[0] || 0;
+			const isBestSize = faviconSize && (faviconSize <= 120 || faviconSize >= 64);
+
+			if (isPng && isBestSize) {
+				favicon.href;
+			}
+		}
+	);
+
 	return {
 		url: urlMetadataMetadata?.url || urlMetadataMetadata?.['og:url'],
 		title: urlMetadataMetadata?.title || urlMetadataMetadata?.['og:title'],
 		description: urlMetadataMetadata?.description || urlMetadataMetadata?.['og:description'],
 		author: urlMetadataMetadata?.author || urlMetadataMetadata?.['twitter:creator'],
-		mainImageUrl: urlMetadataMetadata?.image || urlMetadataMetadata?.['og:image']
+		mainImageUrl: urlMetadataMetadata?.image || urlMetadataMetadata?.['og:image'],
+		iconUrl: getIconUrl(url, urlMetadataMetadata?.favicons?.[0].href || iconUrls[0])
 	};
 }
 
-export async function getMetadataFromHtml(html: string, url: string) {
+export async function getMetadata(url: string, providedHtml?: string): Promise<Metadata> {
+	const html: string = providedHtml || (await fetch(url).then((res) => res.text()));
+
 	const urlMetadataMetadata = await urlMetadataScraper(html, url);
 	const articleExtractorMetadata = await articleExtractorScraper(html, url);
-	const faviconMetadata = await faviconScraper(html, url);
 
-	const firstParagraph = faviconMetadata.contentHtml?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
-
+	const firstParagraph = html?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
 	const domain = new URL(url).hostname.replace('www.', '');
 	const contentText = articleExtractorMetadata?.contentHtml
 		? htmlToText(articleExtractorMetadata.contentHtml) || htmlToText(html)
@@ -163,16 +116,10 @@ export async function getMetadataFromHtml(html: string, url: string) {
 			'',
 		author: urlMetadataMetadata?.author || articleExtractorMetadata?.author || '',
 		contentText,
-		contentHtml:
-			urlMetadataMetadata?.contentHtml ||
-			articleExtractorMetadata?.contentHtml ||
-			sanitizeHtml(html) ||
-			'',
+		contentHtml: articleExtractorMetadata?.contentHtml || sanitizeHtml(html) || '',
 		contentType: '',
-		contentPublishedDate: urlMetadataMetadata?.contentPublishedDate || '',
-		mainImage: '',
+		contentPublishedDate: null,
 		mainImageUrl: urlMetadataMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
-		icon: '',
-		iconUrl: urlMetadataMetadata?.iconUrl || faviconMetadata?.iconUrl || ''
+		iconUrl: urlMetadataMetadata?.iconUrl || ''
 	};
 }

@@ -1,19 +1,16 @@
 import { fileSchema } from '$lib/database/schema';
 import { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
 import { createSlug } from '$lib/utils/create-slug';
-import { file } from 'bun';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import { db } from '../database/db';
 
-import type { BunFile } from 'bun';
-
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
 export class Storage {
 	async storeFile(
-		fileData: BunFile | Blob,
+		fileData: Blob,
 		details: {
 			ownerId: number;
 			relatedEntityId?: number;
@@ -33,19 +30,6 @@ export class Storage {
 			.map(String);
 		const relativePath = path.join(...relativePathParts);
 		const absoluteFilePath = `${ROOT_DIR}/${relativePath}`;
-
-		console.log('Storing file', {
-			ownerId,
-			relatedEntityId,
-			source,
-			fileName,
-			mimeType,
-			size,
-			fileExt,
-			generatedId,
-			relativePath,
-			absoluteFilePath
-		});
 
 		await Bun.write(absoluteFilePath, fileData).catch((e) => {
 			console.error('Error storing file', e);
@@ -68,11 +52,10 @@ export class Storage {
 		const storage = new Storage();
 
 		if (url && url.length > 0) {
-			const arrayBuffer = await fetch(url).then((r) => r.arrayBuffer());
+			const blob = await fetch(url).then((r) => r.blob());
 			const fileName = `${createSlug(title)}.${url.split('.').pop()}`;
-			const imageFile = file(arrayBuffer);
 
-			const [{ id }] = await storage.storeFile(imageFile, {
+			const [{ id }] = await storage.storeFile(blob, {
 				ownerId,
 				fileName
 			});

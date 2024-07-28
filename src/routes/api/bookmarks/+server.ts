@@ -10,7 +10,7 @@ import {
 import { getTagsByUserId } from '$lib/database/repositories/Tag.repository';
 import { FileSourceEnum } from '$lib/enums/files';
 import { Storage } from '$lib/storage/storage';
-import { getMetadataFromHtml } from '$lib/utils/get-metadata';
+import { getMetadata } from '$lib/utils/get-metadata';
 import { prepareTags } from '$lib/utils/handle-tags-input';
 import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
 import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
@@ -158,7 +158,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const tags = requestBody.get('tags') ? JSON.parse(requestBody.get('tags') as string) : [];
 		const tagIds = await prepareTags(db, tags, ownerId);
 
-		const metadata = await getMetadataFromHtml(requestBody?.contentHtml || '', requestBody.url);
+		const metadata = await getMetadata(requestBody.url, requestBody.contentHtml);
 
 		const mainImageId = await storage.storeImage(
 			requestBody.mainImageUrl || metadata?.mainImageUrl,

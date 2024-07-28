@@ -9,10 +9,8 @@ import type { RequestHandler } from '@sveltejs/kit';
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
 export const GET: RequestHandler = async ({ params }) => {
-	const pathParts = params.path?.split('/');
-
-	if (!pathParts) throw error(404, 'File not found');
-	const [userId, fileId] = pathParts;
+	const [userId] = params.path?.split('/') || [];
+	if (!params.path || !userId) throw error(404, 'File not found');
 
 	try {
 		const [file] = await db
@@ -22,7 +20,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			})
 			.from(fileSchema)
 			.where(
-				and(eq(fileSchema.ownerId, parseInt(userId, 10)), eq(fileSchema.id, parseInt(fileId, 10)))
+				and(eq(fileSchema.ownerId, parseInt(userId, 10)), eq(fileSchema.relativePath, params.path))
 			);
 
 		if (!file?.relativePath) throw error(404, 'File not found');

@@ -1,10 +1,16 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-    addTagToBookmark, createBookmark, deleteBookmark, getBookmarkById, updateBookmark
+	addTagToBookmark,
+	createBookmark,
+	deleteBookmark,
+	getBookmarkById,
+	updateBookmark
 } from '$lib/database/repositories/Bookmark.repository';
 import {
-    createCategory, deleteCategory, updateCategory
+	createCategory,
+	deleteCategory,
+	updateCategory
 } from '$lib/database/repositories/Category.repository';
 import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
@@ -385,6 +391,7 @@ export const actions = {
 			await updateUserSettings(ownerId, {
 				theme
 			});
+			console.log('updated');
 
 			return {
 				success: true

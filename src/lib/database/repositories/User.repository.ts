@@ -70,7 +70,7 @@ export const updateUser = async (
 ): Promise<User> => {
 	const [user]: UserDbo[] = await db
 		.update(userSchema)
-		.set(userData)
+		.set({ ...userData, updated: new Date() })
 		.where(eq(userSchema.id, id))
 		.returning();
 
@@ -91,28 +91,15 @@ export const updateUserSettings = async (
 ): Promise<User> => {
 	const existingUserSettings = await getUserSettings(id);
 
-	const [user]: UserDbo[] = await db
-		.update(userSchema)
-		.set({
-			settings: {
-				...existingUserSettings,
-				...settings
-			}
-		})
-		.where(eq(userSchema.id, id))
-		.returning();
-
-	return serializeUser(user);
+	const updatedUserSettings = {
+		...existingUserSettings,
+		...settings
+	};
+	return await updateUser(id, { settings: updatedUserSettings });
 };
 
 export const updateUserPassword = async (id: number, passwordHash: string): Promise<User> => {
-	const [user]: UserDbo[] = await db
-		.update(userSchema)
-		.set({ passwordHash })
-		.where(eq(userSchema.id, id))
-		.returning();
-
-	return serializeUser(user);
+	return await updateUser(id, { passwordHash });
 };
 
 export const deleteUser = async (id: number): Promise<void> => {
@@ -166,11 +153,5 @@ export const isUserDisabled = async (id: number): Promise<boolean> => {
 	return disabled ? true : false;
 };
 export const disableUser = async (id: number): Promise<User> => {
-	const [user]: UserDbo[] = await db
-		.update(userSchema)
-		.set({ disabled: new Date() })
-		.where(eq(userSchema.id, id))
-		.returning();
-
-	return serializeUser(user);
+	return await updateUser(id, { disabled: new Date() });
 };

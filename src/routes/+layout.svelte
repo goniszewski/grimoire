@@ -52,7 +52,7 @@
 				</div>
 			</div>
 			<div class="flex-none gap-2 md:mr-6">
-				<ThemeSwitch />
+				<ThemeSwitch {user} />
 				{#if !user}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
@@ -125,7 +125,7 @@
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
 									{#each $page.data.tags as tag (tag.id)}
-										{#if tag.bookmarks.length > 0}
+										{#if tag.bookmarks?.length > 0}
 											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
 												>#{tag.name}</a
 											>
