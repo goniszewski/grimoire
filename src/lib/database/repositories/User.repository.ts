@@ -23,10 +23,10 @@ export const getUserById = async (
 	id: number,
 	relations: UserRelations[] = allUserRelations
 ): Promise<User | null> => {
-	const user = await db.query.userSchema.findFirst({
+	const user = (await db.query.userSchema.findFirst({
 		where: eq(userSchema.id, id),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as UserDbo | undefined;
 
 	return user ? serializeUser(user) : null;
 };
@@ -35,10 +35,10 @@ export const getUserByUsername = async (
 	username: string,
 	relations: UserRelations[] = allUserRelations
 ): Promise<User | null> => {
-	const user = await db.query.userSchema.findFirst({
+	const user = (await db.query.userSchema.findFirst({
 		where: eq(userSchema.username, username),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as UserDbo | undefined;
 
 	return user ? serializeUser(user) : null;
 };
@@ -47,10 +47,10 @@ export const getUserByEmail = async (
 	email: string,
 	relations: UserRelations[] = allUserRelations
 ): Promise<User | null> => {
-	const user = await db.query.userSchema.findFirst({
+	const user = (await db.query.userSchema.findFirst({
 		where: eq(userSchema.email, email),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as UserDbo | undefined;
 
 	return user ? serializeUser(user) : null;
 };
@@ -128,7 +128,10 @@ export const fetchUserCategoryAndTags = async (
 		}
 	});
 
-	return { categories: categories.map(serializeCategory), tags: tags.map(serializeTag) };
+	return {
+		categories: categories.filter((category) => category === null).map(serializeCategory),
+		tags: tags.map(serializeTag)
+	};
 };
 
 export const getUsersForAdminPanel = async () => {

@@ -1,11 +1,7 @@
+import type { tagSchema, userSchema } from '$lib/database/schema';
 import type { UserDbo } from './UserDbo.type';
+import type { InferSelectModel } from 'drizzle-orm';
 
-export type TagDbo = {
-	id: number;
-	name: string;
-	slug: string;
-	ownerId: number;
-	owner?: UserDbo | null;
-	created: Date;
-	updated: Date;
+export type TagDbo = InferSelectModel<typeof tagSchema> & {
+	owner?: InferSelectModel<typeof userSchema>;
 };

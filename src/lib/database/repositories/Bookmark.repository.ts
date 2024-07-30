@@ -10,12 +10,12 @@ import type { BookmarkDbo } from '$lib/types/dbo/BookmarkDbo.type';
 import type { Tag } from '$lib/types/Tag.type';
 
 export enum BookmarkRelations {
-	CATEGORY = 'category',
+	TAGS__TAG = 'tags.tag',
+	// CATEGORY = 'category',
 	CATEGORY__PARENT = 'category.parent',
-	TAGS = 'bookmarksToTags',
-	OWNER = 'owner',
-	MAIN_IMAGE = 'mainImage',
 	ICON = 'icon',
+	MAIN_IMAGE = 'mainImage',
+	OWNER = 'owner',
 	SCREENSHOT = 'screenshot'
 }
 const allBookmarkRelations: BookmarkRelations[] = Object.values(BookmarkRelations);
@@ -32,10 +32,11 @@ export const getBookmarkById = async (
 	ownerId: number,
 	relations: BookmarkRelations[] = allBookmarkRelations
 ): Promise<Bookmark | null> => {
-	const bookmark = await db.query.bookmarkSchema.findFirst({
+	const bookmark = (await db.query.bookmarkSchema.findFirst({
 		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as BookmarkDbo;
+	bookmark?.tags;
 
 	return bookmark ? serializeBookmark(bookmark) : null;
 };
@@ -45,13 +46,13 @@ export const getBookmarksByIds = async (
 	ownerId: number,
 	relations: BookmarkRelations[] = allBookmarkRelations
 ): Promise<Bookmark[]> => {
-	const bookmarks = await db.query.bookmarkSchema.findMany({
+	const bookmarks = (await db.query.bookmarkSchema.findMany({
 		where: and(
 			eq(bookmarkSchema.ownerId, ownerId),
 			or(...ids.map((id) => eq(bookmarkSchema.id, id)))
 		),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as BookmarkDbo[];
 
 	return bookmarks.map(serializeBookmark);
 };
@@ -66,7 +67,7 @@ export const getBookmarksByUserId = async (
 	},
 	relations: BookmarkRelations[] = allBookmarkRelations
 ): Promise<Bookmark[]> => {
-	const bookmarks = await db.query.bookmarkSchema.findMany({
+	const bookmarks = (await db.query.bookmarkSchema.findMany({
 		limit: options?.limit,
 		offset: options?.page && options?.limit && (options.page - 1) * options.limit,
 		// orderBy: desc(bookmarkSchema.created),
@@ -77,7 +78,7 @@ export const getBookmarksByUserId = async (
 				: desc(orderKeys[options.orderBy])),
 		where: eq(bookmarkSchema.ownerId, userId),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as BookmarkDbo[];
 
 	return bookmarks.map(serializeBookmark);
 };
@@ -88,13 +89,13 @@ export const getBookmarkByUrl = async (
 	relations: BookmarkRelations[] = allBookmarkRelations
 ): Promise<Bookmark | null> => {
 	const urlObj = new URL(url);
-	const bookmark = await db.query.bookmarkSchema.findFirst({
+	const bookmark = (await db.query.bookmarkSchema.findFirst({
 		where: and(
 			like(bookmarkSchema.url, `%${urlObj.host}${urlObj.pathname}%`),
 			eq(bookmarkSchema.ownerId, ownerId)
 		),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as BookmarkDbo;
 
 	return bookmark ? serializeBookmark(bookmark) : null;
 };
@@ -103,10 +104,10 @@ export const createBookmark = async (
 	ownerId: number,
 	bookmarkData: Omit<typeof bookmarkSchema.$inferInsert, 'ownerId'>
 ): Promise<Bookmark> => {
-	const [bookmark]: BookmarkDbo[] = await db
+	const [bookmark] = (await db
 		.insert(bookmarkSchema)
 		.values({ ...bookmarkData, ownerId })
-		.returning();
+		.returning()) as BookmarkDbo[];
 
 	return serializeBookmark(bookmark);
 };
@@ -116,11 +117,11 @@ export const updateBookmark = async (
 	ownerId: number,
 	bookmarkData: Partial<typeof bookmarkSchema.$inferInsert>
 ): Promise<Bookmark> => {
-	const [bookmark]: BookmarkDbo[] = await db
+	const [bookmark] = (await db
 		.update(bookmarkSchema)
 		.set(bookmarkData)
 		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)))
-		.returning();
+		.returning()) as BookmarkDbo[];
 
 	return serializeBookmark(bookmark);
 };
@@ -141,10 +142,10 @@ export const fetchBookmarkCountByUserId = async (userId: number): Promise<number
 };
 
 export const fetchBookmarkTags = async (id: number, ownerId: number): Promise<{ tags: Tag[] }> => {
-	const [{ bookmarksToTags }] = await db.query.bookmarkSchema.findMany({
+	const [{ tags }] = await db.query.bookmarkSchema.findMany({
 		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)),
 		with: {
-			bookmarksToTags: {
+			tags: {
 				with: {
 					tag: true
 				}
@@ -152,9 +153,9 @@ export const fetchBookmarkTags = async (id: number, ownerId: number): Promise<{ 
 		}
 	});
 
-	const tags: Tag[] = bookmarksToTags.map((bookmarksToTag) => bookmarksToTag.tag);
+	const bookmarkTags: Tag[] = tags.map((bookmarksToTag) => bookmarksToTag.tag);
 
-	return { tags };
+	return { tags: bookmarkTags };
 };
 
 export const addTagToBookmark = async (

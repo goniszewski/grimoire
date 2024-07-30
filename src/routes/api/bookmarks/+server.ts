@@ -69,7 +69,7 @@ const getBookmarksByFilter = async (filter: string, ownerId: number) => {
 			{ id: true }
 		),
 		with: {
-			bookmarksToTags: {
+			tags: {
 				with: {
 					tag: true
 				}
@@ -77,9 +77,9 @@ const getBookmarksByFilter = async (filter: string, ownerId: number) => {
 		}
 	});
 
-	const serializedRecords = records.map(({ bookmarksToTags, ...record }) => ({
+	const serializedRecords = records.map(({ tags, ...record }) => ({
 		...record,
-		tags: bookmarksToTags.map(({ tag }) => tag.name)
+		tags: tags.map(({ tag }) => tag.name)
 	}));
 
 	const searchEngine = initializeSearch(records);

@@ -4,7 +4,6 @@
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { getFileUrl } from '$lib/utils/get-file-url';
 
 	export let closeModal: () => void;
 	let contentTab = writable<'text' | 'html'>('html');
@@ -17,7 +16,7 @@
 
 	const bookmarkTagsInput: Writable<
 		| {
-				value: string;
+				value: number;
 				label: string;
 				created?: boolean;
 		  }[]
@@ -28,14 +27,14 @@
 	let screenshot: string;
 
 	$: {
-		if ($bookmark.mainImage?.relativePath) {
-			mainImage = getFileUrl($bookmark.mainImage.relativePath);
+		if ($bookmark.mainImage) {
+			mainImage = $bookmark.mainImage;
 		} else if ($bookmark.mainImageUrl) {
 			mainImage = $bookmark.mainImageUrl;
 		}
 
-		if ($bookmark.screenshot?.relativePath ) {
-			screenshot = getFileUrl($bookmark.screenshot.relativePath);
+		if ($bookmark.screenshot) {
+			screenshot = $bookmark.screenshot;
 		}
 	}
 
@@ -59,7 +58,7 @@
 					<div class="flex min-w-fit flex-1 flex-col gap-2">
 						<div class="flex items-center gap-2">
 							{#if $bookmark.icon || $bookmark.iconUrl}
-								<img src={getFileUrl($bookmark.icon?.relativePath) || $bookmark.iconUrl} alt="Icon" class="h-8 w-8" />
+								<img src={$bookmark.icon || $bookmark.iconUrl} alt="Icon" class="h-8 w-8" />
 							{/if}
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
 						</div>
@@ -70,12 +69,12 @@
 								{#if mainImage}
 									<div id="main-image" class="carousel-item w-full">
 										<a
-											href={getFileUrl($bookmark.mainImage?.relativePath) || $bookmark.mainImageUrl}
+											href={$bookmark.mainImage || $bookmark.mainImageUrl}
 											target="_blank"
 											class="flex w-full"
 										>
 											<img
-												src={getFileUrl($bookmark.mainImage?.relativePath) || $bookmark.mainImageUrl}
+												src={$bookmark.mainImage || $bookmark.mainImageUrl}
 												class="w-full justify-self-center object-scale-down"
 												alt="Main"
 											/>
@@ -84,9 +83,9 @@
 								{/if}
 								{#if screenshot}
 									<div id="screenshot" class="carousel-item w-full">
-										<a href={getFileUrl($bookmark.screenshot?.relativePath)} target="_blank" class="flex w-full">
+										<a href={$bookmark.screenshot} target="_blank" class="flex w-full">
 											<img
-												src={getFileUrl($bookmark.screenshot?.relativePath)}
+												src={$bookmark.screenshot}
 												class="w-full justify-self-center object-scale-down"
 												alt="Screenshot"
 											/>
@@ -95,7 +94,7 @@
 								{/if}
 							</div>
 						{/if}
-						{#if (($bookmark.mainImage ) || $bookmark.mainImage) && $bookmark.screenshot }
+						{#if ($bookmark.mainImage || $bookmark.mainImage) && $bookmark.screenshot}
 							<div class="flex w-full justify-center gap-2 py-2">
 								<a href="#main-image" class="btn btn-xs">Main image</a>
 								<a href="#screenshot" class="btn btn-xs">Screenshot</a>

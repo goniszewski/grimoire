@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c5ccc4d3-ab32-4d61-8a49-bfffa05d93f9",
+  "id": "1f736ab3-a59a-4ec3-af25-6bf0a7dc0f55",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {
@@ -182,7 +182,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(strftime('%s', 'now'))"
         },
         "updated": {
           "name": "updated",
@@ -449,7 +449,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(strftime('%s', 'now'))"
         },
         "updated": {
           "name": "updated",
@@ -573,7 +573,7 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(strftime('%s', 'now'))"
         },
         "updated": {
           "name": "updated",
@@ -691,7 +691,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(strftime('%s', 'now'))"
         },
         "updated": {
           "name": "updated",
@@ -819,7 +819,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(CURRENT_TIMESTAMP)"
+          "default": "(strftime('%s', 'now'))"
         },
         "updated": {
           "name": "updated",

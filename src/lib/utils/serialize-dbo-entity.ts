@@ -32,14 +32,24 @@ export const serializeCategory = (categoryData: CategoryDbo): Category => {
 	};
 };
 
-export const serializeBookmark = (bookmark: BookmarkDbo): Bookmark => {
+export const serializeBookmark = ({ tags, ...bookmark }: BookmarkDbo): Bookmark => {
 	const icon = getFileUrl(bookmark.icon?.relativePath);
 	const mainImage = getFileUrl(bookmark.mainImage?.relativePath);
 	const screenshot = getFileUrl(bookmark.screenshot?.relativePath);
 
-	const category = bookmark.category ? serializeCategory(bookmark.category) : undefined;
+	const category = serializeCategory(bookmark.category!);
 	const owner = bookmark.owner ? serializeUser(bookmark.owner) : undefined;
-	const tags = bookmark.tags ? bookmark.tags.map(serializeTag) : undefined;
+
+	const serializedTags = tags?.map((tag) => serializeTag(tag.tag!));
+
+	console.log({
+		icon,
+		mainImage,
+		screenshot,
+		category,
+		owner,
+		tags: serializedTags
+	});
 
 	return {
 		...bookmark,
@@ -48,7 +58,7 @@ export const serializeBookmark = (bookmark: BookmarkDbo): Bookmark => {
 		screenshot,
 		category,
 		owner,
-		tags
+		tags: serializedTags
 	};
 };
 

@@ -22,7 +22,7 @@
 
 	const bookmarkTagsInput: Writable<
 		| {
-				value: string;
+				value: number;
 				label: string;
 				created?: boolean;
 		  }[]
@@ -30,6 +30,7 @@
 	> = writable(null);
 
 	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
+	console.log('$bookmark.tags', $bookmark.tags);
 
 	const bookmarkTags = writable<
 		{
@@ -161,12 +162,12 @@
 		<div class="w-full">
 			<div class="form-control flex w-full gap-4">
 				<input type="text" class="hidden" name="domain" value={$bookmark.domain} />
-				<input type="text" class="hidden" name="content_html" value={$bookmark.content_html} />
+				<input type="text" class="hidden" name="content_html" value={$bookmark.contentHtml} />
 				<input
 					type="text"
 					class="hidden"
 					name="content_published_date"
-					value={$bookmark.content_published_date}
+					value={$bookmark.contentPublishedDate}
 				/>
 
 				{#if error}
@@ -296,18 +297,14 @@
 								type="text"
 								class="input input-bordered w-9/12"
 								name="icon_url"
-								value={$bookmark.icon_url}
+								value={$bookmark.iconUrl}
 								on:input={(event) => {
 									// @ts-ignore-next-line
 									$bookmark.icon_url = event.target.value;
 								}}
 							/>
-							{#if $bookmark.icon_url}
-								<img
-									class="m-auto h-8 w-8 md:ml-8"
-									src={$bookmark.icon_url}
-									alt={$bookmark.title}
-								/>
+							{#if $bookmark.iconUrl}
+								<img class="m-auto h-8 w-8 md:ml-8" src={$bookmark.iconUrl} alt={$bookmark.title} />
 							{/if}
 						</div>
 					</div>
@@ -325,10 +322,10 @@
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
-						{#if $bookmark.main_image_url}
+						{#if $bookmark.mainImageUrl}
 							<img
 								class="m-auto max-h-64 rounded-md"
-								src={$bookmark.main_image_url}
+								src={$bookmark.mainImageUrl}
 								alt={$bookmark.title}
 							/>
 						{/if}
@@ -336,7 +333,7 @@
 							type="text"
 							class="input input-bordered w-full"
 							name="main_image_url"
-							value={$bookmark.main_image_url}
+							value={$bookmark.mainImageUrl}
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.main_image_url = event.target.value;
@@ -348,7 +345,7 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="content_text"
-							value={$bookmark.content_text}
+							value={$bookmark.contentText}
 							placeholder="Extracted if possible..."
 							on:input={(event) => {
 								// @ts-ignore-next-line

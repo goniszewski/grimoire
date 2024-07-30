@@ -23,7 +23,7 @@ CREATE TABLE `bookmark` (
 	`category_id` integer NOT NULL,
 	`opened_last` integer,
 	`opened_times` integer DEFAULT 0 NOT NULL,
-	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updated` integer NOT NULL,
 	FOREIGN KEY (`main_image_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`icon_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
@@ -52,7 +52,7 @@ CREATE TABLE `category` (
 	`public` integer,
 	`icon` text,
 	`initial` integer DEFAULT false NOT NULL,
-	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updated` integer NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
@@ -67,7 +67,7 @@ CREATE TABLE `file` (
 	`mime-type` text NOT NULL,
 	`source` text NOT NULL,
 	`owner_id` integer NOT NULL,
-	`created` integer DEFAULT (CURRENT_TIMESTAMP),
+	`created` integer DEFAULT (strftime('%s', 'now')),
 	`updated` integer,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
@@ -84,7 +84,7 @@ CREATE TABLE `tag` (
 	`name` text NOT NULL,
 	`slug` text NOT NULL,
 	`owner_id` integer NOT NULL,
-	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updated` integer NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
@@ -100,7 +100,7 @@ CREATE TABLE `user` (
 	`initial` integer DEFAULT false NOT NULL,
 	`disabled` integer,
 	`is_admin` integer DEFAULT false NOT NULL,
-	`created` integer DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	`created` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updated` integer NOT NULL
 );
 --> statement-breakpoint

@@ -1,16 +1,10 @@
+import type { fileSchema, userSchema } from '$lib/database/schema';
 import type { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
 import type { UserDbo } from './UserDbo.type';
+import type { InferSelectModel } from 'drizzle-orm';
 
-export type FileDbo = {
-	id: number;
-	fileName: string;
-	storageType: FileStorageTypeEnum;
-	relativePath: string;
-	size: number | null;
-	mimeType: string;
-	source: FileSourceEnum;
-	ownerId: number;
-	owner?: UserDbo | null;
-	created: Date | null;
-	updated: Date | null;
+export type FileDbo = InferSelectModel<typeof fileSchema> & {
+	owner?: InferSelectModel<typeof userSchema>;
+	source?: FileSourceEnum;
+	storageType?: FileStorageTypeEnum;
 };

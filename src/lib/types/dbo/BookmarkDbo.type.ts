@@ -1,37 +1,21 @@
-import type { CategoryDbo } from './CategoryDbo.type';
-import type { TagDbo } from './TagDbo.type';
-import type { UserDbo } from './UserDbo.type';
-import type { FileDbo } from './FileDbo.type';
+import type { InferSelectModel } from 'drizzle-orm';
+import type {
+	bookmarkSchema,
+	bookmarksToTagsSchema,
+	categorySchema,
+	fileSchema,
+	tagSchema,
+	userSchema
+} from '$lib/database/schema';
 
-export type BookmarkDbo = {
-	id: number;
-	url: string;
-	domain: string;
-	title: string;
-	description: string | null;
-	author: string | null;
-	contentText: string | null;
-	contentHtml: string | null;
-	contentType: string | null;
-	contentPublishedDate: string | null;
-	note: string | null;
-	mainImage?: FileDbo | null;
-	mainImageId: number | null;
-	mainImageUrl: string | null;
-	icon?: FileDbo | null;
-	iconId: number | null;
-	iconUrl: string | null;
-	importance: number | null;
-	flagged: null | Date;
-	read: null | Date;
-	archived: null | Date;
-	category?: CategoryDbo | null;
-	tags?: TagDbo[];
-	owner?: UserDbo;
-	openedLast: null | Date;
-	openedTimes: number;
-	screenshotId: number | null;
-	screenshot?: FileDbo | null;
-	created: Date;
-	updated: Date;
+export type BookmarkDbo = InferSelectModel<typeof bookmarkSchema> & {
+	tags?: (InferSelectModel<typeof bookmarksToTagsSchema> & {
+		tag: InferSelectModel<typeof tagSchema>;
+		bookmark: InferSelectModel<typeof bookmarkSchema>;
+	})[];
+	owner?: InferSelectModel<typeof userSchema>;
+	category?: InferSelectModel<typeof categorySchema>;
+	mainImage?: InferSelectModel<typeof fileSchema>;
+	icon?: InferSelectModel<typeof fileSchema>;
+	screenshot?: InferSelectModel<typeof fileSchema>;
 };

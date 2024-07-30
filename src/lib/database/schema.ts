@@ -181,7 +181,6 @@ export const bookmarksToTagsSchema = sqliteTable(
 
 // relations
 export const bookmarksRelations = relations(bookmarkSchema, ({ many, one }) => ({
-	bookmarksToTags: many(bookmarksToTagsSchema),
 	mainImage: one(fileSchema, {
 		fields: [bookmarkSchema.mainImageId],
 		references: [fileSchema.id],
@@ -206,16 +205,17 @@ export const bookmarksRelations = relations(bookmarkSchema, ({ many, one }) => (
 		fields: [bookmarkSchema.ownerId],
 		references: [userSchema.id],
 		relationName: 'userBookmarks'
-	})
+	}),
+	tags: many(bookmarksToTagsSchema)
 }));
 
 export const tagRelations = relations(tagSchema, ({ many, one }) => ({
-	bookmarksToTags: many(bookmarksToTagsSchema),
 	owner: one(userSchema, {
 		fields: [tagSchema.ownerId],
 		references: [userSchema.id],
 		relationName: 'userTags'
-	})
+	}),
+	bookmarks: many(bookmarksToTagsSchema)
 }));
 
 export const bookmarkToTagsRelations = relations(bookmarksToTagsSchema, ({ one }) => ({

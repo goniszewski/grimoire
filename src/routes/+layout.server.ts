@@ -1,7 +1,8 @@
 import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/database/db';
 import {
-    fetchBookmarkCountByUserId, getBookmarksByUserId
+	fetchBookmarkCountByUserId,
+	getBookmarksByUserId
 } from '$lib/database/repositories/Bookmark.repository';
 import { fetchUserCategoryAndTags, getUserCount } from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';
@@ -38,15 +39,17 @@ export const load = (async ({ locals, url }) => {
 		orderBy: 'created',
 		orderDirection: 'desc'
 	});
+	console.log({ bookmark: bookmarks[0].tags });
 	const bookmarksCount = await fetchBookmarkCountByUserId(locals.user.id);
 
 	const bookmarksForIndexQuery = await db.query.bookmarkSchema.findMany({
 		with: {
-			bookmarksToTags: {
+			tags: {
 				with: {
 					tag: true
 				}
-			}
+			},
+			category: true
 		},
 		columns: {
 			id: true,
@@ -58,11 +61,12 @@ export const load = (async ({ locals, url }) => {
 	});
 
 	const bookmarksForIndex = bookmarksForIndexQuery.map((b) => {
-		const { bookmarksToTags, ...bookmark } = b;
+		const { tags, ...bookmark } = b;
 
 		return {
 			...bookmark,
-			tags: bookmarksToTags.map((bt) => bt.tag)
+			tags: tags.map((bt) => bt.tag),
+			category: b.category
 		};
 	}) as BookmarkForIndex[];
 

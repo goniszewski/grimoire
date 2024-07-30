@@ -18,10 +18,10 @@ export const getTagById = async (
 	ownerId: number,
 	relations: TagRelations[] = allTagRelations
 ): Promise<Tag | null> => {
-	const tag = await db.query.tagSchema.findFirst({
+	const tag = (await db.query.tagSchema.findFirst({
 		where: and(eq(tagSchema.id, id), eq(tagSchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as TagDbo | undefined;
 
 	return tag ? serializeTag(tag) : null;
 };
@@ -42,7 +42,7 @@ export const getTagsByUserId = async (
 	},
 	relations: TagRelations[] = allTagRelations
 ): Promise<Tag[]> => {
-	const tags = await db.query.tagSchema.findMany({
+	const tags = (await db.query.tagSchema.findMany({
 		limit: options?.limit,
 		offset: options?.page && options?.limit && (options.page - 1) * options.limit,
 		orderBy:
@@ -52,7 +52,7 @@ export const getTagsByUserId = async (
 				: desc(orderKeys[options.orderBy])),
 		where: eq(tagSchema.ownerId, userId),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as TagDbo[];
 
 	return tags.map(serializeTag);
 };
@@ -62,10 +62,10 @@ export const getTagByName = async (
 	ownerId: number,
 	relations: TagRelations[] = allTagRelations
 ): Promise<Tag | null> => {
-	const tag = await db.query.tagSchema.findFirst({
+	const tag = (await db.query.tagSchema.findFirst({
 		where: and(eq(tagSchema.name, name), eq(tagSchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as TagDbo;
 
 	return tag ? serializeTag(tag) : null;
 };

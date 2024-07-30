@@ -25,6 +25,7 @@ export const actions = {
 		}
 
 		const data = await request.formData();
+		// @ts-ignore
 		const updatedUserInfo = Object.fromEntries(data.entries()) as UpdatedUserInfo;
 
 		if (

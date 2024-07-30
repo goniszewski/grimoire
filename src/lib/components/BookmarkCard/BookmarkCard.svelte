@@ -7,7 +7,6 @@
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import { getFileUrl } from '$lib/utils/get-file-url';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -54,37 +53,30 @@
 			<div class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100">
 				{#if bookmark.mainImage && bookmark.screenshot}
 					<img
-						src={getFileUrl(bookmark.mainImage?.relativePath) || bookmark.mainImageUrl}
+						src={bookmark.mainImage || bookmark.mainImageUrl}
 						on:mouseover={(e) => {
 							if (e.target instanceof HTMLImageElement) {
-								e.target.src =
-									getFileUrl(bookmark.screenshot?.relativePath) || '/static/no-image.png';
+								e.target.src = bookmark.screenshot || '/static/no-image.png';
 							}
 						}}
 						on:mouseleave={(e) => {
 							if (e.target instanceof HTMLImageElement) {
 								e.target.src =
-									getFileUrl(bookmark.mainImage?.relativePath) ||
-									bookmark.mainImageUrl ||
-									'/static/no-image.png';
+									bookmark.mainImage || bookmark.mainImageUrl || '/static/no-image.png';
 							}
 						}}
 						on:focus={(e) => {
 							if (e.target instanceof HTMLImageElement) {
-								e.target.src =
-									getFileUrl(bookmark.screenshot?.relativePath) || '/static/no-image.png';
+								e.target.src = bookmark.screenshot || '/static/no-image.png';
 							}
 						}}
 						class="h-full w-full object-cover transition duration-300 ease-in-out"
 						alt="Main"
 					/>
 				{:else if bookmark.mainImageId || bookmark.mainImageUrl}
-					<img
-						src={getFileUrl(bookmark.mainImage?.relativePath) || bookmark.mainImageUrl}
-						alt="Main"
-					/>
+					<img src={bookmark.mainImage || bookmark.mainImageUrl} alt="Main" />
 				{:else if bookmark.screenshot}
-					<img src={getFileUrl(bookmark.screenshot?.relativePath)} alt="Screenshot" />
+					<img src={bookmark.screenshot} alt="Screenshot" />
 				{:else}
 					<IconPhotoX class="m-auto my-16" />
 				{/if}
@@ -235,7 +227,7 @@
 					<div class="flex w-full items-baseline gap-2">
 						{#if bookmark.icon || bookmark.iconUrl}
 							<img
-								src={getFileUrl(bookmark.icon?.relativePath) || bookmark.iconUrl}
+								src={bookmark.icon || bookmark.iconUrl}
 								alt={`${bookmark.domain}'s favicon`}
 								class="avatar w-4"
 							/>

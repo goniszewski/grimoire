@@ -1,7 +1,6 @@
 import type { Category } from './Category.type';
 import type { Tag } from './Tag.type';
 import type { User } from './User.type';
-import type { File } from './File.type';
 
 export type Bookmark = {
 	id: number;
@@ -15,10 +14,10 @@ export type Bookmark = {
 	contentType: string | null;
 	contentPublishedDate: string | null;
 	note: string | null;
-	mainImage: File | null;
+	mainImage: string | null;
 	mainImageId: number | null;
 	mainImageUrl: string | null;
-	icon: File | null;
+	icon: string | null;
 	iconUrl: string | null;
 	importance: number | null;
 	flagged: null | Date;
@@ -30,11 +29,12 @@ export type Bookmark = {
 	openedLast: null | Date;
 	openedTimes: number;
 	screenshotId: number | null;
-	screenshot: File | null;
+	screenshot: string | null;
 	created: Date;
 	updated: Date;
 };
 
-export type BookmarkForIndex = Omit<Bookmark, 'mainImage' | 'icon' | 'screenshot'> & {
+export type BookmarkForIndex = Omit<Bookmark, 'mainImage' | 'icon' | 'screenshot' | 'category'> & {
 	tags: Tag[];
+	category: Omit<Category, 'parent' | 'owner'>;
 };

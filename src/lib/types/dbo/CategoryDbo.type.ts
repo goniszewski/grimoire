@@ -1,19 +1,8 @@
+import type { categorySchema, userSchema } from '$lib/database/schema';
 import type { UserDbo } from './UserDbo.type';
+import type { InferSelectModel } from 'drizzle-orm';
 
-export type CategoryDbo = {
-	id: number;
-	name: string;
-	slug: string;
-	icon: string | null;
-	description: string | null;
-	color: string | null;
-	ownerId: number;
-	owner?: UserDbo | null;
-	parentId: number | null;
-	parent?: CategoryDbo | null;
-	archived: Date | null;
-	public: Date | null;
-	initial: boolean;
-	created: Date;
-	updated: Date;
+export type CategoryDbo = InferSelectModel<typeof categorySchema> & {
+	owner?: InferSelectModel<typeof userSchema>;
+	parent?: InferSelectModel<typeof categorySchema>;
 };

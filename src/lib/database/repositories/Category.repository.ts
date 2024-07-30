@@ -19,10 +19,10 @@ export const getCategoryById = async (
 	ownerId: number,
 	relations: CategoryRelations[] = allCategoryRelations
 ): Promise<Category | null> => {
-	const category = await db.query.categorySchema.findFirst({
+	const category = (await db.query.categorySchema.findFirst({
 		where: and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as CategoryDbo | undefined;
 
 	return category ? serializeCategory(category) : null;
 };
@@ -43,7 +43,7 @@ export const getCategoriesByUserId = async (
 	},
 	relations: CategoryRelations[] = allCategoryRelations
 ): Promise<Category[]> => {
-	const categories = await db.query.categorySchema.findMany({
+	const categories = (await db.query.categorySchema.findMany({
 		limit: options?.limit,
 		offset: options?.page && options?.limit && (options.page - 1) * options.limit,
 		orderBy:
@@ -53,7 +53,7 @@ export const getCategoriesByUserId = async (
 				: desc(orderKeys[options.orderBy])),
 		where: eq(categorySchema.ownerId, userId),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as CategoryDbo[];
 
 	return categories.map(serializeCategory);
 };
@@ -100,10 +100,10 @@ export const getCategoryCountForUser = async (userId: number): Promise<number> =
 };
 
 export const getInitialCategory = async (userId: number): Promise<Category | null> => {
-	const category = await db.query.categorySchema.findFirst({
+	const category = (await db.query.categorySchema.findFirst({
 		where: and(eq(categorySchema.ownerId, userId), eq(categorySchema.initial, true)),
 		with: mapRelationsToWithStatements([CategoryRelations.OWNER])
-	});
+	})) as CategoryDbo | undefined;
 
 	return category ? serializeCategory(category) : null;
 };
