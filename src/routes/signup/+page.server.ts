@@ -1,5 +1,7 @@
+import { createCategory } from '$lib/database/repositories/Category.repository';
 import { createUser, getUserByUsername } from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
+import { createSlug } from '$lib/utils/create-slug';
 import Joi from 'joi';
 
 import { hash } from '@node-rs/argon2';
@@ -64,6 +66,13 @@ export const actions: Actions = {
 			name: value.name,
 			email: value.email,
 			passwordHash
+		});
+
+		await createCategory(user.id, {
+			name: 'Uncategorized',
+			slug: createSlug('uncategorized'),
+			color: '#ccc',
+			initial: true
 		});
 
 		const session = await lucia.createSession(user.id, {});

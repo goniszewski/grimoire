@@ -19,10 +19,10 @@ export const userSchema = sqliteTable(
 		disabled: integer('disabled', { mode: 'timestamp' }),
 		isAdmin: integer('is_admin', { mode: 'boolean' }).default(false).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(strftime('%s', 'now'))`)
+			.default(sql`(unixepoch())`)
 			.notNull(),
 		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(strftime('%s', 'now'))`)
+			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
 	},
 	(table) => ({
@@ -48,8 +48,8 @@ export const fileSchema = sqliteTable(
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id, { onDelete: 'cascade' }),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(strftime('%s', 'now'))`)
+		created: integer('created', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		ownerIdIdx: index('filet_owner_id_index').on(table.ownerId)
@@ -73,10 +73,10 @@ export const categorySchema = sqliteTable(
 		icon: text('icon'),
 		initial: integer('initial', { mode: 'boolean' }).default(false).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(strftime('%s', 'now'))`)
+			.default(sql`(unixepoch())`)
 			.notNull(),
 		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(strftime('%s', 'now'))`)
+			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
 	},
 	(table) => ({
@@ -95,10 +95,10 @@ export const tagSchema = sqliteTable(
 			.notNull()
 			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(strftime('%s', 'now'))`)
+			.default(sql`(unixepoch())`)
 			.notNull(),
 		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(strftime('%s', 'now'))`)
+			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
 	},
 	(table) => ({
@@ -139,10 +139,10 @@ export const bookmarkSchema = sqliteTable(
 		openedLast: integer('opened_last', { mode: 'timestamp' }),
 		openedTimes: integer('opened_times').default(0).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(strftime('%s', 'now'))`)
+			.default(sql`(unixepoch())`)
 			.notNull(),
 		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(strftime('%s', 'now'))`)
+			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
 	},
 	(table) => ({

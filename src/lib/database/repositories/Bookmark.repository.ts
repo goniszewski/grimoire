@@ -100,6 +100,22 @@ export const getBookmarkByUrl = async (
 	return bookmark ? serializeBookmark(bookmark) : null;
 };
 
+export const getBookmarksByCategoryIds = async (
+	ids: number[],
+	ownerId: number,
+	relations: BookmarkRelations[] = allBookmarkRelations
+): Promise<Bookmark[]> => {
+	const bookmarks = (await db.query.bookmarkSchema.findMany({
+		where: and(
+			eq(bookmarkSchema.ownerId, ownerId),
+			or(...ids.map((id) => eq(bookmarkSchema.categoryId, id)))
+		),
+		with: mapRelationsToWithStatements(relations)
+	})) as BookmarkDbo[];
+
+	return bookmarks.map(serializeBookmark);
+};
+
 export const createBookmark = async (
 	ownerId: number,
 	bookmarkData: Omit<typeof bookmarkSchema.$inferInsert, 'ownerId'>
@@ -117,6 +133,8 @@ export const updateBookmark = async (
 	ownerId: number,
 	bookmarkData: Partial<typeof bookmarkSchema.$inferInsert>
 ): Promise<Bookmark> => {
+	const { contentHtml, contentText, ...logData } = bookmarkData;
+	console.log('updateBookmark', logData);
 	const [bookmark] = (await db
 		.update(bookmarkSchema)
 		.set(bookmarkData)

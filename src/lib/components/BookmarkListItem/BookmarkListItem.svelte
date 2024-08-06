@@ -6,7 +6,6 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { getFileUrl } from '$lib/utils/get-file-url';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -45,8 +44,7 @@
 	<div class="flex">
 		<div class="flex items-center justify-between gap-1">
 			<div class="flex items-center gap-1">
-				{#if bookmark.icon || bookmark.iconUrl}
-					<img src={getFileUrl(bookmark.icon?.relativePath) || bookmark.iconUrl}
+				{#if bookmark.icon || bookmark.iconUrl}<img src={bookmark.icon || bookmark.iconUrl}
 						alt={`${bookmark.domain}'s favicon`}
 						class="avatar h-4 w-4 rounded-sm"
 					/>

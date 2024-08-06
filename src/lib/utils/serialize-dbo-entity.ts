@@ -11,7 +11,7 @@ import type { File } from '$lib/types/File.type';
 import { getFileUrl } from './get-file-url';
 
 export const serializeUser = (userData: UserDbo): User => {
-	const user = userData;
+	const { passwordHash, ...user } = userData;
 	return user;
 };
 
@@ -41,15 +41,6 @@ export const serializeBookmark = ({ tags, ...bookmark }: BookmarkDbo): Bookmark 
 	const owner = bookmark.owner ? serializeUser(bookmark.owner) : undefined;
 
 	const serializedTags = tags?.map((tag) => serializeTag(tag.tag!));
-
-	console.log({
-		icon,
-		mainImage,
-		screenshot,
-		category,
-		owner,
-		tags: serializedTags
-	});
 
 	return {
 		...bookmark,

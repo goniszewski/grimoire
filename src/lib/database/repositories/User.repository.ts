@@ -11,6 +11,8 @@ import type { UserDbo } from '$lib/types/dbo/UserDbo.type';
 import type { UserSettings } from '$lib/types/UserSettings.type';
 import type { Category } from '$lib/types/Category.type';
 import type { Tag } from '$lib/types/Tag.type';
+import type { CategoryDbo } from '$lib/types/dbo/CategoryDbo.type';
+import type { TagDbo } from '$lib/types/dbo/TagDbo.type';
 enum UserRelations {
 	FILES = 'files',
 	BOOKMARKS = 'bookmarks',
@@ -53,6 +55,14 @@ export const getUserByEmail = async (
 	})) as UserDbo | undefined;
 
 	return user ? serializeUser(user) : null;
+};
+
+export const getUserWithoutSerialization = async (username: string): Promise<UserDbo | null> => {
+	const user = await db.query.userSchema.findFirst({
+		where: eq(userSchema.username, username)
+	});
+
+	return user || null;
 };
 
 export const createUser = async (userData: typeof userSchema.$inferInsert): Promise<User> => {
@@ -115,7 +125,7 @@ export const getUserCount = async (): Promise<number> => {
 export const fetchUserCategoryAndTags = async (
 	id: number
 ): Promise<{ categories: Category[]; tags: Tag[] }> => {
-	const [{ categories, tags }] = await db.query.userSchema.findMany({
+	const result = (await db.query.userSchema.findFirst({
 		where: eq(userSchema.id, id),
 		with: {
 			categories: {
@@ -124,13 +134,22 @@ export const fetchUserCategoryAndTags = async (
 					parent: true
 				}
 			},
-			tags: { orderBy: asc(tagSchema.name) }
+			tags: {
+				orderBy: asc(tagSchema.name),
+				with: {
+					bookmarks: true
+				}
+			}
 		}
-	});
+	})) as { categories: CategoryDbo[]; tags: TagDbo[] } | undefined;
+
+	if (!result) {
+		return { categories: [], tags: [] };
+	}
 
 	return {
-		categories: categories.filter((category) => category === null).map(serializeCategory),
-		tags: tags.map(serializeTag)
+		categories: result.categories.filter(Boolean).map(serializeCategory),
+		tags: result.tags.map(serializeTag)
 	};
 };
 

@@ -1,16 +1,10 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-	addTagToBookmark,
-	createBookmark,
-	deleteBookmark,
-	getBookmarkById,
-	updateBookmark
+    addTagToBookmark, createBookmark, deleteBookmark, getBookmarkById, updateBookmark
 } from '$lib/database/repositories/Bookmark.repository';
 import {
-	createCategory,
-	deleteCategory,
-	updateCategory
+    createCategory, deleteCategory, updateCategory
 } from '$lib/database/repositories/Category.repository';
 import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
@@ -148,6 +142,7 @@ export const actions = {
 		const flagged = data.get('flagged') === 'on' ? new Date() : null;
 		const category = JSON.parse(data.get('category') as string);
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
+		const read = data.get('read') === 'on' ? new Date() : null;
 
 		const tagIds = await prepareTags(db, tags, ownerId);
 
@@ -172,6 +167,7 @@ export const actions = {
 			owner: ownerId,
 			title,
 			url,
+			read,
 			...(mainImageId ? { mainImageId } : {}),
 			...(iconId ? { iconId } : {})
 		};
@@ -391,7 +387,7 @@ export const actions = {
 			await updateUserSettings(ownerId, {
 				theme
 			});
-			console.log('updated');
+			console.debug('User theme updated');
 
 			return {
 				success: true

@@ -64,7 +64,7 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 		const bookmark = await createBookmark(ownerId, {
 			categoryId: defaultCategory?.id,
 			contentHtml: metadata.contentHtml,
-			contentPublishedDate: metadata.contentPublishedDate.toString(),
+			contentPublishedDate: metadata.contentPublishedDate?.toString(),
 			contentText: metadata.contentText,
 			contentType: metadata.contentType,
 			description: metadata.description,

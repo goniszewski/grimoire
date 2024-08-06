@@ -6,7 +6,7 @@ import joi from 'joi';
 import { json } from '@sveltejs/kit';
 
 import type { RequestHandler } from './$types';
-import type { AddTagRequestBody, UpdateTagRequestBody } from '$lib/types/api/Tags.type';
+import type { AddTagRequestBody } from '$lib/types/api/Tags.type';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	const ownerId = locals.user?.id;
@@ -64,7 +64,7 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const requestBody = (await request.json()) as UpdateTagRequestBody;
+	const requestBody = await request.json();
 
 	const validationSchema = joi.object({
 		id: joi.number().required(),

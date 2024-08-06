@@ -20,6 +20,11 @@
 
 	$: $bookmark = { ...$editBookmarkStore };
 
+	const categoryItems = $page.data.categories.map((c) => ({
+		value: c.id,
+		label: c.name
+	}));
+
 	const bookmarkTagsInput: Writable<
 		| {
 				value: number;
@@ -30,7 +35,6 @@
 	> = writable(null);
 
 	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: t.id, label: t.name })) || null;
-	console.log('$bookmark.tags', $bookmark.tags);
 
 	const bookmarkTags = writable<
 		{
@@ -61,7 +65,7 @@
 		e.detail[lastItemIndex] = {
 			...e.detail[lastItemIndex],
 			label: e.detail[lastItemIndex].label.replace(/#/g, ''),
-			value: e.detail[lastItemIndex].value.replace(/#/g, '')
+			value: e.detail[lastItemIndex].value
 		};
 
 		return e;
@@ -197,12 +201,9 @@
 									<Select
 										name="category"
 										searchable
-										items={$page.data.categories.map((c) => ({
-											value: c.id,
-											label: c.name
-										}))}
-										value={$bookmark.category?.id}
-										class="this-select input input-bordered w-full"
+										items={categoryItems}
+										placeholder={$bookmark.category?.name || 'Select category'}
+										class="this-select input input-bordered w-full md:min-w-28"
 									/>
 								{/if}
 							</div>

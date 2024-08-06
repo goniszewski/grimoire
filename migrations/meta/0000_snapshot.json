@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1f736ab3-a59a-4ec3-af25-6bf0a7dc0f55",
+  "id": "78d8b6cb-5b7d-4f3b-befc-93e837859b66",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bookmark": {
@@ -182,7 +182,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
+          "default": "(unixepoch())"
         },
         "updated": {
           "name": "updated",
@@ -449,7 +449,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
+          "default": "(unixepoch())"
         },
         "updated": {
           "name": "updated",
@@ -573,7 +573,7 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
+          "default": "(unixepoch())"
         },
         "updated": {
           "name": "updated",
@@ -691,7 +691,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
+          "default": "(unixepoch())"
         },
         "updated": {
           "name": "updated",
@@ -819,7 +819,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
+          "default": "(unixepoch())"
         },
         "updated": {
           "name": "updated",

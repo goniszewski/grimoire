@@ -1,5 +1,5 @@
 import {
-    BookmarkRelations, getBookmarksByIds
+    BookmarkRelations, getBookmarksByCategoryIds
 } from '$lib/database/repositories/Bookmark.repository';
 
 import type { Category } from '$lib/types/Category.type';
@@ -32,9 +32,9 @@ export const load: LayoutServerLoad = async ({ locals, url, parent }) => {
 
 	const nestedCategoryIds = getIdsOfCategoryAndChildren(categories, categorySlug);
 
-	const relatedBookmarks = await getBookmarksByIds(nestedCategoryIds, locals.user!.id, [
-		BookmarkRelations.CATEGORY,
-		BookmarkRelations.TAGS
+	const relatedBookmarks = await getBookmarksByCategoryIds(nestedCategoryIds, locals.user!.id, [
+		BookmarkRelations.CATEGORY__PARENT,
+		BookmarkRelations.TAGS__TAG
 	]);
 
 	return {

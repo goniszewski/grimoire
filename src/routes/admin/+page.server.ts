@@ -89,8 +89,6 @@ export const actions = {
 		const disable = data.get('disable') === 'true';
 		const isDisabled = await isUserDisabled(userId);
 
-		console.log({ isDisabled, disable });
-
 		if (isDisabled && disable) {
 			return {
 				status: 200,

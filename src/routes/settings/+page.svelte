@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { defaultConfig, listAvailableModels } from '$lib/integrations/ollama';
-	import { user } from '$lib/pb';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
 	import { showToast } from '$lib/utils/show-toast';
@@ -33,7 +33,7 @@
 
 <div class="flex w-full flex-col gap-8">
 	<h1 class="text-2xl font-bold">User settings</h1>
-	{#if !$user || !$user.isValid}
+	{#if !$page.data.user || $page.data.user.disabled}
 		<p>Not logged in.</p>
 	{:else}
 		<form

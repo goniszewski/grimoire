@@ -7,9 +7,9 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ request }) => {
 	const { url } = await request.json();
 
-	console.log({ url });
+	console.debug('Fetching metadata for URL', url);
 	const metadata = await getMetadata(url);
-	console.log('Fetched metadata', {
+	console.debug('Fetched metadata', {
 		...metadata,
 		contentHtml: metadata.contentHtml.slice(0, 100),
 		contentText: metadata.contentText.slice(0, 100)

@@ -71,17 +71,17 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 		urlMetadataMetadata = await urlMetadata(url);
 	}
 
-	const iconUrls = urlMetadataMetadata?.favicons?.map(
-		(favicon: { rel: string; href: string; sizes: string }) => {
+	const iconUrls = urlMetadataMetadata?.favicons
+		?.map((favicon: { rel: string; href: string; sizes: string }) => {
 			const isPng = favicon.href.endsWith('.png');
 			const faviconSize = +favicon.sizes?.split('x')?.[0] || 0;
 			const isBestSize = faviconSize && (faviconSize <= 120 || faviconSize >= 64);
 
 			if (isPng && isBestSize) {
-				favicon.href;
+				return favicon.href;
 			}
-		}
-	);
+		})
+		.filter(Boolean);
 
 	return {
 		url: urlMetadataMetadata?.url || urlMetadataMetadata?.['og:url'],
@@ -89,7 +89,7 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 		description: urlMetadataMetadata?.description || urlMetadataMetadata?.['og:description'],
 		author: urlMetadataMetadata?.author || urlMetadataMetadata?.['twitter:creator'],
 		mainImageUrl: urlMetadataMetadata?.image || urlMetadataMetadata?.['og:image'],
-		iconUrl: getIconUrl(url, urlMetadataMetadata?.favicons?.[0].href || iconUrls[0])
+		iconUrl: getIconUrl(url, iconUrls[0] || urlMetadataMetadata?.favicons?.[0].href)
 	};
 }
 

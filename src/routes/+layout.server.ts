@@ -1,8 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/database/db';
 import {
-	fetchBookmarkCountByUserId,
-	getBookmarksByUserId
+    fetchBookmarkCountByUserId, getBookmarksByUserId
 } from '$lib/database/repositories/Bookmark.repository';
 import { fetchUserCategoryAndTags, getUserCount } from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';
@@ -39,7 +38,6 @@ export const load = (async ({ locals, url }) => {
 		orderBy: 'created',
 		orderDirection: 'desc'
 	});
-	console.log({ bookmark: bookmarks[0].tags });
 	const bookmarksCount = await fetchBookmarkCountByUserId(locals.user.id);
 
 	const bookmarksForIndexQuery = await db.query.bookmarkSchema.findMany({

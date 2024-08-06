@@ -7,7 +7,6 @@ export type User = {
 	name: string;
 	settings: UserSettings;
 	username: string;
-	passwordHash: string;
 	verified: boolean;
 	disabled: Date | null;
 	isAdmin: boolean;

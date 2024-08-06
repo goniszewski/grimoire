@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/stores';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
 	import { showToast } from '$lib/utils/show-toast';
 	import { IconLock, IconLockOpen, IconTrash } from '@tabler/icons-svelte';
