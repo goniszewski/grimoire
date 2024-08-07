@@ -4,10 +4,11 @@ module.exports = {
 		'eslint:recommended',
 		'plugin:@typescript-eslint/recommended',
 		'plugin:svelte/recommended',
+		'plugin:drizzle/recommended',
 		'prettier'
 	],
 	parser: '@typescript-eslint/parser',
-	plugins: ['@typescript-eslint', 'perfectionist'],
+	plugins: ['@typescript-eslint', 'perfectionist', 'drizzle'],
 	rules: {
 		'perfectionist/sort-objects': [
 			'error',

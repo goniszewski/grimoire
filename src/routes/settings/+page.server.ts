@@ -1,8 +1,7 @@
 import type { Actions } from '../$types';
-import { pb } from '$lib/pb';
 
 import type { UserSettings } from '$lib/types/UserSettings.type';
-import type { User } from '$lib/types/User.type';
+import { updateUserSettings } from '$lib/database/repositories/User.repository';
 
 export const actions = {
 	updateUserSettings: async ({ locals, request }) => {
@@ -17,26 +16,23 @@ export const actions = {
 
 		const data = await request.formData();
 		const settings = JSON.parse(data.get('settings') as string) as UserSettings;
-		const currentSettings = await pb
-			.collection('users')
-			.getOne(owner)
-			.then((res) => res.settings);
 
-		const updatedUser = await pb
-			.collection('users')
-			.update<User | null>(owner, {
-				settings: {
-					...currentSettings,
-					...settings
-				}
-			})
+		const updatedSettings = await updateUserSettings(owner, settings)
+			.then(({ settings }) => settings)
 			.catch((err) => {
 				console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
 				return null;
 			});
 
+		if (!updatedSettings) {
+			return {
+				success: false,
+				error: 'Error updating user settings'
+			};
+		}
+
 		return {
-			updatedSettings: updatedUser?.settings
+			updatedSettings
 		};
 	}
 } satisfies Actions;

@@ -20,9 +20,14 @@
 
 	$: $bookmark = { ...$editBookmarkStore };
 
+	const categoryItems = $page.data.categories.map((c) => ({
+		value: c.id,
+		label: c.name
+	}));
+
 	const bookmarkTagsInput: Writable<
 		| {
-				value: string;
+				value: number;
 				label: string;
 				created?: boolean;
 		  }[]
@@ -60,7 +65,7 @@
 		e.detail[lastItemIndex] = {
 			...e.detail[lastItemIndex],
 			label: e.detail[lastItemIndex].label.replace(/#/g, ''),
-			value: e.detail[lastItemIndex].value.replace(/#/g, '')
+			value: e.detail[lastItemIndex].value
 		};
 
 		return e;
@@ -161,12 +166,12 @@
 		<div class="w-full">
 			<div class="form-control flex w-full gap-4">
 				<input type="text" class="hidden" name="domain" value={$bookmark.domain} />
-				<input type="text" class="hidden" name="content_html" value={$bookmark.content_html} />
+				<input type="text" class="hidden" name="content_html" value={$bookmark.contentHtml} />
 				<input
 					type="text"
 					class="hidden"
 					name="content_published_date"
-					value={$bookmark.content_published_date}
+					value={$bookmark.contentPublishedDate}
 				/>
 
 				{#if error}
@@ -196,12 +201,9 @@
 									<Select
 										name="category"
 										searchable
-										items={$page.data.categories.map((c) => ({
-											value: c.id,
-											label: c.name
-										}))}
-										value={$bookmark.category?.id}
-										class="this-select input input-bordered w-full"
+										items={categoryItems}
+										placeholder={$bookmark.category?.name || 'Select category'}
+										class="this-select input input-bordered w-full md:min-w-28"
 									/>
 								{/if}
 							</div>
@@ -296,18 +298,14 @@
 								type="text"
 								class="input input-bordered w-9/12"
 								name="icon_url"
-								value={$bookmark.icon_url}
+								value={$bookmark.iconUrl}
 								on:input={(event) => {
 									// @ts-ignore-next-line
 									$bookmark.icon_url = event.target.value;
 								}}
 							/>
-							{#if $bookmark.icon_url}
-								<img
-									class="m-auto h-8 w-8 md:ml-8"
-									src={$bookmark.icon_url}
-									alt={$bookmark.title}
-								/>
+							{#if $bookmark.iconUrl}
+								<img class="m-auto h-8 w-8 md:ml-8" src={$bookmark.iconUrl} alt={$bookmark.title} />
 							{/if}
 						</div>
 					</div>
@@ -325,10 +323,10 @@
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
-						{#if $bookmark.main_image_url}
+						{#if $bookmark.mainImageUrl}
 							<img
 								class="m-auto max-h-64 rounded-md"
-								src={$bookmark.main_image_url}
+								src={$bookmark.mainImageUrl}
 								alt={$bookmark.title}
 							/>
 						{/if}
@@ -336,7 +334,7 @@
 							type="text"
 							class="input input-bordered w-full"
 							name="main_image_url"
-							value={$bookmark.main_image_url}
+							value={$bookmark.mainImageUrl}
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.main_image_url = event.target.value;
@@ -348,7 +346,7 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="content_text"
-							value={$bookmark.content_text}
+							value={$bookmark.contentText}
 							placeholder="Extracted if possible..."
 							on:input={(event) => {
 								// @ts-ignore-next-line

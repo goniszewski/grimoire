@@ -1,52 +1,36 @@
-import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb';
-import { createSlug } from '$lib/utils/create-slug';
+import {
+    createTag, deleteTag, getTagByName, getTagsByUserId, updateTag
+} from '$lib/database/repositories/Tag.repository';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
-import type { Tag } from '$lib/types/Tag.type';
+import type { RequestHandler } from './$types';
+import type { AddTagRequestBody } from '$lib/types/api/Tags.type';
 
-export async function GET({ locals, request }) {
-	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
+export const GET: RequestHandler = async ({ locals }) => {
+	const ownerId = locals.user?.id;
 
-	if (error) {
-		return error;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	try {
-		const records = await pb.collection('tags').getFullList<Tag>({
-			filter: `owner="${owner}"`
-		});
-
-		const tags = removePocketbaseFields(records);
-
-		return json(
-			{ tags },
-			{
-				status: 200
-			}
-		);
+		const tags = await getTagsByUserId(ownerId);
+		return json({ tags }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function POST({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const POST: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const requestBody = await request.json();
+	const requestBody = (await request.json()) as AddTagRequestBody;
 
 	const validationSchema = joi.object({
 		name: joi.string().required()
@@ -55,70 +39,72 @@ export async function POST({ locals, request }) {
 	const { error } = validationSchema.validate(requestBody);
 
 	if (error) {
-		return json(
-			{
-				success: false,
-				error: error.message
-			},
-			{
-				status: 400
-			}
-		);
+		return json({ success: false, error: error.message }, { status: 400 });
 	}
 
 	try {
-		const existingTag = await pb.collection('tags').getFullList<Tag>({
-			filter: `owner="${owner}" && name="${requestBody.name}"`,
-			fields: 'id'
-		});
+		const existingTag = await getTagByName(requestBody.name, ownerId);
 
-		if (existingTag[0]?.id) {
-			return json(
-				{
-					success: false,
-					error: 'Tag with this name already exists'
-				},
-				{
-					status: 403
-				}
-			);
+		if (existingTag) {
+			return json({ success: false, error: 'Tag with this name already exists' }, { status: 403 });
 		}
 
-		const record = await pb.collection('tags').create<Tag>({
-			name: requestBody.name,
-			slug: createSlug(requestBody.name),
-			owner
-		});
+		const tag = await createTag(ownerId, requestBody);
 
-		const tag = removePocketbaseFields(record);
-
-		if (!tag.id) {
-			return json(
-				{
-					success: false,
-					error: 'Tag creation failed'
-				},
-				{
-					status: 500
-				}
-			);
-		}
-
-		return json(
-			{ tag },
-			{
-				status: 201
-			}
-		);
+		return json({ tag }, { status: 201 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
+
+export const PATCH: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
+
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
+	}
+
+	const requestBody = await request.json();
+
+	const validationSchema = joi.object({
+		id: joi.number().required(),
+		name: joi.string().optional()
+	});
+
+	const { error } = validationSchema.validate(requestBody);
+
+	if (error) {
+		return json({ success: false, error: error.message }, { status: 400 });
+	}
+
+	const { id, ...updatedFields } = requestBody;
+
+	try {
+		const tag = await updateTag(id, ownerId, updatedFields);
+		return json({ tag }, { status: 200 });
+	} catch (error: any) {
+		return json({ success: false, error: error?.message }, { status: 500 });
+	}
+};
+
+export const DELETE: RequestHandler = async ({ locals, url }) => {
+	const ownerId = locals.user?.id;
+
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
+	}
+
+	try {
+		const id = parseInt(url.searchParams.get('id') || '', 10);
+
+		if (!id) {
+			return json({ success: false, error: 'Tag ID is required' }, { status: 400 });
+		}
+
+		await deleteTag(id, ownerId);
+
+		return json({ success: true }, { status: 200 });
+	} catch (error: any) {
+		return json({ success: false, error: error?.message }, { status: 404 });
+	}
+};

@@ -1,4 +1,4 @@
-export const urlDataToBlobConverter = (urlData: string): Blob => {
+export const urlDataToBlobConverter = (urlData: string) => {
 	const splittedData = urlData.split(',');
 	const byteCharacters = atob(splittedData[1]);
 	const mimeString = splittedData[0].split(':')[1].split(';')[0];

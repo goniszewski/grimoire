@@ -4,46 +4,7 @@ export type AdminData = {
 	users: UserOverview[];
 	bookmarksTotalCount: number;
 	backups: Backup[];
-	s3Test: boolean;
 	settings: Settings;
-};
-
-export type PbSettings = {
-	meta: Meta;
-	logs: Logs;
-	smtp: SMTP;
-	s3: S3;
-	backups: Backups;
-	adminAuthToken: Token;
-	adminPasswordResetToken: Token;
-	adminFileToken: Token;
-	recordAuthToken: Token;
-	recordPasswordResetToken: Token;
-	recordEmailChangeToken: Token;
-	recordVerificationToken: Token;
-	recordFileToken: Token;
-	emailAuth: EmailAuth;
-	googleAuth: AuthProvider;
-	facebookAuth: AuthProvider;
-	githubAuth: AuthProvider;
-	gitlabAuth: AuthProvider;
-	discordAuth: AuthProvider;
-	twitterAuth: AuthProvider;
-	microsoftAuth: AuthProvider;
-	spotifyAuth: AuthProvider;
-	kakaoAuth: AuthProvider;
-	twitchAuth: AuthProvider;
-	stravaAuth: AuthProvider;
-	giteeAuth: AuthProvider;
-	livechatAuth: AuthProvider;
-	giteaAuth: AuthProvider;
-	oidcAuth: AuthProvider;
-	oidc2Auth: AuthProvider;
-	oidc3Auth: AuthProvider;
-	appleAuth: AuthProvider;
-	instagramAuth: AuthProvider;
-	vkAuth: AuthProvider;
-	yandexAuth: AuthProvider;
 };
 
 export type SystemSettings = {
@@ -59,7 +20,7 @@ export type SystemSettings = {
 	};
 };
 
-export type Settings = PbSettings & SystemSettings;
+export type Settings = SystemSettings;
 
 export type Backup = {
 	key: string;
@@ -153,7 +114,13 @@ export type SMTP = {
 // 	tagsCount?: number;
 // };
 
-export type UserOverview = User & {
+export type UserOverview = {
+	id: number;
+	created: Date;
+	username: string;
+	email: string;
+	disabled: Date | null;
+} & {
 	bookmarksCount?: number;
 	categoriesCount?: number;
 	tagsCount?: number;

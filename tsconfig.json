@@ -1,11 +1,12 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
+	"types": ["@types/bun"],
 	"compilerOptions": {
 		"lib": ["ESNext"],
 		"module": "esnext",
 		"target": "esnext",
 		// "bun-types" is the important part
-		"types": ["bun-types"],
+		"types": ["@types/bun"],
 		// "moduleResolution": "nodenext",
 		"allowJs": true,
 		"checkJs": true,

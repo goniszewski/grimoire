@@ -6,7 +6,7 @@
 	import { page } from '$app/stores';
 	import { env } from '$env/dynamic/public';
 	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import { user } from '$lib/pb';
+	import { defaultUserSettings } from '$lib/config';
 	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { searchEngine, searchedValue } from '$lib/stores/search.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
@@ -74,7 +74,7 @@
 	let bookmarksViewForm: HTMLFormElement;
 </script>
 
-{#if $user.isValid && $user.model}
+{#if $page.data.user?.id}
 	<div class="m-4 ml-auto flex w-full flex-col justify-center sm:flex-row">
 		<form
 			class="flex w-full flex-1 flex-wrap items-center pr-5"
@@ -83,7 +83,7 @@
 			action="/settings/?/updateUserSettings"
 			use:enhance={({ formData }) => {
 				$userSettingsStore = {
-					...($user.model?.settings || {}),
+					...($page.data.user?.settings || defaultUserSettings),
 					bookmarksView: formData.get('bookmarksView') === 'on' ? 'list' : 'grid',
 					// @ts-ignore
 					bookmarksSortedBy: JSON.parse(formData.get('bookmarksSortedBy') || '{}')?.value,

@@ -18,7 +18,7 @@
 					style={`background-color: ${category?.color || '#a0a0a0'};`}
 				/>
 			{:else}
-				<Icon name={category.icon} size={16} color={category?.color} />
+				<Icon name={category.icon} size={16} color={category?.color || '#a0a0a0'} />
 			{/if}
 			<a href={`/categories/${category.slug}`} class="link m-1 hover:text-primary"
 				>{category.name}</a
@@ -27,7 +27,11 @@
 
 		{#if category.children}
 			{#each category.children as child (child.id)}
-				<CategoryTreeItem children={category.children} {...child} />
+				<CategoryTreeItem
+					children={category.children}
+					{...child}
+					color={child.color || undefined}
+				/>
 			{/each}
 		{/if}
 	</div>

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { env } from '$env/dynamic/public';
 	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
 	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
 	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
@@ -10,38 +9,16 @@
 	import Footer from '$lib/components/Footer/Footer.svelte';
 	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
 	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { checkPocketbaseConnection, user } from '$lib/pb';
 	import { searchedValue } from '$lib/stores/search.store';
 	import type { Category } from '$lib/types/Category.type';
 	import { buildCategoryTree } from '$lib/utils/build-category-tree';
-	import { ToastNode, showToast } from '$lib/utils/show-toast';
+	import { ToastNode } from '$lib/utils/show-toast';
 	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { onDestroy, onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import '../app.css';
 
-	let checkPbConnectionInterval: NodeJS.Timeout;
-	let isPocketbaseAvailable: boolean;
-
-	onMount(async () => {
-		$user.loadFromCookie(document.cookie);
-
-		isPocketbaseAvailable = await checkPocketbaseConnection();
-
-		checkPbConnectionInterval = setInterval(async () => {
-			isPocketbaseAvailable = await checkPocketbaseConnection();
-
-			if (!isPocketbaseAvailable) {
-				showToast.error('Could not connect to Pocketbase. Is it running?');
-			}
-		}, 10_000);
-	});
-
-	onDestroy(() => {
-		clearInterval(checkPbConnectionInterval);
-	});
-
 	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
+	const user = $page.data.user;
 
 	$: {
 		const categories = $page.data.categories;
@@ -51,16 +28,6 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	{#if isPocketbaseAvailable === false}
-		<div class="flex items-center justify-center">
-			<div class="alert alert-error fixed z-50 mt-16 max-w-fit opacity-90">
-				<p>
-					Could not connect to <strong>Pocketbase</strong> on {env.PUBLIC_POCKETBASE_URL}. Is it
-					running? 🧙
-				</p>
-			</div>
-		</div>
-	{/if}
 	<head>
 		<title>Grimoire</title>
 	</head>
@@ -85,30 +52,21 @@
 				</div>
 			</div>
 			<div class="flex-none gap-2 md:mr-6">
-				<ThemeSwitch />
-				{#if !$user.isValid}
+				<ThemeSwitch {user} />
+				{#if !user}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
 					</ul>
-				{:else if $user.isValid && $user.isAdmin}
-					<form
-						method="POST"
-						action="/logout"
-						use:enhance={() => {
-							return async ({ result }) => {
-								$user.clear();
-								await applyAction(result);
-							};
-						}}
-					>
+				{:else if user && user.isAdmin}
+					<form method="POST" action="/logout" use:enhance>
 						<button class="btn btn-outline btn-error btn-sm w-28">Log out admin</button>
 					</form>
 				{:else}
 					<div class="dropdown dropdown-end z-10">
 						<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
 							<div class="w-10 rounded-full bg-neutral text-neutral-content">
-								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
+								<span> {user.name[0] || user.username[0]} </span>
 							</div>
 						</label>
 						<ul
@@ -122,16 +80,7 @@
 								</a>
 							</li>
 							<li><a href="/settings">Settings</a></li>
-							<form
-								method="POST"
-								action="/logout"
-								use:enhance={() => {
-									return async ({ result }) => {
-										$user.clear();
-										await applyAction(result);
-									};
-								}}
-							>
+							<form method="POST" action="/logout" use:enhance>
 								<button class="btn btn-outline btn-error btn-sm w-24">Log out</button>
 							</form>
 						</ul>
@@ -140,7 +89,7 @@
 			</div>
 		</div>
 		<div class="z-2 mb-20 flex min-w-full flex-1 sm:mb-0">
-			{#if user && !$user.isAdmin}
+			{#if user}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 					<div class="justify-top drawer-content m-2 flex flex-1 flex-col items-center sm:m-8">
@@ -176,7 +125,7 @@
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
 									{#each $page.data.tags as tag (tag.id)}
-										{#if tag.bookmarks.length > 0}
+										{#if tag.bookmarks?.length > 0}
 											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
 												>#{tag.name}</a
 											>
