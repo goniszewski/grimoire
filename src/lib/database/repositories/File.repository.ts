@@ -18,10 +18,10 @@ export const getFileById = async (
 	ownerId: number,
 	relations: FileRelations[] = allFileRelations
 ): Promise<File | null> => {
-	const file = await db.query.fileSchema.findFirst({
+	const file = (await db.query.fileSchema.findFirst({
 		where: and(eq(fileSchema.id, id), eq(fileSchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
-	});
+	})) as FileDbo;
 
 	return file ? serializeFile(file) : null;
 };
@@ -54,7 +54,7 @@ export const getFilesByUserId = async (
 		with: mapRelationsToWithStatements(relations)
 	});
 
-	return files.map(serializeFile);
+	return files.map((file) => serializeFile(file as FileDbo));
 };
 
 export const createFile = async (fileData: typeof fileSchema.$inferInsert): Promise<File> => {
@@ -70,7 +70,7 @@ export const updateFile = async (
 ): Promise<File> => {
 	const [file]: FileDbo[] = await db
 		.update(fileSchema)
-		.set(fileData)
+		.set({ ...fileData, updated: new Date() })
 		.where(and(eq(fileSchema.id, id), eq(fileSchema.ownerId, ownerId)))
 		.returning();
 

@@ -93,7 +93,7 @@ export const updateTag = async (
 ): Promise<Tag> => {
 	const [tag]: TagDbo[] = await db
 		.update(tagSchema)
-		.set(tagData)
+		.set({ ...tagData, updated: new Date() })
 		.where(and(eq(tagSchema.id, id), eq(tagSchema.ownerId, ownerId)))
 		.returning();
 

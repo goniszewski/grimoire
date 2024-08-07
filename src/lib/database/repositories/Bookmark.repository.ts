@@ -133,11 +133,10 @@ export const updateBookmark = async (
 	ownerId: number,
 	bookmarkData: Partial<typeof bookmarkSchema.$inferInsert>
 ): Promise<Bookmark> => {
-	const { contentHtml, contentText, ...logData } = bookmarkData;
-	console.log('updateBookmark', logData);
+	console.log('updated', bookmarkData.updated);
 	const [bookmark] = (await db
 		.update(bookmarkSchema)
-		.set(bookmarkData)
+		.set({ ...bookmarkData, updated: new Date() })
 		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)))
 		.returning()) as BookmarkDbo[];
 

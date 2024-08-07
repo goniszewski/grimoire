@@ -23,7 +23,7 @@ export type Bookmark = {
 	flagged: null | Date;
 	read: null | Date;
 	archived: null | Date;
-	category: Category;
+	category?: Category;
 	tags?: Tag[];
 	owner?: User;
 	openedLast: null | Date;

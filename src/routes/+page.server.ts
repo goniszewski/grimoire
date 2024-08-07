@@ -1,10 +1,16 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-    addTagToBookmark, createBookmark, deleteBookmark, getBookmarkById, updateBookmark
+	addTagToBookmark,
+	createBookmark,
+	deleteBookmark,
+	getBookmarkById,
+	updateBookmark
 } from '$lib/database/repositories/Bookmark.repository';
 import {
-    createCategory, deleteCategory, updateCategory
+	createCategory,
+	deleteCategory,
+	updateCategory
 } from '$lib/database/repositories/Category.repository';
 import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
@@ -124,6 +130,7 @@ export const actions = {
 		}
 
 		const data = await request.formData();
+		console.log('Got data');
 
 		const id = parseInt(data.get('id') as string, 10);
 		const url = data.get('url') as string;
@@ -140,14 +147,16 @@ export const actions = {
 		const note = data.get('note') as string;
 		const importance = parseInt((data.get('importance') || '0') as string);
 		const flagged = data.get('flagged') === 'on' ? new Date() : null;
-		const category = JSON.parse(data.get('category') as string);
+		const category = data.get('category') ? JSON.parse(data.get('category') as string) : null;
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 		const read = data.get('read') === 'on' ? new Date() : null;
 
 		const tagIds = await prepareTags(db, tags, ownerId);
+		console.log('Prepared tags');
 
 		const mainImageId = await storage.storeImage(mainImageUrl, title, ownerId);
 		const iconId = await storage.storeImage(iconUrl, title, ownerId);
+		console.log('Stored images');
 
 		const bookmarkData = {
 			author,
@@ -164,17 +173,19 @@ export const actions = {
 			importance,
 			mainImageUrl,
 			note,
-			owner: ownerId,
 			title,
 			url,
 			read,
 			...(mainImageId ? { mainImageId } : {}),
 			...(iconId ? { iconId } : {})
 		};
+		console.log('Prepared bookmark data');
 
 		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
+		console.log('Updated bookmark');
 
 		await Promise.all(tagIds.map((tagId) => addTagToBookmark(bookmark.id, ownerId, tagId)));
+		console.log('Added tags to bookmark');
 
 		return {
 			bookmark,

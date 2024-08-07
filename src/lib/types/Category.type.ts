@@ -8,8 +8,8 @@ export type Category = {
 	description: string | null;
 	color: string | null;
 	ownerId: number;
-	owner: User | null;
-	parent: Category | null;
+	owner?: User;
+	parent?: Category | null;
 	archived: Date | null;
 	public: Date | null;
 	initial: boolean;

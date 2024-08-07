@@ -24,7 +24,7 @@ CREATE TABLE `bookmark` (
 	`opened_last` integer,
 	`opened_times` integer DEFAULT 0 NOT NULL,
 	`created` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated` integer NOT NULL,
+	`updated` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`main_image_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`icon_id`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`screenshotId`) REFERENCES `file`(`id`) ON UPDATE no action ON DELETE no action,
@@ -53,7 +53,7 @@ CREATE TABLE `category` (
 	`icon` text,
 	`initial` integer DEFAULT false NOT NULL,
 	`created` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated` integer NOT NULL,
+	`updated` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -67,8 +67,8 @@ CREATE TABLE `file` (
 	`mime-type` text NOT NULL,
 	`source` text NOT NULL,
 	`owner_id` integer NOT NULL,
-	`created` integer DEFAULT (unixepoch()),
-	`updated` integer,
+	`created` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -85,7 +85,7 @@ CREATE TABLE `tag` (
 	`slug` text NOT NULL,
 	`owner_id` integer NOT NULL,
 	`created` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated` integer NOT NULL,
+	`updated` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -101,7 +101,7 @@ CREATE TABLE `user` (
 	`disabled` integer,
 	`is_admin` integer DEFAULT false NOT NULL,
 	`created` integer DEFAULT (unixepoch()) NOT NULL,
-	`updated` integer NOT NULL
+	`updated` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX `bookmarkt_url_owner_index` ON `bookmark` (`url`,`owner_id`);--> statement-breakpoint

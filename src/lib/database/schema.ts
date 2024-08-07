@@ -19,11 +19,12 @@ export const userSchema = sqliteTable(
 		disabled: integer('disabled', { mode: 'timestamp' }),
 		isAdmin: integer('is_admin', { mode: 'boolean' }).default(false).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(unixepoch())`)
-			.notNull(),
-		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
+			.default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		nameIdx: index('usert_name_index').on(table.name),
@@ -48,8 +49,13 @@ export const fileSchema = sqliteTable(
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id, { onDelete: 'cascade' }),
-		created: integer('created', { mode: 'timestamp' }).default(sql`(unixepoch())`),
-		updated: integer('updated', { mode: 'timestamp' }).$onUpdate(() => sql`(unixepoch())`)
+		created: integer('created', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		ownerIdIdx: index('filet_owner_id_index').on(table.ownerId)
@@ -73,11 +79,12 @@ export const categorySchema = sqliteTable(
 		icon: text('icon'),
 		initial: integer('initial', { mode: 'boolean' }).default(false).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(unixepoch())`)
-			.notNull(),
-		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
+			.default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		userIdNameIdx: index('categoryt_user_name_index').on(table.ownerId, table.name),
@@ -95,11 +102,12 @@ export const tagSchema = sqliteTable(
 			.notNull()
 			.references(() => userSchema.id, { onDelete: 'cascade' }),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(unixepoch())`)
-			.notNull(),
-		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
+			.default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		userIdNameIdx: index('tagt_user_name_index').on(table.ownerId, table.name),
@@ -139,11 +147,12 @@ export const bookmarkSchema = sqliteTable(
 		openedLast: integer('opened_last', { mode: 'timestamp' }),
 		openedTimes: integer('opened_times').default(0).notNull(),
 		created: integer('created', { mode: 'timestamp' })
-			.default(sql`(unixepoch())`)
-			.notNull(),
-		updated: integer('updated', { mode: 'timestamp' })
-			.$onUpdate(() => sql`(unixepoch())`)
 			.notNull()
+			.default(sql`(unixepoch())`),
+		updated: integer('updated', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+			.$onUpdate(() => sql`(unixepoch())`)
 	},
 	(table) => ({
 		urlOwnerIdx: index('bookmarkt_url_owner_index').on(table.url, table.ownerId),

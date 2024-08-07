@@ -22,8 +22,8 @@ export const serializeTag = (tagData: TagDbo): Tag => {
 };
 
 export const serializeCategory = (categoryData: CategoryDbo): Category => {
-	const owner = categoryData.owner ? serializeUser(categoryData.owner) : null;
-	const parent = categoryData.parent ? serializeCategory(categoryData.parent) : null;
+	const owner = categoryData.owner ? serializeUser(categoryData.owner) : undefined;
+	const parent = categoryData.parent ? serializeCategory(categoryData.parent) : undefined;
 
 	return {
 		...categoryData,
@@ -37,7 +37,7 @@ export const serializeBookmark = ({ tags, ...bookmark }: BookmarkDbo): Bookmark 
 	const mainImage = getFileUrl(bookmark.mainImage?.relativePath);
 	const screenshot = getFileUrl(bookmark.screenshot?.relativePath);
 
-	const category = serializeCategory(bookmark.category!);
+	const category = bookmark.category ? serializeCategory(bookmark.category) : undefined;
 	const owner = bookmark.owner ? serializeUser(bookmark.owner) : undefined;
 
 	const serializedTags = tags?.map((tag) => serializeTag(tag.tag!));
@@ -57,7 +57,7 @@ export const serializeBookmarkList = (bookmarks: BookmarkDbo[]): Bookmark[] =>
 	structuredClone(bookmarks.map(serializeBookmark));
 
 export const serializeFile = (fileData: FileDbo): File => {
-	const owner = fileData.owner ? serializeUser(fileData.owner) : null;
+	const owner = fileData.owner ? serializeUser(fileData.owner) : undefined;
 
 	return {
 		...fileData,

@@ -55,6 +55,5 @@ export const defaultUser: Omit<User, 'id' | 'created' | 'updated'> = {
 	disabled: null,
 	verified: false,
 	settings: defaultUserSettings,
-	isAdmin: false,
-	passwordHash: ''
+	isAdmin: false
 };

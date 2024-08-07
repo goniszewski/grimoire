@@ -77,7 +77,7 @@ export const updateCategory = async (
 ): Promise<Category> => {
 	const [category]: CategoryDbo[] = await db
 		.update(categorySchema)
-		.set(categoryData)
+		.set({ ...categoryData, updated: new Date() })
 		.where(and(eq(categorySchema.id, id), eq(categorySchema.ownerId, ownerId)))
 		.returning();
 
