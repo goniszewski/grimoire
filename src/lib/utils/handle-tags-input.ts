@@ -7,22 +7,26 @@ export async function prepareTags(
 	db: DB,
 	tags: {
 		label: string;
-		value: string;
+		value: number | string;
 	}[],
 	ownerId: number
 ) {
 	const createTags = tags.filter(
-		(tag: { label: string; value: string }) => tag.value === tag.label
+		(tag: { label: string; value: number | string }) => tag.value === tag.label
 	);
-	const existingTags = tags.reduce((acc: number[], tag: { label: string; value: string }) => {
-		if (tag.value !== tag.label) {
-			acc.push(parseInt(tag.value, 10));
-		}
-		return acc;
-	}, []);
+	const existingTags = tags.reduce(
+		(acc: number[], tag: { label: string; value: number | string }) => {
+			if (tag.value !== tag.label) {
+				acc.push(+tag.value);
+			}
+			return acc;
+		},
+		[]
+	);
+	console.log({ createTags, existingTags });
 
 	const createdTags = await Promise.all(
-		createTags.map(async (tag: { label: string; value: string }) => {
+		createTags.map(async (tag: { label: string; value: number | string }) => {
 			const [{ id }] = await db
 				.insert(tagSchema)
 				.values({

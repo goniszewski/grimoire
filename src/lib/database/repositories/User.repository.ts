@@ -172,7 +172,7 @@ export const isUserDisabled = async (id: number): Promise<boolean> => {
 	const [{ disabled }] = await db.query.userSchema.findMany({
 		where: eq(userSchema.id, id)
 	});
-	return disabled ? true : false;
+	return !!disabled;
 };
 export const disableUser = async (id: number): Promise<User> => {
 	return await updateUser(id, { disabled: new Date() });

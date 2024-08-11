@@ -29,6 +29,10 @@
 		contentPublishedDate: null
 	};
 	const defaultCategory = $page.data.categories.find((c) => Boolean(c.initial))!;
+	const categorySelectItems = $page.data.categories.map((c) => ({
+		value: `${c.id}`,
+		label: c.name
+	}));
 
 	onDestroy(() => {
 		bookmarkTagsInput.set(null);
@@ -53,7 +57,7 @@
 			label: string;
 			created?: boolean;
 		}[]
-	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+	>([...$page.data.tags.map((t) => ({ value: `${t.id}`, label: t.name }))]);
 	const loadingTags = writable(false);
 
 	let tagsInputFilterText: '';
@@ -73,6 +77,10 @@
 	}
 
 	function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+		if (!e.detail) {
+			$bookmarkTags = [];
+			return e;
+		}
 		const lastItemIndex = e.detail.length - 1;
 		e.detail[lastItemIndex] = {
 			...e.detail[lastItemIndex],
@@ -264,11 +272,8 @@
 									name="category"
 									searchable
 									placeholder="Select category..."
-									value={defaultCategory.id}
-									items={$page.data.categories.map((c) => ({
-										value: c.id,
-										label: c.name
-									}))}
+									value={`${defaultCategory.id}`}
+									items={categorySelectItems}
 									class="this-select input input-bordered w-full"
 								/>
 							</div>

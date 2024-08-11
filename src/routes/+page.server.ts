@@ -1,16 +1,11 @@
 import type { Actions } from './$types';
 import { db } from '$lib/database/db';
 import {
-	addTagToBookmark,
-	createBookmark,
-	deleteBookmark,
-	getBookmarkById,
-	updateBookmark
+    addTagToBookmark, createBookmark, deleteBookmark, getBookmarkById, updateBookmark,
+    upsertTagsForBookmark
 } from '$lib/database/repositories/Bookmark.repository';
 import {
-	createCategory,
-	deleteCategory,
-	updateCategory
+    createCategory, deleteCategory, updateCategory
 } from '$lib/database/repositories/Category.repository';
 import { updateUserSettings } from '$lib/database/repositories/User.repository';
 import { Storage } from '$lib/storage/storage';
@@ -151,8 +146,9 @@ export const actions = {
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 		const read = data.get('read') === 'on' ? new Date() : null;
 
-		const tagIds = await prepareTags(db, tags, ownerId);
-		console.log('Prepared tags');
+		// const tagIds = await prepareTags(db, tags, ownerId);
+		// console.log('Prepared tags');
+		const tagNames = tags.map((tag: any) => tag.label);
 
 		const mainImageId = await storage.storeImage(mainImageUrl, title, ownerId);
 		const iconId = await storage.storeImage(iconUrl, title, ownerId);
@@ -161,7 +157,6 @@ export const actions = {
 		const bookmarkData = {
 			author,
 			category: category?.value ? category.value : category,
-			tags: tagIds,
 			contentHtml,
 			contentPublishedDate,
 			contentText,
@@ -184,8 +179,8 @@ export const actions = {
 		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
 		console.log('Updated bookmark');
 
-		await Promise.all(tagIds.map((tagId) => addTagToBookmark(bookmark.id, ownerId, tagId)));
-		console.log('Added tags to bookmark');
+		await upsertTagsForBookmark(bookmark.id, ownerId, tagNames);
+		console.log('Updated tags');
 
 		return {
 			bookmark,
