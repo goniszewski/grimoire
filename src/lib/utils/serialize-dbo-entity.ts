@@ -12,6 +12,7 @@ import { getFileUrl } from './get-file-url';
 
 export const serializeUser = (userData: UserDbo): User => {
 	const { passwordHash, ...user } = userData;
+
 	return user;
 };
 

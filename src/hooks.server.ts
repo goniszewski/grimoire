@@ -1,21 +1,22 @@
 import { getUserById } from '$lib/database/repositories/User.repository';
 import { themes } from '$lib/enums/themes';
-import { lucia } from '$lib/server/auth';
+import { lucia, validateRequest } from '$lib/server/auth';
 
 import type { Theme } from '$lib/enums/themes';
-import type { Handle } from '@sveltejs/kit';
 import type { User } from '$lib/types/User.type';
 import type { Session, User as LuciaUser } from 'lucia';
-import type { Cookies } from '@sveltejs/kit';
+import type { Cookies, Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const sessionId = event.cookies.get(lucia.sessionCookieName) ?? '';
-	const { session, user } = await lucia.validateSession(sessionId);
-
+	const { session, user } = await validateRequest(event);
 	const { userData, theme } = await getUserDataAndTheme(session, user, event.cookies);
 
-	setEventLocals(event, userData, session);
-	setSessionCookie(event, session);
+	try {
+		setEventLocals(event, userData, session);
+		setSessionCookie(event, session);
+	} catch (error) {
+		console.error('Error setting event locals or session cookie:', error);
+	}
 
 	return await resolveWithTheme(event, resolve, theme);
 };
@@ -26,7 +27,7 @@ async function getUserDataAndTheme(
 	cookies: Cookies
 ): Promise<{ userData: User | null; theme: Theme }> {
 	let userData: User | null = null;
-	let theme: Theme = 'light';
+	let theme: Theme;
 
 	if (session && user?.id) {
 		userData = await getUserById(user.id);

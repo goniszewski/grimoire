@@ -36,7 +36,6 @@ export const getBookmarkById = async (
 		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)),
 		with: mapRelationsToWithStatements(relations)
 	})) as BookmarkDbo;
-	bookmark?.tags;
 
 	return bookmark ? serializeBookmark(bookmark) : null;
 };
@@ -146,15 +145,6 @@ export const deleteBookmark = async (id: number, ownerId: number): Promise<void>
 	await db
 		.delete(bookmarkSchema)
 		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
-};
-
-export const fetchBookmarkCountByUserId = async (userId: number): Promise<number> => {
-	const [{ count: bookmarkCount }] = await db
-		.select({ count: count(bookmarkSchema.id) })
-		.from(bookmarkSchema)
-		.where(eq(bookmarkSchema.ownerId, userId));
-
-	return bookmarkCount;
 };
 
 export const fetchBookmarkTags = async (id: number, ownerId: number): Promise<{ tags: Tag[] }> => {

@@ -13,3 +13,7 @@ export type User = {
 	created: Date;
 	updated: Date;
 };
+
+export type UserWithoutSerialization = User & {
+	passwordHash: string;
+};

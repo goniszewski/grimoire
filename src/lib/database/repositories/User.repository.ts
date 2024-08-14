@@ -1,6 +1,6 @@
 import { defaultUser } from '$lib/config';
 import { serializeCategory, serializeTag, serializeUser } from '$lib/utils/serialize-dbo-entity';
-import { asc, count, desc, eq } from 'drizzle-orm';
+import { asc, count, desc, eq, or } from 'drizzle-orm';
 
 import { db } from '../db';
 import { categorySchema, tagSchema, userSchema } from '../schema';
@@ -57,9 +57,9 @@ export const getUserByEmail = async (
 	return user ? serializeUser(user) : null;
 };
 
-export const getUserWithoutSerialization = async (username: string): Promise<UserDbo | null> => {
+export const getUserWithoutSerialization = async (login: string): Promise<UserDbo | null> => {
 	const user = await db.query.userSchema.findFirst({
-		where: eq(userSchema.username, username)
+		where: or(eq(userSchema.username, login), eq(userSchema.email, login))
 	});
 
 	return user || null;

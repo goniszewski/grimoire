@@ -1,4 +1,7 @@
-import { getUserByUsername } from '$lib/database/repositories/User.repository';
+import {
+	getUserByUsername,
+	getUserWithoutSerialization
+} from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
 
 import { verify } from '@node-rs/argon2';
@@ -27,7 +30,8 @@ export const actions: Actions = {
 			});
 		}
 
-		const existingUser = await getUserByUsername(username);
+		const existingUser = await getUserWithoutSerialization(username);
+
 		if (!existingUser) {
 			const randomMs = Math.floor(Math.random() * 1000);
 
