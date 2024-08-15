@@ -79,7 +79,8 @@ export const createTag = async (
 		.values({
 			...tagData,
 			slug: createSlug(tagData.name),
-			ownerId
+			ownerId,
+			updated: new Date()
 		})
 		.returning();
 

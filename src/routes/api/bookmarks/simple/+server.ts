@@ -58,8 +58,12 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 			);
 		}
 
-		const mainImageId = await storage.storeImage(metadata.mainImageUrl, metadata.title, ownerId);
-		const iconId = await storage.storeImage(metadata.iconUrl, metadata.title, ownerId);
+		const { id: mainImageId } = await storage.storeImage(
+			metadata.mainImageUrl,
+			metadata.title,
+			ownerId
+		);
+		const { id: iconId } = await storage.storeImage(metadata.iconUrl, metadata.title, ownerId);
 
 		const bookmark = await createBookmark(ownerId, {
 			categoryId: defaultCategory?.id,

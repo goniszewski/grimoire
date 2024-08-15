@@ -3,7 +3,7 @@ import { serializeBookmark } from '$lib/utils/serialize-dbo-entity';
 import { and, asc, count, desc, eq, inArray, like, or } from 'drizzle-orm';
 
 import { db } from '../db';
-import { bookmarkSchema, bookmarksToTagsSchema, tagSchema } from '../schema';
+import { bookmarkSchema, bookmarksToTagsSchema, fileSchema, tagSchema } from '../schema';
 import { mapRelationsToWithStatements } from './common';
 
 import type { Bookmark } from '$lib/types/Bookmark.type';
@@ -254,4 +254,22 @@ export const getBookmarksCountForUser = async (userId: number): Promise<number> 
 		.where(eq(bookmarkSchema.ownerId, userId));
 
 	return bookmarkCount;
+};
+
+export const setScreenshotToBookmark = async (
+	id: number,
+	ownerId: number,
+	screenshotId: number
+): Promise<void> => {
+	const bookmarkExists = await db.query.bookmarkSchema.findFirst({
+		where: and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId))
+	});
+
+	if (!bookmarkExists) throw new Error('Bookmark does not exist');
+
+	bookmarkExists.screenshotId = screenshotId;
+	await db
+		.update(bookmarkSchema)
+		.set({ screenshotId, updated: new Date() })
+		.where(eq(bookmarkSchema.id, id));
 };

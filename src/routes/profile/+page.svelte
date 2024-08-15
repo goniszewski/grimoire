@@ -100,10 +100,10 @@
 									</div>
 									<div class="ml-8 flex gap-1 sm:ml-auto">
 										<span
-											style={`color: ${bookmark.category.color || '#a0a0a0'};`}
-											title={bookmark.category.description ? bookmark.category.description : ''}
+											style={`color: ${bookmark.category?.color || '#a0a0a0'};`}
+											title={bookmark.category?.description ?? ''}
 										>
-											{bookmark.category.name}
+											{bookmark.category?.name ?? '[No category]'}
 										</span>
 										<span
 											class="w-36 text-end"

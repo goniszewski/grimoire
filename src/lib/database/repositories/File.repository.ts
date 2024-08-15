@@ -57,8 +57,15 @@ export const getFilesByUserId = async (
 	return files.map((file) => serializeFile(file as FileDbo));
 };
 
-export const createFile = async (fileData: typeof fileSchema.$inferInsert): Promise<File> => {
-	const [file]: FileDbo[] = await db.insert(fileSchema).values(fileData).returning();
+export const createFile = async (
+	ownerId: number,
+	fileData: Omit<typeof fileSchema.$inferInsert, 'ownerId'>
+): Promise<File> => {
+	updated: new Date();
+	const [file]: FileDbo[] = await db
+		.insert(fileSchema)
+		.values({ ...fileData, ownerId, updated: new Date() })
+		.returning();
 
 	return serializeFile(file);
 };

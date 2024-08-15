@@ -23,7 +23,6 @@ export async function prepareTags(
 		},
 		[]
 	);
-	console.log({ createTags, existingTags });
 
 	const createdTags = await Promise.all(
 		createTags.map(async (tag: { label: string; value: number | string }) => {

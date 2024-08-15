@@ -1,17 +1,12 @@
 import { db } from '$lib/database/db';
 import {
-	createBookmark,
-	deleteBookmark,
-	getBookmarkById,
-	getBookmarkByUrl,
-	getBookmarksByIds,
-	updateBookmark
+    createBookmark, deleteBookmark, getBookmarkById, getBookmarkByUrl, getBookmarksByIds,
+    setScreenshotToBookmark, updateBookmark, upsertTagsForBookmark
 } from '$lib/database/repositories/Bookmark.repository';
 import { getTagsByUserId } from '$lib/database/repositories/Tag.repository';
 import { FileSourceEnum } from '$lib/enums/files';
 import { Storage } from '$lib/storage/storage';
 import { getMetadata } from '$lib/utils/get-metadata';
-import { prepareTags } from '$lib/utils/handle-tags-input';
 import { initializeSearch, searchIndexKeys } from '$lib/utils/search';
 import { urlDataToBlobConverter } from '$lib/utils/url-data-to-blob-converter';
 import joi from 'joi';
@@ -128,7 +123,27 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 	const requestBody = await request.json();
 
-	const validationSchema = joi.object({
+	const oldValidationSchema = joi.object({
+		url: joi.string().uri().required(),
+		title: joi.string().required(),
+		description: joi.string().allow('').optional(),
+		author: joi.string().allow('').optional(),
+		content_text: joi.string().allow('').optional(),
+		content_html: joi.string().allow('').optional(),
+		content_type: joi.string().allow('').optional(),
+		content_published_date: joi.date().allow(null).optional(),
+		note: joi.string().allow('').optional(),
+		main_image_url: joi.string().allow('').optional(),
+		icon_url: joi.string().allow('').optional(),
+		icon: joi.string().allow('').optional(),
+		importance: joi.number().min(0).max(3).optional(),
+		flagged: joi.boolean().optional(),
+		category: joi.number().required(),
+		tags: joi.array().items(joi.string().optional()).optional(),
+		screenshot: joi.string().allow('').optional()
+	});
+
+	const newValidationSchema = joi.object({
 		url: joi.string().uri().required(),
 		title: joi.string().required(),
 		description: joi.string().allow('').optional(),
@@ -143,29 +158,29 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		icon: joi.string().allow('').optional(),
 		importance: joi.number().min(0).max(3).optional(),
 		flagged: joi.boolean().optional(),
-		category: joi.string().required(),
+		category: joi.number().required(),
 		tags: joi.array().items(joi.string().optional()).optional(),
 		screenshot: joi.string().allow('').optional()
 	});
 
-	const { error } = validationSchema.validate(requestBody);
+	const combinedSchema = joi.alternatives().try(oldValidationSchema, newValidationSchema);
 
+	const { error } = combinedSchema.validate(requestBody);
 	if (error) {
 		return json({ success: false, error: error.message }, { status: 400 });
 	}
 
 	try {
-		const tags = requestBody.get('tags') ? JSON.parse(requestBody.get('tags') as string) : [];
-		const tagIds = await prepareTags(db, tags, ownerId);
+		const tags = requestBody.tags || [];
 
 		const metadata = await getMetadata(requestBody.url, requestBody.contentHtml);
 
-		const mainImageId = await storage.storeImage(
+		const { id: mainImageId } = await storage.storeImage(
 			requestBody.mainImageUrl || metadata?.mainImageUrl,
 			requestBody.title,
 			ownerId
 		);
-		const iconId = await storage.storeImage(
+		const { id: iconId } = await storage.storeImage(
 			requestBody.iconUrl || metadata?.iconUrl,
 			requestBody.title,
 			ownerId
@@ -189,8 +204,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			note: requestBody.note,
 			flagged: requestBody.flagged ? new Date() : null,
 			mainImageId,
-			iconId,
-			tags: tagIds
+			iconId
 		};
 
 		const bookmark = await createBookmark(ownerId, bookmarkData);
@@ -199,13 +213,19 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			return json({ success: false, error: 'Bookmark creation failed' }, { status: 400 });
 		}
 
+		if (tags.length) {
+			await upsertTagsForBookmark(bookmark.id, ownerId, tags);
+		}
+
 		if (requestBody.screenshot) {
 			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
-			await storage.storeFile(screenshot, {
+			const addedScreenshot = await storage.storeFile(screenshot, {
 				ownerId,
 				relatedEntityId: bookmark.id,
 				source: FileSourceEnum.WebExtension
 			});
+
+			await setScreenshotToBookmark(bookmark.id, ownerId, addedScreenshot.id);
 		}
 
 		return json({ bookmark }, { status: 201 });
@@ -224,7 +244,27 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 
 	const requestBody = await request.json();
 
-	const validationSchema = joi.object({
+	const oldValidationSchema = joi.object<UpdateBookmarkRequestBody>({
+		id: joi.number().required(),
+		url: joi.string().uri().optional(),
+		title: joi.string().optional(),
+		description: joi.string().allow('').optional(),
+		author: joi.string().allow('').optional(),
+		content_text: joi.string().allow('').optional(),
+		content_html: joi.string().allow('').optional(),
+		content_type: joi.string().allow('').optional(),
+		content_published_date: joi.date().optional(),
+		note: joi.string().allow('').optional(),
+		main_image_url: joi.string().allow('').optional(),
+		icon_url: joi.string().allow('').optional(),
+		importance: joi.number().min(0).max(3).optional(),
+		flagged: joi.boolean().optional(),
+		category: joi.string().optional(),
+		tags: joi.array().items(joi.string().required()).optional(),
+		screenshot: joi.string().allow('').optional()
+	});
+
+	const newValidationSchema = joi.object({
 		id: joi.number().required(),
 		url: joi.string().uri().optional(),
 		title: joi.string().optional(),
@@ -244,13 +284,15 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 		screenshot: joi.string().allow('').optional()
 	});
 
-	const { error } = validationSchema.validate(requestBody);
+	const combinedSchema = joi.alternatives().try(oldValidationSchema, newValidationSchema);
+
+	const { error, value } = combinedSchema.validate(requestBody);
 
 	if (error) {
 		return json({ success: false, error: error.message }, { status: 400 });
 	}
 
-	const { id, ...updatedFields } = requestBody;
+	const { id, ...updatedFields } = value;
 
 	try {
 		const currentBookmark = await getBookmarkById(id, ownerId);
@@ -259,16 +301,14 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 			return json({ success: false, error: 'Bookmark not found' }, { status: 404 });
 		}
 
-		const userTags = await getTagsByUserId(ownerId);
-		const preparedTags = prepareRequestedTags(requestBody, userTags);
-		const newTags = await prepareTags(db, preparedTags, ownerId);
+		const tagNames = value.tags?.map((tag: string) => tag);
 
-		const mainImageId = await storage.storeImage(
+		const { id: mainImageId } = await storage.storeImage(
 			updatedFields.mainImageUrl,
 			updatedFields.title || currentBookmark.title,
 			ownerId
 		);
-		const iconId = await storage.storeImage(
+		const { id: iconId } = await storage.storeImage(
 			updatedFields.iconUrl,
 			updatedFields.title || currentBookmark.title,
 			ownerId
@@ -283,6 +323,10 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 		};
 
 		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
+
+		if (tagNames.length) {
+			await upsertTagsForBookmark(id, ownerId, tagNames);
+		}
 
 		if (requestBody.screenshot) {
 			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
