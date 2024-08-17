@@ -8,7 +8,11 @@ import path from 'node:path';
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
 const getFileExtFromMimeType = (mimeType: string) => {
-	const [, ext] = mimeType.split('/'); // TODO: handle variants like 'image/vnd.microsoft.icon'
+	const [, ext] = mimeType.split('/');
+
+	if (ext.includes('icon')) return 'ico';
+	if (ext.includes('svg')) return 'svg';
+
 	return ext;
 };
 
