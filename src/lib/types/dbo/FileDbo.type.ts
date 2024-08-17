@@ -1,6 +1,5 @@
 import type { fileSchema, userSchema } from '$lib/database/schema';
 import type { FileSourceEnum, FileStorageTypeEnum } from '$lib/enums/files';
-import type { UserDbo } from './UserDbo.type';
 import type { InferSelectModel } from 'drizzle-orm';
 
 export type FileDbo = InferSelectModel<typeof fileSchema> & {

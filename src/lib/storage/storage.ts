@@ -8,7 +8,7 @@ import path from 'node:path';
 const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 
 const getFileExtFromMimeType = (mimeType: string) => {
-	const [, ext] = mimeType.split('/');
+	const [, ext] = mimeType.split('/'); // TODO: handle variants like 'image/vnd.microsoft.icon'
 	return ext;
 };
 
@@ -20,14 +20,14 @@ const getDefaultFileNameFromMimeType = (mimeType: string) => {
 export class Storage {
 	async storeFile(
 		fileData: Blob,
+		ownerId: number,
 		details: {
-			ownerId: number;
 			relatedEntityId?: number;
 			source?: FileSourceEnum;
 			fileName?: string;
 		}
 	) {
-		const { ownerId, relatedEntityId, source, fileName } = details;
+		const { relatedEntityId, source, fileName } = details;
 		const mimeType = fileData.type;
 		const size = fileData.size;
 		const fileExt = fileName || fileData.name?.split('.').pop() || getFileExtFromMimeType(mimeType);
@@ -70,8 +70,7 @@ export class Storage {
 		const blob = await fetch(url).then((r) => r.blob());
 		const fileName = `${createSlug(title)}.${url.split('.').pop()?.split('?')[0]}`;
 
-		return await storage.storeFile(blob, {
-			ownerId,
+		return await storage.storeFile(blob, ownerId, {
 			fileName
 		});
 	}

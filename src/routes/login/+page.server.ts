@@ -1,7 +1,4 @@
-import {
-	getUserByUsername,
-	getUserWithoutSerialization
-} from '$lib/database/repositories/User.repository';
+import { getUserWithoutSerialization } from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
 
 import { verify } from '@node-rs/argon2';

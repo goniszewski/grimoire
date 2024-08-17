@@ -219,8 +219,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		if (requestBody.screenshot) {
 			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
-			const addedScreenshot = await storage.storeFile(screenshot, {
-				ownerId,
+			const addedScreenshot = await storage.storeFile(screenshot, ownerId, {
 				relatedEntityId: bookmark.id,
 				source: FileSourceEnum.WebExtension
 			});
@@ -330,8 +329,7 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 
 		if (requestBody.screenshot) {
 			const screenshot = urlDataToBlobConverter(requestBody.screenshot);
-			await storage.storeFile(screenshot, {
-				ownerId,
+			await storage.storeFile(screenshot, ownerId, {
 				relatedEntityId: id,
 				source: FileSourceEnum.WebExtension
 			});

@@ -1,5 +1,4 @@
 import type { Actions } from './$types';
-import { db } from '$lib/database/db';
 import {
     createBookmark, deleteBookmark, getBookmarkById, updateBookmark, upsertTagsForBookmark
 } from '$lib/database/repositories/Bookmark.repository';

@@ -5,8 +5,6 @@ import { Lucia } from 'lucia';
 
 import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
 
-import type { User } from 'lucia';
-
 import type { RequestEvent } from '@sveltejs/kit';
 
 export const adapter = new DrizzleSQLiteAdapter(db, sessionSchema, userSchema);

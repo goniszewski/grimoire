@@ -1,4 +1,4 @@
-import { tagSchema as tagSchema } from '$lib/database/schema';
+import { tagSchema } from '$lib/database/schema';
 
 import { createSlug } from './create-slug';
 
