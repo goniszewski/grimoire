@@ -1,5 +1,8 @@
+import config from '$lib/config';
 import { createCategory } from '$lib/database/repositories/Category.repository';
-import { createUser, getUserByUsername } from '$lib/database/repositories/User.repository';
+import {
+    createUser, getUserByUsername, getUserCount
+} from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
 import { createSlug } from '$lib/utils/create-slug';
 import Joi from 'joi';
@@ -7,9 +10,21 @@ import Joi from 'joi';
 import { hash } from '@node-rs/argon2';
 import { fail, redirect } from '@sveltejs/kit';
 
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+export const load = (async () => {
+	const signupDisabled = config.SIGNUP_DISABLED;
+
+	return {
+		signupDisabled
+	};
+}) satisfies PageServerLoad;
+
 export const actions: Actions = {
 	default: async (event) => {
+		if (config.SIGNUP_DISABLED) {
+			throw redirect(303, '/');
+		}
+
 		const formData = await event.request.formData();
 		const username = formData.get('username');
 		const name = formData.get('name');
@@ -54,6 +69,7 @@ export const actions: Actions = {
 		});
 
 		const userExists = await getUserByUsername(value.username).then((user) => !!user);
+		const isFirstUser = await getUserCount().then((count) => count === 0);
 
 		if (userExists) {
 			return fail(400, {
@@ -65,7 +81,8 @@ export const actions: Actions = {
 			username: value.username,
 			name: value.name,
 			email: value.email,
-			passwordHash
+			passwordHash,
+			isAdmin: isFirstUser
 		});
 
 		await createCategory(user.id, {

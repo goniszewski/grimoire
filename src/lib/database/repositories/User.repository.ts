@@ -1,9 +1,13 @@
 import { defaultUser } from '$lib/config';
+import { createSlug } from '$lib/utils/create-slug';
 import { serializeCategory, serializeTag, serializeUser } from '$lib/utils/serialize-dbo-entity';
 import { asc, count, desc, eq, or } from 'drizzle-orm';
 
+import { hash } from '@node-rs/argon2';
+
 import { db } from '../db';
 import { categorySchema, tagSchema, userSchema } from '../schema';
+import { createCategory } from './Category.repository';
 import { mapRelationsToWithStatements } from './common';
 
 import type { User } from '$lib/types/User.type';
@@ -72,6 +76,33 @@ export const createUser = async (userData: typeof userSchema.$inferInsert): Prom
 		.returning();
 
 	return serializeUser(user);
+};
+
+export const createRootAdminUser = async (email: string, password: string): Promise<User> => {
+	const passwordHash = await hash(password, {
+		// recommended minimum parameters
+		memoryCost: 19456,
+		timeCost: 2,
+		outputLen: 32,
+		parallelism: 1
+	});
+
+	const user = await createUser({
+		username: 'admin',
+		name: 'Root Admin',
+		email,
+		passwordHash,
+		isAdmin: true
+	});
+
+	await createCategory(user.id, {
+		name: 'Uncategorized',
+		slug: createSlug('uncategorized'),
+		color: '#ccc',
+		initial: true
+	});
+
+	return user;
 };
 
 export const updateUser = async (
