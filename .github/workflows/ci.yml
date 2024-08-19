@@ -64,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
+          tag_name: v${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
           release_name: Preview Release ${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
           draft: false
           prerelease: true
