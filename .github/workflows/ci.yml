@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'develop'
     tags:
       - 'v*.*.*'
     paths:
@@ -38,6 +39,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}}-preview.{{increment}},enable=${{ github.ref == 'refs/heads/develop' }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -56,3 +58,13 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/develop'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
+          release_name: Preview Release ${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
+          draft: false
+          prerelease: true
