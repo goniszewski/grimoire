@@ -1,5 +1,6 @@
 import { createBookmark } from '$lib/database/repositories/Bookmark.repository';
 import { getInitialCategory } from '$lib/database/repositories/Category.repository';
+import { Storage } from '$lib/storage/storage';
 import { getMetadata } from '$lib/utils/get-metadata';
 import joi from 'joi';
 

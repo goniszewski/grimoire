@@ -3,7 +3,6 @@ import {
     createBookmark, deleteBookmark, getBookmarkById, getBookmarkByUrl, getBookmarksByIds,
     setScreenshotToBookmark, updateBookmark, upsertTagsForBookmark
 } from '$lib/database/repositories/Bookmark.repository';
-import { getTagsByUserId } from '$lib/database/repositories/Tag.repository';
 import { FileSourceEnum } from '$lib/enums/files';
 import { Storage } from '$lib/storage/storage';
 import { getMetadata } from '$lib/utils/get-metadata';
