@@ -1,17 +1,17 @@
 FROM node:20-slim AS base
 RUN corepack enable
-RUN apt-get update && apt-get install -y python3 python3-pip wget && rm -rf /var/lib/apt/lists/*
-RUN npm i -g bun
+RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && rm -rf /var/lib/apt/lists/*
+RUN npm i -g bun@latest
 WORKDIR /usr/src/app
 
 FROM base AS install
-RUN mkdir -p /temp/dev
-COPY package.json bun.lockb /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+WORKDIR /temp/dev
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile || (echo "Bun install failed" && cat ~/.bun/install.log && exit 1)
 
-RUN mkdir -p /temp/prod
-COPY package.json bun.lockb /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production 
+WORKDIR /temp/prod
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile --production || (echo "Bun install failed" && cat ~/.bun/install.log && exit 1)
 
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
