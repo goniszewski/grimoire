@@ -26,7 +26,6 @@
 		"re2",
 		"svelte-preprocess",
 		"tree-sitter",
-		"tree-sitter-json",
 		"tree-sitter-yaml"
 	],
 	"scripts": {
