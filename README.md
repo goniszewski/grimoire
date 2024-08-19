@@ -65,9 +65,6 @@ git clone https://github.com/goniszewski/grimoire
 # Rename the `.env.example` file to `.env`
 # "mv .env.example .env" on Linux/MacOS, "ren .env.example .env" on Windows
 
-# [RECOMMENDED] Update the `.env` to set the initial admin user credentials
-# (admins are separate from regular users)
-
 # Build and run the containers
 docker compose up
 ```
@@ -75,10 +72,10 @@ docker compose up
 </details>
 
 > [!NOTE]
-> For the recommended setup, only the `docker-compose.yml`, `.env.example` files and the `pb_migrations/` directory (containing the migration files) are needed.
+> For the recommended setup, only the `docker-compose.yml` and `.env.example` files are needed.
 
 <details>
-  <summary><strong>Run app using Node + Pocketbase using Docker Compose</strong></summary>
+  <summary><strong>Run app using Node</strong></summary>
 
 ### Prerequisites
 
@@ -96,49 +93,11 @@ git clone https://github.com/goniszewski/grimoire
 # Rename the `.env.example` file to `.env`
 # "mv .env.example .env" on Linux/MacOS, "ren .env.example .env" on Windows
 
-# [RECOMMENDED] Update the `.env` to set the initial admin user credentials
-# (admins are separate from regular users)
-
 # Install the dependencies
 pnpm i
 
-# Run the Pocketbase container using Docker Compose and start the app
+# Run the app
 chmod +x ./run-dev.sh && ./run-dev.sh
-```
-
-</details>
-
-<details>
-  <summary><strong>Run app using Node + standalone Pocketbase</strong></summary>
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/en/download/)
-- [PNPM](https://pnpm.io/installation)
-- [Pocketbase](https://github.com/pocketbase/pocketbase?tab=readme-ov-file#use-as-standalone-app)
-
-### Steps
-
-```bash
-# Clone the repository
-git clone https://github.com/goniszewski/grimoire
-
-# Rename the `.env.example` file to `.env`
-# "mv .env.example .env" on Linux/MacOS, "ren .env.example .env" on Windows
-
-# [RECOMMENDED] Update the `.env` to set the initial admin user credentials
-# (admins are separate from regular users)
-
-# Move the pocketbase executable to the project root directory and run it
-./pocketbase serve
-
-# Install the dependencies
-pnpm i
-
-# Build and start the app
-pnpm build && node -r dotenv/config build
-
-# To start the app again, just run `node -r dotenv/config build`
 ```
 
 </details>
@@ -175,7 +134,9 @@ This project is licensed under the [MIT License](LICENSE).
 ## Credits
 
 Special thanks to: [@extractus/article-extractor](https://github.com/extractus/article-extractor),
+[Bun](https://github.com/oven-sh/bun),
 [DaisyUI](https://github.com/saadeghi/daisyui),
+[Drizzle](https://github.com/drizzle-team/drizzle-orm),
 [Fuse.js](https://github.com/krisk/fuse),
 [MetaScraper](https://github.com/microlinkhq/metascraper),
 [PocketBase](https://github.com/pocketbase/pocketbase),
@@ -183,4 +144,5 @@ Special thanks to: [@extractus/article-extractor](https://github.com/extractus/a
 [SvelteKit](https://github.com/sveltejs/kit),
 [Svelte Select](https://github.com/rob-balfre/svelte-select),
 [Svelte French Toast](https://github.com/kbrgl/svelte-french-toast),
-[Tailwind CSS](https://tailwindcss.com)
+[Tailwind CSS](https://tailwindcss.com),
+[url-metadata](https://github.com/laurengarcia/url-metadata),

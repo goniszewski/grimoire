@@ -1,7 +1,8 @@
 import type { Actions } from '../../$types';
-import { handlePBError, pb } from '$lib/pb';
+import { updateUser } from '$lib/database/repositories/User.repository';
 import joi from 'joi';
 
+import { hash } from '@node-rs/argon2';
 import { fail } from '@sveltejs/kit';
 
 import type { User } from '$lib/types/User.type';
@@ -24,6 +25,7 @@ export const actions = {
 		}
 
 		const data = await request.formData();
+		// @ts-ignore
 		const updatedUserInfo = Object.fromEntries(data.entries()) as UpdatedUserInfo;
 
 		if (
@@ -62,32 +64,35 @@ export const actions = {
 		}
 
 		try {
-			const currentUser = await pb
-				.collection('users')
-				.getOne(owner)
-				.catch((err) => {
-					console.error('Error fetching current user. Details:', JSON.stringify(err, null, 2));
-
-					throw err;
+			let passwordHash: string | undefined;
+			if (updatedUserInfo.new_password) {
+				passwordHash = await hash(updatedUserInfo.new_password, {
+					// recommended minimum parameters
+					memoryCost: 19456,
+					timeCost: 2,
+					outputLen: 32,
+					parallelism: 1
 				});
+			}
 
-			const updatedUser = await pb
-				.collection('users')
-				.update(owner, {
-					...currentUser,
-					...updatedUserInfo
-				})
-				.catch((err) => {
-					console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
+			const updatedUser = await updateUser(owner, {
+				...(updatedUserInfo.name && { name: updatedUserInfo.name }),
+				...(updatedUserInfo.email && { email: updatedUserInfo.email }),
+				...(updatedUserInfo.username && { username: updatedUserInfo.username }),
+				...(passwordHash && { passwordHash })
+			}).catch((err) => {
+				console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
 
-					throw err;
-				});
+				throw err;
+			});
 
 			return {
 				updatedUser
 			};
-		} catch (e) {
-			return handlePBError(e, pb, true);
+		} catch (e: any) {
+			return fail(500, {
+				error: e.message
+			});
 		}
 	}
 } satisfies Actions;

@@ -17,9 +17,6 @@ FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
 
-ARG PUBLIC_POCKETBASE_URL
-ARG ROOT_ADMIN_EMAIL
-ARG ROOT_ADMIN_PASSWORD
 ARG PUBLIC_ORIGIN="http://localhost:5173"
 ARG PORT=5173
 ARG PUBLIC_HTTPS_ONLY="false"
@@ -27,11 +24,8 @@ ARG PUBLIC_SIGNUP_DISABLED="false"
 ARG BODY_SIZE_LIMIT="5000000"
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=8192
-RUN bun run build
+RUN bun --bun run build
 
-ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
-ENV ROOT_ADMIN_EMAIL=$ROOT_ADMIN_EMAIL
-ENV ROOT_ADMIN_PASSWORD=$ROOT_ADMIN_PASSWORD
 ENV PUBLIC_ORIGIN=$PUBLIC_ORIGIN
 ENV ORIGIN=$PUBLIC_ORIGIN
 ENV PORT=$PORT
@@ -44,4 +38,4 @@ COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app .
 ENV NODE_ENV=production
 EXPOSE $PORT
-ENTRYPOINT [ "bun","run", "src/server.js" ]
+ENTRYPOINT [ "bun","./build/index.js" ]

@@ -16,7 +16,7 @@
 
 	const bookmarkTagsInput: Writable<
 		| {
-				value: string;
+				value: number;
 				label: string;
 				created?: boolean;
 		  }[]
@@ -27,13 +27,13 @@
 	let screenshot: string;
 
 	$: {
-		if ($bookmark.main_image && !$bookmark.main_image.endsWith('/')) {
-			mainImage = $bookmark.main_image;
-		} else {
-			mainImage = $bookmark.main_image_url;
+		if ($bookmark.mainImage) {
+			mainImage = $bookmark.mainImage;
+		} else if ($bookmark.mainImageUrl) {
+			mainImage = $bookmark.mainImageUrl;
 		}
 
-		if ($bookmark.screenshot && !$bookmark.screenshot.endsWith('/')) {
+		if ($bookmark.screenshot) {
 			screenshot = $bookmark.screenshot;
 		}
 	}
@@ -57,8 +57,8 @@
 				<div class="flex flex-col gap-2 md:flex-row">
 					<div class="flex min-w-fit flex-1 flex-col gap-2">
 						<div class="flex items-center gap-2">
-							{#if $bookmark.icon || $bookmark.icon_url}
-								<img src={$bookmark.icon || $bookmark.icon_url} alt="Icon" class="h-8 w-8" />
+							{#if $bookmark.icon || $bookmark.iconUrl}
+								<img src={$bookmark.icon || $bookmark.iconUrl} alt="Icon" class="h-8 w-8" />
 							{/if}
 							<p class="badge badge-ghost">{$bookmark.domain}</p>
 						</div>
@@ -69,12 +69,12 @@
 								{#if mainImage}
 									<div id="main-image" class="carousel-item w-full">
 										<a
-											href={$bookmark.main_image || $bookmark.main_image_url}
+											href={$bookmark.mainImage || $bookmark.mainImageUrl}
 											target="_blank"
 											class="flex w-full"
 										>
 											<img
-												src={$bookmark.main_image || $bookmark.main_image_url}
+												src={$bookmark.mainImage || $bookmark.mainImageUrl}
 												class="w-full justify-self-center object-scale-down"
 												alt="Main"
 											/>
@@ -94,7 +94,7 @@
 								{/if}
 							</div>
 						{/if}
-						{#if (($bookmark.main_image && !$bookmark.main_image.endsWith('/')) || $bookmark.main_image_url) && $bookmark.screenshot && !$bookmark.screenshot.endsWith('/')}
+						{#if ($bookmark.mainImage || $bookmark.mainImage) && $bookmark.screenshot}
 							<div class="flex w-full justify-center gap-2 py-2">
 								<a href="#main-image" class="btn btn-xs">Main image</a>
 								<a href="#screenshot" class="btn btn-xs">Screenshot</a>
@@ -165,11 +165,11 @@
 							<span
 								class="flex items-center gap-2"
 								title={`Last on: ${
-									$bookmark.opened_last ? new Date($bookmark.opened_last).toLocaleString() : ''
+									$bookmark.openedLast ? new Date($bookmark.openedLast).toLocaleString() : ''
 								}`}
 							>
 								<b> Opened: </b>
-								{$bookmark.opened_times || 0} times
+								{$bookmark.openedTimes || 0} times
 							</span>
 
 							<span
@@ -215,11 +215,11 @@
 							{$bookmark.author || 'Unknown'}
 						</span>
 					{/if}
-					{#if $bookmark.content_published_date}
+					{#if $bookmark.contentPublishedDate}
 						<span>
 							<b> Published on: </b>
-							{$bookmark.content_published_date
-								? new Date($bookmark.content_published_date).toLocaleString()
+							{$bookmark.contentPublishedDate
+								? new Date($bookmark.contentPublishedDate).toLocaleString()
 								: ''}
 						</span>
 					{/if}
@@ -250,13 +250,13 @@
 					</div>
 					<div
 						class={`flex w-full flex-col overflow-y-scroll rounded-b-sm border border-t-0 border-gray-500 pl-1 pt-1 ${
-							$bookmark.content_html || $bookmark.content_text ? 'h-60 ' : 'justify-items-center   '
+							$bookmark.contentHtml || $bookmark.contentText ? 'h-60 ' : 'justify-items-center   '
 						}`}
 					>
-						{#if $contentTab === 'html' && $bookmark.content_html}
-							{@html $bookmark.content_html}
-						{:else if $contentTab === 'text' && $bookmark.content_text}
-							{$bookmark.content_text}
+						{#if $contentTab === 'html' && $bookmark.contentHtml}
+							{@html $bookmark.contentHtml}
+						{:else if $contentTab === 'text' && $bookmark.contentText}
+							{$bookmark.contentText}
 						{:else}
 							<div class="w-fit px-4 py-2 text-gray-500">No content</div>
 						{/if}

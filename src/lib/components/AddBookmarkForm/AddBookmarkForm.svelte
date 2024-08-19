@@ -21,13 +21,18 @@
 		title: '',
 		description: '',
 		author: '',
-		content_text: '',
-		content_html: '',
-		content_type: '',
-		main_image_url: '',
-		icon_url: '',
-		content_published_date: null
+		contentText: '',
+		contentHtml: '',
+		contentType: '',
+		mainImageUrl: '',
+		iconUrl: '',
+		contentPublishedDate: null
 	};
+	const defaultCategory = $page.data.categories.find((c) => Boolean(c.initial))!;
+	const categorySelectItems = $page.data.categories.map((c) => ({
+		value: `${c.id}`,
+		label: c.name
+	}));
 
 	onDestroy(() => {
 		bookmarkTagsInput.set(null);
@@ -52,7 +57,7 @@
 			label: string;
 			created?: boolean;
 		}[]
-	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
+	>([...$page.data.tags.map((t) => ({ value: `${t.id}`, label: t.name }))]);
 	const loadingTags = writable(false);
 
 	let tagsInputFilterText: '';
@@ -72,6 +77,10 @@
 	}
 
 	function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+		if (!e.detail) {
+			$bookmarkTags = [];
+			return e;
+		}
 		const lastItemIndex = e.detail.length - 1;
 		e.detail[lastItemIndex] = {
 			...e.detail[lastItemIndex],
@@ -123,7 +132,7 @@
 
 			const bookmarkExists = $page.data.bookmarks.find((b) => b.url === url);
 			if (bookmarkExists) {
-				warning = `Be warned, bookmark with this URL already exists as '${bookmarkExists.title}' in '${bookmarkExists.category.name}' category.`;
+				warning = `Be warned, bookmark with this URL already exists as '${bookmarkExists.title}' in '${bookmarkExists.category?.name}' category.`;
 			}
 
 			fetch(`/api/fetch-metadata`, {
@@ -137,13 +146,13 @@
 				.then((data) => {
 					metadata = data?.metadata || { ...defaultFormValues };
 
-					if (!metadata.content_text || !$userSettingsStore?.llm || !$userSettingsStore.llm.enabled)
+					if (!metadata.contentText || !$userSettingsStore?.llm || !$userSettingsStore.llm.enabled)
 						return;
 
 					$loadingTags = true;
 
 					const generateTagsPromise = generateTags(
-						metadata.content_text,
+						metadata.contentText,
 						$userSettingsStore?.llm?.ollama
 					);
 
@@ -189,9 +198,8 @@
 	method="POST"
 	action="/?/addNewBookmark"
 	use:enhance={({ formData }) => {
-		const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
 		if (!formData.get('category') && defaultCategory) {
-			formData.set('category', defaultCategory?.id);
+			formData.set('category', `${defaultCategory?.id}`);
 		}
 		return async ({ update, result }) => {
 			if (result.type === 'success' && result?.data?.bookmark) {
@@ -210,12 +218,12 @@
 	<div class="w-full">
 		<div class="form-control flex w-full gap-4">
 			<input type="text" class="hidden" name="domain" value={metadata.domain} />
-			<input type="text" class="hidden" name="content_html" value={metadata.content_html} />
+			<input type="text" class="hidden" name="content_html" value={metadata.contentHtml} />
 			<input
 				type="text"
 				class="hidden"
 				name="content_published_date"
-				value={metadata.content_published_date}
+				value={metadata.contentPublishedDate}
 			/>
 
 			{#if error}
@@ -264,11 +272,8 @@
 									name="category"
 									searchable
 									placeholder="Select category..."
-									value={$page.data.categories[0].id}
-									items={$page.data.categories.map((c) => ({
-										value: c.id,
-										label: c.name
-									}))}
+									value={`${defaultCategory.id}`}
+									items={categorySelectItems}
 									class="this-select input input-bordered w-full"
 								/>
 							</div>
@@ -350,14 +355,14 @@
 								type="text"
 								class="input input-bordered w-9/12"
 								name="icon_url"
-								value={metadata.icon_url}
+								value={metadata.iconUrl}
 								on:input={(event) => {
 									// @ts-ignore-next-line
 									metadata.icon_url = event.target.value;
 								}}
 							/>
-							{#if metadata.icon_url}
-								<img class="m-auto h-8 w-8 md:ml-8" src={metadata.icon_url} alt={metadata.title} />
+							{#if metadata.iconUrl}
+								<img class="m-auto h-8 w-8 md:ml-8" src={metadata.iconUrl} alt={metadata.title} />
 							{/if}
 						</div>
 					</div>
@@ -375,10 +380,10 @@
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
-						{#if metadata.main_image_url}
+						{#if metadata.mainImageUrl}
 							<img
 								class="m-auto max-h-64 rounded-md"
-								src={metadata.main_image_url}
+								src={metadata.mainImageUrl}
 								alt={metadata.title}
 							/>
 						{/if}
@@ -386,7 +391,7 @@
 							type="text"
 							class="input input-bordered w-full"
 							name="main_image_url"
-							value={metadata.main_image_url}
+							value={metadata.mainImageUrl}
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.main_image_url = event.target.value;
@@ -398,7 +403,7 @@
 						<textarea
 							class="textarea textarea-bordered"
 							name="content_text"
-							value={metadata.content_text}
+							value={metadata.contentText}
 							placeholder="Extracted if possible..."
 							on:input={(event) => {
 								// @ts-ignore-next-line

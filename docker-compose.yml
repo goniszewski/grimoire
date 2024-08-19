@@ -1,29 +1,12 @@
 version: '3.7'
 services:
-  pocketbase:
-    image: spectado/pocketbase:0.22.10
-    container_name: grimoire-pocketbase
-    restart: unless-stopped
-    ports:
-      - '8090:80'
-    volumes:
-      - pb_data:/pb_data
-      - pb_migrations:/pb_migrations/
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:80/api/health || exit 1
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    env_file: .env
-    depends_on:
-      - grimoire
   grimoire:
     image: goniszewski/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
     env_file: .env
     volumes:
-      - pb_migrations:/app/pb_migrations/
+      - grimoire_data:/app/data/
     build:
       context: .
       dockerfile: Dockerfile
@@ -35,5 +18,4 @@ services:
     ports:
       - '$PORT:$PORT'
 volumes:
-  pb_data:
-  pb_migrations:
+  grimoire_data:

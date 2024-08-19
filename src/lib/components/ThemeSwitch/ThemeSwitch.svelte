@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { themes } from '$lib/enums/themes';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
+	import type { User } from '$lib/types/User.type';
 	import { IconMoon, IconSunHigh } from '@tabler/icons-svelte';
 
+	export let user: User | null = null;
 	let themeSwitchForm: HTMLFormElement;
+
+	$: theme = user?.settings?.theme ?? 'light';
 
 	function handleThemeChange(theme: keyof typeof themes) {
 		document.documentElement.setAttribute('data-theme', themes[theme]);
@@ -24,12 +27,12 @@
 		return async () => {};
 	}}
 >
-	<label class="swap swap-rotate btn btn-sm btn-circle">
+	<label class="btn btn-circle swap swap-rotate btn-sm">
 		<input
 			id="theme"
 			name="theme"
 			type="checkbox"
-			checked={$userSettingsStore.theme === 'dark'}
+			checked={theme === 'dark'}
 			on:change={() => themeSwitchForm.requestSubmit()}
 		/>
 		<IconSunHigh size={20} class="swap-on" />

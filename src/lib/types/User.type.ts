@@ -1,15 +1,19 @@
 import type { UserSettings } from './UserSettings.type';
 
 export type User = {
-	avatar: string;
-	created: string;
+	id: number;
+	avatarId: number | null;
 	email: string;
-	emailVisibility?: boolean;
-	id: string;
 	name: string;
 	settings: UserSettings;
-	updated: string;
 	username: string;
 	verified: boolean;
-	disabled: string;
+	disabled: Date | null;
+	isAdmin: boolean;
+	created: Date;
+	updated: Date;
+};
+
+export type UserWithoutSerialization = User & {
+	passwordHash: string;
 };

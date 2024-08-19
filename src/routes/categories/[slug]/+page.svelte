@@ -30,7 +30,7 @@
 					style={`background-color: ${category?.color || '#a0a0a0'};`}
 				/>
 			{:else}
-				<Icon name={category.icon} size={16} color={category?.color} />
+				<Icon name={category.icon} size={16} color={category.color || '#a0a0a0'} />
 			{/if}
 			<button
 				class="hover:opacity-10s link-hover link px-2 opacity-80"

@@ -8,6 +8,6 @@ export const bookmarksStore = {
 	set,
 	update,
 	add: (bookmark: Bookmark) => update((bookmarks) => [...bookmarks, bookmark]),
-	remove: (bookmarkId: string) =>
+	remove: (bookmarkId: number) =>
 		update((bookmarks) => bookmarks.filter((bookmark) => bookmark.id !== bookmarkId))
 };

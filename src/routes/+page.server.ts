@@ -1,16 +1,23 @@
 import type { Actions } from './$types';
-import { handlePBError, pb } from '$lib/pb';
-import { checkIfImageURL } from '$lib/utils/check-if-image-url';
+import {
+    createBookmark, deleteBookmark, getBookmarkById, updateBookmark, upsertTagsForBookmark
+} from '$lib/database/repositories/Bookmark.repository';
+import {
+    createCategory, deleteCategory, updateCategory
+} from '$lib/database/repositories/Category.repository';
+import { updateUserSettings } from '$lib/database/repositories/User.repository';
+import { Storage } from '$lib/storage/storage';
 import { createSlug } from '$lib/utils/create-slug';
-import { prepareTags } from '$lib/utils/handle-tags-input';
 
-import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Theme } from '$lib/enums/themes';
+
+const storage = new Storage();
 
 export const actions = {
 	addNewBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -19,76 +26,74 @@ export const actions = {
 		const data = await request.formData();
 
 		try {
-			const url = data.get('url');
-			const domain = data.get('domain');
-			const title = data.get('title');
-			const description = data.get('description');
-			const author = data.get('author');
-			const content_text = data.get('content_text');
-			const content_html = data.get('content_html');
-			const content_type = data.get('content_type');
-			const content_published_date = data.get('content_published_date');
-			const main_image_url = data.get('main_image_url') as string;
-			const icon_url = data.get('icon_url') as string;
-			const note = data.get('note');
-			const importance = data.get('importance');
-			const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
+			const url = data.get('url') as string;
+			const domain = data.get('domain') as string;
+			const title = data.get('title') as string;
+			const description = data.get('description') as string;
+			const author = data.get('author') as string;
+			const contentText = data.get('content_text') as string;
+			const contentHtml = data.get('content_html') as string;
+			const contentType = data.get('content_type') as string;
+			const contentPublishedDate = data.get('content_published_date') as string;
+			const mainImageUrl = data.get('main_image_url') as string;
+			const iconUrl = data.get('icon_url') as string;
+			const note = data.get('note') as string;
+			const importance = parseInt((data.get('importance') || '0') as string);
+			const flagged = data.get('flagged') === 'on' ? new Date() : null;
 			const category = JSON.parse(data.get('category') as string);
 			const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
+			const tagNames = tags.map((tag: any) => tag.label);
 
-			const tagIds = await prepareTags(pb, tags, owner);
+			const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId);
+			const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId);
 
-			const bookmark = (await pb.collection('bookmarks').create({
+			const bookmarkData = {
+				ownerId,
+				url,
 				author,
-				category: category?.value ? category.value : category,
-				tags: tagIds,
-				content_html,
-				content_published_date,
-				content_text,
-				content_type,
+				categoryId: category?.value ? category.value : category,
+				title,
+				contentHtml,
+				contentPublishedDate,
+				contentText,
+				contentType,
 				description,
 				domain,
 				flagged,
-				icon_url,
+				iconUrl,
 				importance,
-				main_image_url,
+				mainImageUrl,
 				note,
-				owner,
-				title,
-				url
-			})) as Bookmark;
+				mainImageId,
+				iconId
+			};
+
+			const bookmark = await createBookmark(ownerId, bookmarkData);
 
 			if (!bookmark.id) {
-				return handlePBError(bookmark, pb, true);
+				return {
+					success: false,
+					error: 'Failed to add bookmark'
+				};
 			}
 
-			if (main_image_url || icon_url) {
-				const attachments = new FormData();
+			await upsertTagsForBookmark(bookmark.id, ownerId, tagNames);
 
-				if (main_image_url && checkIfImageURL(main_image_url)) {
-					const main_image = await fetch(main_image_url as string).then((r) => r.blob());
-					attachments.append('main_image', main_image);
-				}
-
-				if (icon_url && checkIfImageURL(icon_url)) {
-					const icon = await fetch(icon_url as string).then((r) => r.blob());
-					attachments.append('icon', icon);
-				}
-
-				await pb.collection('bookmarks').update(bookmark.id, attachments);
-			}
 			return {
 				bookmark,
 				success: true
 			};
 		} catch (e: any) {
-			return handlePBError(e, pb, true);
+			return {
+				success: false,
+				error: e.message
+			};
 		}
 	},
 	deleteBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -96,9 +101,9 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
+		const id = parseInt(data.get('id') as string, 10);
 
-		await pb.collection('bookmarks').delete(id);
+		await deleteBookmark(id, ownerId);
 
 		return {
 			id,
@@ -106,9 +111,9 @@ export const actions = {
 		};
 	},
 	updateBookmark: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -116,92 +121,65 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		let bookmark: Bookmark;
 
-		const id = data.get('id') as string;
-		const url = data.get('url');
-		const domain = data.get('domain');
-		const title = data.get('title');
-		const description = data.get('description');
-		const author = data.get('author');
-		const content_text = data.get('content_text');
-		const content_html = data.get('content_html');
-		const content_type = data.get('content_type');
-		const content_published_date = data.get('content_published_date');
-		const main_image_url = data.get('main_image_url') as string;
-		const icon_url = data.get('icon_url') as string;
-		const note = data.get('note');
-		const importance = data.get('importance');
-		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
-		const category = JSON.parse(data.get('category') as string);
+		const id = parseInt(data.get('id') as string, 10);
+		const url = data.get('url') as string;
+		const domain = data.get('domain') as string;
+		const title = data.get('title') as string;
+		const description = data.get('description') as string;
+		const author = data.get('author') as string;
+		const contentText = data.get('content_text') as string;
+		const contentHtml = data.get('content_html') as string;
+		const contentType = data.get('content_type') as string;
+		const contentPublishedDate = data.get('content_published_date') as string;
+		const mainImageUrl = data.get('main_image_url') as string;
+		const iconUrl = data.get('icon_url') as string;
+		const note = data.get('note') as string;
+		const importance = parseInt((data.get('importance') || '0') as string);
+		const flagged = data.get('flagged') === 'on' ? new Date() : null;
+		const category = data.get('category') ? JSON.parse(data.get('category') as string) : null;
 		const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
+		const read = data.get('read') === 'on' ? new Date() : null;
 
-		const tagIds = await prepareTags(pb, tags, owner);
+		const tagNames = tags.map((tag: any) => tag.label);
 
-		bookmark = (await pb
-			.collection('bookmarks')
-			.update(
-				id,
-				{
-					author,
-					category: category?.value ? category.value : category,
-					tags: tagIds,
-					content_html,
-					content_published_date,
-					content_text,
-					content_type,
-					description,
-					domain,
-					flagged,
-					icon_url,
-					importance,
-					main_image_url,
-					note,
-					owner,
-					title,
-					url
-				},
-				{
-					expand: 'tags,category'
-				}
-			)
-			.then((res) => ({
-				...res,
-				...res.expand
-			}))) as Bookmark;
+		const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId);
+		const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId);
 
-		if (main_image_url || icon_url) {
-			const attachments = new FormData();
+		const bookmarkData = {
+			author,
+			category: category?.value ? category.value : category,
+			contentHtml,
+			contentPublishedDate,
+			contentText,
+			contentType,
+			description,
+			domain,
+			flagged,
+			iconUrl,
+			importance,
+			mainImageUrl,
+			note,
+			title,
+			url,
+			read,
+			...(mainImageId ? { mainImageId } : {}),
+			...(iconId ? { iconId } : {})
+		};
 
-			if (main_image_url && checkIfImageURL(main_image_url)) {
-				const main_image = await fetch(main_image_url as string).then((r) => r.blob());
-				attachments.append('main_image', main_image);
-			}
+		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
 
-			if (icon_url && checkIfImageURL(icon_url)) {
-				const icon = await fetch(icon_url as string).then((r) => r.blob());
-				attachments.append('icon', icon);
-			}
+		await upsertTagsForBookmark(bookmark.id, ownerId, tagNames);
 
-			bookmark = (await pb
-				.collection('bookmarks')
-				.update(id, attachments, {
-					expand: 'tags,category'
-				})
-				.then((res) => ({
-					...res,
-					...res.expand
-				}))) as Bookmark;
-		}
 		return {
 			bookmark,
 			success: true
 		};
 	},
 	updateFlagged: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -209,21 +187,19 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
-		const flagged = data.get('flagged') === 'on' ? new Date().toISOString() : null;
+		const id = parseInt(data.get('id') as string, 10);
+		const flagged = data.get('flagged') === 'on' ? new Date() : null;
 
-		const { success } = await pb.collection('bookmarks').update(id, {
-			flagged
-		});
+		await updateBookmark(id, ownerId, { flagged });
 
 		return {
-			success
+			success: true
 		};
 	},
 	updateImportance: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -231,22 +207,20 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
-		const importance = data.get('importance');
+		const id = parseInt(data.get('id') as string, 10);
+		const importance = parseInt((data.get('importance') || '0') as string);
 
-		const { success } = await pb.collection('bookmarks').update(id, {
-			importance
-		});
+		await updateBookmark(id, ownerId, { importance });
 
 		return {
-			success
+			success: true
 		};
 	},
 
 	updateRead: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -254,22 +228,20 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
-		const read = data.get('read') === 'on' ? new Date().toISOString() : null;
+		const id = parseInt(data.get('id') as string, 10);
+		const read = data.get('read') === 'on' ? new Date() : null;
 
-		const { success } = await pb.collection('bookmarks').update(id, {
-			read
-		});
+		await updateBookmark(id, ownerId, { read });
 
 		return {
-			success
+			success: true
 		};
 	},
 
 	updateIncreasedOpenedCount: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -277,23 +249,30 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
+		const id = parseInt(data.get('id') as string, 10);
 
-		const currentOpenedCount = (await pb.collection('bookmarks').getOne(id))?.opened_times || 0;
+		const bookmark = await getBookmarkById(id, ownerId);
 
-		const { success } = await pb.collection('bookmarks').update(id, {
-			opened_times: currentOpenedCount + 1,
-			opened_last: new Date().toISOString()
+		if (!bookmark) {
+			return {
+				success: false,
+				error: 'Bookmark not found'
+			};
+		}
+
+		await updateBookmark(id, ownerId, {
+			openedTimes: bookmark.openedTimes + 1,
+			openedLast: new Date()
 		});
 
 		return {
-			success
+			success: true
 		};
 	},
 	addNewCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -307,25 +286,23 @@ export const actions = {
 		const color = data.get('color') as string;
 		const parent = JSON.parse(data.get('parent') as string);
 		const parentValue = parent?.value ? parent.value : parent;
-		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
-		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
+		const archived = data.get('archived') === 'on' ? new Date() : null;
+		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const requestBody = {
+		const categoryBody = {
 			name,
 			slug: createSlug(name),
 			description,
 			icon,
 			color,
-			parent: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue === 'null' ? null : parentValue,
 			archived,
 			public: setPublic,
-			owner,
-			initial: false,
-			created: new Date().toISOString(),
-			updated: new Date().toISOString()
+			ownerId,
+			initial: false
 		};
 
-		const { id } = await pb.collection('categories').create(requestBody);
+		const { id } = await createCategory(ownerId, categoryBody);
 
 		return {
 			id,
@@ -333,9 +310,9 @@ export const actions = {
 		};
 	},
 	updateCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false,
 				error: 'Unauthorized'
@@ -344,75 +321,68 @@ export const actions = {
 
 		const data = await request.formData();
 
-		const id = data.get('id') as string;
+		const id = parseInt(data.get('id') as string, 10);
 		const name = data.get('name') as string;
 		const description = data.get('description') as string;
 		const icon = data.get('icon') as string;
 		const color = data.get('color') as string;
 		const parent = JSON.parse(data.get('parent') as string);
 		const parentValue = parent?.value ? parent.value : parent;
-		const archived = data.get('archived') === 'on' ? new Date().toISOString() : null;
-		const setPublic = data.get('public') === 'on' ? new Date().toISOString() : null;
+		const archived = data.get('archived') === 'on' ? new Date() : null;
+		const setPublic = data.get('public') === 'on' ? new Date() : null;
 
-		const requestBody = {
+		const categoryBody = {
 			name,
 			slug: createSlug(name),
 			description,
 			icon,
 			color,
-			parent: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue === 'null' ? null : parentValue,
 			archived,
-			public: setPublic,
-			updated: new Date().toISOString()
+			public: setPublic
 		};
 
-		const { success } = await pb.collection('categories').update(id, requestBody);
+		await updateCategory(id, ownerId, categoryBody);
 
 		return {
-			success
+			success: true
 		};
 	},
 	deleteCategory: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false
 			};
 		}
 
 		const data = await request.formData();
-		const id = data.get('id') as string;
+		const id = parseInt(data.get('id') as string, 10);
 
-		await pb.collection('categories').delete(id);
+		await deleteCategory(id, ownerId);
 
 		return {
 			success: true
 		};
 	},
 	changeTheme: async ({ locals, request }) => {
-		const owner = locals.user?.id;
+		const ownerId = locals.user?.id;
 
-		if (!owner) {
+		if (!ownerId) {
 			return {
 				success: false
 			};
 		}
 
 		const data = await request.formData();
-		const theme = data.get('theme') as string;
-		const existingSettings = await pb
-			.collection('users')
-			.getOne(owner)
-			.then((res) => res?.settings || {});
+		const theme = data.get('theme') as Theme;
 
 		try {
-			await pb.collection('users').update(owner, {
-				settings: {
-					...existingSettings,
-					theme
-				}
+			await updateUserSettings(ownerId, {
+				theme
 			});
+			console.debug('User theme updated');
 
 			return {
 				success: true

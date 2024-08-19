@@ -6,7 +6,6 @@
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
 	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { checkIfImageURL } from '$lib/utils/check-if-image-url';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -14,7 +13,6 @@
 		IconBookmark,
 		IconBookmarkFilled,
 		IconClipboardText,
-		IconExternalLink,
 		IconEyeCheck,
 		IconEyeClosed,
 		IconMenu,
@@ -46,9 +44,7 @@
 	<div class="flex">
 		<div class="flex items-center justify-between gap-1">
 			<div class="flex items-center gap-1">
-				{#if bookmark.icon || (bookmark.icon_url && checkIfImageURL(bookmark.icon_url))}
-					<img
-						src={bookmark.icon || bookmark.icon_url}
+				{#if bookmark.icon || bookmark.iconUrl}<img src={bookmark.icon || bookmark.iconUrl}
 						alt={`${bookmark.domain}'s favicon`}
 						class="avatar h-4 w-4 rounded-sm"
 					/>
@@ -86,7 +82,7 @@
 								increaseOpenedTimesForm.requestSubmit();
 							}}
 						>
-							<IconExternalLink size={14} />
+							<a size={14} />
 						</a>
 					</div>
 					<div class="tooltip text-left" data-tip="copy URL to clipboard">
