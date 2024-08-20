@@ -1,17 +1,16 @@
-FROM node:20-slim AS base
-RUN corepack enable
+FROM oven/bun AS base
 RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && rm -rf /var/lib/apt/lists/*
-RUN npm i -g bun@latest
+RUN bun i -g svelte-kit@latest
 WORKDIR /usr/src/app
 
 FROM base AS install
 WORKDIR /temp/dev
 COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile || (echo "Bun install failed" && cat ~/.bun/install.log && exit 1)
+RUN bun install --frozen-lockfile
 
 WORKDIR /temp/prod
 COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile --production || (echo "Bun install failed" && cat ~/.bun/install.log && exit 1)
+RUN bun install --frozen-lockfile --production
 
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules

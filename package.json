@@ -20,13 +20,9 @@
 		"core-js-pure",
 		"esbuild",
 		"install-from-cache",
-		"node-gyp",
 		"postinstall",
 		"prebuild-install",
-		"re2",
-		"svelte-preprocess",
-		"tree-sitter",
-		"tree-sitter-yaml"
+		"svelte-preprocess"
 	],
 	"scripts": {
 		"dev": "vite dev",
