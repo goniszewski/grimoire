@@ -58,7 +58,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Read version of package.json
-        uses: xile611/read-package-version-action@v1
+        uses: xile611/read-package-version-action@v2.1
         id: package-version
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/develop'
