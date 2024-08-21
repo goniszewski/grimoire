@@ -39,7 +39,6 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{version}}-preview.{{increment}},enable=${{ github.ref == 'refs/heads/develop' }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -71,3 +70,4 @@ jobs:
           name: Preview Release ${{ steps.package-version.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
           draft: false
           prerelease: true
+          generate_release_notes: true
