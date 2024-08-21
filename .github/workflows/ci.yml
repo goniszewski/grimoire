@@ -58,13 +58,16 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Read version of package.json
+        uses: xile611/read-package-version-action@v1
+        id: package-version
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/develop'
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
-          release_name: Preview Release ${{ steps.meta.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
+          tag_name: v${{ steps.package-version.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
+          name: Preview Release ${{ steps.package-version.outputs.version }}-preview.${{ steps.meta.outputs.increment }}
           draft: false
           prerelease: true
