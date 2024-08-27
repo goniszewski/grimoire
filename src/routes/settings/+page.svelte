@@ -1,23 +1,31 @@
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
+	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { defaultUserSettings } from '$lib/config';
 	import { defaultConfig, listAvailableModels } from '$lib/integrations/ollama';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { UserSettings } from '$lib/types/UserSettings.type';
 	import { showToast } from '$lib/utils/show-toast';
 	import { themeChange } from '$lib/utils/theme-change';
 	import { IconPlug, IconPlugConnected } from '@tabler/icons-svelte';
 	import { writable } from 'svelte/store';
 
-	const updatedSettings = writable<Pick<UserSettings, 'llm' | 'uiAnimations' | 'theme'>>({
-		...$userSettingsStore
+	const userSettingsStore = writable<UserSettings>({
+		...defaultUserSettings,
+		...$page.data.user?.settings
 	});
 
 	const llmModels = writable<{ fetched: boolean; models: string[] }>({
 		fetched: false,
-		models: [...([$userSettingsStore.llm?.ollama?.model] || [])]
+		models: [$page.data.user?.settings.llm.ollama.model ?? '']
 	});
+
+	function resetToDefaults() {
+		userSettingsStore.set(defaultUserSettings);
+		showToast.success('Settings reset to defaults. Remember to save!', {
+			duration: 3000
+		});
+	}
 
 	async function onTestConnection() {
 		const url =
@@ -41,22 +49,17 @@
 			class="flex w-full flex-col gap-8"
 			method="POST"
 			action="?/updateUserSettings"
-			use:enhance={({ formData }) => {
-				// @ts-ignore
-				formData.set('settings', JSON.stringify($updatedSettings));
-
-				return async ({ result }) => {
-					// @ts-ignore
-					if (result.type === 'success' && result.data?.updatedSettings) {
-						// @ts-ignore
+			use:enhance={() => {
+				return async ({ update, result }) => {
+					if (result.type === 'success' && result?.data?.updatedSettings) {
+						// @ts-ignore-next-line
 						userSettingsStore.set(result.data.updatedSettings);
-						// @ts-ignore
+						// @ts-ignore-next-line
 						themeChange(result.data.updatedSettings.theme);
 						showToast.success('Settings updated!');
-
 						await invalidate('/');
-						await applyAction(result);
 					}
+					update();
 				};
 			}}
 		>
@@ -70,11 +73,7 @@
 								<select
 									name="theme"
 									class="select select-bordered w-full max-w-xs"
-									value={$userSettingsStore.theme}
-									on:change={(e) => {
-										// @ts-ignore
-										$updatedSettings.theme = e.target.value;
-									}}
+									bind:value={$userSettingsStore.theme}
 								>
 									<option value="light">Light</option>
 									<option value="dark">Dark</option>
@@ -88,10 +87,10 @@
 									type="checkbox"
 									name="uiAnimations"
 									class="checkbox-accent checkbox"
-									checked={$userSettingsStore.uiAnimations}
+									checked={$page.data.user.settings.uiAnimations}
 									on:change={(e) => {
 										// @ts-ignore
-										$updatedSettings.uiAnimations = e.target.checked;
+										$userSettingsStore.uiAnimations = e.target.checked;
 									}}
 								/></td
 							>
@@ -111,10 +110,10 @@
 									type="checkbox"
 									name="llmEnabled"
 									class="checkbox-accent checkbox"
-									checked={$userSettingsStore.llm.enabled}
+									checked={$page.data.user.settings.llm.enabled}
 									on:change={(e) => {
 										// @ts-ignore
-										$updatedSettings.llm.enabled = e.target.checked;
+										$userSettingsStore.llm.enabled = e.target.checked;
 									}}
 								/></td
 							>
@@ -127,18 +126,14 @@
 								<select
 									name="llmProvider"
 									class="select select-bordered w-full max-w-xs"
-									value={$userSettingsStore.llm.provider}
-									on:change={(e) => {
-										// @ts-ignore
-										$updatedSettings.provider = e.target.value;
-									}}
+									bind:value={$userSettingsStore.llm.provider}
 								>
 									<option value="openai">OpenAI</option>
 									<option value="ollama">Ollama</option>
 								</select>
 							</td>
 						</tr>
-						{#if $updatedSettings.llm.provider === 'ollama'}
+						{#if $userSettingsStore.llm.provider === 'ollama'}
 							<tr>
 								<td>
 									<span class="label-text min-w-[8rem]">Ollama URL</span>
@@ -147,15 +142,10 @@
 									<input
 										type="text"
 										name="llmOllamaUrl"
-										class={`input input-bordered w-full max-w-xs ${
-											$llmModels.fetched ? ' border-success' : ''
-										}`}
-										value={$userSettingsStore.llm.ollama.url}
+										class="input input-bordered w-full max-w-xs"
+										class:border-success={$llmModels.fetched}
+										bind:value={$userSettingsStore.llm.ollama.url}
 										placeholder="http://localhost:11434"
-										on:change={(e) => {
-											// @ts-ignore
-											$updatedSettings.llm.ollama.url = e.target.value;
-										}}
 									/>
 									<button
 										class={`btn btn-sm ${$llmModels.fetched ? 'btn-success' : ' btn-warning'}`}
@@ -172,7 +162,7 @@
 									</button>
 								</td>
 							</tr>
-							{#if $llmModels.models.length || $userSettingsStore.llm.ollama.model}
+							{#if $llmModels.models.length || $page.data.user.settings.llm.ollama.model}
 								<tr>
 									<td>
 										<span class="label-text min-w-[8rem]">Model</span>
@@ -181,11 +171,11 @@
 										<select
 											name="llmOllamaModel"
 											class="select select-bordered w-full max-w-xs"
-											value={$userSettingsStore.llm.ollama.model}
+											value={$page.data.user.settings.llm.ollama.model}
 											placeholder="Select a model you wish to use"
 											on:change={(e) => {
 												// @ts-ignore
-												$updatedSettings.llm.ollama.model = e.target.value;
+												$userSettingsStore.llm.ollama.model = e.target.value;
 											}}
 										>
 											{#each $llmModels.models as model}
@@ -195,7 +185,7 @@
 									</td>
 								</tr>
 							{/if}
-						{:else if $updatedSettings.llm.provider === 'openai'}
+						{:else if $userSettingsStore.llm.provider === 'openai'}
 							<tr>
 								<td>
 									<span class="label-text">API Key</span>
@@ -205,11 +195,11 @@
 										type="text"
 										name="llmOpenaiApikey"
 										class="input input-bordered w-full max-w-xs"
-										value={$userSettingsStore.llm.openai.apiKey}
+										value={$page.data.user.settings.llm.openai.apiKey}
 										placeholder="Paste it here..."
 										on:change={(e) => {
 											// @ts-ignore
-											$updatedSettings.llm.openai.apiKey = e.target.value;
+											$userSettingsStore.llm.openai.apiKey = e.target.value;
 										}}
 									/>
 								</td>
@@ -217,7 +207,7 @@
 						{/if}
 					</table>
 					<table class="table table-xs w-full">
-						{#if $updatedSettings.llm.provider === 'ollama'}
+						{#if $userSettingsStore.llm.provider === 'ollama'}
 							<thead>
 								<tr>
 									<th>Feature</th>
@@ -231,23 +221,19 @@
 									<input
 										type="checkbox"
 										name="llmOllamaSummarizeEnabled"
-										checked={$userSettingsStore.llm.ollama.summarize.enabled}
+										bind:checked={$userSettingsStore.llm.ollama.summarize.enabled}
 										class="checkbox-accent checkbox"
-										on:change={(e) => {
-											// @ts-ignore
-											$updatedSettings.llm.ollama.summarize.enabled = e.target.checked;
-										}}
 									/>
 								</td>
 								<td
 									><textarea
 										name="llmOllamaSystemmsg"
 										class="textarea textarea-bordered textarea-sm w-full min-w-[8rem]"
-										value={$userSettingsStore.llm.ollama.summarize.system}
+										value={$page.data.user.settings.llm.ollama.summarize.system}
 										placeholder={defaultConfig.roles.summarize.system}
 										on:change={(e) => {
 											// @ts-ignore
-											$updatedSettings.llm.ollama.summarize.system = e.target.value;
+											$userSettingsStore.llm.ollama.summarize.system = e.target.value;
 										}}
 									/></td
 								>
@@ -258,11 +244,11 @@
 									<input
 										type="checkbox"
 										name="llmOllamaGenerateTagsEnabled"
-										checked={$userSettingsStore.llm.ollama.generateTags.enabled}
+										checked={$page.data.user.settings.llm.ollama.generateTags.enabled}
 										class="checkbox-accent checkbox"
 										on:change={(e) => {
 											// @ts-ignore
-											$updatedSettings.llm.ollama.generateTags.enabled = e.target.checked;
+											$userSettingsStore.llm.ollama.generateTags.enabled = e.target.checked;
 										}}
 									/>
 								</td>
@@ -270,11 +256,11 @@
 									><textarea
 										name="llmOllamaSystemmsg"
 										class="textarea textarea-bordered textarea-sm w-full min-w-[8rem]"
-										value={$userSettingsStore.llm.ollama.generateTags.system}
+										value={$page.data.user.settings.llm.ollama.generateTags.system}
 										placeholder={defaultConfig.roles.generateTags.system}
 										on:change={(e) => {
 											// @ts-ignore
-											$updatedSettings.llm.ollama.generateTags.system = e.target.value;
+											$userSettingsStore.llm.ollama.generateTags.system = e.target.value;
 										}}
 									/></td
 								>
@@ -284,7 +270,9 @@
 				</div>
 			</div>
 			<div class="flex justify-end gap-4">
-				<button class="btn btn-primary" on:click={() => form.requestSubmit()}> Save </button>
+				<button class="btn btn-secondary" on:click|preventDefault={() => resetToDefaults()}>
+					Reset to Defaults
+				</button><button class="btn btn-primary"> Save </button>
 			</div>
 		</form>
 	{/if}

@@ -3,6 +3,14 @@ import type { Actions } from '../$types';
 import type { UserSettings } from '$lib/types/UserSettings.type';
 import { updateUserSettings } from '$lib/database/repositories/User.repository';
 
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	return {
+		user: locals.user
+	};
+};
+
 export const actions = {
 	updateUserSettings: async ({ locals, request }) => {
 		const owner = locals.user?.id;

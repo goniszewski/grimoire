@@ -10,6 +10,10 @@ const ROOT_DIR = `${process.cwd()}/data/user-uploads`;
 const getFileExtFromMimeType = (mimeType: string) => {
 	const [, ext] = mimeType.split('/');
 
+	if (!ext) {
+		return null;
+	}
+
 	if (ext.includes('icon')) return 'ico';
 	if (ext.includes('svg')) return 'svg';
 
@@ -17,6 +21,9 @@ const getFileExtFromMimeType = (mimeType: string) => {
 };
 
 const getDefaultFileNameFromMimeType = (mimeType: string) => {
+	if (mimeType === '') {
+		return null;
+	}
 	const [type] = mimeType.split('/');
 	return `${type}.${getFileExtFromMimeType(mimeType)}`;
 };
@@ -34,7 +41,8 @@ export class Storage {
 		const { relatedEntityId, source, fileName } = details;
 		const mimeType = fileData.type;
 		const size = fileData.size;
-		const fileExt = fileName || fileData.name?.split('.').pop() || getFileExtFromMimeType(mimeType);
+		const fileExt =
+			(fileName || fileData.name)?.split('.').pop() || getFileExtFromMimeType(mimeType);
 
 		const generatedId = randomUUID();
 
@@ -50,7 +58,7 @@ export class Storage {
 
 		const fileDetails: typeof fileSchema.$inferInsert = {
 			storageType: FileStorageTypeEnum.Local,
-			fileName: fileData.name || getDefaultFileNameFromMimeType(mimeType),
+			fileName: fileName || fileData.name || getDefaultFileNameFromMimeType(mimeType) || 'unknown',
 			size,
 			mimeType,
 			relativePath,
@@ -71,10 +79,14 @@ export class Storage {
 			throw new Error('Invalid URL');
 		}
 
-		const blob = await fetch(url).then((r) => r.blob());
+		const response = await fetch(url);
+		const arrayBuffer = await response.arrayBuffer();
+		const blob = new Blob([arrayBuffer], {
+			type: response.headers.get('content-type') || undefined
+		});
 		const fileName = `${createSlug(title)}.${url.split('.').pop()?.split('?')[0]}`;
 
-		return await storage.storeFile(blob, ownerId, {
+		return await storage.storeFile(blob as Blob, ownerId, {
 			fileName
 		});
 	}
