@@ -2,11 +2,12 @@
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 
 	import { applyAction, enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
 	import {
@@ -37,7 +38,7 @@
 
 <div
 	class={`card relative mb-4 flex h-64 w-full min-w-[20rem] break-inside-avoid flex-col justify-between border border-base-100 bg-base-100 shadow-xl hover:border-secondary ${
-		$userSettingsStore.uiAnimations
+		$page.data.user?.settings.uiAnimations
 			? 'transition duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl'
 			: ''
 	}`}
@@ -82,14 +83,18 @@
 				{/if}
 			</div>
 		</div>
-		<div
-			class="badge-xl badge absolute left-1 top-1"
-			style={`border-color: ${bookmark.category.color};`}
-		>
-			<span class="text-opacity-90" style={`_color: ${bookmark.category.color};`}
-				>{bookmark.category.name}</span
+		{#if !bookmark.category}
+				No category? That's odd...
+		{:else}
+			<div
+				class="badge-xl badge absolute left-1 top-1"
+				style={`border-color: ${bookmark.category.color};`}
 			>
-		</div>
+				<span class="text-opacity-90" style={`_color: ${bookmark.category.color};`}
+					>{bookmark.category.name}</span
+				>
+			</div>
+		{/if}
 
 		<form
 			bind:this={importanceForm}
@@ -328,6 +333,7 @@
 							action="/?/deleteBookmark"
 							use:enhance={() => {
 								return async ({ result }) => {
+									await invalidate('app:main-page');
 									if (result.type === 'success') {
 										showToast.success('Bookmark deleted', {
 											position: 'bottom-center'

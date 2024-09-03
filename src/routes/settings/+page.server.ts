@@ -22,15 +22,42 @@ export const actions = {
 			};
 		}
 
-		const data = await request.formData();
-		const settings = JSON.parse(data.get('settings') as string) as UserSettings;
+		const settings = await request.formData();
 
-		const updatedSettings = await updateUserSettings(owner, settings)
+		const mappedSettings: UserSettings = {
+			theme: settings.get('theme') as UserSettings['theme'],
+			uiAnimations: settings.get('uiAnimations') === 'on',
+			llm: {
+				enabled: settings.get('llmEnabled') === 'on',
+				provider: settings.get('llmProvider') as UserSettings['llm']['provider'],
+				ollama: {
+					url: settings.get('llmOllamaUrl') as string,
+					model: settings.get('llmOllamaModel') as string,
+					summarize: {
+						enabled: settings.get('llmOllamaSummarizeEnabled') === 'on',
+						system: settings.get('llmOllamaSystemmsg') as string
+					},
+					generateTags: {
+						enabled: settings.get('llmOllamaGenerateTagsEnabled') === 'on',
+						system: settings.get('llmOllamaSystemmsg') as string
+					}
+				},
+				openai: {
+					apiKey: settings.get('llmOpenaiApikey') as string
+				}
+			}
+		};
+
+		console.log('Received mappedSettings:', JSON.stringify(mappedSettings, null, 2));
+
+		const updatedSettings = await updateUserSettings(owner, mappedSettings)
 			.then(({ settings }) => settings)
 			.catch((err) => {
 				console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
 				return null;
 			});
+
+		console.log('Updated settings:', JSON.stringify(updatedSettings, null, 2));
 
 		if (!updatedSettings) {
 			return {

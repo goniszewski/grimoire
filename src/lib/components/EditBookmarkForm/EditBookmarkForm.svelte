@@ -1,139 +1,140 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import _ from 'lodash';
-	import Select from 'svelte-select';
-	import { writable, type Writable } from 'svelte/store';
+import { enhance } from '$app/forms';
+import { page } from '$app/stores';
+import _ from 'lodash';
+import Select from 'svelte-select';
+import { writable, type Writable } from 'svelte/store';
 
-	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import { searchEngine } from '$lib/stores/search.store';
-	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import { updateBookmarkInSearchIndex } from '$lib/utils/search';
-	import { showToast } from '$lib/utils/show-toast';
+import { invalidate } from '$app/navigation';
+import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { searchEngine } from '$lib/stores/search.store';
+import type { Bookmark } from '$lib/types/Bookmark.type';
+import { updateBookmarkInSearchIndex } from '$lib/utils/search';
+import { showToast } from '$lib/utils/show-toast';
 
-	let form: HTMLFormElement;
-	export let closeModal: () => void;
+let form: HTMLFormElement;
+export let closeModal: () => void;
 
-	let error = '';
-	const loading = writable(false);
-	const bookmark = writable<Partial<Bookmark>>({});
+let error = '';
+const loading = writable(false);
+const bookmark = writable<Partial<Bookmark>>({});
 
-	$: $bookmark = { ...$editBookmarkStore };
+$: $bookmark = { ...$editBookmarkStore };
 
-	const categoryItems = $page.data.categories.map((c) => ({
-		value: `${c.id}`,
-		label: c.name
-	}));
+const categoryItems = $page.data.categories.map((c) => ({
+	value: `${c.id}`,
+	label: c.name
+}));
 
-	const bookmarkTagsInput: Writable<
-		| {
-				value: string;
-				label: string;
-				created?: boolean;
-		  }[]
-		| null
-	> = writable(null);
-
-	$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: `${t.id}`, label: t.name })) || null;
-
-	const bookmarkTags = writable<
-		{
+const bookmarkTagsInput: Writable<
+	| {
 			value: string;
 			label: string;
 			created?: boolean;
-		}[]
-	>([...$page.data.tags.map((t) => ({ value: `${t.id}`, label: t.name }))]);
-	let tagsInputFilterText: '';
+	  }[]
+	| null
+> = writable(null);
 
-	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
-		if (
-			!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) &&
-			e.detail.length === 0 &&
-			tagsInputFilterText.length > 0
-		) {
-			const prev = $bookmarkTags.filter((i) => !i.created);
-			$bookmarkTags = [
-				...prev,
-				{ value: tagsInputFilterText, label: tagsInputFilterText, created: true }
-			];
-		}
-	}
+$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: `${t.id}`, label: t.name })) || null;
 
-	function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
-		if (!e.detail) {
-			$bookmarkTags = [];
-			return e;
-		}
-		const lastItemIndex = e.detail.length - 1;
-		e.detail[lastItemIndex] = {
-			...e.detail[lastItemIndex],
-			label: e.detail[lastItemIndex].label.replace(/#/g, ''),
-			value: e.detail[lastItemIndex].value
-		};
+const bookmarkTags = writable<
+	{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[]
+>([...$page.data.tags.map((t) => ({ value: `${t.id}`, label: t.name }))]);
+let tagsInputFilterText: '';
 
-		return e;
-	}
-
-	function handleTagsChange() {
+function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+	if (
+		!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) &&
+		e.detail.length === 0 &&
+		tagsInputFilterText.length > 0
+	) {
+		const prev = $bookmarkTags.filter((i) => !i.created);
 		$bookmarkTags = [
-			...$bookmarkTags.map((i) => {
-				if (i.label.startsWith('#')) {
-					i.label = i.label.replace(/#/g, '');
-					i.value = i.value.replace(/#/g, '');
-				}
-				if (i.created) {
-					delete i.created;
-				}
-				return i;
-			})
+			...prev,
+			{ value: tagsInputFilterText, label: tagsInputFilterText, created: true }
 		];
 	}
+}
 
-	const onGetMetadata = _.debounce(
-		async (event: Event) => {
-			const validateUrlRegex =
-				/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;
-			const target = event.target as HTMLButtonElement;
-			const url = target.value;
-			error = '';
+function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+	if (!e.detail) {
+		$bookmarkTags = [];
+		return e;
+	}
+	const lastItemIndex = e.detail.length - 1;
+	e.detail[lastItemIndex] = {
+		...e.detail[lastItemIndex],
+		label: e.detail[lastItemIndex].label.replace(/#/g, ''),
+		value: e.detail[lastItemIndex].value
+	};
 
-			loading.set(true);
+	return e;
+}
 
-			if (!url.match(validateUrlRegex)) {
-				error = 'Invalid URL';
-				loading.set(false);
-				return;
+function handleTagsChange() {
+	$bookmarkTags = [
+		...$bookmarkTags.map((i) => {
+			if (i.label.startsWith('#')) {
+				i.label = i.label.replace(/#/g, '');
+				i.value = i.value.replace(/#/g, '');
 			}
+			if (i.created) {
+				delete i.created;
+			}
+			return i;
+		})
+	];
+}
 
-			fetch(`/api/fetch-metadata`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ url })
-			})
-				.then((res) => res.json())
-				.then((data) => {
-					$bookmark = {
-						...$bookmark,
-						...data?.metadata
-					};
-				})
-				.catch((err) => {
-					console.error(err);
-					error = 'Failed to fetch metadata';
-				})
-				.finally(() => {
-					loading.set(false);
-				});
-		},
-		500,
-		{
-			leading: false,
-			trailing: true,
-			maxWait: 1000
+const onGetMetadata = _.debounce(
+	async (event: Event) => {
+		const validateUrlRegex =
+			/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;
+		const target = event.target as HTMLButtonElement;
+		const url = target.value;
+		error = '';
+
+		loading.set(true);
+
+		if (!url.match(validateUrlRegex)) {
+			error = 'Invalid URL';
+			loading.set(false);
+			return;
 		}
-	);
+
+		fetch(`/api/fetch-metadata`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ url })
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				$bookmark = {
+					...$bookmark,
+					...data?.metadata
+				};
+			})
+			.catch((err) => {
+				console.error(err);
+				error = 'Failed to fetch metadata';
+			})
+			.finally(() => {
+				loading.set(false);
+			});
+	},
+	500,
+	{
+		leading: false,
+		trailing: true,
+		maxWait: 1000
+	}
+);
 </script>
 
 {#if $bookmark?.id}
@@ -142,8 +143,9 @@
 		method="POST"
 		action="/?/updateBookmark"
 		use:enhance={() =>
-			({ update, result }) => {
+			async ({ update, result }) => {
 				if (result.type === 'success') {
+					await invalidate('app:main-page');
 					showToast.success('Bookmark updated', {
 						position: 'bottom-center'
 					});
@@ -162,8 +164,7 @@
 				}
 				closeModal();
 				update();
-			}}
-	>
+			}}>
 		<input type="text" class="hidden" name="id" value={$bookmark.id} />
 
 		<div class="w-full">
@@ -174,8 +175,7 @@
 					type="text"
 					class="hidden"
 					name="content_published_date"
-					value={$bookmark.contentPublishedDate}
-				/>
+					value={$bookmark.contentPublishedDate} />
 
 				{#if error}
 					<div class="alert alert-error">{error}</div>
@@ -188,8 +188,7 @@
 						name="url"
 						value={$bookmark.url}
 						on:input={onGetMetadata}
-						disabled={$loading}
-					/>
+						disabled={$loading} />
 				</div>
 
 				{#if $loading}
@@ -207,8 +206,7 @@
 										items={categoryItems}
 										value={`${$bookmark.category?.id}`}
 										placeholder={'Select category'}
-										class="this-select input input-bordered w-full md:min-w-28"
-									/>
+										class="this-select input input-bordered w-full md:min-w-28" />
 								{/if}
 							</div>
 							<div class="flex w-full flex-1 flex-col">
@@ -224,8 +222,7 @@
 									bind:filterText={tagsInputFilterText}
 									bind:value={$bookmarkTagsInput}
 									items={$bookmarkTags}
-									class="this-select input input-bordered min-w-full flex-1"
-								>
+									class="this-select input input-bordered min-w-full flex-1">
 									<div slot="item" let:item>
 										{item.created ? 'Create tag: ' : ''}
 										{item.label}
@@ -242,29 +239,25 @@
 										name="importance"
 										class="rating-hidden"
 										value=""
-										checked={!$bookmark.importance}
-									/>
+										checked={!$bookmark.importance} />
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="1"
-										checked={$bookmark.importance === 1}
-									/>
+										checked={$bookmark.importance === 1} />
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="2"
-										checked={$bookmark.importance === 2}
-									/>
+										checked={$bookmark.importance === 2} />
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
 										value="3"
-										checked={$bookmark.importance === 3}
-									/>
+										checked={$bookmark.importance === 3} />
 								</div>
 							</div>
 							<div class="flex w-full flex-col">
@@ -275,8 +268,7 @@
 										type="checkbox"
 										name="flagged"
 										class="checkbox-error checkbox"
-										checked={!!$bookmark.flagged}
-									/>
+										checked={!!$bookmark.flagged} />
 								</label>
 							</div>
 						</div>
@@ -292,8 +284,7 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.title = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-full flex-col">
 						<label for="icon" class="label">Icon</label>
@@ -306,8 +297,7 @@
 								on:input={(event) => {
 									// @ts-ignore-next-line
 									$bookmark.icon_url = event.target.value;
-								}}
-							/>
+								}} />
 							{#if $bookmark.iconUrl}
 								<img class="m-auto h-8 w-8 md:ml-8" src={$bookmark.iconUrl} alt={$bookmark.title} />
 							{/if}
@@ -322,8 +312,7 @@
 							on:change={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.description = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
@@ -331,8 +320,7 @@
 							<img
 								class="m-auto max-h-64 rounded-md"
 								src={$bookmark.mainImageUrl}
-								alt={$bookmark.title}
-							/>
+								alt={$bookmark.title} />
 						{/if}
 						<input
 							type="text"
@@ -342,8 +330,7 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.main_image_url = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-auto flex-col">
 						<label for="content_text" class="label">Content (text)</label>
@@ -355,8 +342,7 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								bookmark.content_text = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-full flex-col">
 						<label for="author" class="label">Author</label>
@@ -369,8 +355,7 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.author = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-auto flex-col">
 						<label for="note" class="label">Your note</label>
@@ -382,15 +367,13 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								$bookmark.note = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 				</div>
 
 				<button
 					class="btn btn-primary mx-auto my-6 w-full max-w-xs"
-					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button
-				>
+					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button>
 			</div>
 		</div>
 	</form>

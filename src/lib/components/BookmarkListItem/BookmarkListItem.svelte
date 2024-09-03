@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { applyAction, enhance } from '$app/forms';
+	import { invalidate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { bookmarksStore } from '$lib/stores/bookmarks.store';
 	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 	import { searchEngine } from '$lib/stores/search.store';
 	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
 	import type { Bookmark } from '$lib/types/Bookmark.type';
 	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
 	import { showToast } from '$lib/utils/show-toast';
@@ -36,7 +37,7 @@
 
 <div
 	class={`flex min-h-[6rem] flex-col justify-between gap-1 rounded-md border border-base-content border-opacity-20 p-2 hover:border-secondary  ${
-		$userSettingsStore.uiAnimations
+		$page.data.user?.settings.uiAnimations
 			? 'transition duration-300 ease-in-out hover:-translate-x-1'
 			: ''
 	}`}
@@ -125,31 +126,35 @@
 	</div>
 	<div class="flex justify-between">
 		<div class="flex items-center gap-1">
-			<a
-				href={`/categories/${bookmark.category.slug}`}
-				class="badge badge-sm w-full max-w-[8rem]"
-				style={`border-color: ${bookmark.category.color};`}
-			>
-				<span
-					class="w-full overflow-hidden overflow-ellipsis whitespace-nowrap text-opacity-90"
-					style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
+			{#if !bookmark.category}
+				No category? That's odd...
+				{:else}
+					<a
+					href={`/categories/${bookmark.category.slug}`}
+					class="badge badge-sm w-full max-w-[8rem]"
+					style={`border-color: ${bookmark.category.color};`}
 				>
-			</a>
-			<div class="flex w-full gap-1">
-				<span class="font-sans text-xs font-semibold">#</span>
-				{#if bookmark.tags}
-					{#each bookmark.tags as tag (tag.id)}
-						<a
-							href={`/tags/${tag.slug}`}
-							class="link w-full max-w-[8rem] whitespace-nowrap font-sans text-xs hover:text-secondary"
-							>{tag.name}</a
-						>
-					{/each}
-				{/if}
-				<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"
-					>+</button
-				>
-			</div>
+					<span
+						class="w-full overflow-hidden overflow-ellipsis whitespace-nowrap text-opacity-90"
+						style={`_color: ${bookmark.category.color};`}>{bookmark.category.name}</span
+					>
+				</a>
+				<div class="flex w-full gap-1">
+					<span class="font-sans text-xs font-semibold">#</span>
+					{#if bookmark.tags}
+						{#each bookmark.tags as tag (tag.id)}
+							<a
+								href={`/tags/${tag.slug}`}
+								class="link w-full max-w-[8rem] whitespace-nowrap font-sans text-xs hover:text-secondary"
+								>{tag.name}</a
+							>
+						{/each}
+					{/if}
+					<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"
+						>+</button
+					>
+				</div>
+			{/if}
 		</div>
 		<div class="flex items-center gap-1">
 			<form
@@ -306,6 +311,7 @@
 								use:enhance={() => {
 									return async ({ result }) => {
 										if (result.type === 'success') {
+											await invalidate('app:main-page');
 											showToast.success('Bookmark deleted', {
 												position: 'bottom-center'
 											});

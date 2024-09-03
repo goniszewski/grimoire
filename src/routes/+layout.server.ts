@@ -1,7 +1,8 @@
 import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/database/db';
 import {
-    getBookmarksByUserId, getBookmarksCountForUser
+	getBookmarksByUserId,
+	getBookmarksCountForUser
 } from '$lib/database/repositories/Bookmark.repository';
 import { fetchUserCategoryAndTags, getUserCount } from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';
@@ -10,7 +11,9 @@ import type { Category } from '$lib/types/Category.type';
 
 import type { Bookmark, BookmarkForIndex } from '$lib/types/Bookmark.type';
 import type { Tag } from '$lib/types/Tag.type';
-export const load = (async ({ locals, url }) => {
+export const load = (async ({ locals, url, depends }) => {
+	depends('app:main-page');
+
 	const userCount = await getUserCount();
 	const noUsersFound = userCount === 0;
 
