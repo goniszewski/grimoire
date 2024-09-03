@@ -1,8 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/database/db';
 import {
-	getBookmarksByUserId,
-	getBookmarksCountForUser
+    getBookmarksByUserId, getBookmarksCountForUser
 } from '$lib/database/repositories/Bookmark.repository';
 import { fetchUserCategoryAndTags, getUserCount } from '$lib/database/repositories/User.repository';
 import { searchIndexKeys } from '$lib/utils/search';

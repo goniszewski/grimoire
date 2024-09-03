@@ -75,7 +75,7 @@
 </script>
 
 {#if $page.data.user?.id}
-	<div class="m-4 ml-auto flex w-full flex-col justify-center sm:flex-row">
+	<div class="m-4 ml-auto flex flex-1 w-full flex-col justify-center sm:flex-row">
 		<form
 			class="flex w-full flex-1 flex-wrap items-center pr-5"
 			bind:this={bookmarksViewForm}

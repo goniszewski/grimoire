@@ -52,6 +52,7 @@
 			use:enhance={() => {
 				return async ({ update, result }) => {
 					if (result.type === 'success' && result?.data?.updatedSettings) {
+						console.log('result.data.updatedSettings', result.data.updatedSettings);
 						// @ts-ignore-next-line
 						userSettingsStore.set(result.data.updatedSettings);
 						// @ts-ignore-next-line
@@ -87,7 +88,7 @@
 									type="checkbox"
 									name="uiAnimations"
 									class="checkbox-accent checkbox"
-									checked={$page.data.user.settings.uiAnimations}
+									checked={$userSettingsStore.uiAnimations}
 									on:change={(e) => {
 										// @ts-ignore
 										$userSettingsStore.uiAnimations = e.target.checked;
@@ -110,7 +111,7 @@
 									type="checkbox"
 									name="llmEnabled"
 									class="checkbox-accent checkbox"
-									checked={$page.data.user.settings.llm.enabled}
+									checked={$userSettingsStore.llm.enabled}
 									on:change={(e) => {
 										// @ts-ignore
 										$userSettingsStore.llm.enabled = e.target.checked;

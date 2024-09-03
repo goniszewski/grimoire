@@ -24,7 +24,7 @@ export const actions = {
 
 		const settings = await request.formData();
 
-		const mappedSettings: UserSettings = {
+		const mappedSettings: Partial<UserSettings> = {
 			theme: settings.get('theme') as UserSettings['theme'],
 			uiAnimations: settings.get('uiAnimations') === 'on',
 			llm: {
@@ -48,16 +48,12 @@ export const actions = {
 			}
 		};
 
-		console.log('Received mappedSettings:', JSON.stringify(mappedSettings, null, 2));
-
 		const updatedSettings = await updateUserSettings(owner, mappedSettings)
 			.then(({ settings }) => settings)
 			.catch((err) => {
 				console.error('Error updating user settings. Details:', JSON.stringify(err, null, 2));
 				return null;
 			});
-
-		console.log('Updated settings:', JSON.stringify(updatedSettings, null, 2));
 
 		if (!updatedSettings) {
 			return {

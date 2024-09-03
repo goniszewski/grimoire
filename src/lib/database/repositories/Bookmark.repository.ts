@@ -3,7 +3,7 @@ import { serializeBookmark } from '$lib/utils/serialize-dbo-entity';
 import { and, asc, count, desc, eq, inArray, like, or } from 'drizzle-orm';
 
 import { db } from '../db';
-import { bookmarkSchema, bookmarksToTagsSchema, fileSchema, tagSchema } from '../schema';
+import { bookmarkSchema, bookmarksToTagsSchema, tagSchema } from '../schema';
 import { mapRelationsToWithStatements } from './common';
 
 import type { Bookmark } from '$lib/types/Bookmark.type';
@@ -145,6 +145,7 @@ export const deleteBookmark = async (id: number, ownerId: number): Promise<void>
 	await db
 		.delete(bookmarkSchema)
 		.where(and(eq(bookmarkSchema.id, id), eq(bookmarkSchema.ownerId, ownerId)));
+	await db.delete(bookmarksToTagsSchema).where(eq(bookmarksToTagsSchema.bookmarkId, id));
 };
 
 export const fetchBookmarkTags = async (id: number, ownerId: number): Promise<{ tags: Tag[] }> => {
