@@ -1,4 +1,5 @@
 import { convert } from 'html-to-text';
+import { performance } from 'perf_hooks';
 import sanitize from 'sanitize-html';
 import urlMetadata from 'url-metadata';
 
@@ -94,16 +95,33 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 }
 
 export async function getMetadata(url: string, providedHtml?: string): Promise<Metadata> {
+	const startTime = performance.now();
 	const html: string = providedHtml || (await fetch(url).then((res) => res.text()));
+	const fetchHtmlTime = providedHtml?0:performance.now() - startTime;
 
+	const urlMetadataStart = performance.now();
 	const urlMetadataMetadata = await urlMetadataScraper(html, url);
+	const urlMetadataTime = performance.now() - urlMetadataStart;
+
+	const articleExtractorStart = performance.now();
 	const articleExtractorMetadata = await articleExtractorScraper(html, url);
+	const articleExtractorTime = performance.now() - articleExtractorStart;
 
 	const firstParagraph = html?.match(/<p[^>]*>(.*?)<\/p>/)?.[1];
 	const domain = new URL(url).hostname.replace('www.', '');
+
+	const contentHtmlStart = performance.now();
 	const contentText = articleExtractorMetadata?.contentHtml
 		? htmlToText(articleExtractorMetadata.contentHtml) || htmlToText(html)
 		: '';
+	const contentTextTime = performance.now() - contentHtmlStart;
+	const totalTime = performance.now() - startTime;
+
+	console.debug(`Fetch HTML time: ${fetchHtmlTime.toFixed(2)}ms`);
+    console.debug(`URL Metadata Scraper time: ${urlMetadataTime.toFixed(2)}ms`);
+    console.debug(`Article Extractor Scraper time: ${articleExtractorTime.toFixed(2)}ms`);
+	console.debug(`Content Text time: ${contentTextTime.toFixed(2)}ms`);
+    console.debug(`Total execution time: ${totalTime.toFixed(2)}ms`);
 
 	return {
 		url: urlMetadataMetadata?.url || articleExtractorMetadata?.url || '',
