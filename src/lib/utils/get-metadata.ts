@@ -113,7 +113,7 @@ export async function getMetadata(url: string, providedHtml?: string): Promise<M
 		: '';
 
 	return {
-		url: urlMetadataMetadata?.url || articleExtractorMetadata?.url || '',
+		url: urlMetadataMetadata?.url || articleExtractorMetadata?.url || url,
 		domain,
 		title: urlMetadataMetadata?.title || articleExtractorMetadata?.title || '',
 		description:
