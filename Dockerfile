@@ -35,6 +35,7 @@ ENV BODY_SIZE_LIMIT=$BODY_SIZE_LIMIT
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app .
+RUN bun --bun run run-migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
 ENTRYPOINT [ "bun","./build/index.js" ]
