@@ -127,11 +127,11 @@ export async function getMetadata(url: string, providedHtml?: string): Promise<M
 	const totalTime = performance.now() - startTime;
 
 	const logs = createPerformanceLogs([
-		['⏱️ Fetch HTML time:', fetchHtmlTime],
-		['⏱️ URL Metadata Scraper time:', urlMetadataTime],
-		['⏱️ Article Extractor Scraper time:', articleExtractorTime],
-		['⏱️ Content Text time:', contentTextTime],
-		['⏱️ Total execution time:', totalTime]
+		['⏱️ Fetch HTML time:', fetchHtmlTime, 'ms'],
+		['⏱️ URL Metadata Scraper time:', urlMetadataTime, 'ms'],
+		['⏱️ Article Extractor Scraper time:', articleExtractorTime, 'ms'],
+		['⏱️ Content Text time:', contentTextTime, 'ms'],
+		['⏱️ Total execution time:', totalTime, 'ms']
 	]);
 	console.debug(logs);
 
