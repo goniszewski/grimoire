@@ -76,7 +76,7 @@ export class Storage {
 		const storage = new Storage();
 
 		if (!url || url.length === 0) {
-			throw new Error('Invalid URL');
+			throw new Error('Invalid image URL');
 		}
 
 		const response = await fetch(url);

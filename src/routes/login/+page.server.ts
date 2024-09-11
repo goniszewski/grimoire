@@ -5,6 +5,8 @@ import { verify } from '@node-rs/argon2';
 import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
+
+const INVALID_USERNAME_OR_PASSWORD = 'Invalid username or password';
 export const actions: Actions = {
 	default: async (event) => {
 		const formData = await event.request.formData();
@@ -18,12 +20,13 @@ export const actions: Actions = {
 			!/^[a-z0-9_-]+$/.test(username)
 		) {
 			return fail(400, {
-				message: 'Invalid username'
+				username,
+				message: 'Wrong username format'
 			});
 		}
 		if (typeof password !== 'string' || password.length < 6 || password.length > 255) {
 			return fail(400, {
-				message: 'Invalid password'
+				message: 'Wrong password format'
 			});
 		}
 
@@ -32,11 +35,16 @@ export const actions: Actions = {
 		if (!existingUser) {
 			const randomMs = Math.floor(Math.random() * 1000);
 
-			return setTimeout(() => {
-				return fail(400, {
-					message: 'Invalid username'
-				});
-			}, randomMs);
+			return new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(
+						fail(401, {
+							username,
+							message: INVALID_USERNAME_OR_PASSWORD
+						})
+					);
+				}, randomMs);
+			});
 		}
 
 		const validPassword = await verify(existingUser.passwordHash, password, {
@@ -45,9 +53,11 @@ export const actions: Actions = {
 			outputLen: 32,
 			parallelism: 1
 		});
+
 		if (!validPassword) {
-			return fail(400, {
-				message: 'Incorrect username or password'
+			return fail(401, {
+				username,
+				message: INVALID_USERNAME_OR_PASSWORD
 			});
 		}
 
