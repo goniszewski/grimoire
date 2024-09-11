@@ -5,6 +5,8 @@ import urlMetadata from 'url-metadata';
 
 import { extract, extractFromHtml } from '@extractus/article-extractor';
 
+import { createPerformanceLogs } from './logs-formatting';
+
 import type { Metadata } from '$lib/types/Metadata.type';
 
 const getIconUrl = async (pageUrl: string, iconPath: string): Promise<string> => {
@@ -104,7 +106,7 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 export async function getMetadata(url: string, providedHtml?: string): Promise<Metadata> {
 	const startTime = performance.now();
 	const html: string = providedHtml || (await fetch(url).then((res: Response) => res.text()));
-	const fetchHtmlTime = providedHtml?0:performance.now() - startTime;
+	const fetchHtmlTime = providedHtml ? 0 : performance.now() - startTime;
 
 	const urlMetadataStart = performance.now();
 	const urlMetadataMetadata = await urlMetadataScraper(html, url);
@@ -124,11 +126,14 @@ export async function getMetadata(url: string, providedHtml?: string): Promise<M
 	const contentTextTime = performance.now() - contentHtmlStart;
 	const totalTime = performance.now() - startTime;
 
-	console.debug(`Fetch HTML time: ${fetchHtmlTime.toFixed(2)}ms`);
-  console.debug(`URL Metadata Scraper time: ${urlMetadataTime.toFixed(2)}ms`);
-  console.debug(`Article Extractor Scraper time: ${articleExtractorTime.toFixed(2)}ms`);
-	console.debug(`Content Text time: ${contentTextTime.toFixed(2)}ms`);
-  console.debug(`Total execution time: ${totalTime.toFixed(2)}ms`);
+	const logs = createPerformanceLogs([
+		['⏱️ Fetch HTML time:', fetchHtmlTime],
+		['⏱️ URL Metadata Scraper time:', urlMetadataTime],
+		['⏱️ Article Extractor Scraper time:', articleExtractorTime],
+		['⏱️ Content Text time:', contentTextTime],
+		['⏱️ Total execution time:', totalTime]
+	]);
+	console.debug(logs);
 
 	return {
 		url: urlMetadataMetadata?.url || articleExtractorMetadata?.url || url,
