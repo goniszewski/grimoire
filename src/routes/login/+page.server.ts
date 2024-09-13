@@ -10,27 +10,10 @@ const INVALID_USERNAME_OR_PASSWORD = 'Invalid username or password';
 export const actions: Actions = {
 	default: async (event) => {
 		const formData = await event.request.formData();
-		const username = formData.get('username');
-		const password = formData.get('password');
+		const login = formData.get('login') as string;
+		const password = formData.get('password') as string;
 
-		if (
-			typeof username !== 'string' ||
-			username.length < 3 ||
-			username.length > 31 ||
-			!/^[a-z0-9_-]+$/.test(username)
-		) {
-			return fail(400, {
-				username,
-				message: 'Wrong username format'
-			});
-		}
-		if (typeof password !== 'string' || password.length < 6 || password.length > 255) {
-			return fail(400, {
-				message: 'Wrong password format'
-			});
-		}
-
-		const existingUser = await getUserWithoutSerialization(username);
+		const existingUser = await getUserWithoutSerialization(login);
 
 		if (!existingUser) {
 			const randomMs = Math.floor(Math.random() * 1000);
@@ -39,7 +22,7 @@ export const actions: Actions = {
 				setTimeout(() => {
 					resolve(
 						fail(401, {
-							username,
+							login: login,
 							message: INVALID_USERNAME_OR_PASSWORD
 						})
 					);
@@ -56,7 +39,7 @@ export const actions: Actions = {
 
 		if (!validPassword) {
 			return fail(401, {
-				username,
+				login: login,
 				message: INVALID_USERNAME_OR_PASSWORD
 			});
 		}
