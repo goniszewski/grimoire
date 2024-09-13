@@ -19,7 +19,7 @@ export let form: HTMLFormElement;
 				</label>
 				<input
 					type="text"
-					name="username"
+					name="login"
 					placeholder="Type here"
 					class={`input input-bordered w-full max-w-xs ${
 						form?.invalid || (form?.missing && form?.login) ? 'input-error' : ''
