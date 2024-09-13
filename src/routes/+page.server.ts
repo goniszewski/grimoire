@@ -148,7 +148,7 @@ export const actions = {
 
 		const bookmarkData = {
 			author,
-			category: category?.value ? category.value : category,
+			categoryId: category?.value ? +category.value : category,
 			contentHtml,
 			contentPublishedDate,
 			contentText,
