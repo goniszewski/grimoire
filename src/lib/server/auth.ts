@@ -1,4 +1,4 @@
-import { dev } from '$app/environment';
+import config from '$lib/config';
 import { db } from '$lib/database/db';
 import { sessionSchema, userSchema } from '$lib/database/schema';
 import { Lucia } from 'lucia';
@@ -6,13 +6,12 @@ import { Lucia } from 'lucia';
 import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
 
 import type { RequestEvent } from '@sveltejs/kit';
-
 export const adapter = new DrizzleSQLiteAdapter(db, sessionSchema, userSchema);
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
 		attributes: {
-			secure: !dev
+			secure: config.HTTPS_ONLY
 		}
 	},
 	getUserAttributes: (attributes) => {

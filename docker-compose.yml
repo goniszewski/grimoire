@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     environment:
       - PORT=5173
+      - PUBLIC_HTTPS_ONLY=false
+      - PUBLIC_SIGNUP_DISABLED=false
     volumes:
       - grimoire_data:/app/data/
     build:
