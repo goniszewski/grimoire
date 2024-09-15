@@ -3,7 +3,11 @@ import fetch from 'node-fetch';
 import path from 'path';
 
 const BACKUP_NAME = 'pb_migration.zip';
-async function authenticateAdmin(adminEmail: string, adminPassword: string, pbUrl: string): Promise<string> {
+async function authenticateAdmin(
+	adminEmail: string,
+	adminPassword: string,
+	pbUrl: string
+): Promise<string> {
 	const authResponse = await fetch(`${pbUrl}/api/admins/auth-with-password`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -16,7 +20,7 @@ async function authenticateAdmin(adminEmail: string, adminPassword: string, pbUr
 }
 
 async function createBackup(token: string, pbUrl: string): Promise<void> {
-	const {ok, statusText} = await fetch(`${pbUrl}/api/backups`, {
+	const { ok, statusText } = await fetch(`${pbUrl}/api/backups`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -24,13 +28,17 @@ async function createBackup(token: string, pbUrl: string): Promise<void> {
 		},
 		body: JSON.stringify({ name: BACKUP_NAME })
 	});
-	
+
 	if (!ok) {
 		console.error('Failed to create backup:', statusText);
 	}
 }
 
-async function downloadBackup(backupKey: string, token: string, pbUrl: string): Promise<ArrayBuffer> {
+async function downloadBackup(
+	backupKey: string,
+	token: string,
+	pbUrl: string
+): Promise<ArrayBuffer> {
 	const downloadResponse = await fetch(`${pbUrl}/api/backups/${backupKey}`, {
 		headers: { Authorization: `Bearer ${token}` }
 	});
@@ -48,7 +56,11 @@ async function saveBackupFile(backupZip: ArrayBuffer): Promise<string> {
 	return backupPath;
 }
 
-export async function createAndDownloadBackup(adminEmail: string, adminPassword: string, pbUrl: string) {
+export async function createAndDownloadBackup(
+	adminEmail: string,
+	adminPassword: string,
+	pbUrl: string
+) {
 	const token = await authenticateAdmin(adminEmail, adminPassword, pbUrl);
 	await createBackup(token, pbUrl);
 	const backupZip = await downloadBackup(BACKUP_NAME, token, pbUrl);
@@ -57,3 +69,9 @@ export async function createAndDownloadBackup(adminEmail: string, adminPassword:
 	return backupPath;
 }
 
+export async function uploadBackupFile(backupFile: Blob) {
+	const arrayBuffer = await backupFile.arrayBuffer();
+	const backupPath = await saveBackupFile(arrayBuffer);
+
+	return backupPath;
+}

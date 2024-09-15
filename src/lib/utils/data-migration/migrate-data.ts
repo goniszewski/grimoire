@@ -218,6 +218,8 @@ async function migrateBookmarkImages(
 	mappedUserIds: Record<string, number>,
 	sourceFileDir: string // path do backup's 'storage' dir
 ) {
+	let migratedImageCount = 0;
+
 	const bookmarks = migrationDbClient
 		.select({
 			id: schema.bookmarks.id,
@@ -276,11 +278,7 @@ async function migrateBookmarkImages(
 	);
 
 	for (const [bookmarkId, bookmarkFilePath] of Object.entries(bookmarkFilePaths)) {
-		const sourceFilePathDir = path.join(
-			sourceFileDir,
-			bookmarkFilePath.sourceOwnerId,
-			bookmarkId
-		);
+		const sourceFilePathDir = path.join(sourceFileDir, bookmarkFilePath.sourceOwnerId, bookmarkId);
 		if (bookmarkFilePath.icon) {
 			await handleBookmarkImageMigration(
 				targetDbClient,
@@ -290,6 +288,7 @@ async function migrateBookmarkImages(
 				mappedBookmarkIds[bookmarkId],
 				'icon'
 			);
+			migratedImageCount++;
 		}
 		if (bookmarkFilePath.mainImage) {
 			await handleBookmarkImageMigration(
@@ -300,6 +299,7 @@ async function migrateBookmarkImages(
 				mappedBookmarkIds[bookmarkId],
 				'mainImage'
 			);
+			migratedImageCount++;
 		}
 		if (bookmarkFilePath.screenshot) {
 			await handleBookmarkImageMigration(
@@ -310,14 +310,18 @@ async function migrateBookmarkImages(
 				mappedBookmarkIds[bookmarkId],
 				'screenshot'
 			);
+			migratedImageCount++;
 		}
 	}
+
+	return migratedImageCount;
 }
-export async function migrateData(backupPath: string, dbPath: string) {
+export async function migrateData(backupPath: string) {
 	const extractPath = path.join(process.cwd(), 'data', 'temp', `migration_backup_${Date.now()}`);
+	const extractedDbPath = path.join(extractPath, 'data.db');
 	extractBackup(backupPath, extractPath);
 
-	const migrationDbClient = getMigrationDbClient(dbPath);
+	const migrationDbClient = getMigrationDbClient(extractedDbPath);
 
 	const mappedUserIds = await migrateUsers(migrationDbClient, targetDbClient);
 	const mappedCategoryIds = await migrateCategories(
@@ -333,11 +337,21 @@ export async function migrateData(backupPath: string, dbPath: string) {
 		mappedCategoryIds,
 		mappedTagIds
 	);
-	await migrateBookmarkImages(
+	const migratedImages = await migrateBookmarkImages(
 		migrationDbClient,
 		targetDbClient,
 		mappedBookmarkIds,
 		mappedUserIds,
 		extractPath
 	);
+
+	return {
+		count: {
+			users: Object.keys(mappedUserIds).length,
+			categories: Object.keys(mappedCategoryIds).length,
+			tags: Object.keys(mappedTagIds).length,
+			bookmarks: Object.keys(mappedBookmarkIds).length,
+			images: migratedImages
+		}
+	};
 }
