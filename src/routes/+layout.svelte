@@ -42,6 +42,7 @@ import '../app.css';
 
 const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
 const user = $page.data.user;
+const tagsAvailable = $page.data.tags.filter((tag) => tag.bookmarks?.length > 0).length > 0;
 
 $: {
 	const categories = $page.data.categories;
@@ -141,17 +142,21 @@ $: {
 							<div>
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
-									{#each $page.data.tags as tag (tag.id)}
-										{#if tag.bookmarks?.length > 0}
-											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
-												>#{tag.name}</a>
-										{/if}
-									{/each}
+									{#if tagsAvailable}
+										{#each $page.data.tags as tag (tag.id)}
+											{#if tag.bookmarks?.length > 0}
+												<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
+													>#{tag.name}</a>
+											{/if}
+										{/each}
+									{:else}
+										<p class="text-center text-gray-300">No tags available.</p>
+									{/if}
 								</div>
 							</div>
 							<div>
 								<h3 class="text-xl">Flows</h3>
-								<div class="flex flex-wrap p-2">To be added.</div>
+								<div class="flex flex-wrap p-2 text-gray-300">To be added.</div>
 							</div>
 						</ul>
 					</div>
