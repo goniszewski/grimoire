@@ -1,81 +1,78 @@
 <script lang="ts">
-	import AddBookmarkButton from '$lib/components/AddBookmarkButton/AddBookmarkButton.svelte';
-	import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
+import AddBookmarkButton from '$lib/components/AddBookmarkButton/AddBookmarkButton.svelte';
+import BookmarkList from '$lib/components/BookmarksList/BookmarkList.svelte';
 
-	import { applyAction, enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { env } from '$env/dynamic/public';
-	import Pagination from '$lib/components/Pagination/Pagination.svelte';
-	import { defaultUserSettings } from '$lib/config';
-	import { bookmarksStore } from '$lib/stores/bookmarks.store';
-	import { searchEngine, searchedValue } from '$lib/stores/search.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import type { Bookmark } from '$lib/types/Bookmark.type';
-	import type { UserSettings } from '$lib/types/UserSettings.type';
-	import { initializeSearch } from '$lib/utils/search';
-	import { sortBookmarks } from '$lib/utils/sort-bookmarks';
-	import {
-		IconLayout2,
-		IconListDetails,
-		IconSortAscending,
-		IconSortDescending
-	} from '@tabler/icons-svelte';
-	import _ from 'lodash';
-	import Select from 'svelte-select';
-	import { writable } from 'svelte/store';
+import { applyAction, enhance } from '$app/forms';
+import { page } from '$app/stores';
+import { env } from '$env/dynamic/public';
+import Pagination from '$lib/components/Pagination/Pagination.svelte';
+import { defaultUserSettings } from '$lib/config';
+import { bookmarksStore } from '$lib/stores/bookmarks.store';
+import { searchEngine, searchedValue } from '$lib/stores/search.store';
+import { userSettingsStore } from '$lib/stores/user-settings.store';
+import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { UserSettings } from '$lib/types/UserSettings.type';
+import { initializeSearch } from '$lib/utils/search';
+import { sortBookmarks } from '$lib/utils/sort-bookmarks';
+import {
+	IconLayout2,
+	IconListDetails,
+	IconSortAscending,
+	IconSortDescending
+} from '@tabler/icons-svelte';
+import _ from 'lodash';
+import Select from 'svelte-select';
+import { writable } from 'svelte/store';
 
-	const sortByOptions = [
-		{ label: 'added (desc)', value: 'created_desc' },
-		{ label: 'added (asc)', value: 'created_asc' },
-		{ label: 'domain (desc)', value: 'domain_desc' },
-		{ label: 'domain (asc)', value: 'domain_asc' },
-		{ label: 'opened times (desc)', value: 'opened_times_desc' },
-		{ label: 'opened times (asc)', value: 'opened_times_asc' }
-	];
+const sortByOptions = [
+	{ label: 'added (desc)', value: 'created_desc' },
+	{ label: 'added (asc)', value: 'created_asc' },
+	{ label: 'domain (desc)', value: 'domain_desc' },
+	{ label: 'domain (asc)', value: 'domain_asc' },
+	{ label: 'opened times (desc)', value: 'opened_times_desc' },
+	{ label: 'opened times (asc)', value: 'opened_times_asc' }
+];
 
-	$searchEngine = initializeSearch($page.data.bookmarksForIndex);
+$searchEngine = initializeSearch($page.data.bookmarksForIndex);
 
-	function filterBookmarks(bookmarks: Bookmark[], settings: UserSettings) {
-		return bookmarks.filter((b) => {
-			if (settings.bookmarksOnlyShowRead && !!b.read) {
-				return false;
-			}
-			if (settings.bookmarksOnlyShowFlagged && !b.flagged) {
-				return false;
-			}
-			return true;
-		});
-	}
-
-	const bookmarksToDisplay = writable<Bookmark[]>($page.data.bookmarks);
-
-	$: {
-		if ($searchedValue.trim()) {
-			const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
-			_.throttle(() => {
-				fetch(`/api/bookmarks?ids=${searchedBookmarksIds.join(',')}`)
-					.then((r) => r.json())
-					.then((r) => {
-						$bookmarksToDisplay = r.bookmarks;
-					});
-			}, 250)();
-		} else {
-			$bookmarksToDisplay = $page.data.bookmarks;
+function filterBookmarks(bookmarks: Bookmark[], settings: UserSettings) {
+	return bookmarks.filter((b) => {
+		if (settings.bookmarksOnlyShowRead && !!b.read) {
+			return false;
 		}
-	}
-	$: {
-		const sortedBookmarks = sortBookmarks(
-			$bookmarksToDisplay,
-			$userSettingsStore.bookmarksSortedBy
-		);
-		bookmarksStore.set(filterBookmarks(sortedBookmarks, $userSettingsStore));
-	}
+		if (settings.bookmarksOnlyShowFlagged && !b.flagged) {
+			return false;
+		}
+		return true;
+	});
+}
 
-	let bookmarksViewForm: HTMLFormElement;
+const bookmarksToDisplay = writable<Bookmark[]>($page.data.bookmarks);
+
+$: {
+	if ($searchedValue.trim()) {
+		const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
+		_.throttle(() => {
+			fetch(`/api/bookmarks?ids=${searchedBookmarksIds.join(',')}`)
+				.then((r) => r.json())
+				.then((r) => {
+					$bookmarksToDisplay = r.bookmarks;
+				});
+		}, 250)();
+	} else {
+		$bookmarksToDisplay = $page.data.bookmarks;
+	}
+}
+$: {
+	const sortedBookmarks = sortBookmarks($bookmarksToDisplay, $userSettingsStore.bookmarksSortedBy);
+	bookmarksStore.set(filterBookmarks(sortedBookmarks, $userSettingsStore));
+}
+
+let bookmarksViewForm: HTMLFormElement;
 </script>
 
 {#if $page.data.user?.id}
-	<div class="m-4 ml-auto flex flex-1 w-full flex-col justify-center sm:flex-row">
+	<div class="m-4 ml-auto flex w-full flex-col justify-center sm:flex-row">
 		<form
 			class="flex w-full flex-1 flex-wrap items-center pr-5"
 			bind:this={bookmarksViewForm}
@@ -98,8 +95,7 @@
 						await applyAction(result);
 					}
 				};
-			}}
-		>
+			}}>
 			<div class="tooltip flex flex-col justify-center" data-tip="Change view">
 				<label class="link swap swap-rotate px-1 hover:text-secondary">
 					<input
@@ -108,8 +104,7 @@
 						checked={$userSettingsStore.bookmarksView === 'list'}
 						on:change={() => {
 							bookmarksViewForm.requestSubmit();
-						}}
-					/>
+						}} />
 					<IconLayout2 class="swap-on h-5 w-5" />
 					<IconListDetails class="swap-off h-5 w-5" />
 				</label>
@@ -125,8 +120,7 @@
 					value={sortByOptions.find((o) => o.value === $userSettingsStore.bookmarksSortedBy)}
 					on:change={() => {
 						bookmarksViewForm.requestSubmit();
-					}}
-				>
+					}}>
 					<div slot="prepend">
 						{#if $userSettingsStore.bookmarksSortedBy.includes('_asc')}
 							<IconSortAscending class="h-5 w-5" />
@@ -147,8 +141,7 @@
 							class="checkbox"
 							on:change={() => {
 								bookmarksViewForm.requestSubmit();
-							}}
-						/>
+							}} />
 					</label>
 				</div>
 				<div class="tooltip cursor-pointer" data-tip="Show only flagged">
@@ -161,14 +154,12 @@
 							class="checkbox"
 							on:change={() => {
 								bookmarksViewForm.requestSubmit();
-							}}
-						/>
+							}} />
 					</label>
 				</div>
 			</div>
-			<span class="ml-auto text-sm text-gray-500"
-				>{`Showing ${$bookmarksStore.length} out of ${$page.data.bookmarks.length}`}</span
-			>
+			<span class="ml-auto text-sm text-gray-300"
+				>{`Showing ${$bookmarksStore.length} out of ${$page.data.bookmarks.length}`}</span>
 		</form>
 		<AddBookmarkButton />
 	</div>
@@ -178,8 +169,7 @@
 		page={$page.data.page}
 		limit={$page.data.limit}
 		items={$page.data.bookmarksCount}
-		position="right"
-	/>
+		position="right" />
 {:else if $page.data.noUsersFound}
 	<div class="flex h-full flex-col items-center justify-center">
 		<h1 class="text-2xl">Initialization Wizard 🧙</h1>

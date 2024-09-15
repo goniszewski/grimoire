@@ -42,6 +42,7 @@ import '../app.css';
 
 const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
 const user = $page.data.user;
+const tagsAvailable = $page.data.tags.filter((tag) => tag.bookmarks?.length > 0).length > 0;
 
 $: {
 	const categories = $page.data.categories;
@@ -80,25 +81,23 @@ $: {
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
 					</ul>
-				{:else if user && user.isAdmin}
-					<form method="POST" action="/logout" use:enhance>
-						<button class="btn btn-outline btn-error btn-sm w-28">Log out admin</button>
-					</form>
 				{:else}
 					<div class="dropdown dropdown-end z-10">
-						<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
-							<div class="w-10 rounded-full bg-neutral text-neutral-content">
-								<span> {user.name[0] || user.username[0]} </span>
-							</div>
-						</label>
+						<div
+							class="tooltip tooltip-left"
+							data-tip={`Logged in as ${user.username}${user.isAdmin && ' (admin)'}`}>
+							<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
+								<div
+									class={`w-10 rounded-full bg-neutral text-neutral-content ${user.isAdmin && 'ring-1 ring-primary'}`}>
+									<span> {user.name[0] || user.username[0]} </span>
+								</div>
+							</label>
+						</div>
 						<ul
 							tabindex="-1"
 							class="menu dropdown-content menu-sm mt-3 w-auto gap-2 rounded-box bg-base-100 p-2 shadow">
 							<li>
-								<a href="/profile" class="justify-between">
-									Profile
-									<!-- <span class="badge">New</span> -->
-								</a>
+								<a href="/profile" class="justify-between"> Profile </a>
 							</li>
 							<li><a href="/settings">Settings</a></li>
 							<form method="POST" action="/logout" use:enhance>
@@ -143,17 +142,21 @@ $: {
 							<div>
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
-									{#each $page.data.tags as tag (tag.id)}
-										{#if tag.bookmarks?.length > 0}
-											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
-												>#{tag.name}</a>
-										{/if}
-									{/each}
+									{#if tagsAvailable}
+										{#each $page.data.tags as tag (tag.id)}
+											{#if tag.bookmarks?.length > 0}
+												<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
+													>#{tag.name}</a>
+											{/if}
+										{/each}
+									{:else}
+										<p class="text-center text-gray-300">No tags available.</p>
+									{/if}
 								</div>
 							</div>
 							<div>
 								<h3 class="text-xl">Flows</h3>
-								<div class="flex flex-wrap p-2">To be added.</div>
+								<div class="flex flex-wrap p-2 text-gray-300">To be added.</div>
 							</div>
 						</ul>
 					</div>

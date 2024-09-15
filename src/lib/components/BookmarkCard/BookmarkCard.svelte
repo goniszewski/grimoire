@@ -1,39 +1,39 @@
 <script lang="ts">
-	import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Bookmark } from '$lib/types/Bookmark.type';
 
-	import { applyAction, enhance } from '$app/forms';
-	import { invalidate } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { bookmarksStore } from '$lib/stores/bookmarks.store';
-	import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
-	import { searchEngine } from '$lib/stores/search.store';
-	import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
-	import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
-	import { showToast } from '$lib/utils/show-toast';
-	import {
-		IconBookmark,
-		IconBookmarkFilled,
-		IconClipboardText,
-		IconDots,
-		IconExternalLink,
-		IconEyeCheck,
-		IconEyeClosed,
-		IconPhotoX
-	} from '@tabler/icons-svelte';
+import { applyAction, enhance } from '$app/forms';
+import { invalidate } from '$app/navigation';
+import { page } from '$app/stores';
+import { bookmarksStore } from '$lib/stores/bookmarks.store';
+import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { searchEngine } from '$lib/stores/search.store';
+import { showBookmarkStore } from '$lib/stores/show-bookmark.store';
+import { removeBookmarkFromSearchIndex } from '$lib/utils/search';
+import { showToast } from '$lib/utils/show-toast';
+import {
+	IconBookmark,
+	IconBookmarkFilled,
+	IconClipboardText,
+	IconDots,
+	IconExternalLink,
+	IconEyeCheck,
+	IconEyeClosed,
+	IconPhotoX
+} from '@tabler/icons-svelte';
 
-	export let bookmark: Bookmark = {} as Bookmark;
-	let importanceForm: HTMLFormElement;
-	let readForm: HTMLFormElement;
-	let flaggedForm: HTMLFormElement;
-	let increaseOpenedTimesForm: HTMLFormElement;
+export let bookmark: Bookmark = {} as Bookmark;
+let importanceForm: HTMLFormElement;
+let readForm: HTMLFormElement;
+let flaggedForm: HTMLFormElement;
+let increaseOpenedTimesForm: HTMLFormElement;
 
-	function onEditBookmark() {
-		editBookmarkStore.set(bookmark);
-	}
+function onEditBookmark() {
+	editBookmarkStore.set(bookmark);
+}
 
-	function onShowBookmark() {
-		showBookmarkStore.set(bookmark);
-	}
+function onShowBookmark() {
+	showBookmarkStore.set(bookmark);
+}
 </script>
 
 <div
@@ -41,17 +41,17 @@
 		$page.data.user?.settings.uiAnimations
 			? 'transition duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl'
 			: ''
-	}`}
->
+	}`}>
 	<figure class="relative h-36">
 		<div
 			on:click={onShowBookmark}
 			class="w-full hover:brightness-90"
 			role="button"
 			tabindex="0"
-			on:keydown={onShowBookmark}
-		>
-			<div class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100">
+			on:keydown={onShowBookmark}>
+			<div
+				class="bg-base flex h-36 w-full items-center justify-center hover:bg-base-100"
+				title="Click to see more details">
 				{#if bookmark.mainImage && bookmark.screenshot}
 					<img
 						src={bookmark.mainImage || bookmark.mainImageUrl}
@@ -72,8 +72,7 @@
 							}
 						}}
 						class="h-full w-full object-cover transition duration-300 ease-in-out"
-						alt="Main"
-					/>
+						alt="Main" />
 				{:else if bookmark.mainImageId || bookmark.mainImageUrl}
 					<img src={bookmark.mainImage || bookmark.mainImageUrl} alt="Main" />
 				{:else if bookmark.screenshot}
@@ -84,15 +83,13 @@
 			</div>
 		</div>
 		{#if !bookmark.category}
-				No category? That's odd...
+			No category? That's odd...
 		{:else}
 			<div
 				class="badge-xl badge absolute left-1 top-1"
-				style={`border-color: ${bookmark.category.color};`}
-			>
+				style={`border-color: ${bookmark.category.color};`}>
 				<span class="text-opacity-90" style={`_color: ${bookmark.category.color};`}
-					>{bookmark.category.name}</span
-				>
+					>{bookmark.category.name}</span>
 			</div>
 		{/if}
 
@@ -111,8 +108,7 @@
 						});
 					}
 				};
-			}}
-		>
+			}}>
 			<input type="hidden" name="id" value={bookmark.id} />
 			<div class="badge rating rating-sm absolute bottom-1 left-1 opacity-90">
 				<input
@@ -121,24 +117,21 @@
 					class="rating-hidden rating-sm"
 					checked={!bookmark.importance}
 					value="0"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
+					on:change={() => importanceForm.requestSubmit()} />
 				<input
 					type="radio"
 					name="importance"
 					class="mask mask-star-2 bg-orange-400"
 					checked={bookmark.importance === 1}
 					value="1"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
+					on:change={() => importanceForm.requestSubmit()} />
 				<input
 					type="radio"
 					name="importance"
 					class="mask mask-star-2 bg-orange-400"
 					checked={bookmark.importance === 2}
 					value="2"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
+					on:change={() => importanceForm.requestSubmit()} />
 				<input
 					type="radio"
 					name="importance"
@@ -147,16 +140,14 @@
 					value="3"
 					on:change={() => {
 						importanceForm.requestSubmit();
-					}}
-				/>
+					}} />
 				<input
 					type="radio"
 					name="importance"
 					class="rating-hidden rating-sm"
 					checked={false}
 					value="0"
-					on:change={() => importanceForm.requestSubmit()}
-				/>
+					on:change={() => importanceForm.requestSubmit()} />
 			</div>
 		</form>
 
@@ -176,8 +167,7 @@
 							});
 						}
 					};
-				}}
-			>
+				}}>
 				<input type="hidden" name="id" value={bookmark.id} />
 				<label class="btn btn-circle swap btn-xs p-4">
 					<input
@@ -186,8 +176,7 @@
 						checked={!!bookmark.read}
 						on:change={() => {
 							readForm.requestSubmit();
-						}}
-					/>
+						}} />
 					<IconEyeCheck class="swap-on text-blue-500" />
 					<IconEyeClosed class="swap-off text-gray-400" />
 				</label>
@@ -207,8 +196,7 @@
 							});
 						}
 					};
-				}}
-			>
+				}}>
 				<input type="hidden" name="id" value={bookmark.id} />
 				<label class="btn btn-circle swap btn-xs p-4">
 					<input
@@ -217,8 +205,7 @@
 						checked={!!bookmark.flagged}
 						on:change={() => {
 							flaggedForm.requestSubmit();
-						}}
-					/>
+						}} />
 					<IconBookmarkFilled class="swap-on text-green-600" />
 					<IconBookmark class="swap-off text-gray-400" />
 				</label>
@@ -234,20 +221,18 @@
 							<img
 								src={bookmark.icon || bookmark.iconUrl}
 								alt={`${bookmark.domain}'s favicon`}
-								class="avatar w-4"
-							/>
+								class="avatar w-4" />
 						{/if}
 						<form
 							bind:this={increaseOpenedTimesForm}
 							method="POST"
 							action="/?/updateIncreasedOpenedCount"
-							use:enhance
-						>
+							use:enhance>
 							<input type="hidden" name="id" value={bookmark.id} />
 						</form>
 						<a
 							href={bookmark.url}
-							title={bookmark.title}
+							title={`${bookmark.title} [open in a current tab]`}
 							target="_self"
 							class="link-hover link card-title line-clamp-1 text-lg"
 							on:click={(el) => {
@@ -255,8 +240,7 @@
 								increaseOpenedTimesForm.requestSubmit();
 
 								window.open(bookmark.url, '_self');
-							}}>{bookmark.title}</a
-						>
+							}}>{bookmark.title}</a>
 						<div class="ml-auto flex">
 							<a
 								href={bookmark.url}
@@ -265,8 +249,7 @@
 								class="btn btn-circle btn-ghost btn-xs"
 								on:click={() => {
 									increaseOpenedTimesForm.requestSubmit();
-								}}
-							>
+								}}>
 								<IconExternalLink size={14} />
 							</a>
 							<button
@@ -277,8 +260,7 @@
 									showToast.success('URL copied to clipboard', {
 										position: 'bottom-center'
 									});
-								}}
-							>
+								}}>
 								<IconClipboardText size={14} />
 							</button>
 						</div>
@@ -302,8 +284,7 @@
 					{/each}
 				{/if}
 				<button title="Add new tag" class="link-hover link font-sans text-xs text-gray-400"
-					>+</button
-				>
+					>+</button>
 			</div>
 		</div>
 		<div class="absolute right-1 top-1 flex items-center gap-1">
@@ -344,8 +325,7 @@
 										bookmarksStore.remove(bookmark.id);
 									}
 								};
-							}}
-						>
+							}}>
 							<input type="hidden" name="id" value={bookmark.id} />
 							<button tabindex="0" class="text"> Remove </button>
 						</form>

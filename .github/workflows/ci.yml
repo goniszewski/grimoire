@@ -5,8 +5,6 @@ on:
     branches:
       - 'main'
       - 'develop'
-    tags:
-      - 'v*.*.*'
     paths:
       - 'src/**'
       - 'static/**'
@@ -22,6 +20,8 @@ on:
       - 'tailwind.config.cjs'
       - 'tsconfig.json'
       - 'vite.config.cjs'
+  release:
+    types: [published]
 
 jobs:
   docker:
@@ -39,6 +39,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=pre-release,enable=${{ github.event_name == 'release' && github.event.release.prerelease }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -57,17 +58,3 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Read version of package.json
-        uses: xile611/read-package-version-action@v2.1
-        id: package-version
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/develop'
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.package-version.outputs.current_version }}
-          name: Preview Release ${{ steps.package-version.outputs.current_version }}
-          draft: false
-          prerelease: true
-          generate_release_notes: true

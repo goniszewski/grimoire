@@ -1,7 +1,7 @@
 FROM oven/bun AS base
 RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && rm -rf /var/lib/apt/lists/*
 RUN bun i -g svelte-kit@latest
-WORKDIR /usr/src/app
+WORKDIR /app
 
 FROM base AS install
 WORKDIR /temp/dev
@@ -34,7 +34,7 @@ ENV BODY_SIZE_LIMIT=$BODY_SIZE_LIMIT
 
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/app .
+COPY --from=prerelease /app .
 RUN bun --bun run run-migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
