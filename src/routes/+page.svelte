@@ -158,7 +158,7 @@ let bookmarksViewForm: HTMLFormElement;
 					</label>
 				</div>
 			</div>
-			<span class="ml-auto text-sm text-gray-500"
+			<span class="ml-auto text-sm text-gray-300"
 				>{`Showing ${$bookmarksStore.length} out of ${$page.data.bookmarks.length}`}</span>
 		</form>
 		<AddBookmarkButton />
