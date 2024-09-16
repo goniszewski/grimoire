@@ -8,17 +8,26 @@ import AdmZip from 'adm-zip';
 import { Database } from 'bun:sqlite';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { unlink } from 'node:fs/promises';
+import { exists, readdir, rm, unlink } from 'node:fs/promises';
 import path from 'path';
+
+import { hash } from '@node-rs/argon2';
 
 import { createSlug } from '../create-slug';
 import * as schema from './pb-schema';
 
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { UserSettings } from '$lib/types/UserSettings.type';
+import type { MigrationResult } from './migration.types';
+
+export const DEFAULT_USER_PASSWORD = 'changeme';
 function extractBackup(backupPath: string, extractPath: string) {
 	const zip = new AdmZip(backupPath);
 	zip.extractAllTo(extractPath, true);
+}
+
+async function deleteBackupFiles(backupPath: string, extractPath: string) {
+	return Promise.all([unlink(backupPath), rm(extractPath, { recursive: true, force: true })]);
 }
 
 function getMigrationDbClient(dbPath: string) {
@@ -38,11 +47,18 @@ async function migrateUsers(
 		(a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
 	)[0].id;
 
+	const passwordHash = await hash(DEFAULT_USER_PASSWORD, {
+		memoryCost: 19456,
+		timeCost: 2,
+		outputLen: 32,
+		parallelism: 1
+	});
+
 	const serializedUsers = users.map((user) => ({
 		name: user.name,
 		username: user.username,
 		email: user.email,
-		passwordHash: user.passwordHash,
+		passwordHash,
 		avatarId: null,
 		settings: user.settings as UserSettings,
 		verified: user.verified,
@@ -55,7 +71,8 @@ async function migrateUsers(
 
 	const mappedIds = createdUsers.reduce(
 		(acc, user) => {
-			acc[user.username] = user.id;
+			const oldId = users.find((u) => u.name === user.name)?.id!;
+			acc[oldId] = user.id;
 			return acc;
 		},
 		{} as Record<string, number>
@@ -70,14 +87,21 @@ async function migrateCategories(
 	mappedUserIds: Record<string, number>
 ) {
 	const categories = migrationDbClient.select().from(schema.categories).all();
-	const serializedCategories = categories.map((category) => ({
-		name: category.name,
-		slug: category.slug,
-		description: category.description,
-		ownerId: mappedUserIds[category.owner],
-		created: new Date(category.created),
-		updated: new Date(category.updated)
-	}));
+	const serializedCategories: (typeof categorySchema.$inferInsert)[] = categories.map(
+		(category) => ({
+			name: category.name,
+			slug: category.slug,
+			description: category.description,
+			color: category.color,
+			archived: category.archived ? new Date(category.archived) : null,
+			public: category.public ? new Date(category.public) : null,
+			icon: category.icon,
+			initial: category.initial,
+			ownerId: mappedUserIds[category.owner],
+			created: new Date(category.created),
+			updated: new Date(category.updated)
+		})
+	);
 	const createdCategories = await targetDbClient
 		.insert(categorySchema)
 		.values(serializedCategories)
@@ -85,11 +109,34 @@ async function migrateCategories(
 
 	const mappedIds = createdCategories.reduce(
 		(acc, category) => {
-			acc[category.slug] = category.id;
+			const oldId = categories.find((c) => {
+				const slugMatch = c.slug.trim().toLowerCase() === category.slug.trim().toLowerCase();
+				const ownerMatch = mappedUserIds[c.owner] === category.ownerId;
+
+				return slugMatch && ownerMatch;
+			})?.id!;
+
+			if (!oldId) {
+				console.warn(
+					`Failed to match category: ${category.name} (${category.slug}) for user ${category.ownerId}`
+				);
+			}
+
+			acc[oldId] = category.id;
 			return acc;
 		},
 		{} as Record<string, number>
 	);
+
+	// Update parentId of categories that have a parentId
+	const categoriesWithParentId = categories.filter((c) => c.parent);
+	await targetDbClient
+		.update(categorySchema)
+		.set({
+			parentId: mappedIds[categoriesWithParentId[0].parent],
+			updated: new Date()
+		})
+		.where(eq(categorySchema.id, mappedIds[categoriesWithParentId[0].id]));
 
 	return mappedIds;
 }
@@ -102,12 +149,24 @@ async function migrateBookmarks(
 	mappedTagIds: Record<string, number>
 ) {
 	const bookmarks = migrationDbClient.select().from(schema.bookmarks).all();
-	const serializedBooks = bookmarks.map((book) => ({
+	const serializedBooks: (typeof bookmarkSchema.$inferInsert)[] = bookmarks.map((book) => ({
 		domain: book.domain,
 		title: book.title,
 		url: book.url,
 		slug: createSlug(book.title),
 		description: book.description,
+		mainImageUrl: book.mainImageUrl,
+		iconUrl: book.iconUrl,
+		importance: book.importance,
+		flagged: book.flagged ? new Date(book.flagged) : null,
+		read: book.read ? new Date(book.read) : null,
+		archived: book.archived ? new Date(book.archived) : null,
+		openedLast: book.openedLast ? new Date(book.openedLast) : null,
+		openedTimes: book.openedTimes,
+		contentHtml: book.contentHtml,
+		contentText: book.contentText,
+		contentType: book.contentType,
+		author: book.author,
 		ownerId: mappedUserIds[book.owner],
 		categoryId: mappedCategoryIds[book.category],
 		created: new Date(book.created),
@@ -119,7 +178,12 @@ async function migrateBookmarks(
 		.returning();
 	const mappedIds = createdBooks.reduce(
 		(acc, book) => {
-			acc[book.id] = book.id;
+			const oldId = bookmarks.find(
+				(b) =>
+					b.title === book.title &&
+					Object.entries(mappedUserIds).find(([_, value]) => value === book.ownerId)?.[0]
+			)?.id!;
+			acc[oldId] = book.id;
 			return acc;
 		},
 		{} as Record<string, number>
@@ -156,7 +220,8 @@ async function migrateTags(
 	const createdTags = await targetDbClient.insert(tagSchema).values(serializedTags).returning();
 	const mappedIds = createdTags.reduce(
 		(acc, tag) => {
-			acc[tag.slug] = tag.id;
+			const oldId = tags.find((t) => t.name === tag.name)?.id!;
+			acc[oldId] = tag.id;
 			return acc;
 		},
 		{} as Record<string, number>
@@ -166,30 +231,52 @@ async function migrateTags(
 }
 
 async function copyFileAndRemoveOld(fromPath: string, toPath: string) {
+	console.log(`copyFileAndRemoveOld => Copying ${fromPath} to ${toPath}`);
 	const fromFile = Bun.file(fromPath);
 	const toFile = Bun.file(toPath);
 
-	await Bun.write(fromFile, toFile);
+	await Bun.write(toFile, fromFile, {
+		createPath: true
+	});
 	await unlink(fromPath);
 }
 
 function createFilePath(
+	targetFileDir: string,
 	ownerId: number,
 	entityId: number,
-	fileType: 'icon' | 'mainImage' | 'screenshot'
+	fileType: 'icon' | 'mainImage' | 'screenshot',
+	extension?: string
 ) {
-	return path.join(ownerId.toString(), entityId.toString(), fileType);
+	return path.join(
+		targetFileDir,
+		ownerId.toString(),
+		entityId.toString(),
+		`${fileType}${extension || ''}`
+	);
 }
 
 async function handleBookmarkImageMigration(
 	targetDbClient: DB,
 	sourceFilePath: string,
-	sourceFileMimeType: string,
 	ownerId: number,
 	bookmarkId: number,
 	fileType: 'icon' | 'mainImage' | 'screenshot'
 ) {
-	const targetFilePath = createFilePath(ownerId, bookmarkId, fileType);
+	console.log(`handleBookmarkImageMigration => Copying ${sourceFilePath} to ${fileType}`);
+	const sourceFileExtension = path.extname(sourceFilePath);
+	const { type: mimeType, size } = Bun.file(sourceFilePath);
+	const userUploadsDir = path.join(process.cwd(), 'data', 'user-uploads');
+	const targetFilePath = createFilePath(
+		userUploadsDir,
+		ownerId,
+		bookmarkId,
+		fileType,
+		sourceFileExtension
+	);
+	const relativePath = path
+		.join(ownerId.toString(), bookmarkId.toString(), `${fileType}${sourceFileExtension}`)
+		.replaceAll(userUploadsDir, '');
 	const [dbObject] = await targetDbClient
 		.insert(fileSchema)
 		.values({
@@ -197,8 +284,9 @@ async function handleBookmarkImageMigration(
 			fileName: fileType,
 			source: FileSourceEnum.Upload,
 			storageType: FileStorageTypeEnum.Local,
-			mimeType: sourceFileMimeType,
-			relativePath: targetFilePath
+			mimeType,
+			size,
+			relativePath
 		})
 		.returning();
 
@@ -206,9 +294,35 @@ async function handleBookmarkImageMigration(
 	await targetDbClient
 		.update(bookmarkSchema)
 		.set({
-			[`${fileType}Id`]: dbObject.id
+			[`${fileType}Id`]: dbObject.id,
+			updated: new Date()
 		})
 		.where(eq(bookmarkSchema.id, bookmarkId));
+}
+
+async function findFilePath(sourceFileDir: string, entityId: string, fileName: string) {
+	const sourceDirContent = await readdir(sourceFileDir, { withFileTypes: true });
+	const directories = sourceDirContent
+		.filter((dirent) => dirent.isDirectory())
+		.map((dirent) => dirent.name);
+
+	const actualFilePath = await Promise.all(
+		directories.map(async (directory) => {
+			const possibleEntityPath = path.join(sourceFileDir, directory, entityId);
+			const possibleEntityPathExists = await exists(possibleEntityPath);
+
+			if (!possibleEntityPathExists) {
+				return null;
+			}
+
+			const actualFilePath = path.join(possibleEntityPath, fileName);
+			console.log('findFilePath.actualFilePath', actualFilePath);
+
+			return actualFilePath;
+		})
+	).then((paths) => paths.filter((path) => path !== null)?.[0]);
+
+	return actualFilePath;
 }
 
 async function migrateBookmarkImages(
@@ -219,6 +333,7 @@ async function migrateBookmarkImages(
 	sourceFileDir: string // path do backup's 'storage' dir
 ) {
 	let migratedImageCount = 0;
+	const storageFileDir = path.join(sourceFileDir, 'storage');
 
 	const bookmarks = migrationDbClient
 		.select({
@@ -237,7 +352,7 @@ async function migrateBookmarkImages(
 			mainImage?: string;
 			screenshot?: string;
 			ownerId: number;
-			sourceOwnerId: string;
+			sourceBookmarkId: string;
 		}
 	> = bookmarks.reduce(
 		(acc, bookmark) => {
@@ -246,10 +361,10 @@ async function migrateBookmarkImages(
 				mainImage?: string;
 				screenshot?: string;
 				ownerId: number;
-				sourceOwnerId: string;
+				sourceBookmarkId: string;
 			} = {
 				ownerId: mappedUserIds[bookmark.ownerId],
-				sourceOwnerId: bookmark.ownerId
+				sourceBookmarkId: bookmark.id
 			};
 
 			if (bookmark.icon) {
@@ -272,18 +387,22 @@ async function migrateBookmarkImages(
 				mainImage?: string;
 				screenshot?: string;
 				ownerId: number;
-				sourceOwnerId: string;
+				sourceBookmarkId: string;
 			}
 		>
 	);
 
 	for (const [bookmarkId, bookmarkFilePath] of Object.entries(bookmarkFilePaths)) {
-		const sourceFilePathDir = path.join(sourceFileDir, bookmarkFilePath.sourceOwnerId, bookmarkId);
 		if (bookmarkFilePath.icon) {
+			const sourceFilePath = await findFilePath(
+				storageFileDir,
+				bookmarkFilePath.sourceBookmarkId,
+				bookmarkFilePath.icon
+			);
+			console.log(`handleBookmarkImageMigration => Copying ${sourceFilePath} to icon`);
 			await handleBookmarkImageMigration(
 				targetDbClient,
-				`${sourceFilePathDir}/${bookmarkFilePath.icon}`,
-				'image/png', // TODO: get mime type from file extension
+				sourceFilePath,
 				bookmarkFilePath.ownerId,
 				mappedBookmarkIds[bookmarkId],
 				'icon'
@@ -291,10 +410,15 @@ async function migrateBookmarkImages(
 			migratedImageCount++;
 		}
 		if (bookmarkFilePath.mainImage) {
+			const sourceFilePath = await findFilePath(
+				storageFileDir,
+				bookmarkFilePath.sourceBookmarkId,
+				bookmarkFilePath.mainImage
+			);
+			console.log(`handleBookmarkImageMigration => Copying ${sourceFilePath} to mainImage`);
 			await handleBookmarkImageMigration(
 				targetDbClient,
-				`${sourceFilePathDir}/${bookmarkFilePath.mainImage}`,
-				'image/png', // TODO: get mime type from file extension
+				sourceFilePath,
 				bookmarkFilePath.ownerId,
 				mappedBookmarkIds[bookmarkId],
 				'mainImage'
@@ -302,10 +426,15 @@ async function migrateBookmarkImages(
 			migratedImageCount++;
 		}
 		if (bookmarkFilePath.screenshot) {
+			const sourceFilePath = await findFilePath(
+				storageFileDir,
+				bookmarkFilePath.sourceBookmarkId,
+				bookmarkFilePath.screenshot
+			);
+			console.log(`handleBookmarkImageMigration => Copying ${sourceFilePath} to screenshot`);
 			await handleBookmarkImageMigration(
 				targetDbClient,
-				`${sourceFilePathDir}/${bookmarkFilePath.screenshot}`,
-				'image/png', // TODO: get mime type from file extension
+				sourceFilePath,
 				bookmarkFilePath.ownerId,
 				mappedBookmarkIds[bookmarkId],
 				'screenshot'
@@ -316,7 +445,7 @@ async function migrateBookmarkImages(
 
 	return migratedImageCount;
 }
-export async function migrateData(backupPath: string) {
+export async function migrateData(backupPath: string): Promise<MigrationResult> {
 	const extractPath = path.join(process.cwd(), 'data', 'temp', `migration_backup_${Date.now()}`);
 	const extractedDbPath = path.join(extractPath, 'data.db');
 	extractBackup(backupPath, extractPath);
@@ -324,12 +453,15 @@ export async function migrateData(backupPath: string) {
 	const migrationDbClient = getMigrationDbClient(extractedDbPath);
 
 	const mappedUserIds = await migrateUsers(migrationDbClient, targetDbClient);
+	console.log('Mapped user IDs:', mappedUserIds);
 	const mappedCategoryIds = await migrateCategories(
 		migrationDbClient,
 		targetDbClient,
 		mappedUserIds
 	);
+	console.log('Mapped category IDs:', mappedCategoryIds);
 	const mappedTagIds = await migrateTags(migrationDbClient, targetDbClient, mappedUserIds);
+	console.log('Mapped tag IDs:', mappedTagIds);
 	const mappedBookmarkIds = await migrateBookmarks(
 		migrationDbClient,
 		targetDbClient,
@@ -337,6 +469,7 @@ export async function migrateData(backupPath: string) {
 		mappedCategoryIds,
 		mappedTagIds
 	);
+	console.log('Mapped bookmark IDs:', mappedBookmarkIds);
 	const migratedImages = await migrateBookmarkImages(
 		migrationDbClient,
 		targetDbClient,
@@ -344,6 +477,9 @@ export async function migrateData(backupPath: string) {
 		mappedUserIds,
 		extractPath
 	);
+	console.log('Migrated images:', migratedImages);
+
+	await deleteBackupFiles(backupPath, extractPath);
 
 	return {
 		count: {

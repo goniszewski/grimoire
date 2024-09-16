@@ -1,4 +1,4 @@
-import { createBookmark } from '$lib/database/repositories/Bookmark.repository';
+import { createBookmark, updateBookmark } from '$lib/database/repositories/Bookmark.repository';
 import { getInitialCategory } from '$lib/database/repositories/Category.repository';
 import { Storage } from '$lib/storage/storage';
 import { getMetadata } from '$lib/utils/get-metadata';
@@ -59,13 +59,6 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 			);
 		}
 
-		const { id: mainImageId } = await storage.storeImage(
-			metadata.mainImageUrl,
-			metadata.title,
-			ownerId
-		);
-		const { id: iconId } = await storage.storeImage(metadata.iconUrl, metadata.title, ownerId);
-
 		const bookmark = await createBookmark(ownerId, {
 			categoryId: defaultCategory?.id,
 			contentHtml: metadata.contentHtml,
@@ -80,9 +73,7 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 			note: 'From bookmarklet',
 			title: metadata.title,
 			url: bookmarkUrl,
-			author: metadata.author,
-			mainImageId,
-			iconId
+			author: metadata.author
 		});
 
 		if (!bookmark.id) {
@@ -97,8 +88,19 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 			);
 		}
 
+		const { id: mainImageId } = await storage.storeImage(
+			metadata.mainImageUrl,
+			metadata.title,
+			ownerId
+		);
+		const { id: iconId } = await storage.storeImage(metadata.iconUrl, metadata.title, ownerId);
+		const updatedBookmark = await updateBookmark(bookmark.id, ownerId, {
+			mainImageId,
+			iconId
+		});
+
 		return json(
-			{ bookmark },
+			{ bookmark: updatedBookmark },
 			{
 				status: 201
 			}
