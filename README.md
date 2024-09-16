@@ -10,10 +10,7 @@
 <br>
 
 > [!IMPORTANT]
-> This application is undergoing a comprehensive overhaul to simplify its architecture, deliver an enhanced user experience, and have a more efficient development cycle.
-> 
-> Read the [Refactoring and streamlining effort](https://github.com/users/goniszewski/projects/1/views/1?pane=issue&itemId=65225221) for more information.
-
+> Version `0.4` introduces a new approach for data storage and user authorization. If you are upgrading from version `0.3.X` you may want to utilize the built-in [**migration tool** (read more)]().
 
 Glimpse into the magical book of _your_ forbidden knowledge - **Grimoire!** 📖💫
 
@@ -58,21 +55,41 @@ More screenshots can be found in the [screenshots directory](screenshots).
 
 ### Steps
 
-```bash
-# Clone the repository
-git clone https://github.com/goniszewski/grimoire
+1. Create a `docker-compose.yml` file with the following content:
 
-# Rename the `.env.example` file to `.env`
-# "mv .env.example .env" on Linux/MacOS, "ren .env.example .env" on Windows
-
-# Build and run the containers
-docker compose up
+```yml
+services:
+  grimoire:
+    image: goniszewski/grimoire:develop
+    container_name: grimoire
+    restart: unless-stopped
+    environment:
+      - PORT=5173
+      - PUBLIC_HTTPS_ONLY=false
+      - PUBLIC_SIGNUP_DISABLED=false
+    volumes:
+      - grimoire_data:/app/data/
+    build:
+      context: .
+      dockerfile: Dockerfile
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - '${PORT:-5173}:${PORT:-5173}'
+volumes:
+  grimoire_data:
 ```
+
+2. [Optional] Update the environment variables to match your needs.
+3. Run the app using `docker compose up -d` command.
 
 </details>
 
 > [!NOTE]
-> For the recommended setup, only the `docker-compose.yml` and `.env.example` files are needed.
+> For the recommended setup, only the `docker-compose.yml` file is required.
 
 <details>
   <summary><strong>Run app using Node</strong></summary>
@@ -138,11 +155,14 @@ Special thanks to: [@extractus/article-extractor](https://github.com/extractus/a
 [DaisyUI](https://github.com/saadeghi/daisyui),
 [Drizzle](https://github.com/drizzle-team/drizzle-orm),
 [Fuse.js](https://github.com/krisk/fuse),
+[Lucia](https://github.com/pilcrowOnPaper/lucia),
 [MetaScraper](https://github.com/microlinkhq/metascraper),
 [PocketBase](https://github.com/pocketbase/pocketbase),
 [sanitize-html](https://github.com/apostrophecms/sanitize-html),
 [SvelteKit](https://github.com/sveltejs/kit),
 [Svelte Select](https://github.com/rob-balfre/svelte-select),
 [Svelte French Toast](https://github.com/kbrgl/svelte-french-toast),
+[Swagger UI](https://github.com/swagger-api/swagger-ui),
+[Tabler Icons](https://github.com/tabler/tabler-icons),
 [Tailwind CSS](https://tailwindcss.com),
-[url-metadata](https://github.com/laurengarcia/url-metadata),
+[url-metadata](https://github.com/laurengarcia/url-metadata)

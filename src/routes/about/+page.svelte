@@ -68,7 +68,7 @@ import { page } from '$app/stores';
 							<div class="tooltip" data-tip="Thank you for your contribution!">
 								<a
 									href="https://github.com/goniszewski/grimoire/graphs/contributors"
-									class="pl-4 text-center link">
+									class="link pl-4 text-center">
 									And others...
 								</a>
 							</div>
@@ -86,14 +86,22 @@ import { page } from '$app/stores';
 					<a href="https://github.com/saadeghi/daisyui" class="hover:underline">DaisyUI</a>
 					<a href="https://github.com/drizzle-team/drizzle-orm" class="hover:underline">Drizzle</a>
 					<a href="https://github.com/krisk/fuse" class="hover:underline">Fuse.js</a>
-					<a href="https://github.com/microlinkhq/metascraper" class="hover:underline">MetaScraper</a>
+					<a href="https://github.com/pilcrowOnPaper/lucia" class="hover:underline">Lucia</a>
+					<a href="https://github.com/microlinkhq/metascraper" class="hover:underline"
+						>MetaScraper</a>
 					<a href="https://github.com/pocketbase/pocketbase" class="hover:underline">PocketBase</a>
-					<a href="https://github.com/apostrophecms/sanitize-html" class="hover:underline">sanitize-html</a>
+					<a href="https://github.com/apostrophecms/sanitize-html" class="hover:underline"
+						>sanitize-html</a>
 					<a href="https://github.com/sveltejs/kit" class="hover:underline">SvelteKit</a>
-					<a href="https://github.com/kbrgl/svelte-french-toast" class="hover:underline">Svelte French Toast</a>
-					<a href="https://github.com/rob-balfre/svelte-select" class="hover:underline">Svelte Select</a>
+					<a href="https://github.com/kbrgl/svelte-french-toast" class="hover:underline"
+						>Svelte French Toast</a>
+					<a href="https://github.com/rob-balfre/svelte-select" class="hover:underline"
+						>Svelte Select</a>
+					<a href="https://github.com/swagger-api/swagger-ui" class="hover:underline">Swagger UI</a>
+					<a href="https://github.com/tabler/tabler-icons" class="hover:underline">Tabler Icons</a>
 					<a href="https://tailwindcss.com" class="hover:underline">Tailwind CSS</a>
-					<a href="https://github.com/laurengarcia/url-metadata" class="hover:underline">url-metadata</a>
+					<a href="https://github.com/laurengarcia/url-metadata" class="hover:underline"
+						>url-metadata</a>
 				</p>
 			</div>
 		</div>
