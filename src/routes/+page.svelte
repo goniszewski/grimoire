@@ -173,8 +173,11 @@ let bookmarksViewForm: HTMLFormElement;
 {:else if $page.data.noUsersFound}
 	<div class="flex h-full flex-col items-center justify-center">
 		<h1 class="text-2xl">Initialization Wizard 🧙</h1>
-		<div class="my-4 flex max-w-2xl flex-col gap-2 text-center">
-			<p class="text-lg">Looks like you're about to start using Grimoire for the first time!</p>
+		<div class="my-4 flex max-w-2xl flex-col gap-4 text-center">
+			<p class="text-lg">
+				Looks like you're about to start using Grimoire for <span class="text-primary"
+					>the first time!</span>
+			</p>
 			{#if env?.PUBLIC_SIGNUP_DISABLED === 'true'}
 				<p class="text-lg">
 					Please enable public signup in your <code>.env</code> file and
@@ -182,16 +185,16 @@ let bookmarksViewForm: HTMLFormElement;
 				</p>
 			{:else}
 				<p class="text-lg">
-					Please <strong><a href="/signup" class="link">create your first User</a></strong> or check
-					out the
-					<strong><a href="/admin/login" class="link">Admin Panel</a></strong> (use the credentials
-					you set in your
-					<code>.env</code> file).
+					Please go ahead and <strong
+						><a href="/signup" class="link text-secondary">create your first User</a></strong> (Root
+					Admin).
 				</p>
 			{/if}
-			<p class="mt-4">
-				To learn about differences between Admin and User accounts, please check out
-				<a href="https://grimoire.pro/docs/admins-vs-users" class="link">this page</a>.
+			<p class="text-lg">
+				Or, if you're <span class="text-warning">coming from the older version</span> that used
+				PocketBase to store data, you can use the
+				<strong><a href="/migrate" class="link text-secondary">migration tool</a></strong> to easily
+				import all your valuable data!
 			</p>
 		</div>
 	</div>
