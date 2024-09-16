@@ -174,17 +174,6 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		const metadata = await getMetadata(requestBody.url, requestBody.contentHtml);
 
-		const { id: mainImageId } = await storage.storeImage(
-			requestBody.mainImageUrl || metadata?.mainImageUrl,
-			requestBody.title,
-			ownerId
-		);
-		const { id: iconId } = await storage.storeImage(
-			requestBody.iconUrl || metadata?.iconUrl,
-			requestBody.title,
-			ownerId
-		);
-
 		const bookmarkData = {
 			ownerId,
 			url: requestBody.url,
@@ -201,9 +190,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			importance: requestBody.importance,
 			mainImageUrl: requestBody.mainImageUrl || metadata?.mainImageUrl,
 			note: requestBody.note,
-			flagged: requestBody.flagged ? new Date() : null,
-			mainImageId,
-			iconId
+			flagged: requestBody.flagged ? new Date() : null
 		};
 
 		const bookmark = await createBookmark(ownerId, bookmarkData);
@@ -211,6 +198,23 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		if (!bookmark.id) {
 			return json({ success: false, error: 'Bookmark creation failed' }, { status: 400 });
 		}
+
+		const { id: mainImageId } = await storage.storeImage(
+			requestBody.mainImageUrl || metadata?.mainImageUrl,
+			requestBody.title,
+			ownerId,
+			bookmark.id
+		);
+		const { id: iconId } = await storage.storeImage(
+			requestBody.iconUrl || metadata?.iconUrl,
+			requestBody.title,
+			ownerId,
+			bookmark.id
+		);
+		await updateBookmark(bookmark.id, ownerId, {
+			mainImageId,
+			iconId
+		});
 
 		if (tags.length) {
 			await upsertTagsForBookmark(bookmark.id, ownerId, tags);

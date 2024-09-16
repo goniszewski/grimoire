@@ -44,9 +44,6 @@ export const actions = {
 			const tags = data.get('tags') ? JSON.parse(data.get('tags') as string) : [];
 			const tagNames = tags.map((tag: any) => tag.label);
 
-			const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId);
-			const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId);
-
 			const bookmarkData = {
 				ownerId,
 				url,
@@ -63,9 +60,7 @@ export const actions = {
 				iconUrl,
 				importance,
 				mainImageUrl,
-				note,
-				mainImageId,
-				iconId
+				note
 			};
 
 			const bookmark = await createBookmark(ownerId, bookmarkData);
@@ -76,11 +71,22 @@ export const actions = {
 					error: 'Failed to add bookmark'
 				};
 			}
+			const { id: mainImageId } = await storage.storeImage(
+				mainImageUrl,
+				title,
+				ownerId,
+				bookmark.id
+			);
+			const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId, bookmark.id);
+			const updatedBookmark = await updateBookmark(bookmark.id, ownerId, {
+				mainImageId,
+				iconId
+			});
 
 			await upsertTagsForBookmark(bookmark.id, ownerId, tagNames);
 
 			return {
-				bookmark,
+				bookmark: updatedBookmark,
 				success: true
 			};
 		} catch (e: any) {
@@ -143,8 +149,8 @@ export const actions = {
 
 		const tagNames = tags.map((tag: any) => tag.label);
 
-		const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId);
-		const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId);
+		const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId, id);
+		const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId, id);
 
 		const bookmarkData = {
 			author,

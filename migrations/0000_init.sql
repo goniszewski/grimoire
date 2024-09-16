@@ -36,8 +36,8 @@ CREATE TABLE `bookmarks_to_tags` (
 	`bookmark_id` integer NOT NULL,
 	`tag_id` integer NOT NULL,
 	PRIMARY KEY(`bookmark_id`, `tag_id`),
-	FOREIGN KEY (`bookmark_id`) REFERENCES `bookmark`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`bookmark_id`) REFERENCES `bookmark`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `category` (
@@ -55,7 +55,7 @@ CREATE TABLE `category` (
 	`created` integer DEFAULT (unixepoch()) NOT NULL,
 	`updated` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`owner_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE TABLE `file` (

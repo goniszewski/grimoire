@@ -72,7 +72,7 @@ export class Storage {
 		return file;
 	}
 
-	async storeImage(url: string, title: string, ownerId: number) {
+	async storeImage(url: string, title: string, ownerId: number, relatedEntityId?: number) {
 		const storage = new Storage();
 
 		if (!url || url.length === 0) {
@@ -87,7 +87,8 @@ export class Storage {
 		const fileName = `${createSlug(title)}.${url.split('.').pop()?.split('?')[0]}`;
 
 		return await storage.storeFile(blob as Blob, ownerId, {
-			fileName
+			fileName,
+			relatedEntityId
 		});
 	}
 }

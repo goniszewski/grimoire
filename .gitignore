@@ -11,4 +11,5 @@ vite.config.ts.timestamp-*
 coverage
 data/db*
 data/user-uploads/*
+data/temp/*
 !data/user-uploads/.gitkeep
