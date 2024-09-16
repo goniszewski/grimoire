@@ -5,6 +5,7 @@ import { FileSourceEnum, FileStorageTypeEnum } from '../enums/files';
 
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import type { UserSettings } from '$lib/types/UserSettings.type';
+
 export const userSchema = sqliteTable(
 	'user',
 	{
@@ -73,7 +74,9 @@ export const categorySchema = sqliteTable(
 		ownerId: integer('owner_id')
 			.notNull()
 			.references(() => userSchema.id, { onDelete: 'cascade' }),
-		parentId: integer('parent_id').references((): AnySQLiteColumn => categorySchema.id),
+		parentId: integer('parent_id').references((): AnySQLiteColumn => categorySchema.id, {
+			onDelete: 'set null'
+		}),
 		archived: integer('archived', { mode: 'timestamp' }),
 		public: integer('public', { mode: 'timestamp' }),
 		icon: text('icon'),
@@ -177,10 +180,14 @@ export const bookmarksToTagsSchema = sqliteTable(
 	{
 		bookmarkId: integer('bookmark_id')
 			.notNull()
-			.references(() => bookmarkSchema.id),
+			.references(() => bookmarkSchema.id, {
+				onDelete: 'cascade'
+			}),
 		tagId: integer('tag_id')
 			.notNull()
-			.references(() => tagSchema.id)
+			.references(() => tagSchema.id, {
+				onDelete: 'cascade'
+			})
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.bookmarkId, table.tagId] }),
