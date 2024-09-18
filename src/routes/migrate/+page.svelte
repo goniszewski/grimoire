@@ -19,9 +19,7 @@ const isMigrationAllowed = $page.data.noUsersFound || !!$page.data.user?.isAdmin
 </script>
 
 <div class="indicator">
-	<span class="badge indicator-item badge-neutral indicator-center indicator-bottom">
-		preview
-	</span>
+	<span class="badge indicator-item badge-neutral indicator-bottom"> preview </span>
 	<h1 class="mb-2 text-2xl font-bold">Migrate data to new version</h1>
 </div>
 

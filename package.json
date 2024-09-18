@@ -12,7 +12,6 @@
 		"bookmarks-manager",
 		"svelte",
 		"sveltekit",
-		"pocketbase",
 		"tailwindcss"
 	],
 	"trustedDependencies": [

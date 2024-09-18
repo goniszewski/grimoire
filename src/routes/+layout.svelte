@@ -85,7 +85,7 @@ $: {
 					<div class="dropdown dropdown-end z-10">
 						<div
 							class="tooltip tooltip-left"
-							data-tip={`Logged in as ${user.username}${user.isAdmin && ' (admin)'}`}>
+							data-tip={`Logged in as ${user.username}${user.isAdmin ? ' (admin)' : ''}`}>
 							<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
 								<div
 									class={`w-10 rounded-full bg-neutral text-neutral-content ${user.isAdmin && 'ring-1 ring-primary'}`}>
