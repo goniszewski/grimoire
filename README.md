@@ -10,7 +10,7 @@
 <br>
 
 > [!IMPORTANT]
-> Version `0.4` introduces a new approach for data storage and user authorization. If you are upgrading from version `0.3.X` you may want to utilize the built-in [**migration tool** (read more)]().
+> Version `0.4` introduces a new approach for data storage and user authorization. If you are upgrading from version `0.3.X` you may want to utilize the built-in [**migration tool** (read more)](https://grimoire.pro/docs/migration-tool/).
 
 Glimpse into the magical book of _your_ forbidden knowledge - **Grimoire!** 📖💫
 
