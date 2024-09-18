@@ -4,8 +4,28 @@ import { page } from '$app/stores';
 
 <div class="w-full">
 	<h1 class="text-2xl font-bold">About</h1>
+
 	<div class="mb-14 flex w-full flex-wrap">
 		<div class="mt-4 flex max-w-fit flex-none flex-col gap-2 indent-8 md:max-w-xl">
+			<div role="alert" class="alert">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					class="h-6 w-6 shrink-0 stroke-info"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path
+					></svg>
+				<div class="flex flex-col">
+					<span>
+						Remember, Grimoire is a <strong>work-in-progress</strong> project.
+					</span>
+					<span>Accidents may happen!</span>
+				</div>
+			</div>
 			<div class="mb-6 mt-8 flex items-center justify-center">
 				<img
 					srcset="grimoire_logo_300.webp 300w,
