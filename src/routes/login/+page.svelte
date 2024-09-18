@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { IconExclamationCircle } from '@tabler/icons-svelte';
+import { IconExclamationCircle } from '@tabler/icons-svelte';
 
-	export let form: HTMLFormElement;
+export let form: HTMLFormElement;
 </script>
 
 {#if form?.invalid}
@@ -10,22 +10,21 @@
 		<span> Incorrect credentials. </span>
 	</div>
 {/if}
-<div class="w-full mt-24">
+<div class="mt-24 w-full">
 	<form method="POST">
 		<div class="form-control mx-auto max-w-xs gap-4">
 			<div>
-				<label for="usernameOrEmail" class="label">
+				<label for="login" class="label">
 					<span class="label-text">Username / email</span>
 				</label>
 				<input
 					type="text"
-					name="usernameOrEmail"
+					name="login"
 					placeholder="Type here"
 					class={`input input-bordered w-full max-w-xs ${
-						form?.invalid || (form?.missing && form?.usernameOrEmail) ? 'input-error' : ''
-					}`}
-				/>
-				{#if form?.missing && form?.usernameOrEmail}
+						form?.invalid || (form?.missing && form?.login) ? 'input-error' : ''
+					}`} />
+				{#if form?.missing && form?.login}
 					<p class="text-error">This field is required.</p>
 				{/if}
 			</div>
@@ -40,8 +39,7 @@
 					placeholder="Type here"
 					class={`input input-bordered w-full max-w-xs ${
 						form?.invalid || (form?.missing && form?.password) ? 'input-error' : ''
-					}`}
-				/>
+					}`} />
 				{#if form?.missing && form?.password}
 					<p class="text-error">This field is required.</p>
 				{/if}

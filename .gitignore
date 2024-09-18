@@ -8,5 +8,8 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-pb_data
 coverage
+data/db*
+data/user-uploads/*
+data/temp/*
+!data/user-uploads/.gitkeep

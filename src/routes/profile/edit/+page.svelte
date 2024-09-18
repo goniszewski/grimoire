@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { user } from '$lib/pb';
+	import { page } from '$app/stores';
 	import { showToast } from '$lib/utils/show-toast';
 
 	let showPasswordForm = false;
@@ -8,7 +8,7 @@
 	let form: HTMLFormElement;
 </script>
 
-{#if !$user.isValid && $user.model}
+{#if !$page.data.user}
 	<p>Not logged in</p>
 {:else}
 	<form
@@ -38,7 +38,7 @@
 					type="text"
 					class="input input-bordered input-secondary w-full"
 					name="name"
-					value={$user.model?.name}
+					value={$page.data.user.name}
 				/>
 			</div>
 			<div>
@@ -49,7 +49,7 @@
 					type="text"
 					class="input input-bordered input-secondary w-full"
 					name="username"
-					value={$user.model?.username}
+					value={$page.data.user.username}
 					required
 				/>
 			</div>
@@ -61,7 +61,7 @@
 					type="text"
 					class="input input-bordered input-secondary w-full"
 					name="email"
-					value={$user.model?.email}
+					value={$page.data.user.email}
 					placeholder="none"
 				/>
 			</div>

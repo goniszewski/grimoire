@@ -1,8 +1,10 @@
 import type { User } from './User.type';
 
 export type Tag = {
-	id: string;
+	id: number;
 	name: string;
 	slug: string;
-	owner: User;
+	owner?: User | null;
+	created: Date;
+	updated: Date;
 };

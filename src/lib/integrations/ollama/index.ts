@@ -33,15 +33,16 @@ const getValidApiUrl = (url: string) => {
 
 export async function listAvailableModels(providedConfig: Partial<ollamaSettings> = {}) {
 	return fetch(`${getValidApiUrl(providedConfig?.url || defaultConfig.url)}/api/tags`)
-		.then((res) => res.json())
 		.then(
-			(res: {
-				models: {
-					name: string;
-					description: string;
-				}[];
-			}) => res.models.map((model) => model.name)
-		);
+			(res) =>
+				res.json() as Promise<{
+					models: {
+						name: string;
+						description: string;
+					}[];
+				}>
+		)
+		.then((res) => res.models.map((model) => model.name));
 }
 
 async function generate(
@@ -58,7 +59,7 @@ async function generate(
 			model
 		})
 	})
-		.then((res) => res.json())
+		.then((res) => res.json() as Promise<{ response: string }>)
 		.then((res) => res.response);
 }
 
@@ -75,7 +76,7 @@ export async function generateTags(prompt: string, options: ollamaSettings) {
 
 	const response = await generate(
 		serializedPrompt.length > 1000 ? serializedPrompt.slice(0, 1000) : serializedPrompt,
-		options?.model || 'orca-mini',
+		options?.model || 'phi3',
 		options
 	);
 

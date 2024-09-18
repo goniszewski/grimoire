@@ -1,55 +1,38 @@
-import { authenticateUserApiRequest, pb, removePocketbaseFields } from '$lib/pb.js';
+import {
+    createCategory, deleteCategory, getCategoriesByUserId, getCategoryById, updateCategory
+} from '$lib/database/repositories/Category.repository';
 import { createSlug } from '$lib/utils/create-slug.js';
 import joi from 'joi';
 
 import { json } from '@sveltejs/kit';
 
-import type { Category } from '$lib/types/Category.type';
 import type {
 	AddCategoryRequestBody,
 	UpdateCategoryRequestBody
 } from '$lib/types/api/Categories.type';
-
+import type { RequestHandler } from './$types';
 const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i;
 
-export async function GET({ locals, request }) {
-	const { owner, error } = await authenticateUserApiRequest(locals.pb, request);
+export const GET: RequestHandler = async ({ locals }) => {
+	const ownerId = locals.user?.id;
 
-	if (error) {
-		return error;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	try {
-		const records = await pb.collection('categories').getFullList<Category>({
-			filter: `owner="${owner}"`
-		});
-
-		const categories = removePocketbaseFields(records);
-
-		return json(
-			{ categories },
-			{
-				status: 200
-			}
-		);
+		const categories = await getCategoriesByUserId(ownerId);
+		return json({ categories }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function POST({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const POST: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const requestBody = (await request.json()) as AddCategoryRequestBody;
@@ -78,67 +61,23 @@ export async function POST({ locals, request }) {
 	}
 
 	try {
-		const existingCategory = await pb.collection('categories').getFullList({
-			filter: `owner="${owner}" && name="${requestBody.name}"`,
-			fields: 'id'
-		});
-
-		if (existingCategory[0]?.id) {
-			return json(
-				{
-					success: false,
-					error: 'Category with this name already exists'
-				},
-				{
-					status: 403
-				}
-			);
-		}
-
-		if (requestBody.public) requestBody.public = new Date();
-
-		const category = await pb.collection('categories').create<Category>({
+		const category = await createCategory(ownerId, {
 			...requestBody,
 			slug: createSlug(requestBody.name),
-			owner
+			public: requestBody.public ? new Date() : null
 		});
 
-		if (!category.id) {
-			return json(
-				{
-					success: false,
-					error: 'Category creation failed'
-				},
-				{
-					status: 400
-				}
-			);
-		}
-
-		return json(
-			{ category },
-			{
-				status: 201
-			}
-		);
+		return json({ category }, { status: 201 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 500 });
 	}
-}
+};
 
-export async function PATCH({ locals, request }) {
-	const { owner, error: authError } = await authenticateUserApiRequest(locals.pb, request);
+export const PATCH: RequestHandler = async ({ locals, request }) => {
+	const ownerId = locals.user?.id;
 
-	if (authError) {
-		return authError;
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const requestBody = (await request.json()) as UpdateCategoryRequestBody;
@@ -170,62 +109,44 @@ export async function PATCH({ locals, request }) {
 
 	const { id, ...updatedFields } = requestBody;
 
-	if (updatedFields.name) {
-		updatedFields.slug = createSlug(updatedFields.name);
-	}
+	try {
+		const currentCategory = await getCategoryById(id, ownerId);
 
-	if (updatedFields.public) {
-		updatedFields.public = new Date();
-	}
+		if (!currentCategory) {
+			return json({ success: false, error: 'Category not found' }, { status: 404 });
+		}
 
-	if (updatedFields.archived) {
-		updatedFields.archived = new Date();
+		const category = await updateCategory(id, ownerId, {
+			...updatedFields,
+			slug: updatedFields.name ? createSlug(updatedFields.name) : undefined,
+			public: updatedFields.public ? new Date() : null,
+			archived: updatedFields.archived ? new Date() : null
+		});
+
+		return json({ category }, { status: 200 });
+	} catch (error: any) {
+		return json({ success: false, error: error?.message }, { status: 500 });
+	}
+};
+
+export const DELETE: RequestHandler = async ({ locals, url }) => {
+	const ownerId = locals.user?.id;
+
+	if (!ownerId) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
 	try {
-		const currentCategory = await pb.collection('categories').getOne(id);
+		const id = parseInt(url.searchParams.get('id') || '', 10);
 
-		if (!currentCategory || currentCategory.owner !== owner) {
-			return json(
-				{
-					success: false,
-					error: 'Category not found'
-				},
-				{
-					status: 404
-				}
-			);
+		if (!id) {
+			return json({ success: false, error: 'Category ID is required' }, { status: 400 });
 		}
 
-		const category = (await pb.collection('categories').update(id, updatedFields)) as Category;
+		await deleteCategory(id, ownerId);
 
-		if (!category.id) {
-			return json(
-				{
-					success: false,
-					error: 'Category update failed'
-				},
-				{
-					status: 500
-				}
-			);
-		}
-
-		return json(
-			{ category },
-			{
-				status: 200
-			}
-		);
+		return json({ success: true }, { status: 200 });
 	} catch (error: any) {
-		return json(
-			{
-				success: false,
-				error: error?.message
-			},
-			{
-				status: 500
-			}
-		);
+		return json({ success: false, error: error?.message }, { status: 404 });
 	}
-}
+};

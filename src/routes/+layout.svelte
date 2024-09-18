@@ -1,66 +1,57 @@
+<style>
+/* SvelteSelect styling fix */
+:global(.this-select) {
+	border: 0 !important;
+	border-color: rgba(209, 213, 219, 0.5) !important;
+	max-width: 10rem;
+	background: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+}
+:global(.svelte-select-list) {
+	background-color: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
+	box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
+}
+:global(.svelte-select-list .list-item .item.hover) {
+	background-color: oklch(var(--s) / var(--tw-bg-opacity, 1)) !important;
+}
+:global(.svelte-select .value-container .multi-item) {
+	background-color: oklch(var(--nc)) !important;
+}
+:global(.svelte-select .value-container .multi-item .multi-item-clear svg) {
+	color: oklch(var(--pc)) !important;
+}
+</style>
+
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { env } from '$env/dynamic/public';
-	import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
-	import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
-	import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
-	import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
-	import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
-	import Footer from '$lib/components/Footer/Footer.svelte';
-	import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
-	import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
-	import { checkPocketbaseConnection, user } from '$lib/pb';
-	import { searchedValue } from '$lib/stores/search.store';
-	import type { Category } from '$lib/types/Category.type';
-	import { buildCategoryTree } from '$lib/utils/build-category-tree';
-	import { ToastNode, showToast } from '$lib/utils/show-toast';
-	import { IconMenu, IconX } from '@tabler/icons-svelte';
-	import { onDestroy, onMount } from 'svelte';
-	import { writable } from 'svelte/store';
-	import '../app.css';
+import { enhance } from '$app/forms';
+import { page } from '$app/stores';
+import AddBookmarkModal from '$lib/components/AddBookmarkModal/AddBookmarkModal.svelte';
+import AddCategoryModal from '$lib/components/AddCategoryModal/AddCategoryModal.svelte';
+import CategoryTree from '$lib/components/CategoryTree/CategoryTree.svelte';
+import EditBookmarkModal from '$lib/components/EditBookmarkModal/EditBookmarkModal.svelte';
+import EditCategoryModal from '$lib/components/EditCategoryModal/EditCategoryModal.svelte';
+import Footer from '$lib/components/Footer/Footer.svelte';
+import ShowBookmarkModal from '$lib/components/ShowBookmarkModal/ShowBookmarkModal.svelte';
+import ThemeSwitch from '$lib/components/ThemeSwitch/ThemeSwitch.svelte';
+import { searchedValue } from '$lib/stores/search.store';
+import type { Category } from '$lib/types/Category.type';
+import { buildCategoryTree } from '$lib/utils/build-category-tree';
+import { ToastNode } from '$lib/utils/show-toast';
+import { IconMenu, IconX } from '@tabler/icons-svelte';
+import { writable } from 'svelte/store';
+import '../app.css';
 
-	let checkPbConnectionInterval: NodeJS.Timeout;
-	let isPocketbaseAvailable: boolean;
+const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
+const user = $page.data.user;
+const tagsAvailable = $page.data.tags.filter((tag) => tag.bookmarks?.length > 0).length > 0;
 
-	onMount(async () => {
-		$user.loadFromCookie(document.cookie);
+$: {
+	const categories = $page.data.categories;
 
-		isPocketbaseAvailable = await checkPocketbaseConnection();
-
-		checkPbConnectionInterval = setInterval(async () => {
-			isPocketbaseAvailable = await checkPocketbaseConnection();
-
-			if (!isPocketbaseAvailable) {
-				showToast.error('Could not connect to Pocketbase. Is it running?');
-			}
-		}, 10_000);
-	});
-
-	onDestroy(() => {
-		clearInterval(checkPbConnectionInterval);
-	});
-
-	const categoriesTree = writable<(Category & { children?: Category[] })[] | []>([]);
-
-	$: {
-		const categories = $page.data.categories;
-
-		categoriesTree.set(buildCategoryTree(categories));
-	}
+	categoriesTree.set(buildCategoryTree(categories));
+}
 </script>
 
 <div class="flex min-h-screen flex-col">
-	{#if isPocketbaseAvailable === false}
-		<div class="flex items-center justify-center">
-			<div class="alert alert-error fixed z-50 mt-16 max-w-fit opacity-90">
-				<p>
-					Could not connect to <strong>Pocketbase</strong> on {env.PUBLIC_POCKETBASE_URL}. Is it
-					running? 🧙
-				</p>
-			</div>
-		</div>
-	{/if}
 	<head>
 		<title>Grimoire</title>
 	</head>
@@ -75,8 +66,7 @@
 						type="text"
 						placeholder="Search"
 						bind:value={$searchedValue}
-						class={`input input-bordered w-full ${$searchedValue ? 'rounded-r-none' : ''}`}
-					/>
+						class={`input input-bordered w-full ${$searchedValue ? 'rounded-r-none' : ''}`} />
 					{#if $searchedValue}
 						<button class="btn join-item" on:click={() => ($searchedValue = '')}>
 							<IconX />
@@ -85,53 +75,32 @@
 				</div>
 			</div>
 			<div class="flex-none gap-2 md:mr-6">
-				<ThemeSwitch />
-				{#if !$user.isValid}
+				<ThemeSwitch user={user} />
+				{#if !user}
 					<ul class="menu menu-horizontal px-1">
 						<li><a href="/signup">Sign up</a></li>
 						<li><a href="/login">Login</a></li>
 					</ul>
-				{:else if $user.isValid && $user.isAdmin}
-					<form
-						method="POST"
-						action="/logout"
-						use:enhance={() => {
-							return async ({ result }) => {
-								$user.clear();
-								await applyAction(result);
-							};
-						}}
-					>
-						<button class="btn btn-outline btn-error btn-sm w-28">Log out admin</button>
-					</form>
 				{:else}
 					<div class="dropdown dropdown-end z-10">
-						<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
-							<div class="w-10 rounded-full bg-neutral text-neutral-content">
-								<span> {$user.model?.name[0] || $user.model?.username[0]} </span>
-							</div>
-						</label>
+						<div
+							class="tooltip tooltip-left"
+							data-tip={`Logged in as ${user.username}${user.isAdmin ? ' (admin)' : ''}`}>
+							<label for="avatar" tabindex="-1" class="avatar placeholder btn btn-circle btn-ghost">
+								<div
+									class={`w-10 rounded-full bg-neutral text-neutral-content ${user.isAdmin && 'ring-1 ring-primary'}`}>
+									<span> {user.name[0] || user.username[0]} </span>
+								</div>
+							</label>
+						</div>
 						<ul
 							tabindex="-1"
-							class="menu dropdown-content menu-sm mt-3 w-auto gap-2 rounded-box bg-base-100 p-2 shadow"
-						>
+							class="menu dropdown-content menu-sm mt-3 w-auto gap-2 rounded-box bg-base-100 p-2 shadow">
 							<li>
-								<a href="/profile" class="justify-between">
-									Profile
-									<!-- <span class="badge">New</span> -->
-								</a>
+								<a href="/profile" class="justify-between"> Profile </a>
 							</li>
 							<li><a href="/settings">Settings</a></li>
-							<form
-								method="POST"
-								action="/logout"
-								use:enhance={() => {
-									return async ({ result }) => {
-										$user.clear();
-										await applyAction(result);
-									};
-								}}
-							>
+							<form method="POST" action="/logout" use:enhance>
 								<button class="btn btn-outline btn-error btn-sm w-24">Log out</button>
 							</form>
 						</ul>
@@ -140,7 +109,7 @@
 			</div>
 		</div>
 		<div class="z-2 mb-20 flex min-w-full flex-1 sm:mb-0">
-			{#if user && !$user.isAdmin}
+			{#if user}
 				<div class="drawer lg:drawer-open">
 					<input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
 					<div class="justify-top drawer-content m-2 flex flex-1 flex-col items-center sm:m-8">
@@ -148,8 +117,7 @@
 						<label
 							for="my-drawer-2"
 							class="btn btn-primary drawer-button fixed bottom-4 right-4 lg:hidden"
-							><IconMenu /></label
-						>
+							><IconMenu /></label>
 					</div>
 					<div class="min-w-screen drawer-side min-h-full">
 						<div class="flex h-14 flex-col items-end justify-center">
@@ -165,8 +133,7 @@
 									<h3 class="text-xl">Categories</h3>
 									<button
 										class="link-hover link ml-auto opacity-50 hover:opacity-90"
-										onclick="addCategoryModal.showModal()">➕</button
-									>
+										onclick="addCategoryModal.showModal()">➕</button>
 								</div>
 								<div class="flex flex-col p-2">
 									<CategoryTree categories={$categoriesTree} />
@@ -175,18 +142,21 @@
 							<div>
 								<h3 class="text-xl">Tags</h3>
 								<div class="flex flex-wrap p-2">
-									{#each $page.data.tags as tag (tag.id)}
-										{#if tag.bookmarks.length > 0}
-											<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
-												>#{tag.name}</a
-											>
-										{/if}
-									{/each}
+									{#if tagsAvailable}
+										{#each $page.data.tags as tag (tag.id)}
+											{#if tag.bookmarks?.length > 0}
+												<a href={`/tags/${tag.slug}`} class="link m-1 hover:text-secondary"
+													>#{tag.name}</a>
+											{/if}
+										{/each}
+									{:else}
+										<p class="text-center text-gray-300">No tags available.</p>
+									{/if}
 								</div>
 							</div>
 							<div>
 								<h3 class="text-xl">Flows</h3>
-								<div class="flex flex-wrap p-2">To be added.</div>
+								<div class="flex flex-wrap p-2 text-gray-300">To be added.</div>
 							</div>
 						</ul>
 					</div>
@@ -210,28 +180,4 @@
 <ToastNode
 	toastOptions={{
 		position: 'bottom-right'
-	}}
-/>
-
-<style>
-	/* SvelteSelect styling fix */
-	:global(.this-select) {
-		border: 0 !important;
-		border-color: rgba(209, 213, 219, 0.5) !important;
-		max-width: 10rem;
-		background: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
-	}
-	:global(.svelte-select-list) {
-		background-color: oklch(var(--b1) / var(--tw-bg-opacity, 1)) !important;
-		box-shadow: 0 0 0 1px rgba(209, 213, 219, 0.5) !important;
-	}
-	:global(.svelte-select-list .list-item .item.hover) {
-		background-color: oklch(var(--s) / var(--tw-bg-opacity, 1)) !important;
-	}
-	:global(.svelte-select .value-container .multi-item) {
-		background-color: oklch(var(--nc)) !important;
-	}
-	:global(.svelte-select .value-container .multi-item .multi-item-clear svg) {
-		color: oklch(var(--pc)) !important;
-	}
-</style>
+	}} />

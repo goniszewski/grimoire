@@ -1,36 +1,56 @@
-import { handlePBError } from '$lib/pb';
+import { getUserWithoutSerialization } from '$lib/database/repositories/User.repository';
+import { lucia } from '$lib/server/auth';
 
-import { error, fail, redirect } from '@sveltejs/kit';
+import { verify } from '@node-rs/argon2';
+import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
-export const actions: Actions = {
-	default: async ({ locals, request }) => {
-		const data = await request.formData();
-		const usernameOrEmail = data.get('usernameOrEmail') as string;
-		const password = data.get('password') as string;
 
-		if (!usernameOrEmail || !password) {
-			return fail(400, {
-				usernameOrEmail: !usernameOrEmail,
-				password: !password,
-				missing: true
+const INVALID_USERNAME_OR_PASSWORD = 'Invalid username or password';
+export const actions: Actions = {
+	default: async (event) => {
+		const formData = await event.request.formData();
+		const login = formData.get('login') as string;
+		const password = formData.get('password') as string;
+
+		const existingUser = await getUserWithoutSerialization(login);
+
+		if (!existingUser) {
+			const randomMs = Math.floor(Math.random() * 1000);
+
+			return new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(
+						fail(401, {
+							login: login,
+							message: INVALID_USERNAME_OR_PASSWORD
+						})
+					);
+				}, randomMs);
 			});
 		}
 
-		try {
-			const user = await locals.pb.collection('users').authWithPassword(usernameOrEmail, password);
+		const validPassword = await verify(existingUser.passwordHash, password, {
+			memoryCost: 19456,
+			timeCost: 2,
+			outputLen: 32,
+			parallelism: 1
+		});
 
-			if (user.record.disabled) {
-				return fail(401, {
-					usernameOrEmail,
-					password,
-					disabled: true
-				});
-			}
-		} catch (e) {
-			return handlePBError(e, locals.pb, true);
+		if (!validPassword) {
+			return fail(401, {
+				login: login,
+				message: INVALID_USERNAME_OR_PASSWORD
+			});
 		}
 
-		redirect(303, '/');
+		const session = await lucia.createSession(existingUser.id, {});
+		const sessionCookie = lucia.createSessionCookie(session.id);
+		event.cookies.set(sessionCookie.name, sessionCookie.value, {
+			path: '.',
+			...sessionCookie.attributes
+		});
+
+		redirect(302, '/');
 	}
 };

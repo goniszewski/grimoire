@@ -1,199 +1,209 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { generateTags } from '$lib/integrations/ollama';
-	import { searchEngine } from '$lib/stores/search.store';
-	import { userSettingsStore } from '$lib/stores/user-settings.store';
-	import type { Metadata } from '$lib/types/Metadata.type';
-	import { validateUrlRegex } from '$lib/utils/regex-library';
-	import { addBookmarkToSearchIndex } from '$lib/utils/search';
-	import { showToast } from '$lib/utils/show-toast';
+import { enhance } from '$app/forms';
+import { invalidate } from '$app/navigation';
+import { page } from '$app/stores';
+import { generateTags } from '$lib/integrations/ollama';
+import { searchEngine } from '$lib/stores/search.store';
+import { userSettingsStore } from '$lib/stores/user-settings.store';
+import type { Metadata } from '$lib/types/Metadata.type';
+import { validateUrlRegex } from '$lib/utils/regex-library';
+import { addBookmarkToSearchIndex } from '$lib/utils/search';
+import { showToast } from '$lib/utils/show-toast';
 
-	import { IconInfoCircle } from '@tabler/icons-svelte';
-	import _ from 'lodash';
-	import { onDestroy } from 'svelte';
-	import Select from 'svelte-select';
-	import { writable, type Writable } from 'svelte/store';
+import { IconInfoCircle } from '@tabler/icons-svelte';
+import _ from 'lodash';
+import { onDestroy } from 'svelte';
+import Select from 'svelte-select';
+import { writable, type Writable } from 'svelte/store';
 
-	const defaultFormValues: Metadata = {
-		url: '',
-		domain: '',
-		title: '',
-		description: '',
-		author: '',
-		content_text: '',
-		content_html: '',
-		content_type: '',
-		main_image_url: '',
-		icon_url: '',
-		content_published_date: null
-	};
+const defaultFormValues: Metadata = {
+	url: '',
+	domain: '',
+	title: '',
+	description: '',
+	author: '',
+	contentText: '',
+	contentHtml: '',
+	contentType: '',
+	mainImageUrl: '',
+	iconUrl: '',
+	contentPublishedDate: null
+};
+const defaultCategory = $page.data.categories.find((c) => Boolean(c.initial))!;
+const categorySelectItems = $page.data.categories.map((c) => ({
+	value: `${c.id}`,
+	label: c.name
+}));
 
-	onDestroy(() => {
-		bookmarkTagsInput.set(null);
-		metadata = { ...defaultFormValues };
-	});
+onDestroy(() => {
+	bookmarkTagsInput.set(null);
+	metadata = { ...defaultFormValues };
+});
 
-	let metadata: Metadata = { ...defaultFormValues };
-	export let closeModal: () => void;
+let metadata: Metadata = { ...defaultFormValues };
+export let closeModal: () => void;
 
-	const bookmarkTagsInput: Writable<
-		| {
-				value: string;
-				label: string;
-				created?: boolean;
-		  }[]
-		| null
-	> = writable(null);
-
-	const bookmarkTags = writable<
-		{
+const bookmarkTagsInput: Writable<
+	| {
 			value: string;
 			label: string;
 			created?: boolean;
-		}[]
-	>([...$page.data.tags.map((t) => ({ value: t.id, label: t.name }))]);
-	const loadingTags = writable(false);
+	  }[]
+	| null
+> = writable(null);
 
-	let tagsInputFilterText: '';
+const bookmarkTags = writable<
+	{
+		value: string;
+		label: string;
+		created?: boolean;
+	}[]
+>([...$page.data.tags.map((t) => ({ value: `${t.id}`, label: t.name }))]);
+const loadingTags = writable(false);
 
-	function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
-		if (
-			!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) &&
-			e.detail.length === 0 &&
-			tagsInputFilterText.length > 0
-		) {
-			const prev = $bookmarkTags.filter((i) => !i.created);
-			$bookmarkTags = [
-				...prev,
-				{ value: tagsInputFilterText, label: tagsInputFilterText, created: true }
-			];
-		}
-	}
+let tagsInputFilterText: '';
 
-	function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
-		const lastItemIndex = e.detail.length - 1;
-		e.detail[lastItemIndex] = {
-			...e.detail[lastItemIndex],
-			label: e.detail[lastItemIndex].label.replace(/#/g, ''),
-			value: e.detail[lastItemIndex].value.replace(/#/g, '')
-		};
-
-		return e;
-	}
-
-	function handleTagsChange() {
+function handleTagsFilter(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+	if (
+		!$bookmarkTagsInput?.find((i) => i.label === tagsInputFilterText) &&
+		e.detail.length === 0 &&
+		tagsInputFilterText.length > 0
+	) {
+		const prev = $bookmarkTags.filter((i) => !i.created);
 		$bookmarkTags = [
-			...$bookmarkTags?.map((i) => {
-				if (i.label.startsWith('#')) {
-					i.label = i.label.replace(/#/g, '');
-					i.value = i.value.replace(/#/g, '');
-				}
-				if (i.created) {
-					delete i.created;
-				}
-				return i;
-			})
+			...prev,
+			{ value: tagsInputFilterText, label: tagsInputFilterText, created: true }
 		];
 	}
+}
 
-	let note = '';
-	let error = '';
-	let warning = '';
-	const loading = writable(false);
+function handleTagsInput(e: CustomEvent<{ value: string; label: string; created?: boolean }[]>) {
+	if (!e.detail) {
+		$bookmarkTags = [];
+		return e;
+	}
+	const lastItemIndex = e.detail.length - 1;
+	e.detail[lastItemIndex] = {
+		...e.detail[lastItemIndex],
+		label: e.detail[lastItemIndex].label.replace(/#/g, ''),
+		value: e.detail[lastItemIndex].value.replace(/#/g, '')
+	};
 
-	const onGetMetadata = _.debounce(
-		async (event: Event) => {
-			const target = event.target as HTMLButtonElement;
-			const url = target.value;
-			error = '';
+	return e;
+}
 
-			loading.set(true);
-
-			if (!url) {
-				metadata = { ...defaultFormValues };
-				loading.set(false);
-				return;
+function handleTagsChange() {
+	$bookmarkTags = [
+		...$bookmarkTags?.map((i) => {
+			if (i.label.startsWith('#')) {
+				i.label = i.label.replace(/#/g, '');
+				i.value = i.value.replace(/#/g, '');
 			}
-			if (!url.match(validateUrlRegex)) {
-				error = 'Invalid URL';
-				loading.set(false);
-				return;
+			if (i.created) {
+				delete i.created;
 			}
+			return i;
+		})
+	];
+}
 
-			const bookmarkExists = $page.data.bookmarks.find((b) => b.url === url);
-			if (bookmarkExists) {
-				warning = `Be warned, bookmark with this URL already exists as '${bookmarkExists.title}' in '${bookmarkExists.category.name}' category.`;
-			}
+let note = '';
+let error = '';
+let warning = '';
+const loading = writable(false);
 
-			fetch(`/api/fetch-metadata`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ url })
-			})
-				.then((res) => res.json())
-				.then((data) => {
-					metadata = data?.metadata || { ...defaultFormValues };
+const onGetMetadata = _.debounce(
+	async (event: Event) => {
+		const target = event.target as HTMLButtonElement;
+		const url = target.value;
+		error = '';
 
-					if (!metadata.content_text || !$userSettingsStore?.llm || !$userSettingsStore.llm.enabled)
-						return;
+		loading.set(true);
 
-					$loadingTags = true;
-
-					const generateTagsPromise = generateTags(
-						metadata.content_text,
-						$userSettingsStore?.llm?.ollama
-					);
-
-					showToast
-						.promise(
-							generateTagsPromise,
-							{
-								loading: 'Generating tags...',
-								success: 'Tags generated!',
-								error: 'Failed to generate tags.'
-							},
-							{
-								position: 'bottom-right'
-							}
-						)
-						.then((tags) => {
-							$loadingTags = false;
-							bookmarkTagsInput.set(tags!.map((t) => ({ value: t, label: t })));
-						})
-						.catch((err) => {
-							$loadingTags = false;
-							console.error(err);
-						});
-				})
-				.catch((err) => {
-					console.error(err);
-					error = 'Failed to fetch metadata';
-				})
-				.finally(() => {
-					loading.set(false);
-				});
-		},
-		1000,
-		{
-			leading: false,
-			trailing: true,
-			maxWait: 1000
+		if (!url) {
+			metadata = { ...defaultFormValues };
+			loading.set(false);
+			return;
 		}
-	);
+		if (!url.match(validateUrlRegex)) {
+			error = 'Invalid URL';
+			loading.set(false);
+			return;
+		}
+
+		const bookmarkExists = $page.data.bookmarks.find((b) => b.url === url);
+		if (bookmarkExists) {
+			warning = `Be warned, bookmark with this URL already exists as '${bookmarkExists.title}' in '${bookmarkExists.category?.name}' category.`;
+		}
+
+		fetch(`/api/fetch-metadata`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ url })
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				metadata = data?.metadata || { ...defaultFormValues };
+
+				if (!metadata.contentText || !$userSettingsStore?.llm || !$userSettingsStore.llm.enabled)
+					return;
+
+				$loadingTags = true;
+
+				const generateTagsPromise = generateTags(
+					metadata.contentText,
+					$userSettingsStore?.llm?.ollama
+				);
+
+				showToast
+					.promise(
+						generateTagsPromise,
+						{
+							loading: 'Generating tags...',
+							success: 'Tags generated!',
+							error: 'Failed to generate tags.'
+						},
+						{
+							position: 'bottom-right'
+						}
+					)
+					.then((tags) => {
+						$loadingTags = false;
+						bookmarkTagsInput.set(tags!.map((t) => ({ value: t, label: t })));
+					})
+					.catch((err) => {
+						$loadingTags = false;
+						console.error(err);
+					});
+			})
+			.catch((err) => {
+				console.error(err);
+				error = 'Failed to fetch metadata';
+			})
+			.finally(() => {
+				loading.set(false);
+			});
+	},
+	1000,
+	{
+		leading: false,
+		trailing: true,
+		maxWait: 1000
+	}
+);
 </script>
 
 <form
 	method="POST"
 	action="/?/addNewBookmark"
 	use:enhance={({ formData }) => {
-		const defaultCategory = $page.data.categories.find((c) => c.name === 'Uncategorized');
 		if (!formData.get('category') && defaultCategory) {
-			formData.set('category', defaultCategory?.id);
+			formData.set('category', `${defaultCategory?.id}`);
 		}
 		return async ({ update, result }) => {
+			await invalidate('app:main-page');
 			if (result.type === 'success' && result?.data?.bookmark) {
 				// @ts-ignore-next-line
 				addBookmarkToSearchIndex($searchEngine, result.data.bookmark);
@@ -205,18 +215,16 @@
 				closeModal();
 			}
 		};
-	}}
->
+	}}>
 	<div class="w-full">
 		<div class="form-control flex w-full gap-4">
 			<input type="text" class="hidden" name="domain" value={metadata.domain} />
-			<input type="text" class="hidden" name="content_html" value={metadata.content_html} />
+			<input type="text" class="hidden" name="content_html" value={metadata.contentHtml} />
 			<input
 				type="text"
 				class="hidden"
 				name="content_published_date"
-				value={metadata.content_published_date}
-			/>
+				value={metadata.contentPublishedDate} />
 
 			{#if error}
 				<div class="alert alert-error">{error}</div>
@@ -235,8 +243,7 @@
 					name="url"
 					value={metadata.url}
 					on:input={onGetMetadata}
-					disabled={$loading}
-				/>
+					disabled={$loading} />
 				{#if metadata.url}
 					<button
 						class="btn btn-primary join-item"
@@ -244,8 +251,7 @@
 							// @ts-ignore-next-line
 							metadata.url = '';
 						}}
-						disabled={!metadata.url || $loading}
-					>
+						disabled={!metadata.url || $loading}>
 						X
 					</button>
 				{/if}
@@ -264,13 +270,9 @@
 									name="category"
 									searchable
 									placeholder="Select category..."
-									value={$page.data.categories[0].id}
-									items={$page.data.categories.map((c) => ({
-										value: c.id,
-										label: c.name
-									}))}
-									class="this-select input input-bordered w-full"
-								/>
+									value={`${defaultCategory.id}`}
+									items={categorySelectItems}
+									class="this-select input input-bordered w-full" />
 							</div>
 							<div class="flex w-full flex-1 flex-col">
 								<label for="tags" class="label">Tags</label>
@@ -286,8 +288,7 @@
 									bind:value={$bookmarkTagsInput}
 									bind:loading={$loadingTags}
 									items={$bookmarkTags}
-									class="this-select input input-bordered min-w-full flex-1"
-								>
+									class="this-select input input-bordered min-w-full flex-1">
 									<div slot="item" let:item>
 										{item.created ? 'Create tag: ' : ''}
 										{item.label}
@@ -304,20 +305,17 @@
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
-										value="1"
-									/>
+										value="1" />
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
-										value="2"
-									/>
+										value="2" />
 									<input
 										type="radio"
 										name="importance"
 										class="mask mask-star-2 bg-orange-400"
-										value="3"
-									/>
+										value="3" />
 								</div>
 							</div>
 							<div class="flex w-full flex-col">
@@ -340,8 +338,7 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.title = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-full flex-col">
 						<label for="icon" class="label">Icon</label>
@@ -350,14 +347,13 @@
 								type="text"
 								class="input input-bordered w-9/12"
 								name="icon_url"
-								value={metadata.icon_url}
+								value={metadata.iconUrl}
 								on:input={(event) => {
 									// @ts-ignore-next-line
 									metadata.icon_url = event.target.value;
-								}}
-							/>
-							{#if metadata.icon_url}
-								<img class="m-auto h-8 w-8 md:ml-8" src={metadata.icon_url} alt={metadata.title} />
+								}} />
+							{#if metadata.iconUrl}
+								<img class="m-auto h-8 w-8 md:ml-8" src={metadata.iconUrl} alt={metadata.title} />
 							{/if}
 						</div>
 					</div>
@@ -370,41 +366,37 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.description = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="main image" class="label">Main image</label>
-						{#if metadata.main_image_url}
+						{#if metadata.mainImageUrl}
 							<img
 								class="m-auto max-h-64 rounded-md"
-								src={metadata.main_image_url}
-								alt={metadata.title}
-							/>
+								src={metadata.mainImageUrl}
+								alt={metadata.title} />
 						{/if}
 						<input
 							type="text"
 							class="input input-bordered w-full"
 							name="main_image_url"
-							value={metadata.main_image_url}
+							value={metadata.mainImageUrl}
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.main_image_url = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-auto flex-col">
 						<label for="content_text" class="label">Content (text)</label>
 						<textarea
 							class="textarea textarea-bordered"
 							name="content_text"
-							value={metadata.content_text}
+							value={metadata.contentText}
 							placeholder="Extracted if possible..."
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.content_text = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 					<div class="flex w-full flex-col">
 						<label for="author" class="label">Author</label>
@@ -413,8 +405,7 @@
 							class="input input-bordered"
 							name="author"
 							value={metadata.author}
-							placeholder="Extracted if possible..."
-						/>
+							placeholder="Extracted if possible..." />
 					</div>
 					<div class="flex w-auto flex-col">
 						<label for="note" class="label">Your note</label>
@@ -426,16 +417,14 @@
 							on:input={(event) => {
 								// @ts-ignore-next-line
 								metadata.note = event.target.value;
-							}}
-						/>
+							}} />
 					</div>
 				</div>
 			{/if}
 
 			<button
 				class="btn btn-primary mx-auto my-6 w-full max-w-xs"
-				disabled={$loading || !metadata.url || !metadata.title}>Add</button
-			>
+				disabled={$loading || !metadata.url || !metadata.title}>Add</button>
 		</div>
 	</div>
 </form>

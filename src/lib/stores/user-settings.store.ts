@@ -1,4 +1,4 @@
-import { defaultUserSettings } from '$lib/pb';
+import { defaultUserSettings } from '$lib/config';
 import { writable } from 'svelte/store';
 
 import type { UserSettings } from '$lib/types/UserSettings.type';

@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - 'main'
-    tags:
-      - 'v*.*.*'
+      - 'develop'
     paths:
       - 'src/**'
       - 'static/**'
@@ -21,6 +20,8 @@ on:
       - 'tailwind.config.cjs'
       - 'tsconfig.json'
       - 'vite.config.cjs'
+  release:
+    types: [published]
 
 jobs:
   docker:
@@ -38,6 +39,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=pre-release,enable=${{ github.event_name == 'release' && github.event.release.prerelease }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx

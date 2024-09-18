@@ -1,36 +1,39 @@
+import { tagSchema } from '$lib/database/schema';
+
 import { createSlug } from './create-slug';
 
-import type PocketBase from 'pocketbase';
+import type { DB } from '$lib/database/db';
 export async function prepareTags(
-	pb: PocketBase,
+	db: DB,
 	tags: {
 		label: string;
-		value: string;
+		value: number | string;
 	}[],
-	owner: string
+	ownerId: number
 ) {
 	const createTags = tags.filter(
-		(tag: { label: string; value: string }) => tag.value === tag.label
+		(tag: { label: string; value: number | string }) => tag.value === tag.label
 	);
-	const existingTags = tags.reduce((acc: string[], tag: { label: string; value: string }) => {
-		if (tag.value !== tag.label) {
-			acc.push(tag.value);
-		}
-		return acc;
-	}, []);
+	const existingTags = tags.reduce(
+		(acc: number[], tag: { label: string; value: number | string }) => {
+			if (tag.value !== tag.label) {
+				acc.push(+tag.value);
+			}
+			return acc;
+		},
+		[]
+	);
 
 	const createdTags = await Promise.all(
-		createTags.map(async (tag: { label: string; value: string }) => {
-			const { id } = await pb.collection('tags').create(
-				{
+		createTags.map(async (tag: { label: string; value: number | string }) => {
+			const [{ id }] = await db
+				.insert(tagSchema)
+				.values({
 					name: tag.label,
 					slug: createSlug(tag.label),
-					owner
-				},
-				{
-					$cancelKey: tag.label
-				}
-			);
+					ownerId
+				})
+				.returning();
 
 			return id;
 		})

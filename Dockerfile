@@ -1,32 +1,30 @@
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-RUN apt-get update && apt-get install -y python3 python3-pip wget && rm -rf /var/lib/apt/lists/*
-COPY . /app
+FROM oven/bun AS base
+RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && rm -rf /var/lib/apt/lists/*
+RUN bun i -g svelte-kit@latest
 WORKDIR /app
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+FROM base AS install
+WORKDIR /temp/dev
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
-FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-ENV NODE_OPTIONS=--max_old_space_size=4096
-RUN pnpm run build
+WORKDIR /temp/prod
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile --production
 
-FROM base
-ARG PUBLIC_POCKETBASE_URL
-ARG ROOT_ADMIN_EMAIL
-ARG ROOT_ADMIN_PASSWORD
+FROM base AS prerelease
+COPY --from=install /temp/dev/node_modules node_modules
+COPY . .
+
 ARG PUBLIC_ORIGIN="http://localhost:5173"
 ARG PORT=5173
 ARG PUBLIC_HTTPS_ONLY="false"
 ARG PUBLIC_SIGNUP_DISABLED="false"
 ARG BODY_SIZE_LIMIT="5000000"
+ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=8192
+RUN bun --bun run build
 
-ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
-ENV ROOT_ADMIN_EMAIL=$ROOT_ADMIN_EMAIL
-ENV ROOT_ADMIN_PASSWORD=$ROOT_ADMIN_PASSWORD
 ENV PUBLIC_ORIGIN=$PUBLIC_ORIGIN
 ENV ORIGIN=$PUBLIC_ORIGIN
 ENV PORT=$PORT
@@ -34,10 +32,10 @@ ENV PUBLIC_HTTPS_ONLY=$PUBLIC_HTTPS_ONLY
 ENV PUBLIC_SIGNUP_DISABLED=$PUBLIC_SIGNUP_DISABLED
 ENV BODY_SIZE_LIMIT=$BODY_SIZE_LIMIT
 
-COPY --from=prod-deps /app/node_modules /app/node_modules
-COPY --from=build /app/build /app/build
-COPY --from=build /app/package.json /app/package.json
-COPY --from=base /app/pb_migrations /app/pb_migrations
+FROM base AS release
+COPY --from=install /temp/prod/node_modules node_modules
+COPY --from=prerelease /app .
+RUN bun --bun run run-migrations
 ENV NODE_ENV=production
 EXPOSE $PORT
-ENTRYPOINT [ "node", "-r", "dotenv/config", "src/server.js" ]
+ENTRYPOINT [ "bun","./build/index.js" ]

@@ -16,9 +16,9 @@
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
 
-	const categoriesOptions = writable<{ value: string; label: string }[]>([
+	const categoriesOptions = writable<{ value: number; label: string }[]>([
 		{
-			value: 'null',
+			value: 0,
 			label: 'No parent'
 		}
 	]);
@@ -26,7 +26,7 @@
 	$: {
 		$categoriesOptions = [
 			{
-				value: 'null',
+				value: 0,
 				label: 'No parent'
 			},
 			...$page.data.categories

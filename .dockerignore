@@ -22,3 +22,4 @@ coverage
 CONTRIBUTING.md
 run-dev.sh
 build.sh
+data/*
