@@ -1,7 +1,5 @@
-# Base stage
 FROM oven/bun AS base
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
-LABEL version="0.4.0"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
