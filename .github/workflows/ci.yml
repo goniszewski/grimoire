@@ -16,11 +16,11 @@ jobs:
         with:
           images: goniszewski/grimoire
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+            type=raw,value=preview,enable=${{ !github.event.release.prerelease }}
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=pre-release,enable=${{ github.event.release.prerelease }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
