@@ -150,13 +150,13 @@ $: {
 											{/if}
 										{/each}
 									{:else}
-										<p class="text-center text-gray-300">No tags available.</p>
+										<p class="text-center text-gray-500">No tags available.</p>
 									{/if}
 								</div>
 							</div>
 							<div>
 								<h3 class="text-xl">Flows</h3>
-								<div class="flex flex-wrap p-2 text-gray-300">To be added.</div>
+								<div class="flex flex-wrap p-2 text-gray-500">To be added.</div>
 							</div>
 						</ul>
 					</div>
