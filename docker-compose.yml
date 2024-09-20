@@ -1,6 +1,6 @@
 services:
   grimoire:
-    image: goniszewski/grimoire:develop
+    image: goniszewski/grimoire:latest
     container_name: grimoire
     restart: unless-stopped
     environment:
