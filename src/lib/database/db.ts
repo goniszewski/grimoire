@@ -11,7 +11,7 @@ class DbConnection {
 	private db: Database;
 
 	private constructor() {
-		this.db = new Database('data/db.sqlite', { create: true });
+		this.db = new Database('/app/data/db.sqlite', { create: true });
 		this.db.exec('PRAGMA journal_mode = WAL;');
 	}
 
