@@ -33,7 +33,7 @@
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write .",
 		"generate-migration": "drizzle-kit generate --name",
-		"run-migrations": "bun run ./src/lib/database/migrate",
+		"run-migrations": "bun run ./migrate",
 		"release": "release-it"
 	},
 	"type": "module",

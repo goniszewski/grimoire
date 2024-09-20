@@ -34,6 +34,8 @@ RUN bun --bun run build
 FROM base AS release
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
+COPY --from=build /app/migrations ./migrations
+COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
