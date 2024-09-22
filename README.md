@@ -3,7 +3,8 @@
   <h1>Grimoire</h1>
   <p>Bookmark manager for the wizards 🧙</p>
 <img alt="GitHub License" src="https://img.shields.io/github/license/goniszewski/grimoire">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/goniszewski/grimoire/.github%2Fworkflows%2Fci.yml">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/goniszewski/grimoire/ci.yml?event=release
+">
 <img alt="GitHub Release" src="https://img.shields.io/github/v/release/goniszewski/grimoire">
 <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/goniszewski/grimoire">
 </div>
