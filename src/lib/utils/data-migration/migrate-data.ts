@@ -130,6 +130,10 @@ async function migrateCategories(
 
 	// Update parentId of categories that have a parentId
 	const categoriesWithParentId = categories.filter((c) => c.parent);
+	if (categoriesWithParentId.length === 0) {
+		return mappedIds;
+	}
+
 	await targetDbClient
 		.update(categorySchema)
 		.set({
