@@ -1,5 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
+import path from 'path';
 
 import * as schema from './schema';
 
@@ -11,7 +12,9 @@ class DbConnection {
 	private db: Database;
 
 	private constructor() {
-		this.db = new Database('/app/data/db.sqlite', { create: true });
+		this.db = new Database(path.join(path.resolve(process.cwd(), 'data'), 'db.sqlite'), {
+			create: true
+		});
 		this.db.exec('PRAGMA journal_mode = WAL;');
 	}
 
