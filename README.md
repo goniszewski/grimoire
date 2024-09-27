@@ -60,7 +60,7 @@ More screenshots can be found in the [screenshots directory](screenshots).
 ```yml
 services:
   grimoire:
-    image: goniszewski/grimoire:develop
+    image: goniszewski/grimoire:latest # or change from 'latest' to 'preview' to use the latest preview version
     container_name: grimoire
     restart: unless-stopped
     environment:
