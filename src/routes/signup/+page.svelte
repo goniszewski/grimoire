@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { applyAction, enhance } from '$app/forms';
-	import { page } from '$app/stores';
+import { applyAction, enhance } from '$app/forms';
+import { page } from '$app/stores';
 
-	export let form: HTMLFormElement;
+export let form: HTMLFormElement;
 </script>
 
-<div class="w-full mt-24">
+<div class="mt-24 w-full">
 	{#if $page.data.signupDisabled}
-		<div class="flex flex-col items-center justify-center gap-4 p-4 mx-auto">
+		<div class="mx-auto flex flex-col items-center justify-center gap-4 p-4">
 			<h1 class="text-2xl font-bold">Sign up</h1>
 			<p class="text-gray-500">
 				Sign up is currently disabled. Please contact the administrator if you want to sign up.
@@ -20,8 +20,7 @@
 				return async ({ result }) => {
 					await applyAction(result);
 				};
-			}}
-		>
+			}}>
 			<div class="form-control mx-auto max-w-xs gap-4">
 				<div>
 					<label class="label" for="username">
@@ -32,10 +31,10 @@
 						type="text"
 						name="username"
 						placeholder="Type here"
+						required
 						class={`input input-bordered w-full max-w-xs ${
 							form?.missing && form?.username ? 'input-error' : ''
-						}`}
-					/>
+						}`} />
 					{#if (form?.missing && form?.username) || (form?.invalid && form?.username)}
 						<p class="text-error">
 							{form?.missing ? 'This field is required.' : form?.username?.message}
@@ -50,19 +49,19 @@
 						type="text"
 						name="name"
 						placeholder="Type here"
-						class="input input-bordered w-full max-w-xs"
-					/>
+						class="input input-bordered w-full max-w-xs" />
 				</div>
 				<div>
 					<label class="label" for="email">
 						<span class="label-text">Email</span>
+						<span class="label-text-alt"> (required)</span>
 					</label>
 					<input
 						type="email"
 						name="email"
+						required
 						placeholder="Type here"
-						class="input input-bordered w-full max-w-xs"
-					/>
+						class="input input-bordered w-full max-w-xs" />
 				</div>
 				<div>
 					<label class="label" for="password">
@@ -72,13 +71,13 @@
 					<input
 						type="password"
 						name="password"
+						required
 						placeholder="Type here"
 						class={`input input-bordered w-full max-w-xs ${
 							(form?.missing && form?.password) || (form?.invalid && form?.password)
 								? 'input-error'
 								: ''
-						}`}
-					/>
+						}`} />
 					{#if (form?.missing && form?.password) || (form?.invalid && form?.password)}
 						<p class="text-error">
 							{form?.missing ? 'This field is required.' : form?.password?.message}
@@ -94,12 +93,12 @@
 						type="password"
 						name="passwordConfirm"
 						placeholder="Type here"
+						required
 						class={`input input-bordered w-full max-w-xs ${
 							(form?.missing && form?.passwordConfirm) || (form?.invalid && form?.password)
 								? 'input-error'
 								: ''
-						}`}
-					/>
+						}`} />
 					{#if (form?.missing && form?.passwordConfirm) || (form?.invalid && (form?.passwordConfirm || form?.password))}
 						<p class="text-error">
 							{form?.missing
