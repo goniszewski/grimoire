@@ -88,13 +88,14 @@ async function urlMetadataScraper(html: string, url: string): Promise<Partial<Me
 			url,
 			iconUrls?.[0] || urlMetadataMetadata?.favicons?.[0]?.href || ''
 		);
+		const mainImageUrl: string = urlMetadataMetadata?.image || urlMetadataMetadata?.['og:image'];
 
 		return {
 			url: urlMetadataMetadata?.url || urlMetadataMetadata?.['og:url'],
 			title: urlMetadataMetadata?.title || urlMetadataMetadata?.['og:title'],
 			description: urlMetadataMetadata?.description || urlMetadataMetadata?.['og:description'],
 			author: urlMetadataMetadata?.author || urlMetadataMetadata?.['twitter:creator'],
-			mainImageUrl: urlMetadataMetadata?.image || urlMetadataMetadata?.['og:image'],
+			mainImageUrl: mainImageUrl.includes(',http') ? mainImageUrl.split(',http')[0] : mainImageUrl,
 			iconUrl
 		};
 	} catch (error) {
