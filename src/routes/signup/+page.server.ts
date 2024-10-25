@@ -83,6 +83,10 @@ export const actions: Actions = {
 
 		if (userExists) {
 			return fail(400, {
+				username: {
+					message: 'User with this username already exists'
+				},
+				invalid: true,
 				message: 'User with this username / email already exists'
 			});
 		}
