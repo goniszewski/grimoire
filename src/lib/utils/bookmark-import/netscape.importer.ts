@@ -41,26 +41,26 @@ function translateNetscapeBookmarks(bookmarks: ParserBookmark[]): ImportResult {
 		tags: []
 	};
 
-	function processBookmark(bookmark: ParserBookmark, parentSlug?: string) {
-		if (bookmark.type === 'folder') {
+	function processBookmark(item: ParserBookmark, parentSlug?: string) {
+		if (item.type === 'folder' && item.children?.length) {
 			const category: ImportedCategory = {
-				name: bookmark.title!,
-				slug: createSlug(bookmark.title!),
+				name: item.title!,
+				slug: createSlug(item.title!),
 				parentSlug,
-				createdAt: bookmark.addDate ? new Date(bookmark.addDate) : undefined
+				createdAt: item.addDate ? new Date(item.addDate) : undefined
 			};
 			result.categories.push(category);
 
-			bookmark.children?.forEach((child) => processBookmark(child, category.slug));
+			item.children?.forEach((child) => processBookmark(child, category.slug));
 		} else {
-			const importedBookmark: ImportedBookmark = {
-				title: bookmark.title || bookmark.url!,
-				url: bookmark.url!,
-				description: bookmark.description || '',
-				createdAt: bookmark.addDate ? new Date(bookmark.addDate) : undefined,
-				icon: bookmark.icon || undefined
+			const bookmark: ImportedBookmark = {
+				title: item.title || item.url!,
+				url: item.url!,
+				description: item.description || '',
+				createdAt: item.addDate ? new Date(item.addDate) : undefined,
+				icon: item.icon || undefined
 			};
-			result.bookmarks.push(importedBookmark);
+			result.bookmarks.push(bookmark);
 		}
 	}
 
