@@ -6,6 +6,7 @@ import { fail, redirect } from '@sveltejs/kit';
 
 import type { Actions } from './$types';
 
+const USER_NOT_FOUND = 'User not found';
 const INVALID_USERNAME_OR_PASSWORD = 'Invalid username or password';
 export const actions: Actions = {
 	default: async (event) => {
@@ -16,17 +17,10 @@ export const actions: Actions = {
 		const existingUser = await getUserWithoutSerialization(login);
 
 		if (!existingUser) {
-			const randomMs = Math.floor(Math.random() * 1000);
-
-			return new Promise((resolve) => {
-				setTimeout(() => {
-					resolve(
-						fail(401, {
-							login: login,
-							message: INVALID_USERNAME_OR_PASSWORD
-						})
-					);
-				}, randomMs);
+			return fail(401, {
+				login: login,
+				invalid: true,
+				message: USER_NOT_FOUND
 			});
 		}
 
@@ -40,6 +34,7 @@ export const actions: Actions = {
 		if (!validPassword) {
 			return fail(401, {
 				login: login,
+				invalid: true,
 				message: INVALID_USERNAME_OR_PASSWORD
 			});
 		}
