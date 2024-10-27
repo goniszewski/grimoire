@@ -17,7 +17,7 @@ Thank you for considering contributing to this project! All contributors, big or
    ```
 3. **Install Deps** run `bun install` to install the deps
 4. **Start the server:** if you are on \*nix systems run `./run-dev.sh`. Might need to chmod it before. On windows just `bun --bun run dev` should work.
-5. **Run migrations:** `run-migrations` to run migrations and have base DB setup.
+5. **Run migrations:** `bun run-migrations` to run migrations and have base DB setup.
 6. **Make the changes:** Make the necessary changes to the codebase, ensuring that you follow any coding style guidelines mentioned in the project documentation or README file.
 7. **Test your changes:** Thoroughly test your changes to ensure that they do not break existing functionality and introduce new bugs.
 8. **Commit your changes:** Once you are satisfied with your modifications, commit them using a descriptive commit message following the rules of [Semantic Commit Messages](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716).
