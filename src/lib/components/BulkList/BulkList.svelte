@@ -3,6 +3,7 @@ import { writable } from 'svelte/store';
 import BulkListItem from '../BulkListItem/BulkListItem.svelte';
 
 export let itemList = writable<BulkListItem[]>([]);
+export let isLoading = false;
 
 const isAnyItemSelected = writable(false);
 
@@ -52,7 +53,7 @@ const removeSelectedItems = () => {
 				</tr>
 			</thead>
 			<tbody>
-				{#each $itemList as { id, icon, url, title, category, selected } (id)}
+				{#each $itemList as { id, icon, url, title, category, selected, contentHtml } (id)}
 					<BulkListItem
 						id={id}
 						icon={icon}
@@ -60,6 +61,8 @@ const removeSelectedItems = () => {
 						title={title}
 						category={category}
 						selected={selected}
+						isLoading={isLoading}
+						metadataFetched={!!contentHtml}
 						toggleItemSelection={toggleItemSelection} />
 				{/each}
 			</tbody>

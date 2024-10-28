@@ -1,5 +1,10 @@
 <script lang="ts">
-import { IconPhotoX } from '@tabler/icons-svelte';
+import {
+	IconCircleDashedCheck,
+	IconExclamationCircle,
+	IconPhotoX,
+	IconStopwatch
+} from '@tabler/icons-svelte';
 
 export let id: number;
 export let selected = false;
@@ -7,6 +12,8 @@ export let icon: string;
 export let url: string;
 export let title: string;
 export let category: string;
+export let isLoading: boolean;
+export let metadataFetched: boolean;
 export let toggleItemSelection: (id: number) => void;
 
 let urlObj = new URL(url);
@@ -41,8 +48,21 @@ let urlObj = new URL(url);
 							: urlObj.hostname}
 					</a>
 				</div>
-				<div class="text-sm tracking-tight opacity-50">
+				<div class="flex items-center gap-1 text-sm tracking-tight text-secondary">
 					{new URL(url).hostname}
+					{#if metadataFetched}
+						<div class="tooltip" data-tip="Metadata fetched">
+							<IconCircleDashedCheck class="h-4 w-4 text-success" />
+						</div>
+					{:else if isLoading}
+						<div class="tooltip" data-tip="Loading metadata">
+							<IconStopwatch class="h-4 w-4 text-warning" />
+						</div>
+					{:else}
+						<div class="tooltip" data-tip="Failed to fetch metadata">
+							<IconExclamationCircle class="h-4 w-4 text-error" />
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
