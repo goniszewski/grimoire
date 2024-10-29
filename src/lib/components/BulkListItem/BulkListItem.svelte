@@ -1,4 +1,5 @@
 <script lang="ts">
+import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import {
 	IconCircleDashedCheck,
 	IconExclamationCircle,
@@ -14,9 +15,12 @@ export let title: string;
 export let category: string;
 export let isLoading: boolean;
 export let metadataFetched: boolean;
-export let toggleItemSelection: (id: number) => void;
 
 let urlObj = new URL(url);
+
+const removeItem = () => {
+	importBookmarkStore.removeItem(id);
+};
 </script>
 
 <tr>
@@ -26,7 +30,7 @@ let urlObj = new URL(url);
 				type="checkbox"
 				class="checkbox"
 				bind:checked={selected}
-				on:change={() => toggleItemSelection(id)} />
+				on:change={() => importBookmarkStore.toggleSelectionForItem(id)} />
 		</label>
 	</th>
 	<td>
@@ -75,6 +79,6 @@ let urlObj = new URL(url);
 	<td><span class="link hover:link-secondary">{category}</span></td>
 	<th>
 		<button class="btn btn-ghost btn-xs text-secondary">edit</button>
-		<button class="btn btn-ghost btn-xs text-error">remove</button>
+		<button class="btn btn-ghost btn-xs text-error" on:click={removeItem}>remove</button>
 	</th>
 </tr>

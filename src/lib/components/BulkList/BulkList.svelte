@@ -1,40 +1,28 @@
 <script lang="ts">
-import { writable } from 'svelte/store';
+import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
+import { type Readable } from 'svelte/store';
 import BulkListItem from '../BulkListItem/BulkListItem.svelte';
 
-export let itemList = writable<BulkListItem[]>([]);
+export let itemList: Readable<BulkListItem[]>;
 export let isLoading = false;
 
-const isAnyItemSelected = writable(false);
-
-$: $isAnyItemSelected = $itemList && $itemList.some((bookmark) => bookmark.selected);
-
-const toggleItemSelection = (id: number) => {
-	$itemList = $itemList.map((item) => {
-		if (item.id === id) {
-			item.selected = !item.selected;
-		}
-		return item;
-	});
-};
 const selectAllItems = ({ target }: Event) => {
 	if (target instanceof HTMLInputElement) {
-		$itemList = $itemList.map((item) => {
-			item.selected = target.checked;
-			return item;
-		});
+		importBookmarkStore.setSelectStatusForAll(target.checked);
 	}
 };
 
 const removeSelectedItems = () => {
-	$itemList = $itemList.filter((item) => !item.selected);
+	importBookmarkStore.removeSelected();
 };
 </script>
 
 <div class="flex max-w-4xl flex-col gap-2">
 	<div class="mb-2 flex w-full items-end justify-end">
-		<button class="btn btn-primary" disabled={!$isAnyItemSelected} on:click={removeSelectedItems}
-			>DELETE</button>
+		<button
+			class="btn btn-primary"
+			disabled={!importBookmarkStore.isAnySelected}
+			on:click={removeSelectedItems}>DELETE</button>
 	</div>
 	<div class="max-h-[calc(100vh-16rem)] overflow-x-auto">
 		<table class="table table-pin-rows table-pin-cols table-xs">
@@ -62,8 +50,7 @@ const removeSelectedItems = () => {
 						category={category}
 						selected={selected}
 						isLoading={isLoading}
-						metadataFetched={!!contentHtml}
-						toggleItemSelection={toggleItemSelection} />
+						metadataFetched={!!contentHtml} />
 				{/each}
 			</tbody>
 			<!-- foot -->
