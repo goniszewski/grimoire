@@ -1,7 +1,9 @@
 import config from '$lib/config';
 import { createCategory } from '$lib/database/repositories/Category.repository';
 import {
-    createUser, getUserByUsername, getUserCount
+	createUser,
+	getUserByUsername,
+	getUserCount
 } from '$lib/database/repositories/User.repository';
 import { lucia } from '$lib/server/auth';
 import { createSlug } from '$lib/utils/create-slug';
@@ -43,7 +45,9 @@ export const actions: Actions = {
 			username: Joi.string().min(3).max(31),
 			email: Joi.string().email().optional(),
 			password: Joi.string().min(6).max(255),
-			passwordConfirm: Joi.string().valid(Joi.ref('password'))
+			passwordConfirm: Joi.string().valid(Joi.ref('password')).messages({
+				'any.only': 'Passwords do not match.'
+			})
 		});
 
 		const { error, value } = validationSchema.validate({
@@ -55,8 +59,14 @@ export const actions: Actions = {
 		});
 
 		if (error) {
+			const fieldName = error.details[0].path[0] as string;
+
 			return fail(400, {
-				message: error!.message
+				message: error!.message,
+				invalid: true,
+				[fieldName]: {
+					message: error!.message
+				}
 			});
 		}
 
@@ -73,6 +83,10 @@ export const actions: Actions = {
 
 		if (userExists) {
 			return fail(400, {
+				username: {
+					message: 'User with this username already exists'
+				},
+				invalid: true,
 				message: 'User with this username / email already exists'
 			});
 		}
