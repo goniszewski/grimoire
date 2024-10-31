@@ -76,12 +76,10 @@ export let form: FormErrors | null;
 				<div>
 					<label class="label" for="email">
 						<span class="label-text">Email</span>
-						<span class="label-text-alt"> (required)</span>
 					</label>
 					<input
 						type="email"
 						name="email"
-						required
 						placeholder="Type here"
 						class={`input input-bordered w-full max-w-xs ${
 							form?.invalid && form?.email ? 'input-error' : ''

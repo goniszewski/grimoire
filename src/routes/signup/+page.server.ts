@@ -43,7 +43,7 @@ export const actions: Actions = {
 		}>({
 			name: Joi.string().min(3).max(31).optional(),
 			username: Joi.string().min(3).max(31),
-			email: Joi.string().email().required(),
+			email: Joi.string().email().optional(),
 			password: Joi.string().min(6).max(255),
 			passwordConfirm: Joi.string().valid(Joi.ref('password')).messages({
 				'any.only': 'Passwords do not match.'
