@@ -11,19 +11,9 @@ const selectAllItems = ({ target }: Event) => {
 		importBookmarkStore.setSelectStatusForAll(target.checked);
 	}
 };
-
-const removeSelectedItems = () => {
-	importBookmarkStore.removeSelected();
-};
 </script>
 
-<div class="flex max-w-4xl flex-col gap-2">
-	<div class="mb-2 flex w-full items-end justify-end">
-		<button
-			class="btn btn-primary"
-			disabled={!importBookmarkStore.isAnySelected}
-			on:click={removeSelectedItems}>DELETE</button>
-	</div>
+<div class="flex flex-col gap-2">
 	<div class="max-h-[calc(100vh-16rem)] overflow-x-auto">
 		<table class="table table-pin-rows table-pin-cols table-xs">
 			<!-- head -->

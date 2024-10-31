@@ -1,5 +1,3 @@
-import type { Bookmark } from '$lib/types/Bookmark.type';
-import type { Category } from '$lib/types/Category.type';
 import parse from 'node-parse-bookmarks';
 
 import { createSlug } from '../create-slug';
@@ -11,21 +9,10 @@ import type {
 	ImportResult
 } from '$lib/types/BookmarkImport.type';
 
-async function importNetscapeBackupFile(filePath: string): Promise<ParserBookmark[]> {
+async function parseNetscapeBackupFile(content: string): Promise<ParserBookmark[]> {
 	try {
-		const bookmarks: ParserBookmark[] = await new Promise((resolve, reject) => {
-			parse(
-				filePath,
-				{},
-				(res: ParserBookmark[]) => {
-					resolve(res);
-				},
-				(err: Error | null) => {
-					if (err) {
-						reject(err);
-					}
-				}
-			);
+		const bookmarks: ParserBookmark[] = await new Promise((resolve, _reject) => {
+			resolve(parse(content));
 		});
 		return bookmarks;
 	} catch (error) {
@@ -58,7 +45,8 @@ function translateNetscapeBookmarks(bookmarks: ParserBookmark[]): ImportResult {
 				url: item.url!,
 				description: item.description || '',
 				createdAt: item.addDate ? new Date(item.addDate) : undefined,
-				icon: item.icon || undefined
+				icon: item.icon || undefined,
+				categorySlug: parentSlug
 			};
 			result.bookmarks.push(bookmark);
 		}
@@ -69,7 +57,8 @@ function translateNetscapeBookmarks(bookmarks: ParserBookmark[]): ImportResult {
 	return result;
 }
 
-export async function importNetscapeBackup(filePath: string): Promise<ImportResult> {
-	const bookmarks = await importNetscapeBackupFile(filePath);
+export async function importNetscapeBackup(content: string): Promise<ImportResult> {
+	const bookmarks = await parseNetscapeBackupFile(content);
+
 	return translateNetscapeBookmarks(bookmarks);
 }

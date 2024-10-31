@@ -1,4 +1,4 @@
-import { derived, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 
 import type { BulkListItem } from '$lib/types/common/BulkList.type';
 
@@ -24,5 +24,7 @@ export const importBookmarkStore = {
 	setSelectStatusForAll: (selected: boolean) =>
 		update((items) => items.map((item) => ({ ...item, selected }))),
 	removeSelected: () => update((items) => items.filter((item) => !item.selected)),
+	clear: () => set([]),
+	importedCategories: get(derived(store, (items) => items.map((item) => item.category))),
 	length: derived(store, (items) => items.length)
 };

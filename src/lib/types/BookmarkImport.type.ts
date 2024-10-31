@@ -2,6 +2,7 @@ import type { Bookmark } from './Bookmark.type';
 import type { Category } from './Category.type';
 
 export type ImportedBookmark = Pick<Bookmark, 'title' | 'url' | 'description'> & {
+	categorySlug?: string;
 	createdAt?: Date;
 	icon?: string;
 };

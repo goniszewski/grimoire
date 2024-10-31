@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Readable } from 'svelte/store';
-import { get } from 'svelte/store';
 
 export let page: number = 1;
 export let limit: number = 20;
@@ -11,11 +10,12 @@ let itemsCount: number;
 
 $: {
 	// NOTE: We need to subscribe to the changes so it stays reactive
-	itemsCount = typeof items === 'number' ? items : get(items);
 	if (typeof items === 'object' && 'subscribe' in items) {
 		items.subscribe((value) => {
 			itemsCount = value;
 		});
+	} else {
+		itemsCount = items;
 	}
 }
 
