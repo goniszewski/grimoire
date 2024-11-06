@@ -53,7 +53,7 @@ const removeItem = () => {
 					</a>
 				</div>
 				<div class="flex items-center gap-1 text-sm tracking-tight text-secondary">
-					{new URL(url).hostname}
+					{new URL(url).hostname.replace(/^www\./, '')}
 					{#if metadataFetched}
 						<div class="tooltip" data-tip="Metadata fetched">
 							<IconCircleDashedCheck class="h-4 w-4 text-success" />

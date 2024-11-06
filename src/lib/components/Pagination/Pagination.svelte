@@ -1,28 +1,21 @@
 <script lang="ts">
-import type { Readable } from 'svelte/store';
+import { goto } from '$app/navigation';
 
 export let page: number = 1;
 export let limit: number = 20;
-export let items: number | Readable<number> = 0;
+export let items: number = 0;
 export let position: 'left' | 'center' | 'right' = 'center';
 
 let itemsCount: number;
 
 $: {
-	// NOTE: We need to subscribe to the changes so it stays reactive
-	if (typeof items === 'object' && 'subscribe' in items) {
-		items.subscribe((value) => {
-			itemsCount = value;
-		});
-	} else {
-		itemsCount = items;
-	}
+	itemsCount = items;
 }
 
 $: pagesCount = Math.ceil(itemsCount / limit);
 
 function handlePageChange() {
-	window.location.search = `?page=${page}&limit=${limit}`;
+	goto(`?page=${page}&limit=${limit}`, { replaceState: true });
 }
 
 function getMarginPosition() {
