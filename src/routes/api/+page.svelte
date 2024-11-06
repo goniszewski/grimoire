@@ -1,19 +1,13 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import SwaggerUI from 'swagger-ui';
-	import 'swagger-ui/dist/swagger-ui.css';
-	import * as spec from './api-schema.json';
-
-	onMount(async () => {
-		SwaggerUI({
-			spec,
-			dom_id: '#swagger-ui-container'
-		});
-	});
-</script>
-
 <svelte:head>
 	<title>Grimoire - SwaggerUI</title>
 </svelte:head>
 
-<div id="swagger-ui-container" class="bg-gray-50 w-full rounded-lg" />
+<div class="flex h-full w-full flex-col items-center justify-center">
+	<a
+		href="https://grimoire.pro/api"
+		target="_blank"
+		rel="noopener noreferrer"
+		class="text-blue-500 underline hover:text-blue-700">
+		View Swagger Documentation
+	</a>
+</div>

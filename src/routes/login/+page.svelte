@@ -7,7 +7,7 @@ export let form: HTMLFormElement;
 {#if form?.invalid}
 	<div role="alert" class="alert alert-error">
 		<IconExclamationCircle />
-		<span> Incorrect credentials. </span>
+		<span> {form.message} </span>
 	</div>
 {/if}
 <div class="mt-24 w-full">
