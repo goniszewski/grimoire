@@ -17,7 +17,6 @@ interface FormErrors {
 }
 
 export let form: FormErrors | null;
-
 </script>
 
 <div class="mt-24 w-full">
@@ -51,7 +50,6 @@ export let form: FormErrors | null;
 							form?.invalid && form?.name ? 'input-error' : ''
 						}`} />
 					{#if form?.invalid && form?.name}
-
 						<p class="text-error">
 							{form?.invalid ? form?.name.message : 'Invalid display name.'}
 						</p>
@@ -75,7 +73,6 @@ export let form: FormErrors | null;
 							{form?.invalid ? form?.username.message : 'Invalid username.'}
 						</p>
 					{/if}
-
 				</div>
 				<div>
 					<label class="label" for="email">
@@ -93,7 +90,6 @@ export let form: FormErrors | null;
 					{#if form?.invalid && form?.email}
 						<p class="text-error">{form?.invalid ? form?.email.message : 'Invalid email.'}</p>
 					{/if}
-
 				</div>
 				<div>
 					<label class="label" for="password">
@@ -109,7 +105,6 @@ export let form: FormErrors | null;
 							form?.invalid && form?.password?.message ? 'input-error' : ''
 						}`} />
 					{#if form?.invalid && form?.password}
-
 						<p class="text-error">
 							{form?.invalid ? form?.password?.message : 'Invalid password.'}
 						</p>
@@ -129,7 +124,6 @@ export let form: FormErrors | null;
 							form?.invalid && form?.passwordConfirm ? 'input-error' : ''
 						}`} />
 					{#if form?.invalid && form?.passwordConfirm}
-
 						<p class="text-error">
 							{form?.invalid ? form?.passwordConfirm.message : 'Invalid password.'}
 						</p>
