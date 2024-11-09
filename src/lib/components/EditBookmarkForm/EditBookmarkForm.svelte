@@ -1,8 +1,10 @@
 <script lang="ts">
 import { enhance } from '$app/forms';
 import { page } from '$app/stores';
+import Select from '$lib/components/Select/Select.svelte';
 import _ from 'lodash';
-import Select from 'svelte-select';
+import SvelteSelect from 'svelte-select';
+
 import { writable, type Writable } from 'svelte/store';
 
 import { invalidate } from '$app/navigation';
@@ -198,7 +200,7 @@ const onGetMetadata = _.debounce(
 					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
 						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
-								{#if $bookmark.category?.id}
+								{#if $bookmark.category?.id || $bookmark.category?.name}
 									<label for="category" class="label">Category</label>
 									<Select
 										name="category"
@@ -206,12 +208,13 @@ const onGetMetadata = _.debounce(
 										items={categoryItems}
 										value={`${$bookmark.category?.id}`}
 										placeholder={'Select category'}
-										class="this-select input input-bordered w-full md:min-w-28" />
+										border={false}
+										className="this-select input input-bordered w-full md:min-w-28" />
 								{/if}
 							</div>
 							<div class="flex w-full flex-1 flex-col">
 								<label for="tags" class="label">Tags</label>
-								<Select
+								<SvelteSelect
 									name="tags"
 									searchable
 									multiple
@@ -227,7 +230,7 @@ const onGetMetadata = _.debounce(
 										{item.created ? 'Create tag: ' : ''}
 										{item.label}
 									</div>
-								</Select>
+								</SvelteSelect>
 							</div>
 						</div>
 						<div class="ml-4 flex w-full gap-4 md:w-4/12">

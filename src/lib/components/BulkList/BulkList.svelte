@@ -31,16 +31,17 @@ const selectAllItems = ({ target }: Event) => {
 				</tr>
 			</thead>
 			<tbody>
-				{#each $itemList as { id, icon, url, title, category, selected, contentHtml } (id)}
+				{#each $itemList as item (item.id)}
 					<BulkListItem
-						id={id}
-						icon={icon}
-						url={url}
-						title={title}
-						category={category}
-						selected={selected}
-						isLoading={isLoading}
-						metadataFetched={!!contentHtml} />
+						id={item.id}
+						icon={item.icon}
+						url={item.url}
+						title={item.title}
+						category={item.category}
+						selected={item.selected}
+						isLoading={item.isLoading}
+						metadataFetched={!!item.contentHtml}
+						metadata={item} />
 				{/each}
 			</tbody>
 			<!-- foot -->

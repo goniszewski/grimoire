@@ -2,11 +2,11 @@
 import { page } from '$app/stores';
 import BulkList from '$lib/components/BulkList/BulkList.svelte';
 import Pagination from '$lib/components/Pagination/Pagination.svelte';
+import Select from '$lib/components/Select/Select.svelte';
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import type { BulkListItem } from '$lib/types/common/BulkList.type';
 import { importBookmarks } from '$lib/utils/import-bookmarks';
 import { showToast } from '$lib/utils/show-toast';
-import Select from 'svelte-select';
 import { derived, writable } from 'svelte/store';
 
 const step = writable<number>(1);
@@ -130,23 +130,7 @@ const onSetSelectedCategory = () => {
 
 <div class="flex max-w-4xl flex-col">
 	{#if $step === 1}
-		<!-- remove -->
-		<div class="my-10 flex flex-col">
-			<h1 class="text-2xl font-bold">WIP</h1>
-		</div>
-		<div class="flex gap-2">
-			<Select
-				name="category"
-				searchable
-				placeholder="Change category"
-				items={$categoriesOptions}
-				containerStyles="border-color: oklch(var(--p));	max-width: 10rem; background: oklch(var(--b1) / var(--tw-bg-opacity, 1)); min-height: 32px;"
-				inputStyles="font-size: 14px;"
-				groupBy={(item) => item.group}
-				on:change={onSelectCategory} />
-			<button class="btn btn-primary btn-sm" on:click={onSetSelectedCategory}> SET </button>
-		</div>
-		<!-- remove -->
+		<h1 class="mb-4 text-2xl font-bold">Import bookmarks from HTML file</h1>
 		<input
 			type="file"
 			title="Select backup file"
@@ -168,10 +152,9 @@ const onSetSelectedCategory = () => {
 					name="category"
 					searchable
 					placeholder="Change category"
+					size="md"
 					items={$categoriesOptions}
-					containerStyles="border: 1;	border-color: oklch(var(--p));	max-width: 10rem; background: oklch(var(--b1) / var(--tw-bg-opacity, 1)); max-height: 32px;"
-					inputStyles=""
-					on:change={onSelectCategory} />
+					onSelect={onSelectCategory} />
 				<button class="btn btn-primary btn-sm" on:click={onSetSelectedCategory}> SET </button>
 			{/if}
 

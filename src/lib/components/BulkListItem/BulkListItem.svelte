@@ -1,4 +1,5 @@
 <script lang="ts">
+import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import {
 	IconCircleDashedCheck,
@@ -15,10 +16,23 @@ export let title: string;
 export let category: string;
 export let isLoading: boolean;
 export let metadataFetched: boolean;
+export let metadata: any;
 
 let urlObj = new URL(url);
 
-const removeItem = () => {
+const onEditItem = () => {
+	editBookmarkStore.set({
+		description: '',
+		note: '',
+		...metadata,
+		category: {
+			id: category,
+			name: category
+		}
+	});
+};
+
+const onRemoveItem = () => {
 	importBookmarkStore.removeItem(id);
 };
 </script>
@@ -78,7 +92,7 @@ const removeItem = () => {
 	</td>
 	<td><span class="link hover:link-secondary">{category}</span></td>
 	<th>
-		<button class="btn btn-ghost btn-xs text-secondary">edit</button>
-		<button class="btn btn-ghost btn-xs text-error" on:click={removeItem}>remove</button>
+		<button class="btn btn-ghost btn-xs text-secondary" on:click={onEditItem}>edit</button>
+		<button class="btn btn-ghost btn-xs text-error" on:click={onRemoveItem}>remove</button>
 	</th>
 </tr>
