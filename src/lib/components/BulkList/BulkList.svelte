@@ -4,7 +4,7 @@ import { type Readable } from 'svelte/store';
 import BulkListItem from '../BulkListItem/BulkListItem.svelte';
 
 export let itemList: Readable<BulkListItem[]>;
-export let isLoading = false;
+export let isLoading: boolean;
 
 const selectAllItems = ({ target }: Event) => {
 	if (target instanceof HTMLInputElement) {
@@ -39,7 +39,7 @@ const selectAllItems = ({ target }: Event) => {
 						title={item.title}
 						category={item.category}
 						selected={item.selected}
-						isLoading={item.isLoading}
+						isLoading={isLoading}
 						metadataFetched={!!item.contentHtml}
 						metadata={item} />
 				{/each}

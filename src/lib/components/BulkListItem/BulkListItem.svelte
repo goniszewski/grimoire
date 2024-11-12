@@ -22,6 +22,7 @@ let urlObj = new URL(url);
 
 const onEditItem = () => {
 	editBookmarkStore.set({
+		imported: true,
 		description: '',
 		note: '',
 		...metadata,

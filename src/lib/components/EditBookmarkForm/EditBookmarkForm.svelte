@@ -10,7 +10,7 @@ import { writable, type Writable } from 'svelte/store';
 import { invalidate } from '$app/navigation';
 import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 import { searchEngine } from '$lib/stores/search.store';
-import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
 import { showToast } from '$lib/utils/show-toast';
 
@@ -19,7 +19,7 @@ export let closeModal: () => void;
 
 let error = '';
 const loading = writable(false);
-const bookmark = writable<Partial<Bookmark>>({});
+const bookmark = writable<Partial<Bookmark> | BookmarkEdit>();
 
 $: $bookmark = { ...$editBookmarkStore };
 
@@ -90,6 +90,21 @@ function handleTagsChange() {
 			return i;
 		})
 	];
+}
+
+function handleImportedBookmarkEdit() {
+	const formData = new FormData(form);
+	let rawData = Object.fromEntries(formData as any);
+	console.log('rawData', rawData);
+	delete rawData.tags;
+	editBookmarkStore.set({
+		...$bookmark,
+		...rawData,
+		category: JSON.parse(rawData.category)?.label,
+		bookmarkTags: $bookmarkTags
+	});
+	console.log('$editBookmarkStore', $editBookmarkStore);
+	closeModal();
 }
 
 const onGetMetadata = _.debounce(
@@ -376,6 +391,14 @@ const onGetMetadata = _.debounce(
 
 				<button
 					class="btn btn-primary mx-auto my-6 w-full max-w-xs"
+					on:click|preventDefault={() => {
+						console.log('$bookmark', $bookmark);
+						if ($bookmark.imported) {
+							handleImportedBookmarkEdit();
+						} else {
+							form.submit();
+						}
+					}}
 					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button>
 			</div>
 		</div>

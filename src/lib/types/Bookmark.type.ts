@@ -1,4 +1,5 @@
 import type { Category } from './Category.type';
+import type { Metadata } from './Metadata.type';
 import type { Tag } from './Tag.type';
 import type { User } from './User.type';
 
@@ -37,4 +38,19 @@ export type Bookmark = {
 export type BookmarkForIndex = Omit<Bookmark, 'mainImage' | 'icon' | 'screenshot' | 'category'> & {
 	tags: Tag[];
 	category: Omit<Category, 'parent' | 'owner'>;
+};
+
+export type BookmarkEdit = Partial<Metadata> & {
+	id: number;
+	icon: string | null;
+	url: string;
+	title: string;
+	category: string;
+	selected: boolean;
+	imported?: boolean;
+	bookmarkTags?: {
+		value: string;
+		label: string;
+		created?: boolean;
+	}[];
 };
