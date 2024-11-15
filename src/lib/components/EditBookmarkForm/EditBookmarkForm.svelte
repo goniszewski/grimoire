@@ -8,7 +8,7 @@ import SvelteSelect from 'svelte-select';
 import { writable, type Writable } from 'svelte/store';
 
 import { invalidate } from '$app/navigation';
-import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { editBookmarkCategoriesStore, editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 import { searchEngine } from '$lib/stores/search.store';
 import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
@@ -19,14 +19,20 @@ export let closeModal: () => void;
 
 let error = '';
 const loading = writable(false);
-const bookmark = writable<Partial<Bookmark> | BookmarkEdit>();
+const bookmark = writable<BookmarkEdit | Partial<Bookmark>>();
 
 $: $bookmark = { ...$editBookmarkStore };
 
-const categoryItems = $page.data.categories.map((c) => ({
-	value: `${c.id}`,
-	label: c.name
-}));
+const categoryItems = [
+	...$page.data.categories.map((c) => ({
+		value: `${c.id}`,
+		label: c.name
+	})),
+	...$editBookmarkCategoriesStore.map((c) => ({
+		value: c,
+		label: c
+	}))
+];
 
 const bookmarkTagsInput: Writable<
 	| {
@@ -37,7 +43,14 @@ const bookmarkTagsInput: Writable<
 	| null
 > = writable(null);
 
-$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: `${t.id}`, label: t.name })) || null;
+$: $bookmarkTagsInput =
+	(isImportedBookmark($bookmark)
+		? $bookmark.bookmarkTags?.map((t) => ({
+				value: t.value,
+				label: t.label
+			}))
+		: ($bookmark as Partial<Bookmark>).tags?.map((t) => ({ value: `${t.id}`, label: t.name }))) ||
+	null;
 
 const bookmarkTags = writable<
 	{
@@ -92,19 +105,28 @@ function handleTagsChange() {
 	];
 }
 
-function handleImportedBookmarkEdit() {
-	const formData = new FormData(form);
-	let rawData = Object.fromEntries(formData as any);
-	console.log('rawData', rawData);
-	delete rawData.tags;
-	editBookmarkStore.set({
-		...$bookmark,
-		...rawData,
-		category: JSON.parse(rawData.category)?.label,
-		bookmarkTags: $bookmarkTags
-	});
-	console.log('$editBookmarkStore', $editBookmarkStore);
-	closeModal();
+function isImportedBookmark(
+	bookmark: BookmarkEdit | Partial<Bookmark>
+): bookmark is BookmarkEdit & { imported: boolean } {
+	return 'imported' in bookmark;
+}
+
+function handleSubmit() {
+	if (isImportedBookmark($bookmark) && $bookmark.imported) {
+		const formData = new FormData(form);
+		let rawData = Object.fromEntries(formData as any);
+		console.log('rawData', rawData);
+		delete rawData.tags;
+		editBookmarkStore.set({
+			...$bookmark,
+			...rawData,
+			category: JSON.parse(rawData.category)?.label,
+			bookmarkTags: $bookmarkTags
+		});
+		closeModal();
+	} else {
+		form.submit();
+	}
 }
 
 const onGetMetadata = _.debounce(
@@ -215,13 +237,13 @@ const onGetMetadata = _.debounce(
 					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
 						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
-								{#if $bookmark.category?.id || $bookmark.category?.name}
+								{#if typeof $bookmark.category === 'string' || $bookmark.category?.id}
 									<label for="category" class="label">Category</label>
 									<Select
 										name="category"
 										searchable
 										items={categoryItems}
-										value={`${$bookmark.category?.id}`}
+										value={`${$bookmark.category?.id || $bookmark.category}`}
 										placeholder={'Select category'}
 										border={false}
 										className="this-select input input-bordered w-full md:min-w-28" />
@@ -391,14 +413,7 @@ const onGetMetadata = _.debounce(
 
 				<button
 					class="btn btn-primary mx-auto my-6 w-full max-w-xs"
-					on:click|preventDefault={() => {
-						console.log('$bookmark', $bookmark);
-						if ($bookmark.imported) {
-							handleImportedBookmarkEdit();
-						} else {
-							form.submit();
-						}
-					}}
+					on:click|preventDefault={handleSubmit}
 					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button>
 			</div>
 		</div>
