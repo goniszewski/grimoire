@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y python3 python3-pip wget build-essentia
     rm -rf /var/lib/apt/lists/* && \
     bun i -g svelte-kit@latest
 
-RUN adduser --disabled-password --gecos '' grimoire
-RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
+RUN groupadd grimoire && adduser --disabled-password --gecos '' --ingroup grimoire grimoire
+RUN mkdir -p /app/data && chown -R grimoire:grimoire /app
 WORKDIR /app
 
 FROM base AS dependencies
