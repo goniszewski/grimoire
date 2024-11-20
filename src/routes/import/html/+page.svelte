@@ -5,16 +5,19 @@ import Pagination from '$lib/components/Pagination/Pagination.svelte';
 import Select from '$lib/components/Select/Select.svelte';
 import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
+import type { ImportExecutionResult } from '$lib/types/BookmarkImport.type';
 import type { BulkListItem } from '$lib/types/common/BulkList.type';
 import { importBookmarks } from '$lib/utils/import-bookmarks';
 import { showToast } from '$lib/utils/show-toast';
 import { derived, writable } from 'svelte/store';
 
+const defaultCategory = '[No parent]';
+
 const step = writable<number>(1);
 const isFetchingMetadata = writable<boolean>(true);
-const defaultCategory = '[No parent]';
 const selectedCategory = writable<string>();
 const processedItems = writable<number>(0);
+const importResult = writable<ImportExecutionResult>();
 
 const currentItems = derived([importBookmarkStore, page], ([$importBookmarkStore, $page]) => {
 	return $importBookmarkStore.slice(
@@ -43,6 +46,7 @@ const processMetadataQueue = async (items: BulkListItem[]) => {
 				});
 				const { metadata } = await response.json();
 				processedItems.update((count) => count + 1);
+
 				return {
 					...metadata,
 					...item,
@@ -64,9 +68,9 @@ const processMetadataQueue = async (items: BulkListItem[]) => {
 
 	isFetchingMetadata.set(false);
 	showToast.success(
-		`Successfully imported ${results.length - failedItemsCount} bookmarks from ${
+		`Successfully fetched metadata for ${results.length - failedItemsCount} bookmarks from ${
 			items.length
-		} items (${failedItemsCount} failed).`,
+		} items (failed for ${failedItemsCount}).`,
 		{
 			icon: failedItemsCount ? '⚠️' : '🎉',
 			duration: 3000
@@ -136,6 +140,39 @@ const onSetSelectedCategory = () => {
 		items.map((item) => (item.selected ? { ...item, category: $selectedCategory } : item))
 	);
 };
+
+const onImportAction = async () => {
+	try {
+		const response = await fetch('/api/bookmarks/import', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				bookmarks: $importBookmarkStore.map((bookmark) => ({
+					url: bookmark.url,
+					title: bookmark.title,
+					description: bookmark.description,
+					category: bookmark.category,
+					bookmarkTags: bookmark.bookmarkTags
+				}))
+			})
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.message);
+		}
+
+		const result = await response.json();
+
+		importResult.set(result);
+		step.set(3);
+	} catch (error) {
+		console.error('Failed to import bookmarks:', error);
+		return;
+	}
+};
 </script>
 
 {#if $step === 1}
@@ -154,7 +191,7 @@ const onSetSelectedCategory = () => {
 		<div class="mb-4 flex w-full gap-2 pl-12">
 			<button
 				class="btn btn-primary btn-sm"
-				disabled={$isFetchingMetadata}
+				disabled={$isFetchingMetadata || $importBookmarkStore.length === 0}
 				on:click={importBookmarkStore.removeSelected}>IMPORT</button>
 
 			{#if $isAnySelected && !$isFetchingMetadata}
@@ -201,5 +238,36 @@ const onSetSelectedCategory = () => {
 			limit={$page.data.limit}
 			items={$itemsCount}
 			position="right" />
+	</div>
+{:else if $step === 3}
+	<div class="flex flex-col items-center justify-center">
+		<h1 class="mb-8 text-2xl font-bold">Import results</h1>
+		<div class="flex flex-col items-center justify-center">
+			{#if $importResult.successful}
+				<div class="alert alert-success">
+					<div>
+						<span class="text-lg font-bold">Success!</span>
+						<span class="text-sm">
+							{$importResult.successful} bookmarks imported successfully.
+						</span>
+					</div>
+				</div>
+			{/if}
+			{#if $importResult.failed}
+				<div class="alert alert-error">
+					<div>
+						<span class="text-lg font-bold">Error!</span>
+						<span class="text-sm">
+							{$importResult.failed} bookmarks failed to import.
+						</span>
+					</div>
+				</div>
+			{/if}
+			<div class="flex flex-col items-center justify-center">
+				<span>
+					Total bookmarks: {$importResult.total}
+				</span>
+			</div>
+		</div>
 	</div>
 {/if}

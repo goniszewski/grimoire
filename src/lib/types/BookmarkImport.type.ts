@@ -1,4 +1,4 @@
-import type { Bookmark } from './Bookmark.type';
+import type { Bookmark, BookmarkEdit } from './Bookmark.type';
 import type { Category } from './Category.type';
 
 export type ImportedBookmark = Pick<Bookmark, 'title' | 'url' | 'description'> & {
@@ -15,4 +15,15 @@ export type ImportResult = {
 	bookmarks: ImportedBookmark[];
 	categories: ImportedCategory[];
 	tags: ImportedTag[];
+};
+
+export type ImportExecutionResult = {
+	total: number;
+	successful: number;
+	failed: number;
+	results: Array<{
+		success: boolean;
+		bookmark: Bookmark;
+		error?: string;
+	}>;
 };

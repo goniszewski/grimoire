@@ -9,6 +9,7 @@ import { writable, type Writable } from 'svelte/store';
 
 import { invalidate } from '$app/navigation';
 import { editBookmarkCategoriesStore, editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import { searchEngine } from '$lib/stores/search.store';
 import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
@@ -115,9 +116,14 @@ function handleSubmit() {
 	if (isImportedBookmark($bookmark) && $bookmark.imported) {
 		const formData = new FormData(form);
 		let rawData = Object.fromEntries(formData as any);
-		console.log('rawData', rawData);
 		delete rawData.tags;
-		editBookmarkStore.set({
+		// editBookmarkStore.set({
+		// 	...$bookmark,
+		// 	...rawData,
+		// 	category: JSON.parse(rawData.category)?.label,
+		// 	bookmarkTags: $bookmarkTags
+		// });
+		importBookmarkStore.updateItem(+$bookmark.id, {
 			...$bookmark,
 			...rawData,
 			category: JSON.parse(rawData.category)?.label,
