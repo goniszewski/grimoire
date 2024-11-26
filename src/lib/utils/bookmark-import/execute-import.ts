@@ -1,7 +1,10 @@
 import type { BookmarkEdit } from '$lib/types/Bookmark.type';
 import { db } from '$lib/database/db';
 import {
-    bookmarkSchema, bookmarksToTagsSchema, categorySchema, tagSchema
+	bookmarkSchema,
+	bookmarksToTagsSchema,
+	categorySchema,
+	tagSchema
 } from '$lib/database/schema';
 import { eq } from 'drizzle-orm';
 
@@ -96,7 +99,7 @@ export async function executeImport(
 					domain: new URL(bookmark.url).hostname,
 					description: bookmark.description || null,
 					ownerId: userId,
-					categoryId: categoryId ?? null,
+					categoryId: categoryId!,
 					created: new Date(),
 					updated: new Date()
 				} as typeof bookmarkSchema.$inferInsert)
@@ -130,10 +133,14 @@ export async function executeImport(
 		}
 	}
 
-	return {
+	const result = {
 		total: bookmarks.length,
 		successful: results.filter((r) => r.success).length,
 		failed: results.filter((r) => !r.success).length,
 		results
 	} as unknown as ImportExecutionResult;
+
+	console.log(JSON.stringify({result}, null, 2));
+
+	return result;
 }

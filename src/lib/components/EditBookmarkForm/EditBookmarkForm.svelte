@@ -15,14 +15,23 @@ import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
 import { showToast } from '$lib/utils/show-toast';
 
+type EditableBookmark =
+	| (BookmarkEdit & Pick<Bookmark, 'importance' | 'flagged' | 'note'>)
+	| Partial<Bookmark>;
+
 let form: HTMLFormElement;
 export let closeModal: () => void;
 
 let error = '';
 const loading = writable(false);
-const bookmark = writable<BookmarkEdit | Partial<Bookmark>>();
+const bookmark = writable<EditableBookmark>();
 
-$: $bookmark = { ...$editBookmarkStore };
+$: $bookmark = {
+	importance: 0,
+	flagged: null,
+	note: '',
+	...$editBookmarkStore
+};
 
 const categoryItems = [
 	...$page.data.categories.map((c) => ({
@@ -117,12 +126,7 @@ function handleSubmit() {
 		const formData = new FormData(form);
 		let rawData = Object.fromEntries(formData as any);
 		delete rawData.tags;
-		// editBookmarkStore.set({
-		// 	...$bookmark,
-		// 	...rawData,
-		// 	category: JSON.parse(rawData.category)?.label,
-		// 	bookmarkTags: $bookmarkTags
-		// });
+
 		importBookmarkStore.updateItem(+$bookmark.id, {
 			...$bookmark,
 			...rawData,
@@ -135,50 +139,47 @@ function handleSubmit() {
 	}
 }
 
+async function fetchMetadata(url: string): Promise<Partial<Bookmark>> {
+	const response = await fetch('/api/fetch-metadata', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ url })
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to fetch metadata');
+	}
+
+	const data = await response.json();
+	return data?.metadata || {};
+}
+
 const onGetMetadata = _.debounce(
 	async (event: Event) => {
-		const validateUrlRegex =
-			/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;
-		const target = event.target as HTMLButtonElement;
-		const url = target.value;
-		error = '';
+		const target = event.target as HTMLInputElement;
+		const url = target.value.trim();
+
+		if (!url) return;
 
 		loading.set(true);
+		error = '';
 
-		if (!url.match(validateUrlRegex)) {
-			error = 'Invalid URL';
+		try {
+			const metadata = await fetchMetadata(url);
+			$bookmark = {
+				...$bookmark,
+				...metadata
+			} as BookmarkEdit;
+		} catch (err) {
+			console.error('Metadata fetch error:', err);
+			error = err instanceof Error ? err.message : 'Failed to fetch metadata';
+			showToast.error(error);
+		} finally {
 			loading.set(false);
-			return;
 		}
-
-		fetch(`/api/fetch-metadata`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ url })
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				$bookmark = {
-					...$bookmark,
-					...data?.metadata
-				};
-			})
-			.catch((err) => {
-				console.error(err);
-				error = 'Failed to fetch metadata';
-			})
-			.finally(() => {
-				loading.set(false);
-			});
 	},
 	500,
-	{
-		leading: false,
-		trailing: true,
-		maxWait: 1000
-	}
+	{ leading: false, trailing: true, maxWait: 1000 }
 );
 </script>
 
@@ -249,7 +250,9 @@ const onGetMetadata = _.debounce(
 										name="category"
 										searchable
 										items={categoryItems}
-										value={`${$bookmark.category?.id || $bookmark.category}`}
+										value={typeof $bookmark.category === 'string'
+											? $bookmark.category
+											: $bookmark.category?.id}
 										placeholder={'Select category'}
 										border={false}
 										className="this-select input input-bordered w-full md:min-w-28" />

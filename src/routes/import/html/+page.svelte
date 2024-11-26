@@ -1,4 +1,5 @@
 <script lang="ts">
+import { enhance } from '$app/forms';
 import { page } from '$app/stores';
 import BulkList from '$lib/components/BulkList/BulkList.svelte';
 import Pagination from '$lib/components/Pagination/Pagination.svelte';
@@ -140,39 +141,6 @@ const onSetSelectedCategory = () => {
 		items.map((item) => (item.selected ? { ...item, category: $selectedCategory } : item))
 	);
 };
-
-const onImportAction = async () => {
-	try {
-		const response = await fetch('/api/bookmarks/import', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				bookmarks: $importBookmarkStore.map((bookmark) => ({
-					url: bookmark.url,
-					title: bookmark.title,
-					description: bookmark.description,
-					category: bookmark.category,
-					bookmarkTags: bookmark.bookmarkTags
-				}))
-			})
-		});
-
-		if (!response.ok) {
-			const error = await response.json();
-			throw new Error(error.message);
-		}
-
-		const result = await response.json();
-
-		importResult.set(result);
-		step.set(3);
-	} catch (error) {
-		console.error('Failed to import bookmarks:', error);
-		return;
-	}
-};
 </script>
 
 {#if $step === 1}
@@ -187,58 +155,99 @@ const onImportAction = async () => {
 		class="file-input file-input-bordered file-input-primary file-input-md w-full max-w-xs"
 		on:change={onFileSelected} />
 {:else if $step === 2}
-	<div class="flex max-w-6xl flex-col">
-		<div class="mb-4 flex w-full gap-2 pl-12">
-			<button
-				class="btn btn-primary btn-sm"
-				disabled={$isFetchingMetadata || $importBookmarkStore.length === 0}
-				on:click={importBookmarkStore.removeSelected}>IMPORT</button>
+	<form
+		method="POST"
+		use:enhance={({ formData }) => {
+			formData.set(
+				'bookmarks',
+				JSON.stringify(
+					$importBookmarkStore.map((bookmark) => ({
+						url: bookmark.url,
+						title: bookmark.title,
+						description: bookmark.description,
+						category: bookmark.category,
+						bookmarkTags: bookmark.bookmarkTags
+					}))
+				)
+			);
 
-			{#if $isAnySelected && !$isFetchingMetadata}
-				<Select
-					name="category"
-					searchable
-					placeholder="Change category"
-					size="md"
-					items={$categoriesOptions}
-					groupBy
-					onSelect={onSelectCategory} />
-				<button class="btn btn-primary btn-sm" on:click={onSetSelectedCategory}> SET </button>
-			{/if}
-
-			<div class="ml-auto flex gap-2">
+			return async ({ update, result }) => {
+				if (result.type === 'success') {
+					showToast.success('Bookmarks imported successfully');
+					step.set(3);
+				} else {
+					showToast.error('Failed to import bookmarks');
+				}
+				update();
+			};
+		}}>
+		<div class="flex max-w-6xl flex-col">
+			<div class="mb-4 flex w-full gap-2 pl-12">
 				<button
+					type="submit"
 					class="btn btn-primary btn-sm"
-					disabled={!$isAnySelected && !$selectedCategory}
-					on:click={importBookmarkStore.removeSelected}>DELETE</button>
-			</div>
-		</div>
-		<div class="flex min-h-6 flex-col items-center gap-2">
-			<div class="flex items-center justify-center">
-				{#if $isFetchingMetadata}
-					<span class="mr-2">Fetching metadata...</span>
-					<progress
-						class="progress progress-primary w-56"
-						value={$processedItems}
-						max={$importBookmarkStore.length}>
-					</progress>
-				{:else}
-					<span class="mr-2">
-						Done! {$importBookmarkStore.length === $processedItems
-							? 'All items processed.'
-							: `${$processedItems} of ${$importBookmarkStore.length} items processed 🪄`}
-					</span>
-				{/if}
-			</div>
-		</div>
+					disabled={$isFetchingMetadata || $importBookmarkStore.length === 0}
+					aria-label="Import selected bookmarks">
+					{#if $isFetchingMetadata}
+						<span class="loading loading-spinner loading-xs"></span>
+					{/if}
+					IMPORT
+				</button>
 
-		<BulkList itemList={currentItems} isLoading={$isFetchingMetadata} />
-		<Pagination
-			page={$page.data.page}
-			limit={$page.data.limit}
-			items={$itemsCount}
-			position="right" />
-	</div>
+				{#if $isAnySelected && !$isFetchingMetadata}
+					<Select
+						name="category"
+						searchable
+						placeholder="Change category"
+						size="md"
+						items={$categoriesOptions}
+						groupBy
+						onSelect={onSelectCategory} />
+					<button
+						class="btn btn-secondary btn-sm"
+						aria-label="Set selected category"
+						on:click={onSetSelectedCategory}>
+						SET
+					</button>
+				{/if}
+
+				<div class="ml-auto flex gap-2">
+					<button
+						class="btn btn-error btn-sm"
+						disabled={!$isAnySelected}
+						aria-label="Delete selected bookmarks"
+						on:click={importBookmarkStore.removeSelected}>DELETE</button>
+				</div>
+			</div>
+			<div class="flex min-h-6 flex-col items-center gap-2">
+				<div class="flex items-center justify-center">
+					{#if $isFetchingMetadata}
+						<span class="mr-2">Fetching metadata...</span>
+						<progress
+							class="progress progress-primary w-56"
+							value={$processedItems}
+							max={$importBookmarkStore.length}
+							aria-label={`Processing ${$processedItems} of ${$importBookmarkStore.length} items`}>
+							{Math.round(($processedItems / $importBookmarkStore.length) * 100)}%
+						</progress>
+					{:else}
+						<span class="mr-2" role="status">
+							Done! {$importBookmarkStore.length === $processedItems
+								? 'All items processed.'
+								: `${$processedItems} of ${$importBookmarkStore.length} items processed 🪄`}
+						</span>
+					{/if}
+				</div>
+			</div>
+
+			<BulkList itemList={currentItems} isLoading={$isFetchingMetadata} />
+			<Pagination
+				page={$page.data.page}
+				limit={$page.data.limit}
+				items={$itemsCount}
+				position="right" />
+		</div>
+	</form>
 {:else if $step === 3}
 	<div class="flex flex-col items-center justify-center">
 		<h1 class="mb-8 text-2xl font-bold">Import results</h1>
