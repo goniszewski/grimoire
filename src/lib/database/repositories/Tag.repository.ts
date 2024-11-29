@@ -113,3 +113,21 @@ export const getTagCountForUser = async (userId: number): Promise<number> => {
 
 	return tagCount;
 };
+
+export const getOrCreateTag = async (
+	ownerId: number,
+	tagData: typeof tagSchema.$inferInsert
+): Promise<Tag> => {
+	const tag = (await db.query.tagSchema.findFirst({
+		where: and(eq(tagSchema.ownerId, ownerId), eq(tagSchema.name, tagData.name)),
+		with: mapRelationsToWithStatements([TagRelations.OWNER])
+	})) as TagDbo | undefined;
+
+	if (tag) {
+		return serializeTag(tag);
+	}
+
+	const newTag = await createTag(ownerId, tagData);
+
+	return newTag;
+};

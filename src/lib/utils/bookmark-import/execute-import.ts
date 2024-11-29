@@ -1,94 +1,24 @@
 import type { BookmarkEdit } from '$lib/types/Bookmark.type';
 import { db } from '$lib/database/db';
-import {
-	bookmarkSchema,
-	bookmarksToTagsSchema,
-	categorySchema,
-	tagSchema
-} from '$lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getOrCreateCategory } from '$lib/database/repositories/Category.repository';
+import { getOrCreateTag } from '$lib/database/repositories/Tag.repository';
+import { bookmarkSchema, bookmarksToTagsSchema } from '$lib/database/schema';
 
 import { createSlug } from '../create-slug';
 
 import type { ImportExecutionResult } from '$lib/types/BookmarkImport.type';
-
 export async function executeImport(
 	bookmarks: BookmarkEdit[],
 	userId: number
 ): Promise<ImportExecutionResult> {
-	const categoryCache = new Map<string, number>();
-	const tagCache = new Map<string, number>();
-
-	async function getOrCreateCategory(categoryPath: string, userId: number) {
-		if (categoryCache.has(categoryPath)) {
-			return categoryCache.get(categoryPath);
-		}
-
-		const parts = categoryPath.split('/').filter(Boolean);
-		let parentId: number | null = null;
-		let currentPath = '';
-
-		for (const part of parts) {
-			currentPath += `/${part}`;
-			const slug = createSlug(part);
-
-			let category = await db.query.categorySchema.findFirst({
-				where: eq(categorySchema.slug, slug)
-			});
-
-			if (!category) {
-				const [newCategory] = await db
-					.insert(categorySchema)
-					.values({
-						name: part,
-						slug,
-						ownerId: userId,
-						parentId,
-						created: new Date(),
-						updated: new Date()
-					})
-					.returning();
-				category = newCategory as typeof categorySchema.$inferSelect;
-			}
-
-			categoryCache.set(currentPath, category.id);
-			parentId = category.id;
-		}
-
-		return parentId;
-	}
-	async function getOrCreateTag(tagName: string, userId: number) {
-		if (tagCache.has(tagName)) {
-			return tagCache.get(tagName);
-		}
-
-		const slug = createSlug(tagName);
-		let tag = await db.query.tagSchema.findFirst({
-			where: eq(tagSchema.slug, slug)
-		});
-
-		if (!tag) {
-			const [newTag] = await db
-				.insert(tagSchema)
-				.values({
-					name: tagName,
-					slug,
-					ownerId: userId,
-					created: new Date(),
-					updated: new Date()
-				})
-				.returning();
-			tag = newTag;
-		}
-
-		tagCache.set(tagName, tag.id);
-		return tag.id;
-	}
-
 	const results = [];
+
 	for (const bookmark of bookmarks) {
 		try {
-			const categoryId = await getOrCreateCategory(bookmark.category, userId);
+			const category = await getOrCreateCategory(userId, {
+				name: bookmark.category,
+				slug: createSlug(bookmark.category)
+			});
 
 			const [newBookmark] = await db
 				.insert(bookmarkSchema)
@@ -99,36 +29,41 @@ export async function executeImport(
 					domain: new URL(bookmark.url).hostname,
 					description: bookmark.description || null,
 					ownerId: userId,
-					categoryId: categoryId!,
+					categoryId: category.id,
 					created: new Date(),
 					updated: new Date()
 				} as typeof bookmarkSchema.$inferInsert)
 				.returning();
 
 			if (bookmark.bookmarkTags?.length) {
-				const tagIds = await Promise.all(
-					bookmark.bookmarkTags.map((tag) => getOrCreateTag(tag.value, userId))
+				const tags = await Promise.all(
+					bookmark.bookmarkTags.map((tag) =>
+						getOrCreateTag(userId, {
+							name: tag.label,
+							slug: createSlug(tag.label),
+							ownerId: userId
+						})
+					)
 				);
 
 				await db.insert(bookmarksToTagsSchema).values(
-					tagIds
-						.filter((tagId): tagId is number => tagId !== undefined)
-						.map((tagId) => ({
-							bookmarkId: newBookmark.id,
-							tagId
-						}))
+					tags.map((tag) => ({
+						bookmarkId: newBookmark.id,
+						tagId: tag.id
+					}))
 				);
 			}
 
 			results.push({
 				success: true,
-				bookmark: newBookmark
+				bookmark: newBookmark.id
 			});
 		} catch (error) {
+			console.error(error);
 			results.push({
 				success: false,
 				error: error instanceof Error ? error.message : 'Unknown error',
-				bookmark
+				bookmark: bookmark.url
 			});
 		}
 	}
@@ -140,7 +75,7 @@ export async function executeImport(
 		results
 	} as unknown as ImportExecutionResult;
 
-	console.log(JSON.stringify({result}, null, 2));
+	console.log(JSON.stringify({ result }, null, 2));
 
 	return result;
 }
