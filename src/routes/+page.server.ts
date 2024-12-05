@@ -71,16 +71,15 @@ export const actions = {
 					error: 'Failed to add bookmark'
 				};
 			}
-			const { id: mainImageId } = await storage.storeImage(
-				mainImageUrl,
-				title,
-				ownerId,
-				bookmark.id
-			);
-			const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId, bookmark.id);
+			const mainImage = mainImageUrl
+				? await storage.storeImage(mainImageUrl, title, ownerId, bookmark.id)
+				: undefined;
+			const icon = iconUrl
+				? await storage.storeImage(iconUrl, title, ownerId, bookmark.id)
+				: undefined;
 			const updatedBookmark = await updateBookmark(bookmark.id, ownerId, {
-				mainImageId,
-				iconId
+				...(mainImage ? { mainImageId: mainImage.id } : {}),
+				...(icon ? { iconId: icon.id } : {})
 			});
 
 			await upsertTagsForBookmark(bookmark.id, ownerId, tagNames);
@@ -149,8 +148,10 @@ export const actions = {
 
 		const tagNames = tags.map((tag: any) => tag.label);
 
-		const { id: mainImageId } = await storage.storeImage(mainImageUrl, title, ownerId, id);
-		const { id: iconId } = await storage.storeImage(iconUrl, title, ownerId, id);
+		const mainImage = mainImageUrl
+			? await storage.storeImage(mainImageUrl, title, ownerId, id)
+			: undefined;
+		const icon = iconUrl ? await storage.storeImage(iconUrl, title, ownerId, id) : undefined;
 
 		const bookmarkData = {
 			author,
@@ -169,8 +170,8 @@ export const actions = {
 			title,
 			url,
 			read,
-			...(mainImageId ? { mainImageId } : {}),
-			...(iconId ? { iconId } : {})
+			...(mainImage ? { mainImageId: mainImage.id } : {}),
+			...(icon ? { iconId: icon.id } : {})
 		};
 
 		const bookmark = await updateBookmark(id, ownerId, bookmarkData);
