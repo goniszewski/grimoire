@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip wget build-essentia
     bun i -g svelte-kit@latest
 
 RUN adduser --disabled-password --gecos '' grimoire
-RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 755 /app/data
+RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
 FROM base AS dependencies
@@ -35,6 +35,7 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
+COPY docker-entrypoint.sh /
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
     ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
@@ -43,8 +44,9 @@ ENV NODE_ENV=production \
     PUBLIC_SIGNUP_DISABLED=${PUBLIC_SIGNUP_DISABLED:-false} \
     BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5000000}
 
+RUN chmod +x /docker-entrypoint.sh
 USER grimoire
 EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
-ENTRYPOINT ["sh", "-c", "bun --bun run run-migrations && bun ./build/index.js"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
