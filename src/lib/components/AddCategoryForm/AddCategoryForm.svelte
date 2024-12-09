@@ -28,9 +28,9 @@
 	let form: HTMLFormElement;
 	export let closeModal: () => void;
 
-	const categoriesOptions = writable<{ value: string; label: string }[]>([
+	const categoriesOptions = writable<{ value: string | null; label: string }[]>([
 		{
-			value: 'null',
+			value: null,
 			label: 'No parent'
 		}
 	]);
@@ -38,7 +38,7 @@
 	$: {
 		$categoriesOptions = [
 			{
-				value: 'null',
+				value: null,
 				label: 'No parent'
 			},
 			...$page.data.categories
@@ -46,7 +46,7 @@
 					return c.id !== $category.id;
 				})
 				.map((c) => ({
-					value: c.id,
+					value: c.id.toString(),
 					label: c.name
 				}))
 		];
@@ -224,13 +224,12 @@
 						name="parent"
 						searchable
 						placeholder="Select parent category..."
-						required
-						value={$category.parent?.id || $categoriesOptions[0].value}
+						value={$category.parent?.id?.toString() || $categoriesOptions[0].value}
 						items={$categoriesOptions}
 						class="this-select input input-bordered w-max"
 						on:change={(event) => {
 							// @ts-ignore-next-line
-							$category.parent = $page.data.categories.find((c) => c.id === event.detail.value);
+							$category.parent = $page.data.categories.find((c) => c.id.toString() === event.detail.value);
 						}}
 					/>
 				</div>
