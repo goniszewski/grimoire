@@ -290,7 +290,7 @@ export const actions = {
 		const description = data.get('description') as string;
 		const icon = data.get('icon') as string;
 		const color = data.get('color') as string;
-		const parent = JSON.parse(data.get('parent') as string);
+		const parent = data.get('parent') ? JSON.parse(data.get('parent') as string) : null;
 		const parentValue = parent?.value ? parent.value : parent;
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
@@ -301,7 +301,7 @@ export const actions = {
 			description,
 			icon,
 			color,
-			parentId: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue,
 			archived,
 			public: setPublic,
 			ownerId,
@@ -332,7 +332,7 @@ export const actions = {
 		const description = data.get('description') as string;
 		const icon = data.get('icon') as string;
 		const color = data.get('color') as string;
-		const parent = JSON.parse(data.get('parent') as string);
+		const parent = data.get('parent') ? JSON.parse(data.get('parent') as string) : null;
 		const parentValue = parent?.value ? parent.value : parent;
 		const archived = data.get('archived') === 'on' ? new Date() : null;
 		const setPublic = data.get('public') === 'on' ? new Date() : null;
@@ -343,7 +343,7 @@ export const actions = {
 			description,
 			icon,
 			color,
-			parentId: parentValue === 'null' ? null : parentValue,
+			parentId: parentValue,
 			archived,
 			public: setPublic
 		};
