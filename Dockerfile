@@ -3,12 +3,43 @@ LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
+RUN apt-get update && \
+    apt-get install -y xz-utils && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /etc/s6-overlay/s6-rc.d/grimoire && \
+    mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
+
+RUN adduser --disabled-password --gecos '' --uid 1001 grimoire && \
+    mkdir -p /app/data && \
+    chown -R grimoire:grimoire /app/data && \
+    chmod 766 /app/data
+
+ARG S6_OVERLAY_VERSION=3.1.6.2
+ARG TARGETARCH=x86_64
+
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${TARGETARCH}.tar.xz && \
+    rm /tmp/s6-overlay-noarch.tar.xz && \
+    rm /tmp/s6-overlay-${TARGETARCH}.tar.xz
+
+COPY docker/etc/s6-overlay /etc/s6-overlay/
+RUN chown -R grimoire:grimoire /etc/s6-overlay && \
+    chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run
+
+ENV S6_KEEP_ENV=1
+ENV S6_SERVICES_GRACETIME=15000
+ENV S6_KILL_GRACETIME=10000
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
+ENV S6_SYNC_DISKS=1
+ENV S6_OVERLAY_USER=grimoire
+ENV S6_OVERLAY_GROUP=grimoire
+
 RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && \
     rm -rf /var/lib/apt/lists/* && \
     bun i -g svelte-kit@latest
 
-RUN adduser --disabled-password --gecos '' grimoire
-RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
 FROM base AS dependencies
@@ -36,6 +67,9 @@ COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
 COPY docker-entrypoint.sh /
+ENV S6_SERVICES_GRACETIME=15000
+ENV S6_KILL_GRACETIME=10000
+COPY docker/etc/ /etc/
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
     ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
@@ -49,4 +83,4 @@ USER grimoire
 EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/init"]
