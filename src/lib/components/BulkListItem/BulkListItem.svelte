@@ -25,6 +25,8 @@ const onEditItem = () => {
 	editBookmarkStore.set({
 		imported: true,
 		description: '',
+		importance: 0,
+		flagged: false,
 		note: '',
 		...metadata,
 		category: {
@@ -106,7 +108,9 @@ const onRemoveItem = () => {
 		><a class="link hover:link-secondary" href={`/categories/${createSlug(category)}`}>{category}</a
 		></td>
 	<th>
-		<button class="btn btn-ghost btn-xs text-secondary" on:click={onEditItem}>edit</button>
-		<button class="btn btn-ghost btn-xs text-error" on:click={onRemoveItem}>remove</button>
+		<button class="btn btn-ghost btn-xs text-secondary" on:click|preventDefault={onEditItem}
+			>edit</button>
+		<button class="btn btn-ghost btn-xs text-error" on:click|preventDefault={onRemoveItem}
+			>remove</button>
 	</th>
 </tr>
