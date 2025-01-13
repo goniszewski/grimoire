@@ -14,7 +14,10 @@ export let selected = false;
 export let icon: string;
 export let url: string;
 export let title: string;
-export let category: string;
+export let category: {
+	id?: number;
+	name: string;
+};
 export let isLoading: boolean;
 export let metadataFetched: boolean;
 export let metadata: any;
@@ -23,15 +26,10 @@ let urlObj = new URL(url);
 
 const onEditItem = () => {
 	editBookmarkStore.set({
-		imported: true,
-		description: '',
-		importance: 0,
-		flagged: false,
-		note: '',
 		...metadata,
 		category: {
-			id: category,
-			name: category
+			id: category.id,
+			name: category.name
 		}
 	});
 };
@@ -105,7 +103,8 @@ const onRemoveItem = () => {
 		</div>
 	</td>
 	<td
-		><a class="link hover:link-secondary" href={`/categories/${createSlug(category)}`}>{category}</a
+		><a class="link hover:link-secondary" href={`/categories/${createSlug(category.name)}`}
+			>{category.name}</a
 		></td>
 	<th>
 		<button class="btn btn-ghost btn-xs text-secondary" on:click|preventDefault={onEditItem}

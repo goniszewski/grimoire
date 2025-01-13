@@ -9,11 +9,10 @@ export const importBookmarkStore = {
 	subscribe,
 	set,
 	update,
+	getById: (id: number) => get(derived(store, (items) => items.find((item) => item.id === id))),
 	addItem: (item: BulkListItem) => update((items) => [...items, item]),
 	updateItem: (itemId: number, updatedItem: BulkListItem) =>
-		update((items) =>
-			items.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item))
-		),
+		update((items) => items.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item))),
 	removeItem: (itemId: number) => update((items) => items.filter((item) => item.id !== itemId)),
 	selectItem: (itemId: number) =>
 		update((items) => items.map((item) => ({ ...item, selected: item.id === itemId }))),

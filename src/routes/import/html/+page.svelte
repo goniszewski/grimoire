@@ -4,7 +4,7 @@ import { page } from '$app/stores';
 import BulkList from '$lib/components/BulkList/BulkList.svelte';
 import Pagination from '$lib/components/Pagination/Pagination.svelte';
 import Select from '$lib/components/Select/Select.svelte';
-import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { editBookmarkCategoriesStore, editBookmarkStore } from '$lib/stores/edit-bookmark.store';
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import type { ImportExecutionResult } from '$lib/types/BookmarkImport.type';
 import type { BulkListItem } from '$lib/types/common/BulkList.type';
@@ -51,6 +51,7 @@ const processMetadataQueue = async (items: BulkListItem[]) => {
 				return {
 					...metadata,
 					...item,
+					imported: true,
 					icon: item.icon || metadata.iconUrl,
 					title: item.title || metadata.title
 				};
@@ -83,7 +84,7 @@ const categoriesOptions = writable<{ value: string; label: string }[]>([]);
 
 $: {
 	$categoriesOptions = [
-		...[...new Set($importBookmarkStore.map((item) => item.category))].map((category) => ({
+		...[...new Set($importBookmarkStore.map((item) => item.category.name))].map((category) => ({
 			value: category,
 			label: category,
 			group: 'Imported'
@@ -95,17 +96,6 @@ $: {
 		}))
 	];
 }
-$: {
-	if ($editBookmarkStore?.id) {
-		importBookmarkStore.update((items) => {
-			let updatedBookmark = items.find((item) => item.id === $editBookmarkStore.id);
-			if (updatedBookmark) {
-				delete updatedBookmark.imported;
-			}
-			return items;
-		});
-	}
-}
 
 const onFileSelected = async (event: Event) => {
 	const input = event.target as HTMLInputElement;
@@ -116,10 +106,16 @@ const onFileSelected = async (event: Event) => {
 			...bookmark,
 			id: i + 1,
 			icon: bookmark.icon || null,
-			category: bookmark.categorySlug || defaultCategory,
+			category: {
+				name: bookmark.categorySlug || defaultCategory
+			},
 			description: bookmark.description || '',
-			selected: false
+			selected: false,
+			importance: null,
+			flagged: null,
+			note: null
 		}));
+		$editBookmarkCategoriesStore = [...new Set(updatedBookmarks.map((item) => item.category.name))];
 
 		importBookmarkStore.set(updatedBookmarks);
 		processMetadataQueue($importBookmarkStore);
@@ -138,7 +134,16 @@ const onSelectCategory = (
 };
 const onSetSelectedCategory = () => {
 	importBookmarkStore.update((items) =>
-		items.map((item) => (item.selected ? { ...item, category: $selectedCategory } : item))
+		items.map((item) =>
+			item.selected
+				? {
+						...item,
+						category: {
+							name: $selectedCategory
+						}
+					}
+				: item
+		)
 	);
 };
 </script>
@@ -165,7 +170,7 @@ const onSetSelectedCategory = () => {
 						url: bookmark.url,
 						title: bookmark.title,
 						description: bookmark.description,
-						category: bookmark.category,
+						category: bookmark.category.name,
 						bookmarkTags: bookmark.bookmarkTags
 					}))
 				)

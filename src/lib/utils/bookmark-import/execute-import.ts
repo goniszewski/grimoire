@@ -16,8 +16,8 @@ export async function executeImport(
 	for (const bookmark of bookmarks) {
 		try {
 			const category = await getOrCreateCategory(userId, {
-				name: bookmark.category,
-				slug: createSlug(bookmark.category)
+				name: bookmark.category.name,
+				slug: createSlug(bookmark.category.name)
 			});
 
 			const [newBookmark] = await db
@@ -74,8 +74,6 @@ export async function executeImport(
 		failed: results.filter((r) => !r.success).length,
 		results
 	} as unknown as ImportExecutionResult;
-
-	console.log(JSON.stringify({ result }, null, 2));
 
 	return result;
 }

@@ -34,8 +34,14 @@ export type BookmarkEdit = Partial<Metadata> & {
 	icon: string | null;
 	url: string;
 	title: string;
-	category: string;
+	category: {
+		id?: number;
+		name: string;
+	};
 	selected: boolean;
+	importance: number | null;
+	flagged: Date | null;
+	note: string | null;
 	imported?: boolean;
 	bookmarkTags?: {
 		value: string;

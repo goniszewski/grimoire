@@ -15,9 +15,7 @@ import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
 import { showToast } from '$lib/utils/show-toast';
 
-type EditableBookmark =
-	| (BookmarkEdit & Pick<Bookmark, 'importance' | 'flagged' | 'note'>)
-	| Partial<Bookmark>;
+type EditableBookmark = BookmarkEdit | Partial<Bookmark>;
 
 let form: HTMLFormElement;
 export let closeModal: () => void;
@@ -43,7 +41,6 @@ const categoryItems = [
 		label: c
 	}))
 ];
-
 const bookmarkTagsInput: Writable<
 	| {
 			value: string;
@@ -118,11 +115,11 @@ function handleTagsChange() {
 function isImportedBookmark(
 	bookmark: BookmarkEdit | Partial<Bookmark>
 ): bookmark is BookmarkEdit & { imported: boolean } {
-	return 'imported' in bookmark;
+	return 'imported' in bookmark && !!bookmark.imported;
 }
 
 function handleSubmit() {
-	if (isImportedBookmark($bookmark) && $bookmark.imported) {
+	if (isImportedBookmark($bookmark)) {
 		const formData = new FormData(form);
 		let rawData = Object.fromEntries(formData as any);
 		delete rawData.tags;
@@ -130,9 +127,23 @@ function handleSubmit() {
 		importBookmarkStore.updateItem(+$bookmark.id, {
 			...$bookmark,
 			...rawData,
-			category: JSON.parse(rawData.category)?.label,
+			id: +($bookmark.id || rawData.id),
+			importance:
+				rawData.importance === ''
+					? 0
+					: rawData.importance.match(/1|2|3/)
+						? +rawData.importance
+						: $bookmark.importance || 0,
+			flagged: rawData.flagged === 'on' ? ($bookmark.flagged ?? new Date()) : null,
+			note: rawData.note || null,
+			category: {
+				name: JSON.parse(rawData.category)?.label,
+				id: JSON.parse(rawData.category)?.value
+			},
 			bookmarkTags: $bookmarkTags
 		});
+		bookmark.set({});
+		editBookmarkStore.set({});
 		closeModal();
 	} else {
 		form.submit();
@@ -168,7 +179,10 @@ const onGetMetadata = _.debounce(
 			const metadata = await fetchMetadata(url);
 			$bookmark = {
 				...$bookmark,
-				...metadata
+				...metadata,
+				note: $bookmark.note || null,
+				importance: $bookmark.importance || 0,
+				flagged: $bookmark.flagged || null
 			} as BookmarkEdit;
 		} catch (err) {
 			console.error('Metadata fetch error:', err);
@@ -244,15 +258,13 @@ const onGetMetadata = _.debounce(
 					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
 						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
-								{#if typeof $bookmark.category === 'string' || $bookmark.category?.id}
+								{#if $bookmark.category?.name}
 									<label for="category" class="label">Category</label>
 									<Select
 										name="category"
 										searchable
 										items={categoryItems}
-										value={typeof $bookmark.category === 'string'
-											? $bookmark.category
-											: $bookmark.category?.id}
+										value={$bookmark.category.id ? $bookmark.category.id : $bookmark.category.name}
 										placeholder={'Select category'}
 										border={false}
 										className="this-select input input-bordered w-full md:min-w-28" />
