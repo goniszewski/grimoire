@@ -29,7 +29,7 @@ export type BookmarkForIndex = Omit<Bookmark, 'mainImage' | 'icon' | 'screenshot
 	category: Omit<Category, 'parent' | 'owner'>;
 };
 
-export type BookmarkEdit = Partial<Metadata> & {
+export type BookmarkEdit = Metadata & {
 	id: number;
 	icon: string | null;
 	url: string;

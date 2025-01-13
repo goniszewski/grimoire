@@ -11,7 +11,7 @@ import {
 
 export let id: number;
 export let selected = false;
-export let icon: string;
+export let icon: string | null;
 export let url: string;
 export let title: string;
 export let category: {
@@ -55,7 +55,7 @@ const onRemoveItem = () => {
 				<div class="avatar">
 					<div class="mask mask-squircle h-12 w-12">
 						{#if icon}
-							<img src={icon} alt="Avatar Tailwind CSS Component" />
+							<img src={icon} alt="Icon" />
 						{:else}
 							<IconPhotoX class="m-2 h-8 w-8 opacity-80" />
 						{/if}

@@ -2,8 +2,9 @@
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import { type Readable } from 'svelte/store';
 import BulkListItem from '../BulkListItem/BulkListItem.svelte';
+import type { BookmarkEdit } from '$lib/types/Bookmark.type';
 
-export let itemList: Readable<BulkListItem[]>;
+export let itemList: Readable<BookmarkEdit[]>;
 export let isLoading: boolean;
 
 const selectAllItems = ({ target }: Event) => {
@@ -40,7 +41,7 @@ const selectAllItems = ({ target }: Event) => {
 						category={item.category}
 						selected={item.selected}
 						isLoading={isLoading}
-						metadataFetched={!!item.contentHtml}
+						metadataFetched={!!item.domain}
 						metadata={item} />
 				{/each}
 			</tbody>
@@ -48,9 +49,9 @@ const selectAllItems = ({ target }: Event) => {
 			<tfoot>
 				<tr>
 					<th></th>
-					<th>Name</th>
-					<th>Job</th>
-					<th>Favorite Color</th>
+					<th>URL</th>
+					<th>Title</th>
+					<th>Category</th>
 					<th></th>
 				</tr>
 			</tfoot>

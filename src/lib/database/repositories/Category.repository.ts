@@ -113,7 +113,7 @@ export const getOrCreateCategory = async (
 	categoryData: Omit<typeof categorySchema.$inferInsert, 'ownerId'>
 ): Promise<Category> => {
 	const category = (await db.query.categorySchema.findFirst({
-		where: and(eq(categorySchema.ownerId, ownerId), eq(categorySchema.name, categoryData.name)),
+		where: and(eq(categorySchema.ownerId, ownerId), eq(categorySchema.slug, categoryData.slug)),
 		with: mapRelationsToWithStatements([CategoryRelations.OWNER])
 	})) as CategoryDbo | undefined;
 

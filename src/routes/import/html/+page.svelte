@@ -8,6 +8,7 @@ import { editBookmarkCategoriesStore, editBookmarkStore } from '$lib/stores/edit
 import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import type { ImportExecutionResult } from '$lib/types/BookmarkImport.type';
 import type { BulkListItem } from '$lib/types/common/BulkList.type';
+import type { Metadata } from '$lib/types/Metadata.type';
 import { importBookmarks } from '$lib/utils/import-bookmarks';
 import { showToast } from '$lib/utils/show-toast';
 import { derived, writable } from 'svelte/store';
@@ -45,15 +46,15 @@ const processMetadataQueue = async (items: BulkListItem[]) => {
 					body: JSON.stringify({ url: item.url }),
 					headers: { 'Content-Type': 'application/json' }
 				});
-				const { metadata } = await response.json();
+				const { metadata }: { metadata: Metadata } = await response.json();
 				processedItems.update((count) => count + 1);
 
 				return {
-					...metadata,
 					...item,
+					...metadata,
+					title: item.title || metadata.title,
 					imported: true,
-					icon: item.icon || metadata.iconUrl,
-					title: item.title || metadata.title
+					icon: item.icon || metadata.iconUrl
 				};
 			} catch (error) {
 				console.error(`Failed to fetch metadata for ${item.url}:`, error);
@@ -113,7 +114,16 @@ const onFileSelected = async (event: Event) => {
 			selected: false,
 			importance: null,
 			flagged: null,
-			note: null
+			note: null,
+			domain: '',
+			author: null,
+			contentHtml: null,
+			contentText: null,
+			contentPublishedDate: null,
+			contentType: null,
+			mainImageUrl: null,
+			iconUrl: null,
+			imported: true
 		}));
 		$editBookmarkCategoriesStore = [...new Set(updatedBookmarks.map((item) => item.category.name))];
 
@@ -160,39 +170,55 @@ const onSetSelectedCategory = () => {
 		class="file-input file-input-bordered file-input-primary file-input-md w-full max-w-xs"
 		on:change={onFileSelected} />
 {:else if $step === 2}
-	<form
-		method="POST"
-		use:enhance={({ formData }) => {
-			formData.set(
-				'bookmarks',
-				JSON.stringify(
-					$importBookmarkStore.map((bookmark) => ({
-						url: bookmark.url,
-						title: bookmark.title,
-						description: bookmark.description,
-						category: bookmark.category.name,
-						bookmarkTags: bookmark.bookmarkTags
-					}))
-				)
-			);
+	<div class="flex max-w-6xl flex-col">
+		<form
+			method="POST"
+			use:enhance={({ formData }) => {
+				formData.set(
+					'bookmarks',
+					JSON.stringify(
+						$importBookmarkStore.map((bookmark) => ({
+							url: bookmark.url,
+							domain: bookmark.domain,
+							title: bookmark.title,
+							description: bookmark.description,
+							category: bookmark.category,
+							mainImageUrl: bookmark.mainImageUrl,
+							iconUrl: bookmark.iconUrl,
+							author: bookmark.author,
+							contentText: bookmark.contentText,
+							contentHtml: bookmark.contentHtml,
+							contentType: bookmark.contentType,
+							contentPublishedDate: bookmark.contentPublishedDate,
+							importance: bookmark.importance,
+							flagged: bookmark.flagged,
+							note: bookmark.note,
+							bookmarkTags: bookmark.bookmarkTags
+						}))
+					)
+				);
 
-			return async ({ update, result }) => {
-				if (result.type === 'success') {
-					showToast.success('Bookmarks imported successfully');
-					step.set(3);
-				} else {
-					showToast.error('Failed to import bookmarks');
-				}
-				update();
-			};
-		}}>
-		<div class="flex max-w-6xl flex-col">
+				return async ({ update, result }) => {
+					if (result.type === 'success' && result?.data?.data) {
+						showToast.success('Bookmarks imported successfully');
+						const { data } = result.data;
+						if (data) {
+							// @ts-ignore-next-line
+							importResult.set(data);
+							step.set(3);
+						}
+					} else {
+						showToast.error('Failed to import bookmarks');
+					}
+					update();
+				};
+			}}>
 			<div class="mb-4 flex w-full gap-2 pl-12">
 				<button
 					type="submit"
 					class="btn btn-primary btn-sm"
 					disabled={$isFetchingMetadata || $importBookmarkStore.length === 0}
-					aria-label="Import selected bookmarks">
+					aria-label="Import bookmarks">
 					{#if $isFetchingMetadata}
 						<span class="loading loading-spinner loading-xs"></span>
 					{/if}
@@ -246,13 +272,13 @@ const onSetSelectedCategory = () => {
 			</div>
 
 			<BulkList itemList={currentItems} isLoading={$isFetchingMetadata} />
-			<Pagination
-				page={$page.data.page}
-				limit={$page.data.limit}
-				items={$itemsCount}
-				position="right" />
-		</div>
-	</form>
+		</form>
+		<Pagination
+			page={$page.data.page}
+			limit={$page.data.limit}
+			items={$itemsCount}
+			position="right" />
+	</div>
 {:else if $step === 3}
 	<div class="flex flex-col items-center justify-center">
 		<h1 class="mb-8 text-2xl font-bold">Import results</h1>
