@@ -12,10 +12,12 @@ import type { Metadata } from '$lib/types/Metadata.type';
 import { importBookmarks } from '$lib/utils/import-bookmarks';
 import { showToast } from '$lib/utils/show-toast';
 import { derived, writable } from 'svelte/store';
+import { IconFileTypeHtml } from '@tabler/icons-svelte';
 
 const defaultCategory = '[No parent]';
 
-const step = writable<number>(1);
+const user = $page.data.user;
+const step = writable<number>(3);
 const isFetchingMetadata = writable<boolean>(true);
 const selectedCategory = writable<string>();
 const processedItems = writable<number>(0);
@@ -108,7 +110,9 @@ const onFileSelected = async (event: Event) => {
 			id: i + 1,
 			icon: bookmark.icon || null,
 			category: {
-				name: bookmark.categorySlug || defaultCategory
+				name:
+					importedData.categories.find((category) => category.slug === bookmark.categorySlug)
+						?.name || defaultCategory
 			},
 			description: bookmark.description || '',
 			selected: false,
@@ -158,19 +162,32 @@ const onSetSelectedCategory = () => {
 };
 </script>
 
-{#if $step === 1}
-	<h1 class="mb-8 text-2xl font-bold">Import bookmarks from HTML file</h1>
-	<input
-		type="file"
-		title="Select backup file"
-		id="backup"
-		name="backup"
-		accept=".html,.htm"
-		multiple={false}
-		class="file-input file-input-bordered file-input-primary file-input-md w-full max-w-xs"
-		on:change={onFileSelected} />
+{#if !user}
+	<p>Not logged in.</p>
+{:else if $step === 1}
+	<div class="hero bg-base-200">
+		<div class="hero-content flex-col lg:flex-row">
+			<IconFileTypeHtml size={300} stroke={1.2} class="rounded-md p-10 text-info" />
+			<div>
+				<h1 class="text-4xl font-bold">Import bookmarks from HTML file</h1>
+				<p class="py-6">
+					Use this tool to import your bookmarks exported as HTML file (from browser or any
+					compatible tool)
+				</p>
+				<input
+					type="file"
+					title="Select backup file"
+					id="backup"
+					name="backup"
+					accept=".html,.htm"
+					multiple={false}
+					class="file-input file-input-bordered file-input-primary file-input-md w-full max-w-xs"
+					on:change={onFileSelected} />
+			</div>
+		</div>
+	</div>
 {:else if $step === 2}
-	<div class="flex max-w-6xl flex-col">
+	<div class="flex w-full max-w-4xl flex-col">
 		<form
 			method="POST"
 			use:enhance={({ formData }) => {
@@ -279,34 +296,83 @@ const onSetSelectedCategory = () => {
 			items={$itemsCount}
 			position="right" />
 	</div>
-{:else if $step === 3}
-	<div class="flex flex-col items-center justify-center">
+{:else if $step === 3 && $importResult?.total}
+	<div class="flex w-full flex-col items-center justify-center">
 		<h1 class="mb-8 text-2xl font-bold">Import results</h1>
-		<div class="flex flex-col items-center justify-center">
+		<div class="flex w-full flex-col items-center justify-center">
 			{#if $importResult.successful}
-				<div class="alert alert-success">
-					<div>
-						<span class="text-lg font-bold">Success!</span>
-						<span class="text-sm">
-							{$importResult.successful} bookmarks imported successfully.
-						</span>
-					</div>
+				<div>
+					<span class="text-xl font-bold text-success">
+						{$importResult.successful}
+					</span>
+					<span class="text-xl">bookmarks imported successfully.</span>
 				</div>
 			{/if}
 			{#if $importResult.failed}
-				<div class="alert alert-error">
-					<div>
-						<span class="text-lg font-bold">Error!</span>
-						<span class="text-sm">
-							{$importResult.failed} bookmarks failed to import.
-						</span>
-					</div>
+				<div>
+					<span class="text-xl font-bold text-error">
+						{$importResult.failed}
+					</span>
+					<span class="text-xl">bookmarks failed to import.</span>
 				</div>
 			{/if}
+			<div class="mt-4">
+				<span class="text-xl font-bold">{$importResult.total}</span>
+				<span class="text-xl">bookmarks in total.</span>
+			</div>
+
+			<div class="mt-8 flex w-full flex-col gap-4">
+				{#if $importResult.failed}
+					<div class="collapse bg-base-200">
+						<input type="checkbox" />
+						<div class="collapse-title text-xl font-semibold">Click here to see failed items</div>
+						<div class="collapse-content">
+							<div class="flex flex-col gap-4">
+								<div class="overflow-x-auto">
+									<table class="table">
+										<thead>
+											<tr>
+												<th>#</th>
+												<th>Title</th>
+												<th>Category</th>
+												<th>URL</th>
+											</tr>
+										</thead>
+										<tbody>
+											{#each $importResult.results.filter((item) => !item.success) as { bookmark }, i (bookmark.id)}
+												<tr class="bg-base-200">
+													<th>{i + 1}</th>
+													<td class="break-all font-bold">{bookmark.title}</td>
+													<td>{bookmark.category}</td>
+													<td
+														><a class="link link-primary" href={bookmark.url} target="_blank"
+															>{bookmark.url.slice(0, 10)}{bookmark.url.length > 10 ? '...' : ''}</a
+														></td>
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+				<div class="mt-4 flex flex-col items-center justify-center">
+					<a class="btn btn-primary btn-sm ml-4" href="/import">back to import page</a>
+				</div>
+			</div>
+		</div>
+	</div>
+{:else}
+	<div class="flex w-full flex-col items-center justify-center">
+		<h1 class="mb-8 text-2xl font-bold">Import failed to complete</h1>
+		<p class="mb-4 text-xl">Unexpected error occurred while importing bookmarks 🔥</p>
+		<p>(check your console for more details)</p>
+		<div class="flex w-full flex-col items-center justify-center">
 			<div class="flex flex-col items-center justify-center">
-				<span>
-					Total bookmarks: {$importResult.total}
-				</span>
+				<div class="mt-4 flex flex-col items-center justify-center">
+					<a class="btn btn-primary btn-sm ml-4" href="/import">try again</a>
+				</div>
 			</div>
 		</div>
 	</div>

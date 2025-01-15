@@ -99,6 +99,9 @@ $: {
 							<li>
 								<a href="/profile" class="justify-between"> Profile </a>
 							</li>
+							<li>
+								<a href="/import" class="justify-between"> Import </a>
+							</li>
 							<li><a href="/settings">Settings</a></li>
 							<form method="POST" action="/logout" use:enhance>
 								<button class="btn btn-outline btn-error btn-sm w-24">Log out</button>

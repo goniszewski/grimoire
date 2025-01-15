@@ -103,8 +103,10 @@ const onRemoveItem = () => {
 		</div>
 	</td>
 	<td
-		><a class="link hover:link-secondary" href={`/categories/${createSlug(category.name)}`}
-			>{category.name}</a
+		><a
+			class="link hover:link-secondary"
+			href={`/categories/${createSlug(category.name)}`}
+			target="_blank">{category.name}</a
 		></td>
 	<th>
 		<button class="btn btn-ghost btn-xs text-secondary" on:click|preventDefault={onEditItem}
