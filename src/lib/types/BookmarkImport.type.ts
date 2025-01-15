@@ -17,13 +17,26 @@ export type ImportResult = {
 	tags: ImportedTag[];
 };
 
+export type ImportProgress = {
+    processed: number;
+    total: number;
+    successful: number;
+    failed: number;
+};
+
 export type ImportExecutionResult = {
 	total: number;
 	successful: number;
 	failed: number;
 	results: Array<{
 		success: boolean;
-		bookmark: Bookmark;
+		bookmark: {
+			id: number;
+			url: string;
+			title: string;
+			category: string;
+			success: boolean
+		};
 		error?: string;
 	}>;
 };

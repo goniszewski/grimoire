@@ -17,7 +17,7 @@ import { IconFileTypeHtml } from '@tabler/icons-svelte';
 const defaultCategory = '[No parent]';
 
 const user = $page.data.user;
-const step = writable<number>(3);
+const step = writable<number>(1);
 const isFetchingMetadata = writable<boolean>(true);
 const selectedCategory = writable<string>();
 const processedItems = writable<number>(0);
@@ -336,10 +336,11 @@ const onSetSelectedCategory = () => {
 												<th>Title</th>
 												<th>Category</th>
 												<th>URL</th>
+												<th>Error</th>
 											</tr>
 										</thead>
 										<tbody>
-											{#each $importResult.results.filter((item) => !item.success) as { bookmark }, i (bookmark.id)}
+											{#each $importResult.results.filter((item) => !item.success) as { bookmark, error }, i (bookmark.id)}
 												<tr class="bg-base-200">
 													<th>{i + 1}</th>
 													<td class="break-all font-bold">{bookmark.title}</td>
@@ -348,6 +349,9 @@ const onSetSelectedCategory = () => {
 														><a class="link link-primary" href={bookmark.url} target="_blank"
 															>{bookmark.url.slice(0, 10)}{bookmark.url.length > 10 ? '...' : ''}</a
 														></td>
+													<td class="break-all font-bold text-error">
+														{error}
+													</td>
 												</tr>
 											{/each}
 										</tbody>
