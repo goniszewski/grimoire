@@ -92,6 +92,7 @@
 		"joi": "^17.13.3",
 		"lodash": "^4.17.21",
 		"lucia": "^3.2.0",
+		"node-parse-bookmarks": "^1.0.3",
 		"sanitize-html": "^2.13.0",
 		"svelte-french-toast": "^1.2.0",
 		"svelte-select": "^5.8.3",

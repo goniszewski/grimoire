@@ -107,3 +107,21 @@ export const getInitialCategory = async (userId: number): Promise<Category | nul
 
 	return category ? serializeCategory(category) : null;
 };
+
+export const getOrCreateCategory = async (
+	ownerId: number,
+	categoryData: Omit<typeof categorySchema.$inferInsert, 'ownerId'>
+): Promise<Category> => {
+	const category = (await db.query.categorySchema.findFirst({
+		where: and(eq(categorySchema.ownerId, ownerId), eq(categorySchema.slug, categoryData.slug)),
+		with: mapRelationsToWithStatements([CategoryRelations.OWNER])
+	})) as CategoryDbo | undefined;
+
+	if (category) {
+		return serializeCategory(category);
+	}
+
+	const newCategory = await createCategory(ownerId, categoryData);
+
+	return newCategory;
+};
