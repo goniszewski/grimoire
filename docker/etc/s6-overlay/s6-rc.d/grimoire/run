@@ -1,9 +1,0 @@
-#!/command/with-contenv bash
-
-cd /app
-
-# Run migrations first
-/usr/local/bin/bun run run-migrations
-
-# Start the application
-exec /usr/local/bin/bun ./build/index.js
