@@ -2,7 +2,7 @@
 import { enhance } from '$app/forms';
 import { page } from '$app/stores';
 import Select from '$lib/components/Select/Select.svelte';
-import _ from 'lodash';
+import { debounce } from 'es-toolkit';
 import SvelteSelect from 'svelte-select';
 
 import { writable, type Writable } from 'svelte/store';
@@ -165,7 +165,7 @@ async function fetchMetadata(url: string): Promise<Partial<Bookmark>> {
 	return data?.metadata || {};
 }
 
-const onGetMetadata = _.debounce(
+const onGetMetadata = debounce(
 	async (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		const url = target.value.trim();
@@ -193,7 +193,7 @@ const onGetMetadata = _.debounce(
 		}
 	},
 	500,
-	{ leading: false, trailing: true, maxWait: 1000 }
+	{ signal: AbortSignal.timeout(5000), edges: ['trailing'] }
 );
 </script>
 
