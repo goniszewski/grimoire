@@ -30,6 +30,8 @@ ENV S6_KEEP_ENV=1 \
 
 RUN bun i -g svelte-kit@latest
 
+RUN adduser --disabled-password --gecos '' grimoire
+RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
 FROM builder AS dependencies
