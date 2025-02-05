@@ -4,8 +4,10 @@ LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
       xz-utils python3 python3-pip wget build-essential && \
+    dpkg --configure -a && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
 
