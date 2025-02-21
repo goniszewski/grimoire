@@ -2,6 +2,7 @@
 
 cd /app
 
+<<<<<<< HEAD
 echo "Starting Grimoire application"
 echo "Current user: $(whoami)"
 echo "Working directory: $(pwd)"
@@ -29,3 +30,10 @@ echo "Migrations completed successfully"
 # Start the application
 echo "Starting application server..."
 exec s6-setuidgid grimoire /usr/local/bin/bun ./build/index.js
+=======
+# Run migrations first
+/usr/local/bin/bun run run-migrations
+
+# Start the application
+exec /usr/local/bin/bun ./build/index.js
+>>>>>>> 8890939 (Release v0.5.0 (#168))

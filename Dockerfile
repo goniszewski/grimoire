@@ -1,39 +1,29 @@
-FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS base
+FROM oven/bun AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
 
-FROM base AS builder
-
-RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d /app/data
-
-ARG TARGETARCH
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    xz-utils wget python3 python3-pip build-essential && \
-    rm -rf /var/lib/apt/lists/*;
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+      xz-utils python3 python3-pip wget build-essential && \
+    dpkg --configure -a && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
 
-ARG S6_OVERLAY_VERSION=3.2.1.0
-RUN case "${TARGETARCH}" in \
-    "amd64") S6_ARCH="x86_64" ;; \
-    "arm64") S6_ARCH="aarch64" ;; \
-    "386") S6_ARCH="i686" ;; \
-    "arm/v7") S6_ARCH="armhf" ;; \
-    "arm/v6") S6_ARCH="arm" ;; \
-    *) S6_ARCH="x86_64" && echo "Warning: Unknown architecture ${TARGETARCH}, defaulting to x86_64" ;; \
-    esac && \
-    echo "Architecture: Docker ${TARGETARCH} -> s6-overlay ${S6_ARCH}" && \
-    wget -q -O /tmp/s6-overlay-noarch.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz && \
-    wget -q -O /tmp/s6-overlay-${S6_ARCH}.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz && \
+RUN mkdir -p /app/data
+
+ARG S6_OVERLAY_VERSION=3.1.6.2
+ARG TARGETARCH=x86_64
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${TARGETARCH}.tar.xz && \
     rm /tmp/s6-overlay-*xz
 
 COPY docker/etc/s6-overlay /etc/s6-overlay/
-RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run && \
-    chmod +x /etc/s6-overlay/s6-rc.d/init-data-permissions/up && \
-    chmod +x /etc/s6-overlay/scripts/init-data-permissions.sh
+RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run
 
 ENV S6_KEEP_ENV=1 \
     S6_SERVICES_GRACETIME=15000 \
@@ -65,12 +55,9 @@ ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=4096"
 RUN bun --bun run build
 
-FROM base AS release
+FROM builder AS release
 
-RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
-WORKDIR /app
-
-# Copy only the necessary files for the release
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
