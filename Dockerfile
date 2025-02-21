@@ -32,6 +32,8 @@ ENV S6_KEEP_ENV=1 \
 
 RUN bun i -g svelte-kit@latest
 
+RUN adduser --disabled-password --gecos '' grimoire
+RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
 FROM builder AS dependencies
@@ -60,7 +62,6 @@ COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
 COPY docker-entrypoint.sh /
-COPY docker/etc/ /etc/
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
     ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
@@ -68,9 +69,10 @@ ENV NODE_ENV=production \
     PUBLIC_HTTPS_ONLY=${PUBLIC_HTTPS_ONLY:-false} \
     PUBLIC_SIGNUP_DISABLED=${PUBLIC_SIGNUP_DISABLED:-false} \
     BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5000000}
+
 RUN chmod +x /docker-entrypoint.sh
-EXPOSE ${PORT:-5173}
+USER grimoire
+EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
-ENTRYPOINT ["/init"]
-
+ENTRYPOINT ["/docker-entrypoint.sh"]
