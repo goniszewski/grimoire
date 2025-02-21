@@ -11,8 +11,8 @@ RUN apt-get update && \
 
 RUN mkdir -p /app/data
 
+ARG TARGETARCH
 ARG S6_OVERLAY_VERSION=3.1.6.2
-ARG TARGETARCH=x86_64
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
 RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
