@@ -61,8 +61,6 @@ const articleExtractorScraper = async (html: string, url: string): Promise<Parti
 			? sanitizeHtml(articleExtractorMetadata?.content)
 			: '',
 		contentPublishedDate: articleExtractorMetadata?.published
-			? new Date(articleExtractorMetadata?.published)
-			: null
 	};
 };
 
@@ -144,13 +142,14 @@ export async function getMetadata(url: string, providedHtml?: string): Promise<M
 			urlMetadataMetadata?.description ||
 			articleExtractorMetadata?.description ||
 			firstParagraph ||
-			'',
-		author: urlMetadataMetadata?.author || articleExtractorMetadata?.author || '',
+			null,
+		author: urlMetadataMetadata?.author || articleExtractorMetadata?.author || null,
 		contentText,
-		contentHtml: articleExtractorMetadata?.contentHtml || sanitizeHtml(html) || '',
-		contentType: '',
-		contentPublishedDate: null,
-		mainImageUrl: urlMetadataMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || '',
-		iconUrl: urlMetadataMetadata?.iconUrl || ''
+		contentHtml: articleExtractorMetadata?.contentHtml || sanitizeHtml(html) || null,
+		contentType: null,
+		contentPublishedDate: articleExtractorMetadata?.contentPublishedDate || null,
+		mainImageUrl:
+			urlMetadataMetadata?.mainImageUrl || articleExtractorMetadata?.mainImageUrl || null,
+		iconUrl: urlMetadataMetadata?.iconUrl || null
 	};
 }

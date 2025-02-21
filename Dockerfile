@@ -1,22 +1,47 @@
-FROM oven/bun AS base
+FROM oven/bun AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
-RUN apt-get update && apt-get install -y python3 python3-pip wget build-essential && \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+      xz-utils python3 python3-pip wget build-essential && \
+    dpkg --configure -a && \
     rm -rf /var/lib/apt/lists/* && \
-    bun i -g svelte-kit@latest
+    mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
+
+RUN mkdir -p /app/data
+
+ARG S6_OVERLAY_VERSION=3.1.6.2
+ARG TARGETARCH=x86_64
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${TARGETARCH}.tar.xz && \
+    rm /tmp/s6-overlay-*xz
+
+COPY docker/etc/s6-overlay /etc/s6-overlay/
+RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run
+
+ENV S6_KEEP_ENV=1 \
+    S6_SERVICES_GRACETIME=15000 \
+    S6_KILL_GRACETIME=10000 \
+    S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
+    S6_SYNC_DISKS=1
+
+RUN bun i -g svelte-kit@latest
 
 RUN adduser --disabled-password --gecos '' grimoire
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
-FROM base AS dependencies
+FROM builder AS dependencies
 COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile
-RUN bun install --frozen-lockfile --production
+RUN bun install --frozen-lockfile && \
+    bun install --frozen-lockfile --production
 
-FROM base AS build
+FROM builder AS build
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN bun run svelte-kit sync
@@ -29,7 +54,8 @@ ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=4096"
 RUN bun --bun run build
 
-FROM base AS release
+FROM builder AS release
+
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/migrations ./migrations

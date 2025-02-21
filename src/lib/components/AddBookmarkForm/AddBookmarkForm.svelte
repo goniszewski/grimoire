@@ -11,7 +11,7 @@ import { addBookmarkToSearchIndex } from '$lib/utils/search';
 import { showToast } from '$lib/utils/show-toast';
 
 import { IconInfoCircle } from '@tabler/icons-svelte';
-import _ from 'lodash';
+import { debounce } from 'es-toolkit';
 import { onDestroy } from 'svelte';
 import Select from 'svelte-select';
 import { writable, type Writable } from 'svelte/store';
@@ -112,7 +112,7 @@ let error = '';
 let warning = '';
 const loading = writable(false);
 
-const onGetMetadata = _.debounce(
+const onGetMetadata = debounce(
 	async (event: Event) => {
 		const target = event.target as HTMLButtonElement;
 		const url = target.value;
@@ -188,9 +188,8 @@ const onGetMetadata = _.debounce(
 	},
 	1000,
 	{
-		leading: false,
-		trailing: true,
-		maxWait: 1000
+		signal: AbortSignal.timeout(5000),
+		edges: ['trailing']
 	}
 );
 </script>

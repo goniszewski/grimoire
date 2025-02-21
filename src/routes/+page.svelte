@@ -20,7 +20,7 @@ import {
 	IconSortAscending,
 	IconSortDescending
 } from '@tabler/icons-svelte';
-import _ from 'lodash';
+import { throttle } from 'es-toolkit';
 import Select from 'svelte-select';
 import { writable } from 'svelte/store';
 
@@ -52,7 +52,7 @@ const bookmarksToDisplay = writable<Bookmark[]>($page.data.bookmarks);
 $: {
 	if ($searchedValue.trim()) {
 		const searchedBookmarksIds = $searchEngine.search($searchedValue).map((b) => b.item.id);
-		_.throttle(() => {
+		throttle(() => {
 			fetch(`/api/bookmarks?ids=${searchedBookmarksIds.join(',')}`)
 				.then((r) => r.json())
 				.then((r) => {

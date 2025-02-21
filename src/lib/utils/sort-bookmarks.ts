@@ -1,5 +1,5 @@
 import type { Bookmark } from '$lib/types/Bookmark.type';
-import _ from 'lodash';
+import { sortBy } from 'es-toolkit';
 
 export type sortByType =
 	| 'created_asc'
@@ -14,9 +14,11 @@ export function sortBookmarks(bookmarks: Bookmark[], sortString: sortByType) {
 		keyof Bookmark
 	];
 	const field = fieldNameParts.reverse().join('_') as keyof Bookmark;
-	let result = _.sortBy(bookmarks, (b) => {
-		return typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field];
-	});
+	let result = sortBy<Bookmark>(bookmarks, [
+		(b) => {
+			return typeof b[field] === 'string' ? (b[field] as string).toLowerCase() : b[field];
+		}
+	]);
 
 	if (order === 'desc') {
 		result = result.reverse();

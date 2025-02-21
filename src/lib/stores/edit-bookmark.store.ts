@@ -1,4 +1,5 @@
-import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { writable } from 'svelte/store';
 
-export const editBookmarkStore = writable<Partial<Bookmark>>({});
+export const editBookmarkStore = writable<Partial<Bookmark> | BookmarkEdit>({});
+export const editBookmarkCategoriesStore = writable<string[]>([]);

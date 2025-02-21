@@ -1,31 +1,46 @@
 <script lang="ts">
 import { enhance } from '$app/forms';
 import { page } from '$app/stores';
-import _ from 'lodash';
-import Select from 'svelte-select';
+import Select from '$lib/components/Select/Select.svelte';
+import { debounce } from 'es-toolkit';
+import SvelteSelect from 'svelte-select';
+
 import { writable, type Writable } from 'svelte/store';
 
 import { invalidate } from '$app/navigation';
-import { editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { editBookmarkCategoriesStore, editBookmarkStore } from '$lib/stores/edit-bookmark.store';
+import { importBookmarkStore } from '$lib/stores/import-bookmarks.store';
 import { searchEngine } from '$lib/stores/search.store';
-import type { Bookmark } from '$lib/types/Bookmark.type';
+import type { Bookmark, BookmarkEdit } from '$lib/types/Bookmark.type';
 import { updateBookmarkInSearchIndex } from '$lib/utils/search';
 import { showToast } from '$lib/utils/show-toast';
+
+type EditableBookmark = BookmarkEdit | Partial<Bookmark>;
 
 let form: HTMLFormElement;
 export let closeModal: () => void;
 
 let error = '';
 const loading = writable(false);
-const bookmark = writable<Partial<Bookmark>>({});
+const bookmark = writable<EditableBookmark>();
 
-$: $bookmark = { ...$editBookmarkStore };
+$: $bookmark = {
+	importance: 0,
+	flagged: null,
+	note: '',
+	...$editBookmarkStore
+};
 
-const categoryItems = $page.data.categories.map((c) => ({
-	value: `${c.id}`,
-	label: c.name
-}));
-
+const categoryItems = [
+	...$page.data.categories.map((c) => ({
+		value: `${c.id}`,
+		label: c.name
+	})),
+	...$editBookmarkCategoriesStore.map((c) => ({
+		value: c,
+		label: c
+	}))
+];
 const bookmarkTagsInput: Writable<
 	| {
 			value: string;
@@ -35,7 +50,14 @@ const bookmarkTagsInput: Writable<
 	| null
 > = writable(null);
 
-$: $bookmarkTagsInput = $bookmark.tags?.map((t) => ({ value: `${t.id}`, label: t.name })) || null;
+$: $bookmarkTagsInput =
+	(isImportedBookmark($bookmark)
+		? $bookmark.bookmarkTags?.map((t) => ({
+				value: t.value,
+				label: t.label
+			}))
+		: ($bookmark as Partial<Bookmark>).tags?.map((t) => ({ value: `${t.id}`, label: t.name }))) ||
+	null;
 
 const bookmarkTags = writable<
 	{
@@ -90,50 +112,88 @@ function handleTagsChange() {
 	];
 }
 
-const onGetMetadata = _.debounce(
+function isImportedBookmark(
+	bookmark: BookmarkEdit | Partial<Bookmark>
+): bookmark is BookmarkEdit & { imported: boolean } {
+	return 'imported' in bookmark && !!bookmark.imported;
+}
+
+function handleSubmit() {
+	if (isImportedBookmark($bookmark)) {
+		const formData = new FormData(form);
+		let rawData = Object.fromEntries(formData as any);
+		delete rawData.tags;
+
+		importBookmarkStore.updateItem(+$bookmark.id, {
+			...$bookmark,
+			...rawData,
+			id: +($bookmark.id || rawData.id),
+			importance:
+				rawData.importance === ''
+					? 0
+					: rawData.importance.match(/1|2|3/)
+						? +rawData.importance
+						: $bookmark.importance || 0,
+			flagged: rawData.flagged === 'on' ? ($bookmark.flagged ?? new Date()) : null,
+			note: rawData.note || null,
+			category: {
+				name: JSON.parse(rawData.category)?.label,
+				id: JSON.parse(rawData.category)?.value
+			},
+			bookmarkTags: $bookmarkTags
+		});
+		bookmark.set({});
+		editBookmarkStore.set({});
+		closeModal();
+	} else {
+		form.submit();
+	}
+}
+
+async function fetchMetadata(url: string): Promise<Partial<Bookmark>> {
+	const response = await fetch('/api/fetch-metadata', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ url })
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to fetch metadata');
+	}
+
+	const data = await response.json();
+	return data?.metadata || {};
+}
+
+const onGetMetadata = debounce(
 	async (event: Event) => {
-		const validateUrlRegex =
-			/^(?:(?:https?|ftp):\/\/|www\.|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])/;
-		const target = event.target as HTMLButtonElement;
-		const url = target.value;
-		error = '';
+		const target = event.target as HTMLInputElement;
+		const url = target.value.trim();
+
+		if (!url) return;
 
 		loading.set(true);
+		error = '';
 
-		if (!url.match(validateUrlRegex)) {
-			error = 'Invalid URL';
+		try {
+			const metadata = await fetchMetadata(url);
+			$bookmark = {
+				...$bookmark,
+				...metadata,
+				note: $bookmark.note || null,
+				importance: $bookmark.importance || 0,
+				flagged: $bookmark.flagged || null
+			} as BookmarkEdit;
+		} catch (err) {
+			console.error('Metadata fetch error:', err);
+			error = err instanceof Error ? err.message : 'Failed to fetch metadata';
+			showToast.error(error);
+		} finally {
 			loading.set(false);
-			return;
 		}
-
-		fetch(`/api/fetch-metadata`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ url })
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				$bookmark = {
-					...$bookmark,
-					...data?.metadata
-				};
-			})
-			.catch((err) => {
-				console.error(err);
-				error = 'Failed to fetch metadata';
-			})
-			.finally(() => {
-				loading.set(false);
-			});
 	},
 	500,
-	{
-		leading: false,
-		trailing: true,
-		maxWait: 1000
-	}
+	{ signal: AbortSignal.timeout(5000), edges: ['trailing'] }
 );
 </script>
 
@@ -198,20 +258,21 @@ const onGetMetadata = _.debounce(
 					<div class="flex w-full flex-col items-start justify-between gap-2 md:flex-row">
 						<div class="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 							<div class="flex flex-none flex-col">
-								{#if $bookmark.category?.id}
+								{#if $bookmark.category?.name}
 									<label for="category" class="label">Category</label>
 									<Select
 										name="category"
 										searchable
 										items={categoryItems}
-										value={`${$bookmark.category?.id}`}
+										value={$bookmark.category.id ? $bookmark.category.id : $bookmark.category.name}
 										placeholder={'Select category'}
-										class="this-select input input-bordered w-full md:min-w-28" />
+										border={false}
+										className="this-select input input-bordered w-full md:min-w-28" />
 								{/if}
 							</div>
 							<div class="flex w-full flex-1 flex-col">
 								<label for="tags" class="label">Tags</label>
-								<Select
+								<SvelteSelect
 									name="tags"
 									searchable
 									multiple
@@ -227,7 +288,7 @@ const onGetMetadata = _.debounce(
 										{item.created ? 'Create tag: ' : ''}
 										{item.label}
 									</div>
-								</Select>
+								</SvelteSelect>
 							</div>
 						</div>
 						<div class="ml-4 flex w-full gap-4 md:w-4/12">
@@ -373,6 +434,7 @@ const onGetMetadata = _.debounce(
 
 				<button
 					class="btn btn-primary mx-auto my-6 w-full max-w-xs"
+					on:click|preventDefault={handleSubmit}
 					disabled={$loading || !$bookmark.url || !$bookmark.title}>Save</button>
 			</div>
 		</div>
