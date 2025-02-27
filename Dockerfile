@@ -3,19 +3,28 @@ LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      xz-utils \
-      python3 \
-      python3-pip \
-      wget \
-      build-essential && \
-    rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
-
-RUN mkdir -p /app/data
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d && \
+    mkdir -p /app/data
 
 ARG TARGETARCH
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+      # ARM64-specific installation with workaround for libc-bin issues
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt-get install -y --no-install-recommends \
+        xz-utils wget && \
+      apt-get clean && \
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt-get install -y --no-install-recommends \
+        python3 python3-pip build-essential && \
+      rm -rf /var/lib/apt/lists/*; \
+    else \
+      # Standard installation for other architectures
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        xz-utils python3 python3-pip wget build-essential && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
 ARG S6_OVERLAY_VERSION=3.1.6.2
 RUN case "${TARGETARCH}" in \
         "amd64") S6_ARCH="x86_64" ;; \
