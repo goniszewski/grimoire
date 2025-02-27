@@ -1,24 +1,42 @@
-FROM oven/bun AS builder
+FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-      xz-utils python3 python3-pip wget build-essential && \
-    dpkg --configure -a && \
-    rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d && \
+    mkdir -p /app/data
 
-RUN mkdir -p /app/data
+# Different build strategy based on architecture
+ARG TARGETARCH
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+      # ARM64 build - avoid libc-bin issues
+      apt-get update && \
+      apt-mark hold libc-bin && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        xz-utils wget python3 python3-pip build-essential && \
+      rm -rf /var/lib/apt/lists/*; \
+    else \
+      # Standard installation for other architectures
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        xz-utils python3 python3-pip wget build-essential && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
 
 ARG S6_OVERLAY_VERSION=3.1.6.2
-ARG TARGETARCH=x86_64
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${TARGETARCH}.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-${TARGETARCH}.tar.xz && \
+RUN case "${TARGETARCH}" in \
+        "amd64") S6_ARCH="x86_64" ;; \
+        "arm64") S6_ARCH="aarch64" ;; \
+        "386") S6_ARCH="i686" ;; \
+        "arm/v7") S6_ARCH="armhf" ;; \
+        "arm/v6") S6_ARCH="arm" ;; \
+        *) S6_ARCH="x86_64" && echo "Warning: Unknown architecture ${TARGETARCH}, defaulting to x86_64" ;; \
+    esac && \
+    echo "Architecture: Docker ${TARGETARCH} -> s6-overlay ${S6_ARCH}" && \
+    wget -q -O /tmp/s6-overlay-noarch.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz && \
+    wget -q -O /tmp/s6-overlay-${S6_ARCH}.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz && \
     rm /tmp/s6-overlay-*xz
 
 COPY docker/etc/s6-overlay /etc/s6-overlay/
