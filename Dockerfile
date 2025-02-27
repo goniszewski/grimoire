@@ -4,10 +4,12 @@ LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends xz-utils && \
-    apt-get install -y --no-install-recommends python3 python3-pip && \
-    apt-get install -y --no-install-recommends wget build-essential && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      xz-utils \
+      python3 \
+      python3-pip \
+      wget \
+      build-essential && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d
 
@@ -20,7 +22,8 @@ RUN case "${TARGETARCH}" in \
         "arm64") S6_ARCH="aarch64" ;; \
         "386") S6_ARCH="i686" ;; \
         "arm/v7") S6_ARCH="armhf" ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+        "arm/v6") S6_ARCH="arm" ;; \
+        *) S6_ARCH="x86_64" && echo "Warning: Unknown architecture ${TARGETARCH}, defaulting to x86_64" ;; \
     esac && \
     echo "Architecture: Docker ${TARGETARCH} -> s6-overlay ${S6_ARCH}" && \
     wget -q -O /tmp/s6-overlay-noarch.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz && \
