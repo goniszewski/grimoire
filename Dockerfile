@@ -1,4 +1,4 @@
-FROM oven/bun:1.2 AS builder
+FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
@@ -6,16 +6,14 @@ LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d && \
     mkdir -p /app/data
 
+# Different build strategy based on architecture
 ARG TARGETARCH
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-      # ARM64-specific installation with workaround for libc-bin issues
+      # ARM64 build - avoid libc-bin issues
       apt-get update && \
-      DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt-get install -y --no-install-recommends \
-        xz-utils wget && \
-      apt-get clean && \
-      apt-get update && \
-      DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt-get install -y --no-install-recommends \
-        python3 python3-pip build-essential && \
+      apt-mark hold libc-bin && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        xz-utils wget python3 python3-pip build-essential && \
       rm -rf /var/lib/apt/lists/*; \
     else \
       # Standard installation for other architectures
