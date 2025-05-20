@@ -1,9 +1,10 @@
 FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS base
-
-FROM base AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
+RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
+
+FROM base AS builder
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d /app/data
 
@@ -51,7 +52,6 @@ ENV S6_KEEP_ENV=1 \
 
 RUN bun i -g svelte-kit@latest
 
-RUN adduser --disabled-password --gecos '' grimoire
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
@@ -75,7 +75,6 @@ RUN bun --bun run build
 
 FROM base AS release
 
-RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
