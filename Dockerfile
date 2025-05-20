@@ -75,7 +75,7 @@ RUN bun --bun run build
 
 FROM base AS release
 
-RUN adduser --disabled-password --gecos '' grimoire
+RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
