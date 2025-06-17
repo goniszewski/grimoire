@@ -1,5 +1,6 @@
 FROM --platform=$BUILDPLATFORM oven/bun:1.2-alpine AS base
-RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
+RUN apk add --no-cache ca-certificates && update-ca-certificates && \
+    adduser --disabled-password --gecos '' --uid 10001 grimoire
 
 FROM base AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
@@ -14,12 +15,14 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     # ARM64 build - avoid libc-bin issues in Alpine
     apk update && \
     apk add --no-cache \
-    xz wget python3 py3-pip build-base; \
+    ca-certificates xz wget python3 py3-pip build-base && \
+    update-ca-certificates; \
     else \
     # Standard installation for other architectures
     apk update && \
     apk add --no-cache \
-    xz wget python3 py3-pip build-base; \
+    ca-certificates xz wget python3 py3-pip build-base && \
+    update-ca-certificates; \
     fi
 
 
