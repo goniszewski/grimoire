@@ -42,23 +42,25 @@ describe('prepareTags', () => {
 		dbInsertMock.mockClear();
 	});
 
-	it('should create tags', async () => {
-		const tags = await prepareTags(dbMock as any, createTagsStub, 1);
+        it('should create tags', async () => {
+                const tags = await prepareTags(dbMock as any, createTagsStub, 1);
 
-		expect(tags).toEqual([tagIdStub, tagIdStub]);
-		expect(dbInsertMock).toHaveBeenCalledTimes(2);
-		expect(dbInsertMock).toHaveBeenCalledWith(expect.anything());
-		expect(dbInsertMock().values).toHaveBeenCalledWith({
-			name: 'test3',
-			slug: 'test3',
-			ownerId: 1
-		});
-		expect(dbInsertMock().values).toHaveBeenCalledWith({
-			name: 'test4',
-			slug: 'test4',
-			ownerId: 1
-		});
-	});
+                expect(tags).toEqual([tagIdStub, tagIdStub]);
+                expect(dbInsertMock).toHaveBeenCalledTimes(2);
+                expect(dbInsertMock).toHaveBeenCalledWith(expect.anything());
+                const valuesMock1 = dbInsertMock.mock.results[0].value.values;
+                const valuesMock2 = dbInsertMock.mock.results[1].value.values;
+                expect(valuesMock1).toHaveBeenCalledWith({
+                        name: 'test3',
+                        slug: 'test3',
+                        ownerId: 1
+                });
+                expect(valuesMock2).toHaveBeenCalledWith({
+                        name: 'test4',
+                        slug: 'test4',
+                        ownerId: 1
+                });
+        });
 
 	it('should return existing tags', async () => {
 		const tags = await prepareTags(dbMock as any, existingTagsStub, 1);
@@ -67,21 +69,23 @@ describe('prepareTags', () => {
 		expect(dbInsertMock).not.toHaveBeenCalled();
 	});
 
-	it('should return existing and created tags', async () => {
-		const tags = await prepareTags(dbMock as any, [...existingTagsStub, ...createTagsStub], 1);
+        it('should return existing and created tags', async () => {
+                const tags = await prepareTags(dbMock as any, [...existingTagsStub, ...createTagsStub], 1);
 
-		expect(tags).toEqual([123, 456, tagIdStub, tagIdStub]);
-		expect(dbInsertMock).toHaveBeenCalledTimes(2);
-		expect(dbInsertMock).toHaveBeenCalledWith(expect.anything());
-		expect(dbInsertMock().values).toHaveBeenCalledWith({
-			name: 'test3',
-			slug: 'test3',
-			ownerId: 1
-		});
-		expect(dbInsertMock().values).toHaveBeenCalledWith({
-			name: 'test4',
-			slug: 'test4',
-			ownerId: 1
-		});
-	});
+                expect(tags).toEqual([123, 456, tagIdStub, tagIdStub]);
+                expect(dbInsertMock).toHaveBeenCalledTimes(2);
+                expect(dbInsertMock).toHaveBeenCalledWith(expect.anything());
+                const valuesMock1 = dbInsertMock.mock.results[0].value.values;
+                const valuesMock2 = dbInsertMock.mock.results[1].value.values;
+                expect(valuesMock1).toHaveBeenCalledWith({
+                        name: 'test3',
+                        slug: 'test3',
+                        ownerId: 1
+                });
+                expect(valuesMock2).toHaveBeenCalledWith({
+                        name: 'test4',
+                        slug: 'test4',
+                        ownerId: 1
+                });
+        });
 });

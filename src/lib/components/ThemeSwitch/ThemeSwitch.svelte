@@ -10,8 +10,8 @@ let themeSwitchForm: HTMLFormElement;
 $: theme = user?.settings?.theme ?? 'light';
 
 function handleThemeChange(theme: keyof typeof themes) {
-	document.documentElement.setAttribute('data-theme', themes[theme]);
-	document.cookie = `theme=${theme}; ${document.cookie}; SameSite=Lax`;
+        document.documentElement.setAttribute('data-theme', themes[theme]);
+        document.cookie = `theme=${theme}; Path=/; SameSite=Lax`;
 }
 </script>
 
