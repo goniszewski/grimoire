@@ -1,9 +1,12 @@
 #!/command/with-contenv bash
 
+chown -R grimoire:grimoire /app/data
+chmod 755 /app/data
+
 cd /app
 
 # Run migrations first
-/usr/local/bin/bun run run-migrations
+s6-setuidgid grimoire /usr/local/bin/bun run run-migrations
 
 # Start the application
-exec /usr/local/bin/bun ./build/index.js
+exec s6-setuidgid grimoire /usr/local/bin/bun ./build/index.js

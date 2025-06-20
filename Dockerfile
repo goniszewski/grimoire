@@ -1,3 +1,4 @@
+# Builder image runs on the build platform so we can install dependencies
 FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS base
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
@@ -11,24 +12,13 @@ FROM base AS builder
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d /app/data
 
-# Different build strategy based on architecture
 ARG TARGETARCH
-RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-    # ARM64 build - avoid libc-bin issues
-    apt-get update && \
-    apt-mark hold libc-bin && \
+RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     xz-utils wget python3 python3-pip build-essential && \
-    rm -rf /var/lib/apt/lists/*; \
-    else \
-    # Standard installation for other architectures
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    xz-utils python3 python3-pip wget build-essential && \
-    rm -rf /var/lib/apt/lists/*; \
-    fi
+    rm -rf /var/lib/apt/lists/*;
 
-ARG S6_OVERLAY_VERSION=3.1.6.2
+ARG S6_OVERLAY_VERSION=3.2.1.0
 RUN case "${TARGETARCH}" in \
     "amd64") S6_ARCH="x86_64" ;; \
     "arm64") S6_ARCH="aarch64" ;; \
@@ -76,7 +66,27 @@ ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=4096"
 RUN bun --bun run build
 
-FROM base AS release
+FROM --platform=$TARGETPLATFORM oven/bun:1.2 AS release
+RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/grimoire /etc/s6-overlay/s6-rc.d/user/contents.d /app/data
+ARG TARGETARCH
+ARG S6_OVERLAY_VERSION=3.2.1.0
+RUN case "${TARGETARCH}" in \
+    "amd64") S6_ARCH="x86_64" ;; \
+    "arm64") S6_ARCH="aarch64" ;; \
+    "386") S6_ARCH="i686" ;; \
+    "arm/v7") S6_ARCH="armhf" ;; \
+    "arm/v6") S6_ARCH="arm" ;; \
+    *) S6_ARCH="x86_64" && echo "Warning: Unknown architecture ${TARGETARCH}, defaulting to x86_64" ;; \
+    esac && \
+    echo "Architecture: Docker ${TARGETARCH} -> s6-overlay ${S6_ARCH}" && \
+    wget -q -O /tmp/s6-overlay-noarch.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz && \
+    wget -q -O /tmp/s6-overlay-${S6_ARCH}.tar.xz https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz && \
+    rm /tmp/s6-overlay-*xz
+COPY docker/etc/s6-overlay /etc/s6-overlay/
+RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run
 
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
@@ -97,8 +107,7 @@ ENV NODE_ENV=production \
     BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5000000}
 
 RUN chmod +x /docker-entrypoint.sh
-USER grimoire
 EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/init"]
