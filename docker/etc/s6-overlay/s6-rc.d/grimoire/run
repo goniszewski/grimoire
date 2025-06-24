@@ -2,8 +2,30 @@
 
 cd /app
 
+echo "Starting Grimoire application"
+echo "Current user: $(whoami)"
+echo "Working directory: $(pwd)"
+echo "Data directory permissions:"
+ls -la /app/data/
+
+echo "Testing database access as grimoire user:"
+s6-setuidgid grimoire ls -la /app/data/
+
 # Run migrations first
-s6-setuidgid grimoire /usr/local/bin/bun run run-migrations
+echo "Running database migrations..."
+if ! s6-setuidgid grimoire /usr/local/bin/bun run run-migrations; then
+    echo "ERROR: Database migration failed"
+    echo "Data directory details:"
+    ls -la /app/data/
+    echo "Process info:"
+    echo "Running as: $(s6-setuidgid grimoire whoami)"
+    echo "UID: $(s6-setuidgid grimoire id -u)"
+    echo "GID: $(s6-setuidgid grimoire id -g)"
+    exit 1
+fi
+
+echo "Migrations completed successfully"
 
 # Start the application
+echo "Starting application server..."
 exec s6-setuidgid grimoire /usr/local/bin/bun ./build/index.js

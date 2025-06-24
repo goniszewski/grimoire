@@ -32,7 +32,8 @@ RUN case "${TARGETARCH}" in \
 
 COPY docker/etc/s6-overlay /etc/s6-overlay/
 RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run && \
-    chmod +x /etc/s6-overlay/s6-rc.d/init-data-permissions/up
+    chmod +x /etc/s6-overlay/s6-rc.d/init-data-permissions/up && \
+    chmod +x /etc/s6-overlay/scripts/init-data-permissions.sh
 
 ENV S6_KEEP_ENV=1 \
     S6_SERVICES_GRACETIME=15000 \
@@ -42,7 +43,8 @@ ENV S6_KEEP_ENV=1 \
 
 RUN bun i -g svelte-kit@latest
 
-RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
+RUN adduser --disabled-password --gecos '' grimoire
+RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data
 WORKDIR /app
 
 FROM builder AS dependencies
@@ -73,6 +75,8 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
+
+RUN chown -R grimoire:grimoire /app
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
     ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
