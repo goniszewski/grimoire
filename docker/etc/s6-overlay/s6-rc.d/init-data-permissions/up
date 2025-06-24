@@ -1,0 +1,29 @@
+#!/command/with-contenv bash
+
+# Ensure data directory exists and has proper permissions
+mkdir -p /app/data
+
+# Set ownership to grimoire user and group
+chown -R grimoire:grimoire /app/data
+
+# Set proper permissions: owner can read/write/execute, group can read/execute, others can read/execute
+chmod 755 /app/data
+
+# Ensure any existing database files have correct permissions
+if [ -f /app/data/db.sqlite ]; then
+    chown grimoire:grimoire /app/data/db.sqlite
+    chmod 644 /app/data/db.sqlite
+fi
+
+# Ensure WAL and SHM files have correct permissions if they exist
+if [ -f /app/data/db.sqlite-wal ]; then
+    chown grimoire:grimoire /app/data/db.sqlite-wal
+    chmod 644 /app/data/db.sqlite-wal
+fi
+
+if [ -f /app/data/db.sqlite-shm ]; then
+    chown grimoire:grimoire /app/data/db.sqlite-shm
+    chmod 644 /app/data/db.sqlite-shm
+fi
+
+echo "Data directory permissions initialized successfully"

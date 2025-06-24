@@ -31,7 +31,8 @@ RUN case "${TARGETARCH}" in \
     rm /tmp/s6-overlay-*xz
 
 COPY docker/etc/s6-overlay /etc/s6-overlay/
-RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run
+RUN chmod +x /etc/s6-overlay/s6-rc.d/grimoire/run && \
+    chmod +x /etc/s6-overlay/s6-rc.d/init-data-permissions/up
 
 ENV S6_KEEP_ENV=1 \
     S6_SERVICES_GRACETIME=15000 \
@@ -72,8 +73,6 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/migrate.js ./migrate.js
 COPY --from=build /app/package.json ./package.json
-COPY docker-entrypoint.sh /
-
 ENV NODE_ENV=production \
     PUBLIC_ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
     ORIGIN=${PUBLIC_ORIGIN:-http://localhost:5173} \
@@ -81,8 +80,6 @@ ENV NODE_ENV=production \
     PUBLIC_HTTPS_ONLY=${PUBLIC_HTTPS_ONLY:-false} \
     PUBLIC_SIGNUP_DISABLED=${PUBLIC_SIGNUP_DISABLED:-false} \
     BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-5000000}
-
-RUN chmod +x /docker-entrypoint.sh
 EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/api/health || exit 1
