@@ -50,8 +50,6 @@ ENV S6_KEEP_ENV=1 \
     S6_SYNC_DISKS=1
 
 RUN bun i -g svelte-kit@latest
-
-RUN adduser --disabled-password --gecos '' grimoire
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data
 WORKDIR /app
 
