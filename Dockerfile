@@ -14,8 +14,6 @@ RUN apt-get update && \
     python3 python3-pip build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-RUN bun i -g svelte-kit@latest
-
 WORKDIR /app
 
 FROM builder AS dependencies

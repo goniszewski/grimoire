@@ -1,12 +1,24 @@
 #!/command/with-contenv bash
 
-chown -R grimoire:grimoire /app/data
-chmod 755 /app/data
+# Guard: /app/data must exist, be a real directory, and not a symlink
+if [ -e /app/data ] && [ -d /app/data ] && [ ! -L /app/data ]; then
+  # Only perform expensive recursive chown once using a marker file
+  if [ ! -f /app/data/.ownership-initialized ]; then
+    chown -R grimoire:grimoire /app/data
+    touch /app/data/.ownership-initialized
+  else
+    chown grimoire:grimoire /app/data
+  fi
+  chmod 755 /app/data
+else
+  echo "Error: /app/data must exist, be a directory, and not be a symlink." >&2
+  exit 1
+fi
 
 cd /app
 
-# Run migrations first
-s6-setuidgid grimoire /usr/local/bin/bun run run-migrations
+# Run migrations first; exit immediately if they fail to avoid starting against an unmigrated schema
+s6-setuidgid grimoire /usr/local/bin/bun run run-migrations || exit 1
 
 # Start the application
 exec s6-setuidgid grimoire /usr/local/bin/bun ./build/index.js

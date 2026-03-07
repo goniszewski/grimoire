@@ -49,13 +49,11 @@ ENV S6_KEEP_ENV=1 \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_SYNC_DISKS=1
 
-RUN bun i -g svelte-kit@latest
-
 RUN mkdir -p /app/data && chown -R grimoire:grimoire /app/data && chmod 766 /app/data
 WORKDIR /app
 
 FROM builder AS dependencies
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile && \
     bun install --frozen-lockfile --production
 
