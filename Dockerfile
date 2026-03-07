@@ -18,13 +18,13 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     apt-get update && \
     apt-mark hold libc-bin && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates xz-utils wget python3 python3-pip build-essential && \
+    xz-utils wget python3 python3-pip build-essential && \
     rm -rf /var/lib/apt/lists/*; \
     else \
     # Standard installation for other architectures
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates xz-utils python3 python3-pip wget build-essential && \
+    xz-utils python3 python3-pip wget build-essential && \
     rm -rf /var/lib/apt/lists/*; \
     fi
 

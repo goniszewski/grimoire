@@ -15,14 +15,12 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     # ARM64 build - avoid libc-bin issues in Alpine
     apk update && \
     apk add --no-cache \
-    ca-certificates xz wget python3 py3-pip build-base && \
-    update-ca-certificates; \
+    xz wget python3 py3-pip build-base; \
     else \
     # Standard installation for other architectures
     apk update && \
     apk add --no-cache \
-    ca-certificates xz wget python3 py3-pip build-base && \
-    update-ca-certificates; \
+    xz wget python3 py3-pip build-base; \
     fi
 
 
