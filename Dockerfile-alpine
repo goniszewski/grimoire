@@ -1,5 +1,6 @@
 FROM --platform=$BUILDPLATFORM oven/bun:1.2-alpine AS base
-RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
+RUN apk add --no-cache ca-certificates && update-ca-certificates && \
+    adduser --disabled-password --gecos '' --uid 10001 grimoire
 
 FROM base AS builder
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"

@@ -2,7 +2,10 @@ FROM --platform=$BUILDPLATFORM oven/bun:1.2 AS base
 LABEL maintainer="Grimoire Developers <contact@grimoire.pro>"
 LABEL description="Bookmark manager for the wizards"
 LABEL org.opencontainers.image.source="https://github.com/goniszewski/grimoire"
-RUN adduser --disabled-password --gecos '' --uid 10001 grimoire
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    adduser --disabled-password --gecos '' --uid 10001 grimoire
 
 FROM base AS builder
 
