@@ -10,7 +10,7 @@ import { getDatabase, closeDatabase } from "./db/database.js";
 const startTime = new Date();
 
 // --- Initialise components ---
-getDatabase(); // opens DB, runs migrations; singleton accessed via closeDatabase() on shutdown
+const db = getDatabase(); // opens DB, runs migrations
 const queue = new JobQueue();
 const worker = new JobWorker(queue);
 const scheduler = new Scheduler();
@@ -20,7 +20,7 @@ scheduler.register("heartbeat", 60_000, () => {
   log.info("Heartbeat", { uptime: Date.now() - startTime.getTime() });
 });
 
-const app = createApp({ queue, startTime, version: VERSION });
+const app = createApp({ db, queue, startTime, version: VERSION });
 
 // --- Start ---
 worker.start();

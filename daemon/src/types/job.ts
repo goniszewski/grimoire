@@ -24,5 +24,12 @@ export interface PingJobPayload {
 
 export type PingJob = Job<PingJobPayload>;
 
+export interface IngestJobPayload {
+  bookmarkId: string;
+  url: string;
+}
+
+export type IngestJob = Job<IngestJobPayload>;
+
 // Union of all known job payload types (extend as new job types are added)
-export type AnyJob = PingJob | Job<unknown>;
+export type AnyJob = PingJob | IngestJob | Job<unknown>;

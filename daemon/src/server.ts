@@ -1,11 +1,14 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { Database } from "bun:sqlite";
 import { Config } from "./config.js";
 import { log } from "./logger.js";
 import { JobQueue } from "./queue.js";
 import { createHealthRoute } from "./routes/health.js";
+import { createBookmarksRoute } from "./routes/bookmarks.js";
 
 export interface AppDeps {
+  db: Database;
   queue: JobQueue;
   startTime: Date;
   version: string;
@@ -44,6 +47,7 @@ export function createApp(deps: AppDeps): Hono {
 
   // Routes
   app.route("/", createHealthRoute(deps));
+  app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue }));
 
   return app;
 }

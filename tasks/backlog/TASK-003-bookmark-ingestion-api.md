@@ -1,6 +1,6 @@
 # TASK-003: Bookmark Ingestion API
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** v0-alpha
 **Area:** backend / api
@@ -20,10 +20,10 @@ Implement the REST API endpoints for saving and managing bookmarks.
 
 ## Acceptance Criteria
 
-- [ ] POST creates bookmark record with `saved` status immediately
-- [ ] Response includes bookmark ID before pipeline completes
-- [ ] List supports pagination (cursor or offset)
-- [ ] List supports filter params: `tag`, `domain`, `category`, `date_from`, `date_to`
-- [ ] All endpoints return consistent JSON envelope
-- [ ] Error responses follow RFC 7807 problem+json format
-- [ ] Input validation rejects malformed URLs
+- [x] POST creates bookmark record with `saved` status immediately
+- [x] Response includes bookmark ID before pipeline completes
+- [x] List supports pagination (cursor or offset)
+- [x] List supports filter params: `tag`, `domain`, `category`, `date_from`, `date_to`
+- [x] All endpoints return consistent JSON envelope
+- [x] Error responses follow RFC 7807 problem+json format
+- [x] Input validation rejects malformed URLs
