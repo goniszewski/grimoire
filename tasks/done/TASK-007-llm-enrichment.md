@@ -1,6 +1,6 @@
 # TASK-007: LLM Enrichment (Summary, Tags, Category)
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta
 **Area:** backend / ai
@@ -35,11 +35,11 @@ Provider and model configured via preferences API / preferences dialog.
 
 ## Acceptance Criteria
 
-- [ ] Single LLM call returns summary + tags + category
-- [ ] Provider abstraction supports OpenAI API-compatible endpoints (covers OpenAI + Ollama)
-- [ ] API key stored in local config file (not in DB)
-- [ ] Retry on LLM failure with exponential backoff (max 3 retries)
-- [ ] Enrichment result stored and bookmark status updated to `ai_enriched`
-- [ ] Works with local Ollama instance (configurable base URL)
-- [ ] Prompt is tuned for technical/developer content
-- [ ] Gracefully degrades if LLM is unavailable (bookmark still usable)
+- [x] Single LLM call returns summary + tags + category
+- [x] Provider abstraction supports OpenAI API-compatible endpoints (covers OpenAI + Ollama)
+- [x] API key stored in local config file (not in DB)
+- [x] Retry on LLM failure with exponential backoff (max 3 retries)
+- [x] Enrichment result stored and bookmark status updated to `ai_enriched`
+- [x] Works with local Ollama instance (configurable base URL)
+- [x] Prompt is tuned for technical/developer content
+- [x] Gracefully degrades if LLM is unavailable (bookmark still usable)

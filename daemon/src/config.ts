@@ -32,6 +32,13 @@ export const Config = {
   LOG_FORMAT: (process.env.LOG_FORMAT ??
     (process.env.NODE_ENV === "production" ? "json" : "pretty")) as "pretty" | "json",
   NODE_ENV: process.env.NODE_ENV ?? "development",
+
+  // ─── LLM enrichment (TASK-007) ──────────────────────────────────────────────
+  // Set LLM_API_KEY to enable enrichment. Leave blank to disable (bookmarks
+  // remain fully usable without enrichment).
+  LLM_API_KEY: process.env.LLM_API_KEY ?? "",
+  LLM_BASE_URL: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
+  LLM_MODEL: process.env.LLM_MODEL ?? "gpt-4o-mini",
 } as const;
 
 export type AppConfig = typeof Config;

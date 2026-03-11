@@ -4,7 +4,7 @@
  * Stages:
  *   1. fetch       — download the page HTML
  *   2. extract     — strategy-based content extraction
- *   3. ai_enrich   — LLM summary + tags + category (stub; implemented in TASK-007)
+ *   3. ai_enrich   — LLM summary + tags + category
  *   4. embed       — generate embedding vector (stub; implemented in TASK-008)
  *   5. index       — update FTS5 search index
  *
@@ -15,7 +15,7 @@
  * Failure behaviour per task spec:
  *   - Fetch failure   → bookmark stays "saved",  caller logs + retries
  *   - Extract failure → falls back to title only, pipeline continues
- *   - LLM failure     → bookmark usable without enrichment, caller retries
+ *   - LLM failure     → bookmark usable without enrichment, pipeline continues
  *   - Embed failure   → caller retries
  */
 
@@ -23,6 +23,8 @@ import { Database } from "bun:sqlite";
 import { log } from "../logger.js";
 import { fetchPage } from "./fetcher.js";
 import { extractContent } from "./extractor.js";
+import { enrichBookmark } from "../ai/enrichment.js";
+import { Config } from "../config.js";
 import { BookmarkContentRow } from "../db/types.js";
 
 export interface PipelinePayload {
@@ -150,8 +152,30 @@ export async function runPipeline(
   })();
   log.info("Pipeline: extract done", { bookmarkId, wordCount: extracted.wordCount });
 
-  // ── Stage 3: ai_enrich (stub) ─────────────────────────────────────────────
-  // Full implementation in TASK-007. Bookmark is fully usable without this.
+  // ── Stage 3: ai_enrich ────────────────────────────────────────────────────
+  if (Config.LLM_API_KEY) {
+    log.info("Pipeline: ai_enrich", { bookmarkId });
+    try {
+      await enrichBookmark(db, {
+        baseUrl: Config.LLM_BASE_URL,
+        apiKey: Config.LLM_API_KEY,
+        model: Config.LLM_MODEL,
+      }, {
+        bookmarkId,
+        title,
+        content: extracted.markdown ?? "",
+      });
+      log.info("Pipeline: ai_enrich done", { bookmarkId });
+    } catch (err) {
+      log.warn("Pipeline: ai_enrich failed, continuing without enrichment", {
+        bookmarkId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Non-fatal: bookmark is fully usable without LLM enrichment
+    }
+  } else {
+    log.info("Pipeline: ai_enrich skipped (LLM_API_KEY not set)", { bookmarkId });
+  }
 
   // ── Stage 4: embed (stub) ─────────────────────────────────────────────────
   // Full implementation in TASK-008.
