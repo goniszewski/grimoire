@@ -24,6 +24,8 @@ import { log } from "../logger.js";
 import { fetchPage } from "./fetcher.js";
 import { extractContent } from "./extractor.js";
 import { enrichBookmark } from "../ai/enrichment.js";
+import { getEmbedding, buildEmbedInput } from "../ai/embeddings.js";
+import { EmbeddingRepository } from "../db/embedding-repository.js";
 import { Config } from "../config.js";
 import { BookmarkContentRow } from "../db/types.js";
 
@@ -182,8 +184,53 @@ export async function runPipeline(
     log.info("Pipeline: ai_enrich skipped (LLM_API_KEY not set)", { bookmarkId });
   }
 
-  // ── Stage 4: embed (stub) ─────────────────────────────────────────────────
-  // Full implementation in TASK-008.
+  // ── Stage 4: embed ────────────────────────────────────────────────────────
+  if (Config.EMBEDDING_API_KEY) {
+    log.info("Pipeline: embed", { bookmarkId });
+    try {
+      // Read current summary and tags for embedding input
+      const contentRow = db
+        .query<{ summary: string | null }, [string]>(
+          "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+        )
+        .get(bookmarkId);
+      const tagNames = db
+        .query<{ name: string }, [string]>(
+          `SELECT t.name FROM tags t
+           JOIN bookmark_tags bt ON bt.tag_id = t.id
+           WHERE bt.bookmark_id = ?`
+        )
+        .all(bookmarkId)
+        .map((r) => r.name);
+
+      const embedText = buildEmbedInput({
+        title,
+        summary: contentRow?.summary ?? null,
+        tags: tagNames,
+      });
+
+      const vector = await getEmbedding(
+        {
+          baseUrl: Config.EMBEDDING_BASE_URL,
+          apiKey: Config.EMBEDDING_API_KEY,
+          model: Config.EMBEDDING_MODEL,
+        },
+        embedText
+      );
+
+      const embRepo = new EmbeddingRepository(db);
+      embRepo.upsert(bookmarkId, Config.EMBEDDING_MODEL, vector);
+      log.info("Pipeline: embed done", { bookmarkId, dimensions: vector.length });
+    } catch (err) {
+      log.warn("Pipeline: embed failed, continuing without embedding", {
+        bookmarkId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Non-fatal: bookmark is fully usable without embedding
+    }
+  } else {
+    log.info("Pipeline: embed skipped (EMBEDDING_API_KEY not set)", { bookmarkId });
+  }
 
   // ── Stage 5: index ────────────────────────────────────────────────────────
   log.info("Pipeline: index", { bookmarkId });

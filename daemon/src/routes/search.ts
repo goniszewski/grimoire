@@ -1,6 +1,7 @@
 import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
-import { SearchRepository } from "../db/search-repository.js";
+import { SearchRepository, SearchMode } from "../db/search-repository.js";
+import { Config } from "../config.js";
 
 interface SearchDeps {
   db: Database;
@@ -12,20 +13,53 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   return isNaN(n) ? fallback : Math.max(n, min);
 }
 
+function problem(c: Context, status: 400 | 422, title: string, detail?: string) {
+  return c.json(
+    {
+      type: `https://littleimp.app/problems/${title.toLowerCase().replace(/\s+/g, "-")}`,
+      title,
+      status,
+      detail,
+    },
+    status,
+    { "Content-Type": "application/problem+json" }
+  );
+}
+
 export function createSearchRoute(deps: SearchDeps): Hono {
   const router = new Hono();
   const repo = new SearchRepository(deps.db);
 
-  // GET /search?q=&tag=&domain=&category=&date_from=&date_to=&limit=&offset=
-  router.get("/search", (c: Context) => {
+  // GET /search?q=&mode=keyword|semantic|hybrid&tag=&domain=&category=&date_from=&date_to=&limit=&offset=
+  router.get("/search", async (c: Context) => {
     const q = c.req.query("q") ?? undefined;
+    const rawMode = c.req.query("mode") ?? "keyword";
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
     const offset = parseIntParam(c.req.query("offset"), 0);
 
+    const validModes: SearchMode[] = ["keyword", "semantic", "hybrid"];
+    if (!validModes.includes(rawMode as SearchMode)) {
+      return problem(c, 422, "Unprocessable Entity", `mode must be one of: ${validModes.join(", ")}`);
+    }
+    const mode = rawMode as SearchMode;
+
+    // Semantic/hybrid require embedding config
+    if ((mode === "semantic" || mode === "hybrid") && !Config.EMBEDDING_API_KEY) {
+      return problem(c, 422, "Unprocessable Entity",
+        `mode=${mode} requires EMBEDDING_API_KEY to be configured`);
+    }
+
+    const embeddingConfig = Config.EMBEDDING_API_KEY ? {
+      baseUrl: Config.EMBEDDING_BASE_URL,
+      apiKey: Config.EMBEDDING_API_KEY,
+      model: Config.EMBEDDING_MODEL,
+    } : undefined;
+
     let result;
     try {
-      result = repo.search({
+      result = await repo.search({
         q,
+        mode,
         tag: c.req.query("tag") ?? undefined,
         domain: c.req.query("domain") ?? undefined,
         category: c.req.query("category") ?? undefined,
@@ -33,21 +67,13 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         date_to: c.req.query("date_to") ?? undefined,
         limit,
         offset,
+        embeddingConfig,
       });
     } catch (err) {
       // FTS5 MATCH syntax errors surface as SQLite exceptions
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("fts5") || msg.includes("MATCH") || msg.includes("syntax error")) {
-        return c.json(
-          {
-            type: "https://littleimp.app/problems/invalid-query",
-            title: "Invalid Query",
-            status: 400,
-            detail: "Search query contains invalid syntax",
-          },
-          400,
-          { "Content-Type": "application/problem+json" }
-        );
+        return problem(c, 400, "Invalid Query", "Search query contains invalid syntax");
       }
       throw err;
     }
@@ -60,6 +86,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         offset: result.offset,
         has_more: result.offset + result.items.length < result.total,
       },
+      meta: { mode },
     });
   });
 

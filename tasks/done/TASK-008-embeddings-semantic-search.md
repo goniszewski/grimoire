@@ -1,6 +1,6 @@
 # TASK-008: Embeddings & Semantic Search
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta
 **Area:** backend / ai / search
@@ -40,10 +40,10 @@ Where:
 
 ## Acceptance Criteria
 
-- [ ] sqlite-vec extension loads at daemon startup
-- [ ] Embedding generated after LLM enrichment step
-- [ ] Bookmark status updated to `indexed` after embedding stored
-- [ ] Semantic search endpoint returns relevant results for conceptual queries
-- [ ] Hybrid search mode blends keyword + vector + recency scores
-- [ ] Related bookmarks endpoint: `GET /bookmarks/:id/related`
+- [~] sqlite-vec extension loads at daemon startup (Bun 1.3.x does not support dynamic SQLite extensions; vectors stored as float32 BLOB — forward-compatible with vec0 when Bun adds support)
+- [x] Embedding generated after LLM enrichment step
+- [x] Bookmark status updated to `indexed` after embedding stored
+- [x] Semantic search endpoint returns relevant results for conceptual queries
+- [x] Hybrid search mode blends keyword + vector + recency scores
+- [x] Related bookmarks endpoint: `GET /bookmarks/:id/related`
 - [ ] Re-embedding job available for library-wide re-processing

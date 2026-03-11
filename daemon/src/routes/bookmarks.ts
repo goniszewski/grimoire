@@ -2,6 +2,8 @@ import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
+import { SearchRepository } from "../db/search-repository.js";
+import { Config } from "../config.js";
 import { log } from "../logger.js";
 
 interface BookmarksDeps {
@@ -93,6 +95,7 @@ function ok<T>(c: Context, data: T, status: 200 | 201 = 200) {
 export function createBookmarksRoute(deps: BookmarksDeps): Hono {
   const router = new Hono();
   const repo = new BookmarkRepository(deps.db);
+  const searchRepo = new SearchRepository(deps.db);
 
   // POST /bookmarks — ingest a URL
   router.post("/bookmarks", async (c) => {
@@ -222,6 +225,25 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const deleted = repo.softDelete(c.req.param("id"));
     if (!deleted) return problem(c, 404, "Not Found", "Bookmark not found");
     return c.body(null, 204);
+  });
+
+  // GET /bookmarks/:id/related — semantically similar bookmarks
+  router.get("/bookmarks/:id/related", (c) => {
+    const id = c.req.param("id");
+    if (!repo.findById(id)) return problem(c, 404, "Not Found", "Bookmark not found");
+
+    if (!Config.EMBEDDING_API_KEY) {
+      return problem(c, 422, "Unprocessable Entity",
+        "Related bookmarks require EMBEDDING_API_KEY to be configured");
+    }
+
+    const limit = Math.min(
+      parseInt(c.req.query("limit") ?? "10", 10) || 10,
+      50
+    );
+
+    const related = searchRepo.findRelated(id, Config.EMBEDDING_MODEL, limit);
+    return ok(c, related);
   });
 
   // GET /bookmarks/:id/status — pipeline job status

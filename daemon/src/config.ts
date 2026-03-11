@@ -39,6 +39,13 @@ export const Config = {
   LLM_API_KEY: process.env.LLM_API_KEY ?? "",
   LLM_BASE_URL: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
   LLM_MODEL: process.env.LLM_MODEL ?? "gpt-4o-mini",
+
+  // ─── Embeddings (TASK-008) ────────────────────────────────────────────────────
+  // Shares API key with LLM by default; set EMBEDDING_API_KEY to override.
+  // Leave EMBEDDING_API_KEY empty to disable embedding generation.
+  EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY ?? process.env.LLM_API_KEY ?? "",
+  EMBEDDING_BASE_URL: process.env.EMBEDDING_BASE_URL ?? process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
+  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL ?? "text-embedding-3-small",
 } as const;
 
 export type AppConfig = typeof Config;

@@ -1,11 +1,16 @@
 import { Database } from "bun:sqlite";
 import { BookmarkRow } from "./types.js";
 import { BookmarkWithTags } from "./bookmark-repository.js";
+import { EmbeddingRepository } from "./embedding-repository.js";
+import { getEmbedding, cosineSimilarity, EmbeddingConfig } from "../ai/embeddings.js";
 
 // ─── Query option types ───────────────────────────────────────────────────────
 
+export type SearchMode = "keyword" | "semantic" | "hybrid";
+
 export interface SearchOptions {
   q?: string;
+  mode?: SearchMode;
   tag?: string;
   domain?: string;
   category?: string;
@@ -13,6 +18,8 @@ export interface SearchOptions {
   date_to?: string;
   limit: number;
   offset: number;
+  /** Required for semantic/hybrid modes. */
+  embeddingConfig?: EmbeddingConfig;
 }
 
 export interface SearchResultItem extends BookmarkWithTags {
@@ -30,9 +37,25 @@ export interface SearchResult {
 // ─── Repository ───────────────────────────────────────────────────────────────
 
 export class SearchRepository {
-  constructor(private db: Database) {}
+  private embRepo: EmbeddingRepository;
 
-  search(opts: SearchOptions): SearchResult {
+  constructor(private db: Database) {
+    this.embRepo = new EmbeddingRepository(db);
+  }
+
+  async search(opts: SearchOptions): Promise<SearchResult> {
+    const mode = opts.mode ?? "keyword";
+    if ((mode === "semantic" || mode === "hybrid") && opts.embeddingConfig && opts.q?.trim()) {
+      return mode === "hybrid"
+        ? this.hybridSearch(opts)
+        : this.semanticSearch(opts);
+    }
+    return this.keywordSearch(opts);
+  }
+
+  // ─── Keyword (FTS5) search — synchronous ──────────────────────────────────
+
+  keywordSearch(opts: SearchOptions): SearchResult {
     const { q, tag, domain, category, date_from, date_to, limit, offset } = opts;
     const hasQuery = typeof q === "string" && q.trim().length > 0;
 
@@ -128,6 +151,161 @@ export class SearchRepository {
     return { items, total, limit, offset };
   }
 
+  // ─── Semantic (vector) search ─────────────────────────────────────────────
+
+  private async semanticSearch(opts: SearchOptions): Promise<SearchResult> {
+    const { q, limit, offset, embeddingConfig } = opts;
+    const queryVec = await getEmbedding(embeddingConfig!, q!.trim());
+
+    const allEmbeddings = this.embRepo.getAllForModel(embeddingConfig!.model);
+    if (allEmbeddings.length === 0) return { items: [], total: 0, limit, offset };
+
+    // Build filter set (archived bookmarks excluded)
+    const allowedIds = this.getFilteredBookmarkIds(opts);
+
+    const scored = allEmbeddings
+      .filter((e) => allowedIds.has(e.bookmarkId))
+      .map((e) => ({ id: e.bookmarkId, score: cosineSimilarity(queryVec, e.vector) }))
+      .sort((a, b) => b.score - a.score);
+
+    const total = scored.length;
+    const page = scored.slice(offset, offset + limit);
+
+    const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
+    const scoreMap = new Map(page.map((s) => [s.id, s.score]));
+    // Preserve ranking order from scored results
+    const orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+
+    const items = this.attachTagsAndSnippet(orderedRows, null).map((item) => ({
+      ...item,
+      rank: scoreMap.get(item.id) ?? null,
+    }));
+
+    return { items, total, limit, offset };
+  }
+
+  // ─── Hybrid search (FTS + vector + recency) ───────────────────────────────
+
+  private async hybridSearch(opts: SearchOptions): Promise<SearchResult> {
+    const { q, limit, offset, embeddingConfig } = opts;
+
+    // Run FTS and embedding in parallel
+    const [ftsResult, queryVec] = await Promise.all([
+      Promise.resolve(this.keywordSearch({ ...opts, limit: 200, offset: 0 })),
+      getEmbedding(embeddingConfig!, q!.trim()),
+    ]);
+
+    const allEmbeddings = this.embRepo.getAllForModel(embeddingConfig!.model);
+    const embMap = new Map(allEmbeddings.map((e) => [e.bookmarkId, e.vector]));
+
+    const allowedIds = this.getFilteredBookmarkIds(opts);
+    const allBookmarkIds = new Set([
+      ...ftsResult.items.map((i) => i.id),
+      // Include embedding-only results that passed the filter
+      ...allEmbeddings.filter((e) => allowedIds.has(e.bookmarkId)).map((e) => e.bookmarkId),
+    ]);
+
+    // BM25 scores from FTS (normalise: BM25 is negative, lower = better)
+    const ftsScores = new Map<string, number>();
+    if (ftsResult.items.length > 0) {
+      const minRank = Math.min(...ftsResult.items.map((i) => i.rank ?? 0));
+      const maxRank = Math.max(...ftsResult.items.map((i) => i.rank ?? 0));
+      const range = maxRank - minRank || 1;
+      for (const item of ftsResult.items) {
+        // Normalise to 0-1, invert (lower BM25 rank = more relevant)
+        ftsScores.set(item.id, 1 - ((item.rank ?? minRank) - minRank) / range);
+      }
+    }
+
+    // Recency score: exponential decay over 365 days
+    const now = Date.now();
+    const bookmarkDates = this.getBookmarkDates(Array.from(allBookmarkIds));
+
+    const scored: Array<{ id: string; hybridScore: number }> = [];
+    for (const id of allBookmarkIds) {
+      const keywordScore = ftsScores.get(id) ?? 0;
+      const vec = embMap.get(id);
+      const vectorScore = vec ? Math.max(0, cosineSimilarity(queryVec, vec)) : 0;
+      const createdAt = bookmarkDates.get(id) ?? now;
+      const ageMs = now - createdAt;
+      const ageDays = ageMs / 86_400_000;
+      const recencyScore = Math.exp(-ageDays / 365);
+
+      const hybridScore = keywordScore * 0.6 + vectorScore * 0.3 + recencyScore * 0.1;
+      scored.push({ id, hybridScore });
+    }
+
+    scored.sort((a, b) => b.hybridScore - a.hybridScore);
+
+    const total = scored.length;
+    const page = scored.slice(offset, offset + limit);
+
+    const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
+    const scoreMap = new Map(page.map((s) => [s.id, s.hybridScore]));
+    const orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+
+    const items = this.attachTagsAndSnippet(orderedRows, null).map((item) => ({
+      ...item,
+      rank: scoreMap.get(item.id) ?? null,
+    }));
+
+    return { items, total, limit, offset };
+  }
+
+  // ─── Related bookmarks ────────────────────────────────────────────────────
+
+  /**
+   * Find bookmarks semantically similar to a given bookmark.
+   * Requires the bookmark to have an embedding stored.
+   */
+  findRelated(
+    bookmarkId: string,
+    model: string,
+    limit = 10
+  ): BookmarkWithTags[] {
+    const source = this.embRepo.getByBookmarkId(bookmarkId);
+    if (!source) return [];
+
+    const all = this.embRepo.getAllForModel(model);
+    const scored = all
+      .filter((e) => e.bookmarkId !== bookmarkId)
+      .map((e) => ({ id: e.bookmarkId, score: cosineSimilarity(source.vector, e.vector) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    const bookmarkRows = this.fetchBookmarksByIds(scored.map((s) => s.id));
+    const results: BookmarkWithTags[] = [];
+
+    for (const s of scored) {
+      const bm = bookmarkRows.get(s.id);
+      if (bm) results.push({ ...bm, tags: [] });
+    }
+
+    // Attach tags in bulk
+    if (results.length > 0) {
+      const ids = results.map((r) => r.id);
+      const placeholders = ids.map(() => "?").join(",");
+      const tagRows = this.db
+        .query<{ bookmark_id: string; name: string }, string[]>(
+          `SELECT bt.bookmark_id, t.name FROM tags t
+           JOIN bookmark_tags bt ON bt.tag_id = t.id
+           WHERE bt.bookmark_id IN (${placeholders}) ORDER BY t.name`
+        )
+        .all(...ids);
+      const tagMap = new Map<string, string[]>();
+      for (const tr of tagRows) {
+        const list = tagMap.get(tr.bookmark_id) ?? [];
+        list.push(tr.name);
+        tagMap.set(tr.bookmark_id, list);
+      }
+      for (const item of results) {
+        item.tags = tagMap.get(item.id) ?? [];
+      }
+    }
+
+    return results;
+  }
+
   // ─── Private helpers ────────────────────────────────────────────────────────
 
   private attachTagsAndSnippet(
@@ -176,5 +354,57 @@ export class SearchRepository {
     }
 
     return items;
+  }
+
+  /** Return a Set of bookmark IDs that pass the structural filters (not archived, tag, domain, etc). */
+  private getFilteredBookmarkIds(opts: SearchOptions): Set<string> {
+    const conditions: string[] = ["b.is_archived = 0"];
+    const params: (string | number)[] = [];
+
+    if (opts.tag) {
+      conditions.push(
+        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
+      );
+      params.push(opts.tag);
+    }
+    if (opts.domain) { conditions.push("b.domain = ?"); params.push(opts.domain); }
+    if (opts.category) {
+      conditions.push("b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)");
+      params.push(opts.category);
+    }
+    if (opts.date_from) { conditions.push("b.created_at >= ?"); params.push(opts.date_from); }
+    if (opts.date_to)   { conditions.push("b.created_at <= ?"); params.push(opts.date_to); }
+
+    const rows = this.db
+      .query<{ id: string }, (string | number)[]>(
+        `SELECT b.id FROM bookmarks b WHERE ${conditions.join(" AND ")}`
+      )
+      .all(...params);
+
+    return new Set(rows.map((r) => r.id));
+  }
+
+  /** Fetch BookmarkRow by IDs as a Map for O(1) lookup. */
+  private fetchBookmarksByIds(ids: string[]): Map<string, BookmarkRow> {
+    if (ids.length === 0) return new Map();
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = this.db
+      .query<BookmarkRow, string[]>(
+        `SELECT * FROM bookmarks WHERE id IN (${placeholders})`
+      )
+      .all(...ids);
+    return new Map(rows.map((r) => [r.id, r]));
+  }
+
+  /** Get created_at timestamps for a set of bookmark IDs (for recency scoring). */
+  private getBookmarkDates(ids: string[]): Map<string, number> {
+    if (ids.length === 0) return new Map();
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = this.db
+      .query<{ id: string; created_at: string }, string[]>(
+        `SELECT id, created_at FROM bookmarks WHERE id IN (${placeholders})`
+      )
+      .all(...ids);
+    return new Map(rows.map((r) => [r.id, new Date(r.created_at).getTime()]));
   }
 }
