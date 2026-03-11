@@ -7,6 +7,7 @@ import { JobQueue } from "./queue.js";
 import { createHealthRoute } from "./routes/health.js";
 import { createBookmarksRoute } from "./routes/bookmarks.js";
 import { createSearchRoute } from "./routes/search.js";
+import { createImportRoute } from "./routes/import.js";
 
 export interface AppDeps {
   db: Database;
@@ -50,6 +51,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createHealthRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createSearchRoute({ db: deps.db }));
+  app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));
 
   return app;
 }

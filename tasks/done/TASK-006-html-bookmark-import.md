@@ -1,6 +1,6 @@
 # TASK-006: HTML Bookmark Import (Netscape Format)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** v0-alpha
 **Area:** backend / import
@@ -23,10 +23,10 @@ Implement import from Netscape Bookmark HTML format (exported by Chrome, Firefox
 
 ## Acceptance Criteria
 
-- [ ] Parses Chrome, Firefox, Safari, Edge export formats
-- [ ] Handles nested folders → maps to category hierarchy
-- [ ] Deduplicates URLs already in library
-- [ ] Shows real-time import progress (SSE or polling endpoint)
-- [ ] Large imports (1000+ bookmarks) don't block the API
-- [ ] Import jobs are batched and processed by background worker
+- [x] Parses Chrome, Firefox, Safari, Edge export formats
+- [x] Handles nested folders → maps to category hierarchy
+- [x] Deduplicates URLs already in library
+- [x] Shows real-time import progress (SSE or polling endpoint)
+- [x] Large imports (1000+ bookmarks) don't block the API
+- [x] Import jobs are batched and processed by background worker
 - [ ] Frontend import dialog connects to this endpoint (replaces mock)
