@@ -1,0 +1,17 @@
+{
+  "name": "littleimpd",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "check": "bun tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2"
+  }
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.littleimp.daemon</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/bun</string>
+    <string>run</string>
+    <string>__INSTALL_DIR__/src/index.ts</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__INSTALL_DIR__</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOST</key>
+    <string>127.0.0.1</string>
+    <key>PORT</key>
+    <string>3210</string>
+    <key>DATA_DIR</key>
+    <string>__DATA_DIR__</string>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>LOG_FORMAT</key>
+    <string>json</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__DATA_DIR__/logs/daemon.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__DATA_DIR__/logs/daemon.error.log</string>
+</dict>
+</plist>

@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "daemon:dev": "cd daemon && bun run dev",
+    "daemon:start": "cd daemon && bun run start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

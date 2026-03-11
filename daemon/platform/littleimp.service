@@ -1,0 +1,22 @@
+[Unit]
+Description=Little Imp daemon (littleimpd)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/littleimp/daemon
+ExecStart=/usr/local/bin/bun run %h/.local/share/littleimp/daemon/src/index.ts
+Restart=on-failure
+RestartSec=5
+
+Environment=HOST=127.0.0.1
+Environment=PORT=3210
+Environment=DATA_DIR=%h/.local/share/littleimp
+Environment=NODE_ENV=production
+Environment=LOG_FORMAT=json
+
+StandardOutput=append:%h/.local/share/littleimp/logs/daemon.log
+StandardError=append:%h/.local/share/littleimp/logs/daemon.error.log
+
+[Install]
+WantedBy=default.target
