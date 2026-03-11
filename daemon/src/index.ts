@@ -5,10 +5,12 @@ import { JobQueue } from "./queue.js";
 import { JobWorker } from "./worker.js";
 import { Scheduler } from "./scheduler.js";
 import { createApp } from "./server.js";
+import { getDatabase, closeDatabase } from "./db/database.js";
 
 const startTime = new Date();
 
 // --- Initialise components ---
+getDatabase(); // opens DB, runs migrations; singleton accessed via closeDatabase() on shutdown
 const queue = new JobQueue();
 const worker = new JobWorker(queue);
 const scheduler = new Scheduler();
@@ -49,6 +51,9 @@ async function shutdown(signal: string): Promise<void> {
 
   log.info("Shutting down server…");
   server.stop(true);
+
+  log.info("Closing database…");
+  closeDatabase();
 
   log.info("Shutdown complete");
   process.exit(0);

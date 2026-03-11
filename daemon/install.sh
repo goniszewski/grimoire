@@ -28,11 +28,14 @@ detect_os() {
   esac
 }
 
+BUN_PATH=""
+
 check_bun() {
   if ! command -v bun &>/dev/null; then
     die "Bun is not installed. Visit https://bun.sh to install it."
   fi
-  info "Found bun $(bun --version)"
+  BUN_PATH="$(command -v bun)"
+  info "Found bun $(bun --version) at ${BUN_PATH}"
 }
 
 install_daemon_files() {
@@ -71,6 +74,7 @@ install_autostart_macos() {
   sed \
     -e "s|__INSTALL_DIR__|${INSTALL_DIR}|g" \
     -e "s|__DATA_DIR__|${DATA_DIR}|g" \
+    -e "s|__BUN_PATH__|${BUN_PATH}|g" \
     "${plist_src}" > "${plist_dst}"
   launchctl unload -- "${plist_dst}" 2>/dev/null || true
   launchctl load -w -- "${plist_dst}"
@@ -85,7 +89,10 @@ install_autostart_linux() {
   info "Installing systemd user unit…"
   mkdir -p "${service_dir}"
   # Substitute INSTALL_DIR placeholder (ExecStart uses %h already)
-  sed "s|__INSTALL_DIR__|${INSTALL_DIR}|g" "${service_src}" > "${service_dst}"
+  sed \
+    -e "s|__INSTALL_DIR__|${INSTALL_DIR}|g" \
+    -e "s|__BUN_PATH__|${BUN_PATH}|g" \
+    "${service_src}" > "${service_dst}"
   systemctl --user daemon-reload
   systemctl --user enable "${DAEMON_NAME}"
   info "systemd unit installed: ${service_dst}"

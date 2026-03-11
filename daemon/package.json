@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
-    "check": "bun tsc --noEmit"
+    "check": "bun tsc --noEmit",
+    "db:seed": "bun run src/db/seed/dev-seed.ts"
   },
   "dependencies": {
-    "hono": "^4.7"
+    "hono": "^4.7",
+    "sqlite-vec": "^0.1.7-alpha.2"
   },
   "devDependencies": {
     "@types/bun": "^1.2"

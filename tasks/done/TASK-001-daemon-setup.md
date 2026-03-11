@@ -1,6 +1,6 @@
 # TASK-001: littleimpd Daemon Setup
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** v0-alpha
 **Area:** backend / infrastructure
@@ -21,11 +21,11 @@ Create the `littleimpd` local daemon that serves as the runtime core of Little I
 
 ## Acceptance Criteria
 
-- [ ] Daemon starts and serves API at `127.0.0.1:3210`
-- [ ] API responds to health check endpoint
-- [ ] Background job worker processes queue
-- [ ] Scheduler runs periodic tasks
-- [ ] LaunchAgent plist installs and autoloads on macOS
-- [ ] systemd unit installs and enables on Linux
-- [ ] Shell installer script handles both platforms
-- [ ] Daemon can be stopped/restarted gracefully
+- [x] Daemon starts and serves API at `127.0.0.1:3210`
+- [x] API responds to health check endpoint
+- [x] Background job worker processes queue
+- [x] Scheduler runs periodic tasks
+- [x] LaunchAgent plist installs and autoloads on macOS
+- [x] systemd unit installs and enables on Linux
+- [x] Shell installer script handles both platforms
+- [x] Daemon can be stopped/restarted gracefully

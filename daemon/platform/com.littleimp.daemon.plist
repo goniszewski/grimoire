@@ -8,7 +8,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/bun</string>
+    <string>__BUN_PATH__</string>
     <string>run</string>
     <string>__INSTALL_DIR__/src/index.ts</string>
   </array>

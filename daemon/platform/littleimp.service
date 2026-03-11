@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/.local/share/littleimp/daemon
-ExecStart=/usr/local/bin/bun run %h/.local/share/littleimp/daemon/src/index.ts
+ExecStart=__BUN_PATH__ run %h/.local/share/littleimp/daemon/src/index.ts
 Restart=on-failure
 RestartSec=5
 
