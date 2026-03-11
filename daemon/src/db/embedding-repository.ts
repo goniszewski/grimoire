@@ -60,7 +60,9 @@ export class EmbeddingRepository {
   getAllForModel(model: string): EmbeddingRecord[] {
     const rows = this.db
       .query<EmbeddingRow, [string]>(
-        "SELECT * FROM embeddings WHERE model = ?"
+        `SELECT e.* FROM embeddings e
+         JOIN bookmarks b ON b.id = e.bookmark_id
+         WHERE e.model = ? AND b.is_archived = 0`
       )
       .all(model);
 

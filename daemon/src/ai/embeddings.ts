@@ -127,12 +127,16 @@ export async function getEmbedding(
       return vector as number[];
     } catch (err) {
       clearTimeout(timer);
+      const isAbort = err instanceof Error && err.name === "AbortError";
       const msg = err instanceof Error ? err.message : String(err);
-      if (!(err instanceof Error && err.name === "AbortError") && attempt === MAX_ATTEMPTS) {
+      // Non-abort errors that aren't transient HTTP errors (already handled above)
+      // are not worth retrying — rethrow immediately.
+      if (!isAbort) {
         throw err instanceof Error ? err : new Error(msg);
       }
+      // Timeout (AbortError) — retryable
       lastErr = new Error(msg);
-      log.warn("Embedding request error (retryable)", { attempt, error: msg });
+      log.warn("Embedding request timeout, retrying", { attempt, error: msg });
       if (attempt < MAX_ATTEMPTS) await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
     }
   }
