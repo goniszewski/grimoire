@@ -13,7 +13,6 @@ import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { ExportMenu } from "@/components/ExportMenu";
-import { AIPalette } from "@/components/AIPalette";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { usePreferences } from "@/hooks/use-preferences";
 import { Bookmark } from "@/types/bookmark";
@@ -32,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SortOption } from "@/hooks/use-bookmark-store";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Sparkles, Settings } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -44,7 +43,6 @@ const Index = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [aiPaletteOpen, setAiPaletteOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
   const appLock = useAppLock();
@@ -68,10 +66,6 @@ const Index = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === "n") {
         e.preventDefault();
         setAddOpen(true);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
-        e.preventDefault();
-        setAiPaletteOpen(true);
       }
       if (e.key === "Escape" && selectionMode) {
         exitSelectionMode();
@@ -213,10 +207,6 @@ const Index = () => {
               <SearchBar value={store.searchQuery} onChange={store.setSearchQuery} />
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={() => setAiPaletteOpen(true)} className="hidden sm:flex gap-1.5">
-                {showButtonLabels && "Ask"}
-                <kbd className="text-[10px] font-mono text-muted-foreground">⌘J</kbd>
-              </Button>
               <ThemeToggle />
               <ExportMenu bookmarks={store.filteredBookmarks} showLabel={showButtonLabels} />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="hidden sm:flex">
@@ -424,12 +414,6 @@ const Index = () => {
         onRetry={store.retryBookmark}
         relatedBookmarks={relatedBookmarks}
         onSelectRelated={handleOpenDetail}
-      />
-      <AIPalette
-        open={aiPaletteOpen}
-        onOpenChange={setAiPaletteOpen}
-        bookmarks={store.bookmarks}
-        onSelectBookmark={handleOpenDetail}
       />
       <PreferencesDialog
         open={prefsOpen}

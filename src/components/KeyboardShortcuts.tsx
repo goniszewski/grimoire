@@ -4,7 +4,6 @@ import { Keyboard } from "lucide-react";
 
 const shortcuts = [
   { keys: ["⌘", "K"], description: "Focus search bar" },
-  { keys: ["⌘", "J"], description: "AI search" },
   { keys: ["⌘", "N"], description: "Add new bookmark" },
   { keys: ["?"], description: "Show this cheat sheet" },
   { keys: ["Paste"], description: "Auto-save a URL from clipboard" },
