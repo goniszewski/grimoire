@@ -23,6 +23,7 @@ export function getDatabase(): Database {
   db.exec("PRAGMA synchronous = NORMAL");
   db.exec("PRAGMA cache_size = -8000"); // 8 MB page cache
   db.exec("PRAGMA temp_store = MEMORY");
+  db.exec("PRAGMA recursive_triggers = OFF"); // guard against updated_at trigger recursion
 
   runMigrations(db);
 

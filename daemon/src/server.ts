@@ -6,6 +6,7 @@ import { log } from "./logger.js";
 import { JobQueue } from "./queue.js";
 import { createHealthRoute } from "./routes/health.js";
 import { createBookmarksRoute } from "./routes/bookmarks.js";
+import { createSearchRoute } from "./routes/search.js";
 
 export interface AppDeps {
   db: Database;
@@ -48,6 +49,7 @@ export function createApp(deps: AppDeps): Hono {
   // Routes
   app.route("/", createHealthRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createSearchRoute({ db: deps.db }));
 
   return app;
 }

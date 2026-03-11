@@ -58,8 +58,13 @@ create_config_dir() {
   info "Creating data/log directories…"
   mkdir -p "${DATA_DIR}" "${LOG_DIR}"
   if [[ ! -f "${DATA_DIR}/.env" ]]; then
-    cp "${INSTALL_DIR}/.env.example" "${DATA_DIR}/.env"
-    info "Created default config at ${DATA_DIR}/.env"
+    if [[ -f "${INSTALL_DIR}/.env.example" ]]; then
+      cp "${INSTALL_DIR}/.env.example" "${DATA_DIR}/.env"
+      info "Created default config at ${DATA_DIR}/.env"
+    else
+      warn ".env.example not found at ${INSTALL_DIR}/.env.example — skipping config creation"
+      warn "Create ${DATA_DIR}/.env manually before starting the daemon"
+    fi
   else
     info "Existing config found at ${DATA_DIR}/.env — skipping"
   fi

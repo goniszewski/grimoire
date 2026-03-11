@@ -31,7 +31,11 @@ function problem(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns true if the hostname resolves to a private/loopback/link-local address. */
+/** Returns true if the hostname looks like a private/loopback/link-local address.
+ *  NOTE: This is a best-effort blocklist on the syntactic hostname only.
+ *  DNS rebinding (a public hostname resolving to a private IP at fetch time)
+ *  is not mitigated here and is considered an accepted risk for a local-only daemon.
+ */
 function isPrivateHost(hostname: string): boolean {
   // Strip IPv6 brackets
   const host = hostname.replace(/^\[|\]$/g, "");
@@ -44,10 +48,16 @@ function isPrivateHost(hostname: string): boolean {
   if (/^169\.254\./.test(host)) return true;
   if (/^fe80:/i.test(host)) return true;
 
+  // IPv6 site-local (deprecated but still routable internally)
+  if (/^fec[0-9a-f]:/i.test(host)) return true;
+
   // Private ranges
   if (/^10\./.test(host)) return true;
   if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
   if (/^192\.168\./.test(host)) return true;
+
+  // CGNAT / shared address space (RFC 6598)
+  if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return true;
 
   // Unspecified / broadcast
   if (host === "0.0.0.0" || host === "::") return true;
@@ -180,8 +190,8 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const allowed: Record<string, unknown> = {};
 
     if ("title" in patch) {
-      if (patch.title !== null && typeof patch.title !== "string") {
-        return problem(c, 422, "Unprocessable Entity", "`title` must be a string or null");
+      if (patch.title !== null && (typeof patch.title !== "string" || patch.title.trim() === "")) {
+        return problem(c, 422, "Unprocessable Entity", "`title` must be a non-empty string or null");
       }
       allowed.title = patch.title as string | undefined;
     }

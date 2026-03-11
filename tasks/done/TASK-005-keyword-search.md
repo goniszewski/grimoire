@@ -1,6 +1,6 @@
 # TASK-005: Keyword Search (FTS5)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** v0-alpha
 **Area:** backend / search
@@ -30,10 +30,10 @@ Implement full-text keyword search using SQLite FTS5 with BM25 ranking.
 
 ## Acceptance Criteria
 
-- [ ] FTS5 virtual table created with porter tokenizer
-- [ ] Search endpoint returns results ordered by relevance
-- [ ] Filter params (tag, domain, category, date) applied correctly
-- [ ] Snippet highlights matching terms in title/summary
-- [ ] Empty query returns all bookmarks sorted by date
-- [ ] Response time < 100ms for libraries up to 10,000 bookmarks
-- [ ] FTS index updated after each pipeline completion
+- [x] FTS5 virtual table created with porter tokenizer
+- [x] Search endpoint returns results ordered by relevance
+- [x] Filter params (tag, domain, category, date) applied correctly
+- [x] Snippet highlights matching terms in title/summary
+- [x] Empty query returns all bookmarks sorted by date
+- [x] Response time < 100ms for libraries up to 10,000 bookmarks
+- [x] FTS index updated after each pipeline completion
