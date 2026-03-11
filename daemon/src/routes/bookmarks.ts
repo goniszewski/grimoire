@@ -31,10 +31,36 @@ function problem(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Returns true if the hostname resolves to a private/loopback/link-local address. */
+function isPrivateHost(hostname: string): boolean {
+  // Strip IPv6 brackets
+  const host = hostname.replace(/^\[|\]$/g, "");
+
+  // Loopback
+  if (host === "localhost" || host === "::1") return true;
+  if (/^127\./.test(host)) return true;
+
+  // Link-local (AWS IMDS etc.)
+  if (/^169\.254\./.test(host)) return true;
+  if (/^fe80:/i.test(host)) return true;
+
+  // Private ranges
+  if (/^10\./.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
+  if (/^192\.168\./.test(host)) return true;
+
+  // Unspecified / broadcast
+  if (host === "0.0.0.0" || host === "::") return true;
+
+  return false;
+}
+
 function isValidUrl(raw: string): boolean {
   try {
     const u = new URL(raw);
-    return u.protocol === "http:" || u.protocol === "https:";
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    if (isPrivateHost(u.hostname)) return false;
+    return true;
   } catch {
     return false;
   }

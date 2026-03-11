@@ -6,6 +6,8 @@ import { JobWorker } from "./worker.js";
 import { Scheduler } from "./scheduler.js";
 import { createApp } from "./server.js";
 import { getDatabase, closeDatabase } from "./db/database.js";
+import { runPipeline } from "./pipeline/pipeline.js";
+import type { IngestJobPayload } from "./types/job.js";
 
 const startTime = new Date();
 
@@ -14,6 +16,12 @@ const db = getDatabase(); // opens DB, runs migrations
 const queue = new JobQueue();
 const worker = new JobWorker(queue);
 const scheduler = new Scheduler();
+
+// --- Register job handlers ---
+worker.registerHandler("ingest", async (job) => {
+  const payload = job.payload as IngestJobPayload;
+  await runPipeline(db, { bookmarkId: payload.bookmarkId, url: payload.url });
+});
 
 // --- Register scheduled tasks before start() ---
 scheduler.register("heartbeat", 60_000, () => {
