@@ -80,16 +80,21 @@ function updateFts(
   content: string,
   tags: string
 ): void {
-  // The FTS triggers handle INSERT/UPDATE on bookmarks, but content comes
-  // from bookmark_content. We manually sync the content column here.
-  db.run(
-    `DELETE FROM bookmarks_fts WHERE bookmark_id = ?`,
-    [bookmarkId]
-  );
+  // Read the current summary from bookmark_content (may have been written by ai_enrich stage).
+  const summaryRow = db
+    .query<{ summary: string | null }, [string]>(
+      "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+    )
+    .get(bookmarkId);
+  const summary = summaryRow?.summary ?? "";
+
+  // The FTS triggers handle INSERT/UPDATE on bookmarks, but content/summary come
+  // from bookmark_content. We manually sync all columns here.
+  db.run(`DELETE FROM bookmarks_fts WHERE bookmark_id = ?`, [bookmarkId]);
   db.run(
     `INSERT INTO bookmarks_fts(bookmark_id, title, summary, tags, content)
-     VALUES (?, ?, '', ?, ?)`,
-    [bookmarkId, title, tags, content]
+     VALUES (?, ?, ?, ?, ?)`,
+    [bookmarkId, title, summary, tags, content]
   );
 }
 

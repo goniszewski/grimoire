@@ -68,7 +68,7 @@ export async function chatCompletion(
   messages: ChatMessage[],
   opts: { jsonMode?: boolean; maxTokens?: number } = {}
 ): Promise<string> {
-  const url = `${config.baseUrl}/chat/completions`;
+  const url = `${config.baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -109,7 +109,7 @@ export async function chatCompletion(
           status: res.status,
           model: config.model,
         });
-        await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
+        if (attempt < MAX_ATTEMPTS) await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
         continue;
       }
 
@@ -140,7 +140,7 @@ export async function chatCompletion(
       if (err instanceof LlmError) {
         if (!err.retryable) throw err;
         lastErr = err;
-        await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
+        if (attempt < MAX_ATTEMPTS) await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
         continue;
       }
 
@@ -148,7 +148,7 @@ export async function chatCompletion(
       const msg = err instanceof Error ? err.message : String(err);
       lastErr = new LlmError(`Request timeout/network error: ${msg}`, true);
       log.warn("LLM request error (retryable)", { attempt, error: msg, model: config.model });
-      await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
+      if (attempt < MAX_ATTEMPTS) await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
     }
   }
 
