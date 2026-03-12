@@ -21,6 +21,25 @@ export interface ListBookmarksOptions {
   date_to?: string;
 }
 
+export interface ExportBookmarkRow {
+  id: string;
+  url: string;
+  title: string | null;
+  summary: string | null;
+  tags: string[];
+  category: string | null;
+  domain: string;
+  created_at: string;
+}
+
+export interface FilterOptions {
+  tag?: string;
+  domain?: string;
+  category?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
 export interface ListResult {
   items: BookmarkWithTags[];
   total: number;
@@ -109,7 +128,7 @@ export class BookmarkRepository {
     }
     if (opts.date_to) {
       conditions.push("b.created_at <= ?");
-      params.push(opts.date_to);
+      params.push(opts.date_to.length === 10 ? `${opts.date_to}T23:59:59Z` : opts.date_to);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -154,6 +173,84 @@ export class BookmarkRepository {
     }
 
     return { items, total, limit: opts.limit, offset: opts.offset };
+  }
+
+  /** Export all non-archived bookmarks with optional filters. Returns rows with resolved category name and tags. */
+  exportAll(filters: FilterOptions = {}): ExportBookmarkRow[] {
+    const conditions: string[] = ["b.is_archived = 0"];
+    const params: (string | number)[] = [];
+
+    if (filters.tag) {
+      conditions.push(
+        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
+      );
+      params.push(filters.tag);
+    }
+    if (filters.domain) {
+      conditions.push("b.domain = ?");
+      params.push(filters.domain);
+    }
+    if (filters.category) {
+      conditions.push(
+        "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
+      );
+      params.push(filters.category);
+    }
+    if (filters.date_from) {
+      conditions.push("b.created_at >= ?");
+      params.push(filters.date_from);
+    }
+    if (filters.date_to) {
+      conditions.push("b.created_at <= ?");
+      params.push(filters.date_to.length === 10 ? `${filters.date_to}T23:59:59Z` : filters.date_to);
+    }
+
+    const where = `WHERE ${conditions.join(" AND ")}`;
+
+    const rows = this.db
+      .query<
+        BookmarkRow & { category_name: string | null; summary: string | null },
+        (string | number)[]
+      >(
+        `SELECT b.*, c.name AS category_name,
+                (SELECT bc.summary FROM bookmark_content bc WHERE bc.bookmark_id = b.id) AS summary
+         FROM bookmarks b
+         LEFT JOIN categories c ON c.id = b.category_id
+         ${where}
+         ORDER BY b.created_at DESC`
+      )
+      .all(...params);
+
+    if (rows.length === 0) return [];
+
+    const ids = rows.map((r) => r.id);
+    const placeholders = ids.map(() => "?").join(",");
+    const tagRows = this.db
+      .query<{ bookmark_id: string; name: string }, string[]>(
+        `SELECT bt.bookmark_id, t.name FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id IN (${placeholders})
+         ORDER BY t.name`
+      )
+      .all(...ids);
+
+    const tagMap = new Map<string, string[]>();
+    for (const tr of tagRows) {
+      const list = tagMap.get(tr.bookmark_id) ?? [];
+      list.push(tr.name);
+      tagMap.set(tr.bookmark_id, list);
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      url: r.url,
+      title: r.title,
+      summary: r.summary,
+      tags: tagMap.get(r.id) ?? [],
+      category: r.category_name,
+      domain: r.domain,
+      created_at: r.created_at,
+    }));
   }
 
   /** Partial update: title, tags, category_id. */

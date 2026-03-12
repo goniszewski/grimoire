@@ -1,6 +1,6 @@
 # TASK-010: Export API (JSON & CSV)
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** v0-alpha
 **Area:** backend / api
@@ -38,8 +38,8 @@ Columns: id, url, title, summary, tags (semicolon-joined), category, domain, cre
 
 ## Acceptance Criteria
 
-- [ ] JSON export returns valid JSON array
-- [ ] CSV export includes headers row
-- [ ] Large exports (10k+ bookmarks) streamed without memory issues
-- [ ] Frontend ExportMenu connects to these endpoints (replaces mock)
-- [ ] Content-Disposition header triggers file download in browser
+- [x] JSON export returns valid JSON array
+- [x] CSV export includes headers row
+- [x] Large exports (10k+ bookmarks) streamed without memory issues
+- [x] Frontend ExportMenu connects to these endpoints (replaces mock)
+- [x] Content-Disposition header triggers file download in browser

@@ -1,4 +1,3 @@
-import { Bookmark } from "@/types/bookmark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,56 +8,56 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+const DAEMON_URL = "http://127.0.0.1:3210";
+
 interface ExportMenuProps {
-  bookmarks: Bookmark[];
   showLabel?: boolean;
-}
-
-function downloadFile(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function toJSON(bookmarks: Bookmark[]): string {
-  return JSON.stringify(bookmarks, null, 2);
-}
-
-function toCSV(bookmarks: Bookmark[]): string {
-  const headers = ["id", "url", "title", "summary", "domain", "tags", "category", "status", "savedAt", "updatedAt"];
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const rows = bookmarks.map((b) =>
-    [
-      b.id,
-      b.url,
-      escape(b.title),
-      escape(b.summary),
-      b.domain,
-      escape(b.tags.join(", ")),
-      escape(b.category),
-      b.status,
-      b.savedAt,
-      b.updatedAt,
-    ].join(",")
-  );
-  return [headers.join(","), ...rows].join("\n");
-}
-
-export function ExportMenu({ bookmarks, showLabel = true }: ExportMenuProps) {
-  const handleExportJSON = () => {
-    downloadFile(toJSON(bookmarks), "bookmarks.json", "application/json");
-    toast({ title: "Exported as JSON", description: `${bookmarks.length} bookmarks` });
+  filters?: {
+    tag?: string;
+    domain?: string;
+    category?: string;
+    date_from?: string;
+    date_to?: string;
   };
+}
 
-  const handleExportCSV = () => {
-    downloadFile(toCSV(bookmarks), "bookmarks.csv", "text/csv");
-    toast({ title: "Exported as CSV", description: `${bookmarks.length} bookmarks` });
-  };
+async function triggerDownload(format: "json" | "csv", filters: ExportMenuProps["filters"] = {}) {
+  const params = new URLSearchParams({ format });
+  if (filters.tag) params.set("tag", filters.tag);
+  if (filters.domain) params.set("domain", filters.domain);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
 
+  const url = `${DAEMON_URL}/export?${params.toString()}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] ?? `bookmarks.${format}`;
+
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+
+    toast({ title: `Exported as ${format.toUpperCase()}` });
+  } catch (err) {
+    toast({
+      title: "Export failed",
+      description: err instanceof Error ? err.message : "Unknown error",
+      variant: "destructive",
+    });
+  }
+}
+
+export function ExportMenu({ showLabel = true, filters }: ExportMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -68,10 +67,10 @@ export function ExportMenu({ bookmarks, showLabel = true }: ExportMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleExportJSON} className="text-xs font-mono">
+        <DropdownMenuItem onClick={() => triggerDownload("json", filters)} className="text-xs font-mono">
           Export as JSON
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleExportCSV} className="text-xs font-mono">
+        <DropdownMenuItem onClick={() => triggerDownload("csv", filters)} className="text-xs font-mono">
           Export as CSV
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -208,7 +208,16 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <ThemeToggle />
-              <ExportMenu bookmarks={store.filteredBookmarks} showLabel={showButtonLabels} />
+              <ExportMenu
+                showLabel={showButtonLabels}
+                filters={{
+                  tag: store.selectedTag ?? undefined,
+                  category: store.selectedCategory ?? undefined,
+                  domain: store.selectedDomain ?? undefined,
+                  date_from: store.dateRange.from?.toISOString().slice(0, 10),
+                  date_to: store.dateRange.to?.toISOString().slice(0, 10),
+                }}
+              />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="hidden sm:flex">
                 <Upload className="h-3.5 w-3.5" />
                 {showButtonLabels && <span className="ml-1.5">Import</span>}
