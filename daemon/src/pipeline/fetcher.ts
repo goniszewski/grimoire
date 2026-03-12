@@ -25,6 +25,19 @@ export interface FetchResult {
 }
 
 export async function fetchPage(url: string): Promise<FetchResult> {
+  // Pre-flight SSRF guard: reject private/loopback hostnames before the first
+  // network packet leaves the machine. The post-redirect check further down
+  // handles open-redirect chains, but this stops trivially private URLs early.
+  try {
+    const initialHost = new URL(url).hostname;
+    if (isPrivateHost(initialHost)) {
+      throw new Error(`Fetch to private host blocked: ${url}`);
+    }
+  } catch (e) {
+    if ((e as Error).message.startsWith("Fetch to private host")) throw e;
+    throw new Error(`Invalid URL: ${url}`);
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 

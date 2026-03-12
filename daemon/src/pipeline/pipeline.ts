@@ -144,8 +144,24 @@ export async function runPipeline(
   // Persist extraction results atomically.
   const title = extracted.title ?? existingTitle ?? url;
   db.transaction(() => {
+    // Build a short description excerpt from markdown for the list view.
+    // This is overwritten later if LLM enrichment produces a proper summary.
+    const descriptionExcerpt = extracted.markdown
+      ? extracted.markdown.replace(/#+\s/g, "").replace(/\n+/g, " ").trim().slice(0, 300)
+      : null;
+
+    const sets: string[] = [];
+    const setParams: (string | null)[] = [];
     if (extracted.title && extracted.title !== existingTitle) {
-      db.run("UPDATE bookmarks SET title = ? WHERE id = ?", [extracted.title, bookmarkId]);
+      sets.push("title = ?");
+      setParams.push(extracted.title);
+    }
+    if (descriptionExcerpt) {
+      sets.push("description = ?");
+      setParams.push(descriptionExcerpt);
+    }
+    if (sets.length) {
+      db.run(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ?`, [...setParams, bookmarkId]);
     }
     upsertContent(db, bookmarkId, {
       raw_html: extracted.rawHtml,

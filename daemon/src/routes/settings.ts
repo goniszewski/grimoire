@@ -1,7 +1,6 @@
 import { Hono, Context } from "hono";
 import { settingsManager, redactSettings, validateSettingsPatch } from "../settings.js";
 import { log } from "../logger.js";
-import { isPrivateHost } from "../lib/network.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,16 +91,16 @@ export function createSettingsRoute(): Hono {
       apiKey = openai.api_key;
       model = openai.model;
     } else {
-      // ollama — validate base_url to prevent SSRF
+      // ollama — validate base_url (Ollama is a local service so private/loopback hosts are allowed)
       const rawUrl = ollama.base_url.replace(/\/$/, "");
       try {
         const u = new URL(rawUrl);
         if (u.protocol !== "http:" && u.protocol !== "https:") {
           return c.json({ ok: false, error: "ollama.base_url must use http or https" });
         }
-        if (isPrivateHost(u.hostname)) {
-          return c.json({ ok: false, error: "ollama.base_url must not point to a private or loopback address" });
-        }
+        // Note: we intentionally do NOT reject private/loopback addresses here.
+        // Ollama runs locally by design (typically http://localhost:11434).
+        // The isPrivateHost check is not appropriate for an intentionally-local service.
       } catch {
         return c.json({ ok: false, error: "ollama.base_url is not a valid URL" });
       }

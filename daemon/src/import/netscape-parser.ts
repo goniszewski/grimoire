@@ -13,6 +13,8 @@
  *   </DL>
  */
 
+import { isPrivateHost } from "../lib/network.js";
+
 export interface ParsedBookmark {
   url: string;
   title: string;
@@ -154,17 +156,25 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
           break;
         }
 
-        // Validate URL
+        // Validate URL: must be http/https and must not point to a private/loopback host
         let valid = false;
+        let skipReason = "";
         try {
           const u = new URL(href);
-          valid = u.protocol === "http:" || u.protocol === "https:";
+          if (u.protocol !== "http:" && u.protocol !== "https:") {
+            skipReason = `Skipped non-http(s) URL: ${href.slice(0, 80)}`;
+          } else if (isPrivateHost(u.hostname)) {
+            // Reject private/loopback URLs to prevent SSRF via batch import
+            skipReason = `Skipped private/internal URL: ${href.slice(0, 80)}`;
+          } else {
+            valid = true;
+          }
         } catch {
-          // ignore
+          skipReason = `Skipped malformed URL near position ${tok.pos}`;
         }
 
         if (!valid) {
-          warnings.push(`Skipped non-http(s) URL: ${href.slice(0, 80)}`);
+          warnings.push(skipReason);
           break;
         }
 
