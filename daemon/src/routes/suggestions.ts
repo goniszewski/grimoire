@@ -35,8 +35,7 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
   // GET /suggestions — list pending suggestions
   router.get("/suggestions", (c) => {
     const suggestions = repo.listPending();
-    const count = repo.countPending();
-    return c.json({ data: suggestions, meta: { pending: count } });
+    return c.json({ data: suggestions, meta: { pending: suggestions.length } });
   });
 
   // POST /suggestions/:id/accept — accept a suggestion

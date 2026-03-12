@@ -149,15 +149,24 @@ export class OrganizationAgent {
     const categories = this.categoryRepo.listFlat();
     if (categories.length < 2) return;
 
+    // Build bookmarkId → category_id lookup in a single query to avoid N+1
+    const bmCatRows = this.db
+      .query<{ id: string; category_id: string | null }, []>(
+        "SELECT id, category_id FROM bookmarks WHERE is_archived = 0"
+      )
+      .all();
+    const bmCatMap = new Map<string, string | null>(
+      bmCatRows.map((r) => [r.id, r.category_id])
+    );
+
     // Build a map: category_id → mean embedding vector
     const embMap = new Map<string, number[]>();
     for (const cat of categories) {
       if (cat.bookmark_count < MIN_CATEGORY_BOOKMARKS) continue;
 
-      const catEmbeddings = embeddings.filter((e) => {
-        const bm = this.bookmarkRepo.findById(e.bookmarkId);
-        return bm?.category_id === cat.id;
-      });
+      const catEmbeddings = embeddings.filter(
+        (e) => bmCatMap.get(e.bookmarkId) === cat.id
+      );
       if (catEmbeddings.length === 0) continue;
 
       const mean = meanVector(catEmbeddings.map((e) => e.vector));
