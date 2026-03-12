@@ -40,6 +40,14 @@ const MIN_BOOKMARKS = 20;
 /** Minimum bookmarks per category to be considered for merge analysis. */
 const MIN_CATEGORY_BOOKMARKS = 3;
 
+/**
+ * Maximum number of embeddings considered for the O(n²) duplicate scan.
+ * At 2 000 embeddings the loop performs ~2 million comparisons — still fast
+ * in JS (~100 ms). Beyond this threshold we skip the scan to protect against
+ * very large libraries. Increase if needed once a proper ANN index is in place.
+ */
+const MAX_EMBEDDINGS_FOR_DUPLICATE_SCAN = 2_000;
+
 // ─── Agent ────────────────────────────────────────────────────────────────────
 
 export class OrganizationAgent {
@@ -92,6 +100,14 @@ export class OrganizationAgent {
   private async detectDuplicates(
     embeddings: Array<{ bookmarkId: string; vector: number[] }>
   ): Promise<void> {
+    if (embeddings.length > MAX_EMBEDDINGS_FOR_DUPLICATE_SCAN) {
+      log.warn("OrganizationAgent: embedding count exceeds duplicate-scan limit, skipping", {
+        count: embeddings.length,
+        limit: MAX_EMBEDDINGS_FOR_DUPLICATE_SCAN,
+      });
+      return;
+    }
+
     let found = 0;
 
     for (let i = 0; i < embeddings.length; i++) {
@@ -111,8 +127,8 @@ export class OrganizationAgent {
         // Skip if identical URLs (not a duplicate by content, just same page)
         if (bmA.url === bmB.url) continue;
 
-        // Skip if already suggested
-        if (this.suggRepo.hasPending("duplicate_bookmark", value)) continue;
+        // Skip if already suggested (match by structured IDs, not human-readable value)
+        if (this.suggRepo.hasPending("duplicate_bookmark", value, { bookmarkIdA: idA, bookmarkIdB: idB })) continue;
 
         const confidence = Math.min(sim, 1.0);
         found++;
@@ -187,7 +203,7 @@ export class OrganizationAgent {
         const catB = categories.find((c) => c.id === idB)!;
         const value = `Consider merging "${catA.name}" and "${catB.name}" — their bookmarks are very similar`;
 
-        if (this.suggRepo.hasPending("merge_categories", value)) continue;
+        if (this.suggRepo.hasPending("merge_categories", value, { categoryIdA: idA, categoryIdB: idB })) continue;
 
         const confidence = Math.min((sim - CATEGORY_MERGE_THRESHOLD) / (1 - CATEGORY_MERGE_THRESHOLD), 1.0);
         found++;

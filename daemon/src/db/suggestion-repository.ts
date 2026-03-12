@@ -122,8 +122,36 @@ export class SuggestionRepository {
   /**
    * Check whether an equivalent pending suggestion already exists.
    * Prevents the agent from flooding the queue with duplicates across runs.
+   *
+   * Falls back to exact `value` string comparison so callers that don't supply
+   * `metadata` still work. When `metadata` is provided, the check uses the
+   * structured JSON payload which is more robust against title changes.
    */
-  hasPending(type: SuggestionType, value: string): boolean {
+  hasPending(type: SuggestionType, value: string, metadata?: Record<string, unknown>): boolean {
+    // If we have structured metadata, prefer matching by it over the human-readable value.
+    if (metadata && Object.keys(metadata).length > 0) {
+      const rows = this.db
+        .query<{ metadata: string }, [string]>(
+          `SELECT metadata FROM agent_suggestions
+           WHERE type = ? AND status = 'pending'`
+        )
+        .all(type);
+
+      for (const row of rows) {
+        try {
+          const stored = JSON.parse(row.metadata) as Record<string, unknown>;
+          // Check that every key in the provided metadata matches the stored value.
+          const allMatch = Object.entries(metadata).every(
+            ([k, v]) => JSON.stringify(stored[k]) === JSON.stringify(v)
+          );
+          if (allMatch) return true;
+        } catch {
+          // unparseable stored metadata — fall through to value check
+        }
+      }
+      return false;
+    }
+
     const row = this.db
       .query<{ c: number }, [string, string]>(
         `SELECT COUNT(*) AS c FROM agent_suggestions
