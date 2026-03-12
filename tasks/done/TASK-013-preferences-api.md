@@ -1,6 +1,6 @@
 # TASK-013: Preferences / Settings API
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta
 **Area:** backend / api
@@ -38,8 +38,8 @@ Implement a settings API for storing and retrieving user preferences (AI provide
 
 ## Acceptance Criteria
 
-- [ ] API keys never returned in GET response (write-only)
-- [ ] Settings persisted to config file on write
+- [x] API keys never returned in GET response (write-only)
+- [x] Settings persisted to config file on write
 - [ ] Frontend PreferencesDialog connects to this endpoint (replaces mock)
-- [ ] Test endpoint validates LLM provider is reachable
+- [x] Test endpoint validates LLM provider is reachable
 - [ ] Changing provider clears cached enrichment job statuses
