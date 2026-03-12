@@ -2,6 +2,7 @@
  * Strategy-based content extractor.
  *
  * Inspects the URL to pick the best extraction strategy:
+ *   - youtube.com / youtu.be → YouTube transcript extractor
  *   - github.com  → GitHub API extractor
  *   - stackoverflow.com / stackexchange.com → SE API extractor
  *   - everything else → Readability-style HTML extractor
@@ -12,6 +13,7 @@ import { extractWithReadability } from "./extractors/readability.js";
 import { extractFromGitHub, parseGitHubUrl } from "./extractors/github.js";
 import { extractFromStackOverflow, parseSOUrl } from "./extractors/stackoverflow.js";
 import { extractFromPdf } from "./extractors/pdf.js";
+import { extractFromYouTube, parseYouTubeUrl } from "./extractors/youtube.js";
 import { ExtractionResult } from "./extractors/types.js";
 import { log } from "../logger.js";
 
@@ -45,11 +47,28 @@ function isStackOverflow(url: string): boolean {
   }
 }
 
+function isYouTube(url: string): boolean {
+  return parseYouTubeUrl(url) !== null;
+}
+
 export async function extractContent(
   url: string,
   fetched: FetchResult,
   fallbackTitle?: string | null
 ): Promise<ExtractionResult> {
+  // Strategy: YouTube
+  if (isYouTube(url)) {
+    log.info("Using YouTube extractor", { url });
+    try {
+      return await extractFromYouTube(url);
+    } catch (err) {
+      log.warn("YouTube extractor failed, falling back to readability", {
+        url,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   // Strategy: PDF
   if (isPDF(url, fetched.contentType)) {
     log.info("Using PDF extractor", { url });
