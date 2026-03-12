@@ -52,14 +52,14 @@ export function createExportRoute(deps: ExportDeps): Hono {
     for (const r of rows) {
       lines.push(
         [
-          r.id,
+          escapeCSV(r.id),
           escapeCSV(r.url),
           escapeCSV(r.title),
           escapeCSV(r.summary),
           escapeCSV(r.tags.join(";")),
           escapeCSV(r.category),
-          r.domain,
-          r.created_at,
+          escapeCSV(r.domain),
+          escapeCSV(r.created_at),
         ].join(",")
       );
     }

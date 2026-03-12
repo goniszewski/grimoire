@@ -174,6 +174,7 @@ export function createImportRoute(deps: ImportDeps): Hono {
     }
 
     // Server-Sent Events
+    let cancelled = false;
     const stream = new ReadableStream({
       start(controller) {
         const enc = new TextEncoder();
@@ -186,6 +187,8 @@ export function createImportRoute(deps: ImportDeps): Hono {
         }
 
         function poll() {
+          if (cancelled) return;
+
           const state = progressMap.get(importId);
           if (!state) {
             controller.close();
@@ -212,6 +215,9 @@ export function createImportRoute(deps: ImportDeps): Hono {
 
         // Send initial event immediately
         poll();
+      },
+      cancel() {
+        cancelled = true;
       },
     });
 
