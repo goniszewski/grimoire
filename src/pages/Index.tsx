@@ -8,6 +8,7 @@ import { BookmarkCard } from "@/components/BookmarkCard";
 import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { ImportDialog } from "@/components/ImportDialog";
+import { AIPalette } from "@/components/AIPalette";
 import { useBookmarks } from "@/hooks/use-bookmarks";
 import { useDaemonStatus } from "@/hooks/use-daemon-status";
 import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
@@ -18,6 +19,7 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { usePreferences } from "@/hooks/use-preferences";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
+import { ApiBookmark } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
@@ -43,6 +45,7 @@ const Index = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -69,6 +72,10 @@ const Index = () => {
       if ((e.metaKey || e.ctrlKey) && e.key === "n") {
         e.preventDefault();
         setAddOpen(true);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
       }
       if (e.key === "Escape" && selectionMode) {
         exitSelectionMode();
@@ -156,10 +163,29 @@ const Index = () => {
     exitSelectionMode();
   }, [selectedIds, store, exitSelectionMode]);
 
-  const handleOpenDetail = (bookmark: Bookmark) => {
+  const handleOpenDetail = useCallback((bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
     setDetailOpen(true);
-  };
+  }, []);
+
+  const handlePaletteSelectBookmark = useCallback((bm: ApiBookmark) => {
+    const uiBm: Bookmark = {
+      id: bm.id,
+      url: bm.url,
+      title: bm.title ?? bm.url,
+      rawTitle: bm.title,
+      summary: bm.description ?? "",
+      domain: bm.domain,
+      favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
+      tags: bm.tags,
+      category: "Uncategorized",
+      category_id: bm.category_id,
+      status: bm.status,
+      savedAt: bm.created_at,
+      updatedAt: bm.updated_at,
+    };
+    handleOpenDetail(uiBm);
+  }, [handleOpenDetail]);
 
   const relatedBookmarks = useMemo(() => {
     if (!selectedBookmark) return [];
@@ -417,6 +443,12 @@ const Index = () => {
         onImport={store.importBookmarks}
       />
       <KeyboardShortcuts />
+      <AIPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onSelectBookmark={handlePaletteSelectBookmark}
+        onAddBookmark={() => setAddOpen(true)}
+      />
       <BookmarkDetail
         bookmark={selectedBookmark}
         open={detailOpen}

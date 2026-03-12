@@ -12,10 +12,6 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
       if (e.key === "Escape" && document.activeElement === inputRef.current) {
         inputRef.current?.blur();
       }
