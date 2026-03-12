@@ -299,6 +299,17 @@ export function subscribeToImportProgress(
   return () => es.close();
 }
 
+// ─── Domains ──────────────────────────────────────────────────────────────────
+
+export interface ApiDomain {
+  domain: string;
+  count: number;
+}
+
+export async function listDomains(): Promise<{ data: ApiDomain[] }> {
+  return apiFetch<{ data: ApiDomain[] }>("/domains");
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export async function getSettings(): Promise<{ data: ApiSettings }> {

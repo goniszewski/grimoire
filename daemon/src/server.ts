@@ -12,6 +12,7 @@ import { createCategoriesRoute } from "./routes/categories.js";
 import { createTagsRoute } from "./routes/tags.js";
 import { createExportRoute } from "./routes/export.js";
 import { createSettingsRoute } from "./routes/settings.js";
+import { createDomainsRoute } from "./routes/domains.js";
 
 export interface AppDeps {
   db: Database;
@@ -60,6 +61,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createTagsRoute({ db: deps.db }));
   app.route("/", createExportRoute({ db: deps.db }));
   app.route("/", createSettingsRoute());
+  app.route("/", createDomainsRoute({ db: deps.db }));
 
   return app;
 }

@@ -7,6 +7,7 @@ import {
   updateBookmark,
   deleteBookmark,
   listCategories,
+  listDomains,
   ApiBookmark,
   ApiCategory,
 } from "@/lib/api";
@@ -82,6 +83,7 @@ export const bookmarkKeys = {
   search: (q: string, filters: object) => ["search", q, filters] as const,
   categories: ["categories"] as const,
   tags: ["tags"] as const,
+  domains: ["domains"] as const,
 };
 
 // ─── Main hook ────────────────────────────────────────────────────────────────
@@ -126,6 +128,15 @@ export function useBookmarks() {
     return m;
   }, [categoriesQuery.data]);
 
+  // ─── Domains (from API) ───────────────────────────────────────────────────
+  const domainsQuery = useQuery({
+    queryKey: bookmarkKeys.domains,
+    queryFn: async () => {
+      const res = await listDomains();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
 
   // ─── Resolve category_id for filters ──────────────────────────────────────
   const categoryIdForFilter = useMemo<string | undefined>(() => {
@@ -222,12 +233,8 @@ export function useBookmarks() {
   }, [bookmarks]);
 
   const domains = useMemo<UIDomainCount[]>(() => {
-    const map = new Map<string, number>();
-    bookmarks.forEach((b) => map.set(b.domain, (map.get(b.domain) ?? 0) + 1));
-    return Array.from(map.entries())
-      .map(([domain, count]) => ({ domain, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [bookmarks]);
+    return (domainsQuery.data ?? []).map((d) => ({ domain: d.domain, count: d.count }));
+  }, [domainsQuery.data]);
 
   // ─── Mutations ────────────────────────────────────────────────────────────
 
@@ -235,6 +242,7 @@ export function useBookmarks() {
     mutationFn: (url: string) => createBookmark(url),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
     },
   });
 
@@ -251,6 +259,7 @@ export function useBookmarks() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
     },
   });
 

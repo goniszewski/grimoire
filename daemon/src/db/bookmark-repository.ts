@@ -334,6 +334,19 @@ export class BookmarkRepository {
     );
   }
 
+  /** List all domains with bookmark counts, ordered by count desc. */
+  listDomains(): { domain: string; count: number }[] {
+    return this.db
+      .query<{ domain: string; count: number }, []>(
+        `SELECT domain, COUNT(*) AS count
+         FROM bookmarks
+         WHERE is_archived = 0
+         GROUP BY domain
+         ORDER BY count DESC, domain ASC`
+      )
+      .all();
+  }
+
   // ─── Private helpers ────────────────────────────────────────────────────────
 
   private getTagNames(bookmarkId: string): string[] {

@@ -1,6 +1,6 @@
 # TASK-015: Domains Page — Real Data
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** v0-alpha
 **Area:** frontend / backend
@@ -30,7 +30,7 @@ The `Domains.tsx` page exists in the frontend but uses mock data. Wire it to a r
 
 ## Acceptance Criteria
 
-- [ ] Domains API endpoint returns correct counts
-- [ ] Domains page fetches real data
-- [ ] Clicking domain navigates to filtered search results
-- [ ] Favicons load with fallback for missing icons
+- [x] Domains API endpoint returns correct counts
+- [x] Domains page fetches real data
+- [x] Clicking domain navigates to filtered search results
+- [x] Favicons load with fallback for missing icons
