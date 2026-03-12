@@ -1,6 +1,6 @@
 # TASK-012: Library Evolution Timeline
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** v0.2
 **Area:** backend / api
@@ -38,5 +38,5 @@ Implement timeline recording of all structural changes to the library (category 
 
 - [ ] All agent auto-actions write to timeline
 - [ ] Manual category changes also recorded
-- [ ] Timeline paginated (newest first)
-- [ ] Frontend timeline view reads from this endpoint
+- [x] Timeline paginated (newest first)
+- [x] Frontend timeline view reads from this endpoint

@@ -310,6 +310,36 @@ export async function listDomains(): Promise<{ data: ApiDomain[] }> {
   return apiFetch<{ data: ApiDomain[] }>("/domains");
 }
 
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+
+export type TimelineEventType =
+  | "category_created"
+  | "category_merged"
+  | "category_renamed"
+  | "duplicate_removed"
+  | "cluster_labeled";
+
+export interface ApiTimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  description: string;
+  metadata: Record<string, unknown>;
+  source: "agent" | "user";
+  created_at: string;
+}
+
+export async function listTimeline(
+  params: { limit?: number; offset?: number } = {}
+): Promise<{ data: ApiTimelineEvent[]; pagination: Pagination }> {
+  const q = new URLSearchParams();
+  if (params.limit != null) q.set("limit", String(params.limit));
+  if (params.offset != null) q.set("offset", String(params.offset));
+  const qs = q.toString();
+  return apiFetch<{ data: ApiTimelineEvent[]; pagination: Pagination }>(
+    `/timeline${qs ? `?${qs}` : ""}`
+  );
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export async function getSettings(): Promise<{ data: ApiSettings }> {

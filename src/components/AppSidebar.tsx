@@ -12,7 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Category, TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -183,6 +183,23 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Timeline */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/timeline")}
+                  tooltip={collapsed ? "Timeline" : undefined}
+                >
+                  <History className="h-3.5 w-3.5 shrink-0" />
+                  {!collapsed && <span className="text-xs">Timeline</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

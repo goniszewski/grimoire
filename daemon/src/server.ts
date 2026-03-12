@@ -13,6 +13,7 @@ import { createTagsRoute } from "./routes/tags.js";
 import { createExportRoute } from "./routes/export.js";
 import { createSettingsRoute } from "./routes/settings.js";
 import { createDomainsRoute } from "./routes/domains.js";
+import { createTimelineRoute } from "./routes/timeline.js";
 
 export interface AppDeps {
   db: Database;
@@ -62,6 +63,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createExportRoute({ db: deps.db }));
   app.route("/", createSettingsRoute());
   app.route("/", createDomainsRoute({ db: deps.db }));
+  app.route("/", createTimelineRoute({ db: deps.db }));
 
   return app;
 }
