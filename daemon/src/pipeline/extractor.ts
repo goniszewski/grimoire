@@ -11,6 +11,7 @@ import { FetchResult } from "./fetcher.js";
 import { extractWithReadability } from "./extractors/readability.js";
 import { extractFromGitHub, parseGitHubUrl } from "./extractors/github.js";
 import { extractFromStackOverflow, parseSOUrl } from "./extractors/stackoverflow.js";
+import { extractFromPdf } from "./extractors/pdf.js";
 import { ExtractionResult } from "./extractors/types.js";
 import { log } from "../logger.js";
 
@@ -18,6 +19,15 @@ export type { ExtractionResult };
 
 function isGitHub(url: string): boolean {
   return parseGitHubUrl(url) !== null;
+}
+
+function isPDF(url: string, contentType: string): boolean {
+  if (contentType.includes("application/pdf")) return true;
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".pdf");
+  } catch {
+    return false;
+  }
 }
 
 function isStackOverflow(url: string): boolean {
@@ -37,8 +47,18 @@ function isStackOverflow(url: string): boolean {
 
 export async function extractContent(
   url: string,
-  fetched: FetchResult
+  fetched: FetchResult,
+  fallbackTitle?: string | null
 ): Promise<ExtractionResult> {
+  // Strategy: PDF
+  if (isPDF(url, fetched.contentType)) {
+    log.info("Using PDF extractor", { url });
+    if (!fetched.bytes || fetched.bytes.byteLength === 0) {
+      throw new Error(`Expected PDF bytes for ${url} but received none (content-type: ${fetched.contentType})`);
+    }
+    return extractFromPdf(fetched.bytes, fallbackTitle ?? null);
+  }
+
   // Strategy: GitHub
   if (isGitHub(url)) {
     log.info("Using GitHub extractor", { url });

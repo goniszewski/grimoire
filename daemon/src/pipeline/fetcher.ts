@@ -34,6 +34,8 @@ export interface FetchResult {
   html: string;
   finalUrl: string; // URL after redirects
   contentType: string;
+  /** Raw bytes — populated for non-HTML content types (e.g. PDF). */
+  bytes?: Uint8Array;
 }
 
 export async function fetchPage(url: string): Promise<FetchResult> {
@@ -45,7 +47,7 @@ export async function fetchPage(url: string): Promise<FetchResult> {
     res = await fetch(url, {
       headers: {
         "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/pdf,*/*;q=0.5",
         "Accept-Language": "en-US,en;q=0.9",
       },
       redirect: "follow",
@@ -71,7 +73,14 @@ export async function fetchPage(url: string): Promise<FetchResult> {
   }
 
   const contentType = res.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+  // Use the final URL (after redirects) for the extension check — the original URL
+  // may have redirected to a different resource type.
+  const isPdf = contentType.includes("application/pdf") || res.url.toLowerCase().endsWith(".pdf");
+  if (
+    !isPdf &&
+    !contentType.includes("text/html") &&
+    !contentType.includes("application/xhtml")
+  ) {
     throw new Error(`Unexpected content-type "${contentType}" for ${url}`);
   }
 
@@ -101,14 +110,17 @@ export async function fetchPage(url: string): Promise<FetchResult> {
     chunks.push(value);
   }
 
-  const html = new TextDecoder().decode(
-    chunks.reduce((acc, chunk) => {
-      const merged = new Uint8Array(acc.byteLength + chunk.byteLength);
-      merged.set(acc);
-      merged.set(chunk, acc.byteLength);
-      return merged;
-    }, new Uint8Array(0))
-  );
+  const rawBytes = chunks.reduce((acc, chunk) => {
+    const merged = new Uint8Array(acc.byteLength + chunk.byteLength);
+    merged.set(acc);
+    merged.set(chunk, acc.byteLength);
+    return merged;
+  }, new Uint8Array(0));
 
+  if (isPdf) {
+    return { html: "", finalUrl: res.url, contentType, bytes: rawBytes };
+  }
+
+  const html = new TextDecoder().decode(rawBytes);
   return { html, finalUrl: res.url, contentType };
 }

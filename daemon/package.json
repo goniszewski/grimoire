@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "hono": "^4.7",
+    "pdf-parse": "^2.4.5",
     "sqlite-vec": "^0.1.7-alpha.2"
   },
   "devDependencies": {

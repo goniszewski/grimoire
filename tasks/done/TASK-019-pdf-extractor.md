@@ -1,6 +1,6 @@
 # TASK-019: PDF Content Extractor
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** future
 **Area:** backend / pipeline
@@ -19,8 +19,8 @@ Add PDF as a supported content type in the extraction pipeline. When a URL point
 
 ## Acceptance Criteria
 
-- [ ] PDF detection works by Content-Type and URL extension
-- [ ] Text extraction works for text-based PDFs
-- [ ] Falls back to URL title for scanned/image PDFs
-- [ ] Large PDFs (>10MB) handled with size limit / truncation
-- [ ] Extraction status tracked in pipeline status field
+- [x] PDF detection works by Content-Type and URL extension
+- [x] Text extraction works for text-based PDFs
+- [x] Falls back to URL title for scanned/image PDFs
+- [x] Large PDFs (>10MB) handled with size limit / truncation
+- [x] Extraction status tracked in pipeline status field

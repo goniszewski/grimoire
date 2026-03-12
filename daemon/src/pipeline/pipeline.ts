@@ -126,7 +126,7 @@ export async function runPipeline(
   log.info("Pipeline: extract", { bookmarkId });
   let extracted;
   try {
-    extracted = await extractContent(url, fetched);
+    extracted = await extractContent(url, fetched, existingTitle);
   } catch (err) {
     log.warn("Pipeline: extraction failed, storing title only", {
       bookmarkId,
