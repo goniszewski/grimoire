@@ -25,7 +25,7 @@ export const Config = {
     process.env.DATA_DIR ?? "~/.local/share/littleimp"
   ),
   // Comma-separated list of allowed CORS origins
-  CORS_ORIGINS: (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173")
+  CORS_ORIGINS: (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),

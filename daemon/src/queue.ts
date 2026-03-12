@@ -85,5 +85,10 @@ export class JobQueue {
     // Evict to prevent unbounded memory growth.
     // TASK-002 will persist completed jobs to SQLite before this point.
     this.jobs.delete(id);
+    // Remove from the order array so it doesn't accumulate stale entries.
+    // We use splice here rather than filtering so the operation stays O(n) once
+    // rather than O(n) on every dequeue pass.
+    const idx = this.order.indexOf(id);
+    if (idx !== -1) this.order.splice(idx, 1);
   }
 }
