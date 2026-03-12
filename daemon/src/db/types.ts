@@ -67,9 +67,10 @@ export interface JobRow {
 
 export interface AgentSuggestionRow {
   id: string;
-  bookmark_id: string;
+  bookmark_id: string | null;
   type: string;
   value: string;
+  metadata: string; // JSON
   confidence: number | null;
   status: SuggestionStatus;
   created_at: string;

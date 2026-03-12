@@ -7,6 +7,7 @@ import { Scheduler } from "./scheduler.js";
 import { createApp } from "./server.js";
 import { getDatabase, closeDatabase } from "./db/database.js";
 import { runPipeline } from "./pipeline/pipeline.js";
+import { OrganizationAgent } from "./ai/organization-agent.js";
 import type { IngestJobPayload } from "./types/job.js";
 
 const startTime = new Date();
@@ -27,6 +28,10 @@ worker.registerHandler("ingest", async (job) => {
 scheduler.register("heartbeat", 60_000, () => {
   log.info("Heartbeat", { uptime: Date.now() - startTime.getTime() });
 });
+
+const AGENT_INTERVAL_MS = parseInt(process.env.AGENT_INTERVAL_MS ?? "", 10) || 24 * 60 * 60_000; // default: daily
+const agent = new OrganizationAgent(db);
+scheduler.register("organization-agent", AGENT_INTERVAL_MS, () => agent.run());
 
 const app = createApp({ db, queue, startTime, version: VERSION });
 

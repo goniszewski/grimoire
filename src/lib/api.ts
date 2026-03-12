@@ -340,6 +340,42 @@ export async function listTimeline(
   );
 }
 
+// ─── Suggestions ──────────────────────────────────────────────────────────────
+
+export type SuggestionType =
+  | "new_subcategory"
+  | "merge_categories"
+  | "duplicate_bookmark";
+
+export type SuggestionStatus = "pending" | "accepted" | "rejected";
+
+export interface ApiSuggestion {
+  id: string;
+  bookmarkId: string | null;
+  type: SuggestionType;
+  value: string;
+  metadata: Record<string, unknown>;
+  confidence: number | null;
+  status: SuggestionStatus;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export async function listSuggestions(): Promise<{
+  data: ApiSuggestion[];
+  meta: { pending: number };
+}> {
+  return apiFetch<{ data: ApiSuggestion[]; meta: { pending: number } }>("/suggestions");
+}
+
+export async function acceptSuggestion(id: string): Promise<{ data: ApiSuggestion }> {
+  return apiFetch<{ data: ApiSuggestion }>(`/suggestions/${id}/accept`, { method: "POST" });
+}
+
+export async function rejectSuggestion(id: string): Promise<{ data: ApiSuggestion }> {
+  return apiFetch<{ data: ApiSuggestion }>(`/suggestions/${id}/reject`, { method: "POST" });
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export async function getSettings(): Promise<{ data: ApiSettings }> {

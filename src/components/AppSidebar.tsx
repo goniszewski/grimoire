@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { listSuggestions } from "@/lib/api";
+import { suggestionKeys } from "@/hooks/use-suggestions";
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Category, TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +54,14 @@ export function AppSidebar({
   const navigate = useNavigate();
   const [domainsExpanded, setDomainsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
+
+  const { data: suggestionsData } = useQuery({
+    queryKey: suggestionKeys.pending(),
+    queryFn: listSuggestions,
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+  });
+  const pendingSuggestions = suggestionsData?.meta.pending ?? 0;
 
   const visibleDomains = domainsExpanded ? domains : domains.slice(0, DOMAINS_COLLAPSED_COUNT);
   const hasMoreDomains = domains.length > DOMAINS_COLLAPSED_COUNT;
@@ -187,7 +198,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Timeline */}
+        {/* Timeline + Review Queue */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -198,6 +209,27 @@ export function AppSidebar({
                 >
                   <History className="h-3.5 w-3.5 shrink-0" />
                   {!collapsed && <span className="text-xs">Timeline</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate("/review-queue")}
+                  tooltip={collapsed ? `Review Queue${pendingSuggestions > 0 ? ` (${pendingSuggestions})` : ""}` : undefined}
+                >
+                  <Bot className="h-3.5 w-3.5 shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="text-xs">Review Queue</span>
+                      {pendingSuggestions > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
+                          {pendingSuggestions}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                  {collapsed && pendingSuggestions > 0 && (
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
