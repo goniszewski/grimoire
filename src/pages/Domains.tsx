@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useBookmarkStore } from "@/hooks/use-bookmark-store";
+import { useBookmarks } from "@/hooks/use-bookmarks";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Globe, Search } from "lucide-react";
 
 const Domains = () => {
-  const store = useBookmarkStore();
+  const store = useBookmarks();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 

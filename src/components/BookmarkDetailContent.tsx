@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Bookmark } from "@/types/bookmark";
+import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, RotateCcw } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -14,7 +14,6 @@ interface BookmarkDetailContentProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
-  onRetry: (id: string) => void;
   relatedBookmarks: Bookmark[];
   onSelectRelated: (bookmark: Bookmark) => void;
 }
@@ -24,7 +23,6 @@ export function BookmarkDetailContent({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
-  onRetry,
   relatedBookmarks,
   onSelectRelated,
 }: BookmarkDetailContentProps) {
@@ -80,13 +78,7 @@ export function BookmarkDetailContent({
     <div className="space-y-5 mt-2">
 
       <div className="flex items-center gap-2">
-        <PipelineBadge status={bookmark.status} error={bookmark.error} />
-        {bookmark.error && (
-          <Button variant="outline" size="sm" className="h-6 text-xs gap-1.5" onClick={() => onRetry(bookmark.id)}>
-            <RotateCcw className="h-3 w-3" />
-            Retry
-          </Button>
-        )}
+        <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
       </div>
 
       {/* Summary — editable */}
@@ -123,17 +115,6 @@ export function BookmarkDetailContent({
         )}
       </div>
 
-      {/* Content — read-only */}
-      {bookmark.content && (
-        <div className="rounded-md border bg-muted/30 overflow-hidden">
-          <div className="px-4 py-2 border-b bg-muted/50">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Page Content</span>
-          </div>
-          <div className="px-4 py-3">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{bookmark.content}</p>
-          </div>
-        </div>
-      )}
 
       {/* Tags */}
       <div className="space-y-2">

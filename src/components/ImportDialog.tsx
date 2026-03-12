@@ -8,85 +8,77 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, CheckCircle2 } from "lucide-react";
-import { Bookmark } from "@/types/bookmark";
+import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { importBookmarksFile, subscribeToImportProgress } from "@/lib/api";
 
 interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (bookmarks: Bookmark[]) => void;
-}
-
-function parseNetscapeBookmarks(html: string): Bookmark[] {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const links = doc.querySelectorAll("a");
-  const bookmarks: Bookmark[] = [];
-
-  links.forEach((link) => {
-    const url = link.getAttribute("href");
-    if (!url || !url.startsWith("http")) return;
-    const title = link.textContent?.trim() || url;
-    let domain = "";
-    try {
-      domain = new URL(url).hostname.replace("www.", "");
-    } catch {
-      return;
-    }
-
-    bookmarks.push({
-      id: `bm-import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      url,
-      title,
-      summary: `Imported bookmark from ${domain}`,
-      content: "",
-      domain,
-      favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
-      tags: [],
-      category: "Imported",
-      status: "indexed",
-      savedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-  });
-
-  return bookmarks;
+  /** Called after a successful import so the parent can refresh its list */
+  onImport: () => void;
 }
 
 export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps) {
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "parsing" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "uploading" | "processing" | "done" | "error">("idle");
   const [count, setCount] = useState(0);
+  const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setPhase("parsing");
+    setPhase("uploading");
     setProgress(10);
+    setErrorMsg("");
 
-    const text = await file.text();
-    setProgress(40);
+    try {
+      const result = await importBookmarksFile(file);
+      const { importId, total } = result.data;
 
-    await new Promise((r) => setTimeout(r, 500));
-    const parsed = parseNetscapeBookmarks(text);
-    setProgress(70);
+      setProgress(30);
+      setPhase("processing");
 
-    await new Promise((r) => setTimeout(r, 500));
-    setProgress(100);
-    setCount(parsed.length);
-    setPhase("done");
+      // Subscribe to SSE progress
+      cleanupRef.current = subscribeToImportProgress(importId, (state) => {
+        const pct = total > 0
+          ? 30 + Math.round(((state.queued + state.skipped) / total) * 70)
+          : 100;
+        setProgress(Math.min(pct, 100));
 
-    if (parsed.length > 0) onImport(parsed);
+        if (state.error) {
+          cleanupRef.current?.();
+          cleanupRef.current = null;
+          setErrorMsg(state.error);
+          setPhase("error");
+        } else if (state.done) {
+          cleanupRef.current?.();
+          cleanupRef.current = null;
+          setCount(state.queued);
+          setProgress(100);
+          setPhase("done");
+          onImport();
+        }
+      });
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Upload failed");
+      setPhase("error");
+    }
   };
 
   const handleClose = () => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
     setPhase("idle");
     setProgress(0);
     setCount(0);
+    setErrorMsg("");
     onOpenChange(false);
   };
+
+  const phaseLabel = phase === "uploading" ? "Uploading file..." : "Queuing bookmarks...";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -125,9 +117,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
           </div>
         )}
 
-        {phase === "parsing" && (
+        {(phase === "uploading" || phase === "processing") && (
           <div className="space-y-4 py-6">
-            <p className="text-sm text-muted-foreground text-center">Parsing bookmarks...</p>
+            <p className="text-sm text-muted-foreground text-center">{phaseLabel}</p>
             <Progress value={progress} className="h-2" />
           </div>
         )}
@@ -137,13 +129,24 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
             <CheckCircle2 className="h-12 w-12 text-pipeline-indexed" />
             <div className="text-center">
               <p className="font-semibold">
-                {count} bookmark{count !== 1 ? "s" : ""} imported
+                {count} bookmark{count !== 1 ? "s" : ""} queued for processing
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                All bookmarks have been added to your library.
+                Each bookmark will be fetched, extracted, and indexed in the background.
               </p>
             </div>
             <Button onClick={handleClose}>Done</Button>
+          </div>
+        )}
+
+        {phase === "error" && (
+          <div className="flex flex-col items-center gap-4 py-6">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <div className="text-center">
+              <p className="font-semibold text-destructive">Import failed</p>
+              <p className="text-sm text-muted-foreground mt-1">{errorMsg}</p>
+            </div>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
           </div>
         )}
       </DialogContent>

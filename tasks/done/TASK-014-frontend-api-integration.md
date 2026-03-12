@@ -1,6 +1,6 @@
 # TASK-014: Frontend API Integration (Replace Mocks)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** v0-alpha
 **Area:** frontend
@@ -25,11 +25,11 @@ Wire the existing mocked React frontend to the real `littleimpd` API. All mock d
 
 ## Acceptance Criteria
 
-- [ ] `use-bookmark-store.ts` hook replaced with real API client
-- [ ] API client module created at `src/lib/api.ts`
-- [ ] Loading states shown while API requests are in-flight
-- [ ] Error states handled gracefully (daemon offline, network error)
-- [ ] Daemon offline banner shown if `127.0.0.1:3210` unreachable
-- [ ] Search results update on each keystroke (debounced, 300ms)
-- [ ] Pipeline status badge on BookmarkCard reflects real status
-- [ ] `PipelineBadge` polls or subscribes to real processing status
+- [x] `use-bookmark-store.ts` hook replaced with real API client (`use-bookmarks.ts`)
+- [x] API client module created at `src/lib/api.ts`
+- [x] Loading states shown while API requests are in-flight (TanStack Query `isLoading`)
+- [x] Error states handled gracefully (daemon offline, network error)
+- [x] Daemon offline banner shown if `127.0.0.1:3210` unreachable
+- [x] Search results update on each keystroke (debounced, 300ms)
+- [x] Pipeline status badge on BookmarkCard reflects real status
+- [x] `PipelineBadge` polls `GET /bookmarks/:id/status` every 3s until indexed

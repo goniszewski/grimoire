@@ -1,4 +1,4 @@
-import { Bookmark } from "@/types/bookmark";
+import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { HighlightText } from "./HighlightText";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +146,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
               <HighlightText text={bookmark.title} query={searchQuery} />
             </span>
             <span className="text-xs text-muted-foreground font-mono shrink-0 hidden sm:inline">{bookmark.domain}</span>
-            <PipelineBadge status={bookmark.status} error={bookmark.error} />
+            <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
             {bookmark.tags.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono hidden md:inline-flex">{tag}</Badge>
             ))}
@@ -183,7 +183,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
                   {bookmark.domain}
                 </span>
               </div>
-              <PipelineBadge status={bookmark.status} error={bookmark.error} />
+              <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
             </div>
 
             <div className="space-y-1.5">

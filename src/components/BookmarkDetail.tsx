@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark } from "@/types/bookmark";
+import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,6 @@ interface BookmarkDetailProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
-  onRetry: (id: string) => void;
   relatedBookmarks: Bookmark[];
   onSelectRelated: (bookmark: Bookmark) => void;
 }
@@ -37,7 +36,6 @@ export function BookmarkDetail({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
-  onRetry,
   relatedBookmarks,
   onSelectRelated,
 }: BookmarkDetailProps) {
@@ -106,7 +104,6 @@ export function BookmarkDetail({
       onUpdateTags={onUpdateTags}
       onUpdateCategory={onUpdateCategory}
       onUpdateField={onUpdateField}
-      onRetry={onRetry}
       relatedBookmarks={relatedBookmarks}
       onSelectRelated={onSelectRelated}
     />

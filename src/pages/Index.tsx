@@ -8,14 +8,16 @@ import { BookmarkCard } from "@/components/BookmarkCard";
 import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { ImportDialog } from "@/components/ImportDialog";
-import { useBookmarkStore } from "@/hooks/use-bookmark-store";
+import { useBookmarks } from "@/hooks/use-bookmarks";
+import { useDaemonStatus } from "@/hooks/use-daemon-status";
+import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { ExportMenu } from "@/components/ExportMenu";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { usePreferences } from "@/hooks/use-preferences";
-import { Bookmark } from "@/types/bookmark";
+import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
@@ -30,12 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { SortOption } from "@/hooks/use-bookmark-store";
+import { SortOption } from "@/hooks/use-bookmarks";
 import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const store = useBookmarkStore();
+  const store = useBookmarks();
+  const { online, isChecking: daemonChecking } = useDaemonStatus();
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -200,6 +203,7 @@ const Index = () => {
         />
 
         <div className="flex-1 flex flex-col min-w-0">
+          <DaemonOfflineBanner online={online} loading={daemonChecking} />
           {/* Header */}
           <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 py-3">
             <SidebarTrigger className="shrink-0" />
@@ -420,7 +424,6 @@ const Index = () => {
         onUpdateTags={store.updateBookmarkTags}
         onUpdateCategory={store.updateBookmarkCategory}
         onUpdateField={store.updateBookmarkField}
-        onRetry={store.retryBookmark}
         relatedBookmarks={relatedBookmarks}
         onSelectRelated={handleOpenDetail}
       />
