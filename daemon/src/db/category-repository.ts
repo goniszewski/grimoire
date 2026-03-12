@@ -1,0 +1,156 @@
+import { Database } from "bun:sqlite";
+import { CategoryRow } from "./types.js";
+
+// ─── Shapes ───────────────────────────────────────────────────────────────────
+
+export interface CategoryWithCount extends CategoryRow {
+  bookmark_count: number;
+}
+
+export interface CategoryNode extends CategoryWithCount {
+  children: CategoryNode[];
+}
+
+// ─── Repository ───────────────────────────────────────────────────────────────
+
+export class CategoryRepository {
+  constructor(private db: Database) {}
+
+  /** List all categories flat, with bookmark counts. */
+  listFlat(): CategoryWithCount[] {
+    return this.db
+      .query<CategoryWithCount, []>(
+        `SELECT c.*,
+                COUNT(b.id) AS bookmark_count
+         FROM categories c
+         LEFT JOIN bookmarks b ON b.category_id = c.id AND b.is_archived = 0
+         GROUP BY c.id
+         ORDER BY c.name`
+      )
+      .all();
+  }
+
+  /** Build a tree (max 3 levels) from flat rows. Orphaned children are dropped. */
+  listTree(): CategoryNode[] {
+    const flat = this.listFlat();
+    const map = new Map<string, CategoryNode>(
+      flat.map((r) => [r.id, { ...r, children: [] }])
+    );
+
+    const roots: CategoryNode[] = [];
+    for (const node of map.values()) {
+      if (node.parent_id === null) {
+        roots.push(node);
+      } else {
+        const parent = map.get(node.parent_id);
+        if (parent) parent.children.push(node);
+        // orphaned rows (unknown parent) are silently excluded
+      }
+    }
+
+    return roots;
+  }
+
+  findById(id: string): CategoryRow | null {
+    return (
+      this.db
+        .query<CategoryRow, [string]>("SELECT * FROM categories WHERE id = ?")
+        .get(id) ?? null
+    );
+  }
+
+  /** Returns depth of a category (root = 0). */
+  depth(id: string): number {
+    let depth = 0;
+    let current = this.findById(id);
+    while (current?.parent_id) {
+      current = this.findById(current.parent_id);
+      depth++;
+      if (depth > 10) break; // safety guard against cycles
+    }
+    return depth;
+  }
+
+  /**
+   * Returns true if `ancestorId` is an ancestor of `nodeId` (or equal to it).
+   * Used to prevent creating cycles when reparenting.
+   */
+  isAncestorOrSelf(ancestorId: string, nodeId: string): boolean {
+    let current = this.findById(nodeId);
+    let steps = 0;
+    while (current) {
+      if (current.id === ancestorId) return true;
+      if (!current.parent_id) break;
+      current = this.findById(current.parent_id);
+      if (++steps > 10) break; // cycle guard
+    }
+    return false;
+  }
+
+  create(name: string, parentId?: string | null): CategoryRow {
+    const row = this.db
+      .query<CategoryRow, [string, string | null]>(
+        `INSERT INTO categories (name, parent_id)
+         VALUES (?, ?)
+         RETURNING *`
+      )
+      .get(name.trim(), parentId ?? null);
+
+    if (!row) throw new Error("Failed to insert category");
+    return row;
+  }
+
+  update(id: string, patch: { name?: string; parent_id?: string | null }): CategoryRow | null {
+    const sets: string[] = [];
+    const params: (string | null)[] = [];
+
+    if ("name" in patch && patch.name !== undefined) {
+      sets.push("name = ?");
+      params.push(patch.name.trim());
+    }
+    if ("parent_id" in patch) {
+      sets.push("parent_id = ?");
+      params.push(patch.parent_id ?? null);
+    }
+
+    if (sets.length === 0) return this.findById(id);
+
+    this.db
+      .query(`UPDATE categories SET ${sets.join(", ")} WHERE id = ?`)
+      .run(...params, id);
+
+    return this.findById(id);
+  }
+
+  /**
+   * Delete a category. Bookmarks keep their rows; their category_id is set to
+   * NULL by the ON DELETE SET NULL foreign key constraint. Children are
+   * reparented to the deleted category's parent.
+   */
+  delete(id: string): boolean {
+    const cat = this.findById(id);
+    if (!cat) return false;
+
+    this.db.transaction(() => {
+      // Reparent direct children to the deleted node's parent
+      this.db.run(
+        "UPDATE categories SET parent_id = ? WHERE parent_id = ?",
+        [cat.parent_id ?? null, id]
+      );
+      this.db.run("DELETE FROM categories WHERE id = ?", [id]);
+    })();
+
+    return true;
+  }
+
+  /** Find a category by exact name (case-insensitive). */
+  findByName(name: string): CategoryRow | null {
+    return (
+      this.db
+        .query<CategoryRow, [string]>(
+          "SELECT * FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1"
+        )
+        .get(name) ?? null
+    );
+  }
+}

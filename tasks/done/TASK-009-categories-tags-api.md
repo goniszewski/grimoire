@@ -1,6 +1,6 @@
 # TASK-009: Categories & Tags API
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** v0-alpha
 **Area:** backend / api
@@ -26,9 +26,9 @@ Implement CRUD API for categories and tags, plus endpoints used by the sidebar.
 
 ## Acceptance Criteria
 
-- [ ] Categories support parent_id for nesting (max 3 levels)
-- [ ] Tag list returns count of bookmarks per tag
-- [ ] Category list returns count of bookmarks per category
-- [ ] Deleting a category does not delete its bookmarks
-- [ ] Auto-created tags from LLM enrichment go through this API
+- [x] Categories support parent_id for nesting (max 3 levels)
+- [x] Tag list returns count of bookmarks per tag
+- [x] Category list returns count of bookmarks per category
+- [x] Deleting a category does not delete its bookmarks
+- [x] Auto-created tags from LLM enrichment go through this API
 - [ ] Frontend sidebar connects to these endpoints (replaces mock data)
