@@ -34,6 +34,35 @@ export interface SearchResult {
   offset: number;
 }
 
+// ─── FTS5 query sanitisation ──────────────────────────────────────────────────
+
+/**
+ * Escape a raw user query string so it is safe to pass to the FTS5 MATCH
+ * operator as a parameterised value.
+ *
+ * FTS5 treats a handful of characters as query operators when they appear in
+ * certain positions. Rather than trying to replicate the full FTS5 grammar we
+ * take a conservative approach:
+ *   1. Strip control characters that have no meaning in a search term.
+ *   2. Wrap the entire input in double-quotes so it is treated as a phrase
+ *      query, then escape any embedded double-quotes by doubling them.
+ *
+ * This turns user input like:  hello "world" OR NOT foo
+ * into the FTS5 literal phrase: "hello ""world"" OR NOT foo"
+ * which matches the exact phrase rather than being interpreted as operators.
+ *
+ * For more expressive power (operators, prefix search, etc.) callers can
+ * switch to an "advanced" mode where the input is trusted — but that requires
+ * explicit opt-in rather than being the default for arbitrary user text.
+ */
+function sanitizeFtsQuery(raw: string): string {
+  // Remove ASCII control characters (NUL–US, DEL) which have no search value
+  const stripped = raw.replace(/[\x00-\x1f\x7f]/g, " ").trim();
+  if (!stripped) return '""';
+  // Double any embedded double-quotes, then wrap in double-quotes for a phrase
+  return `"${stripped.replace(/"/g, '""')}"`;
+}
+
 // ─── Repository ───────────────────────────────────────────────────────────────
 
 export class SearchRepository {
@@ -114,6 +143,8 @@ export class SearchRepository {
     // ── FTS5 query ────────────────────────────────────────────────────────────
     // FTS5 snippet() args: table, column_index (1=title), highlight start/end, ellipsis, num_tokens
     // column weights: title=10, summary=5, tags=5, content=1 (via bm25() column weights)
+    const ftsQuery = sanitizeFtsQuery(q!);
+
     const total =
       this.db
         .query<{ count: number }, (string | number)[]>(
@@ -123,7 +154,7 @@ export class SearchRepository {
            ${where}
              AND fts.bookmarks_fts MATCH ?`
         )
-        .get(...filterParams, q!.trim())?.count ?? 0;
+        .get(...filterParams, ftsQuery)?.count ?? 0;
 
     interface FtsRow extends BookmarkRow {
       snippet: string;
@@ -133,7 +164,7 @@ export class SearchRepository {
     const rows = this.db
       .query<FtsRow, (string | number)[]>(
         `SELECT b.*,
-                snippet(bookmarks_fts, 1, '<mark>', '</mark>', '…', 16) AS snippet,
+                snippet(bookmarks_fts, 1, '[[HL]]', '[[/HL]]', '…', 16) AS snippet,
                 bm25(bookmarks_fts, 10, 5, 5, 1) AS rank
          FROM bookmarks_fts fts
          JOIN bookmarks b ON b.id = fts.bookmark_id
@@ -142,7 +173,7 @@ export class SearchRepository {
          ORDER BY rank
          LIMIT ? OFFSET ?`
       )
-      .all(...filterParams, q!.trim(), limit, offset);
+      .all(...filterParams, ftsQuery, limit, offset);
 
     const items = this.attachTagsAndSnippet(
       rows.map((r) => ({ ...r })),
@@ -155,7 +186,7 @@ export class SearchRepository {
 
   private async semanticSearch(opts: SearchOptions): Promise<SearchResult> {
     const { q, limit, offset, embeddingConfig } = opts;
-    const queryVec = await getEmbedding(embeddingConfig!, q!.trim());
+    const queryVec = await getEmbedding(embeddingConfig!, q!.trim()); // plain text; sanitization only needed for FTS5 MATCH
 
     const allEmbeddings = this.embRepo.getAllForModel(embeddingConfig!.model);
     if (allEmbeddings.length === 0) return { items: [], total: 0, limit, offset };
