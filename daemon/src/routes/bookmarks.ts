@@ -5,6 +5,7 @@ import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { SearchRepository } from "../db/search-repository.js";
 import { Config } from "../config.js";
 import { log } from "../logger.js";
+import { isPrivateHost } from "../lib/network.js";
 
 interface BookmarksDeps {
   db: Database;
@@ -32,40 +33,6 @@ function problem(
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Returns true if the hostname looks like a private/loopback/link-local address.
- *  NOTE: This is a best-effort blocklist on the syntactic hostname only.
- *  DNS rebinding (a public hostname resolving to a private IP at fetch time)
- *  is not mitigated here and is considered an accepted risk for a local-only daemon.
- */
-function isPrivateHost(hostname: string): boolean {
-  // Strip IPv6 brackets
-  const host = hostname.replace(/^\[|\]$/g, "");
-
-  // Loopback
-  if (host === "localhost" || host === "::1") return true;
-  if (/^127\./.test(host)) return true;
-
-  // Link-local (AWS IMDS etc.)
-  if (/^169\.254\./.test(host)) return true;
-  if (/^fe80:/i.test(host)) return true;
-
-  // IPv6 site-local (deprecated but still routable internally)
-  if (/^fec[0-9a-f]:/i.test(host)) return true;
-
-  // Private ranges
-  if (/^10\./.test(host)) return true;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
-  if (/^192\.168\./.test(host)) return true;
-
-  // CGNAT / shared address space (RFC 6598)
-  if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return true;
-
-  // Unspecified / broadcast
-  if (host === "0.0.0.0" || host === "::") return true;
-
-  return false;
-}
 
 function isValidUrl(raw: string): boolean {
   try {
