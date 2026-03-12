@@ -144,7 +144,10 @@ export async function enrichBookmark(
 
   // Persist atomically
   db.transaction(() => {
-    // Summary → bookmark_content
+    // Summary → bookmark_content (full summary for search/detail view)
+    // Also denormalize a short excerpt into bookmarks.description so the list
+    // API can surface it without an extra JOIN (description is the fast-path
+    // field shown in bookmark cards).
     if (result.summary) {
       db.run(
         `INSERT INTO bookmark_content (bookmark_id, summary)
@@ -152,6 +155,9 @@ export async function enrichBookmark(
          ON CONFLICT(bookmark_id) DO UPDATE SET summary = excluded.summary`,
         [bookmarkId, result.summary]
       );
+      // Truncate to 300 chars for the description quick-access field
+      const descriptionExcerpt = result.summary.slice(0, 300);
+      db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [descriptionExcerpt, bookmarkId]);
     }
 
     // Category
