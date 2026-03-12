@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { listSuggestions } from "@/lib/api";
+import { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listSuggestions, createCategory } from "@/lib/api";
 import { suggestionKeys } from "@/hooks/use-suggestions";
+import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +16,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Category, TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +55,38 @@ export function AppSidebar({
   const navigate = useNavigate();
   const [domainsExpanded, setDomainsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const newCategoryInputRef = useRef<HTMLInputElement>(null);
+  const qc = useQueryClient();
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (name: string) => createCategory(name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
+      setAddingCategory(false);
+      setNewCategoryName("");
+    },
+  });
+
+  function handleCreateCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    createCategoryMutation.mutate(name);
+  }
+
+  function handleNewCategoryKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") handleCreateCategory();
+    if (e.key === "Escape") {
+      setAddingCategory(false);
+      setNewCategoryName("");
+    }
+  }
+
+  function openAddCategory() {
+    setAddingCategory(true);
+    setTimeout(() => newCategoryInputRef.current?.focus(), 0);
+  }
 
   const { data: suggestionsData } = useQuery({
     queryKey: suggestionKeys.pending(),
@@ -87,9 +120,20 @@ export function AppSidebar({
       <SidebarContent>
         {/* Categories */}
         <SidebarGroup>
-          <SidebarGroupLabel>
-            <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
-            {!collapsed && "Categories"}
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <span className="flex items-center">
+              <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
+              {!collapsed && "Categories"}
+            </span>
+            {!collapsed && (
+              <button
+                onClick={openAddCategory}
+                className="ml-auto h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                title="New category"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            )}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -131,6 +175,42 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {!collapsed && addingCategory && (
+                <SidebarMenuItem>
+                  <div className="flex items-center gap-1 px-2 py-1">
+                    <input
+                      ref={newCategoryInputRef}
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={handleNewCategoryKeyDown}
+                      onBlur={() => {
+                        if (!newCategoryName.trim()) {
+                          setAddingCategory(false);
+                        }
+                      }}
+                      placeholder="Category name…"
+                      maxLength={100}
+                      disabled={createCategoryMutation.isPending}
+                      className="flex-1 text-xs bg-transparent border-b border-border outline-none placeholder:text-muted-foreground/60 py-0.5"
+                    />
+                    <button
+                      onClick={handleCreateCategory}
+                      disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                      className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      title="Create"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => { setAddingCategory(false); setNewCategoryName(""); }}
+                      className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      title="Cancel"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
