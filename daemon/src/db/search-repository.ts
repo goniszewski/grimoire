@@ -124,7 +124,9 @@ export class SearchRepository {
     }
     if (date_to) {
       conditions.push("b.created_at <= ?");
-      filterParams.push(date_to);
+      // Normalize date-only strings to end-of-day to include all bookmarks on that day,
+      // consistent with BookmarkRepository.list() behaviour.
+      filterParams.push(date_to.length === 10 ? `${date_to}T23:59:59Z` : date_to);
     }
 
     const where = `WHERE ${conditions.join(" AND ")}`;
@@ -414,7 +416,7 @@ export class SearchRepository {
       params.push(opts.category);
     }
     if (opts.date_from) { conditions.push("b.created_at >= ?"); params.push(opts.date_from); }
-    if (opts.date_to)   { conditions.push("b.created_at <= ?"); params.push(opts.date_to); }
+    if (opts.date_to)   { conditions.push("b.created_at <= ?"); params.push(opts.date_to.length === 10 ? `${opts.date_to}T23:59:59Z` : opts.date_to); }
 
     const rows = this.db
       .query<{ id: string }, (string | number)[]>(

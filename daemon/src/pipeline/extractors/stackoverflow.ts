@@ -37,16 +37,17 @@ interface SEResponse<T> {
   items: T[];
 }
 
-async function seFetch(path: string): Promise<unknown> {
+async function seFetch(path: string, site: string): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const key = process.env.STACKEXCHANGE_KEY;
   const keyParam = key ? `&key=${encodeURIComponent(key)}` : "";
+  const siteParam = `site=${encodeURIComponent(site)}`;
 
   try {
     const res = await fetch(
-      `${SE_API}${path}${path.includes("?") ? "&" : "?"}site=stackoverflow${keyParam}`,
+      `${SE_API}${path}${path.includes("?") ? "&" : "?"}${siteParam}${keyParam}`,
       {
         headers: { "User-Agent": "LittleImp/0.0" },
         signal: controller.signal,
@@ -57,6 +58,29 @@ async function seFetch(path: string): Promise<unknown> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Derive the SE API `site` parameter from a StackExchange URL.
+ * stackoverflow.com → "stackoverflow"
+ * askubuntu.com     → "askubuntu"
+ * foo.stackexchange.com → "foo"
+ * meta.stackexchange.com → "meta.stackexchange"
+ */
+function siteFromUrl(url: string): string {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === "stackoverflow.com" || host === "www.stackoverflow.com") return "stackoverflow";
+    if (host === "askubuntu.com") return "askubuntu";
+    if (host === "serverfault.com") return "serverfault";
+    if (host === "superuser.com") return "superuser";
+    // meta.stackexchange.com or foo.stackexchange.com
+    const m = host.match(/^([^.]+)\.stackexchange\.com$/);
+    if (m) return m[1] === "meta" ? "meta.stackexchange" : m[1];
+  } catch {
+    // fall through
+  }
+  return "stackoverflow";
 }
 
 /** Strip HTML tags for plain-text conversion. */
@@ -97,8 +121,11 @@ export async function extractFromStackOverflow(url: string): Promise<ExtractionR
   const questionId = parseSOUrl(url);
   if (!questionId) throw new Error(`Not a valid StackOverflow question URL: ${url}`);
 
+  const site = siteFromUrl(url);
+
   const data = (await seFetch(
-    `/questions/${questionId}?filter=withbody&order=desc&sort=votes`
+    `/questions/${questionId}?filter=withbody&order=desc&sort=votes`,
+    site
   )) as SEResponse<SEQuestion>;
 
   const question = data.items[0];
@@ -106,7 +133,8 @@ export async function extractFromStackOverflow(url: string): Promise<ExtractionR
 
   // Fetch answers separately with body filter
   const answersData = (await seFetch(
-    `/questions/${questionId}/answers?filter=withbody&order=desc&sort=votes&pagesize=10`
+    `/questions/${questionId}/answers?filter=withbody&order=desc&sort=votes&pagesize=10`,
+    site
   )) as SEResponse<SEAnswer>;
 
   const answers = answersData.items ?? [];

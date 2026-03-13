@@ -132,9 +132,10 @@ export async function runPipeline(
       bookmarkId,
       error: err instanceof Error ? err.message : String(err),
     });
-    // Graceful degradation: store minimal content so bookmark is still usable
+    // Graceful degradation: store minimal content so bookmark is still usable.
+    // Cap raw HTML to avoid storing up to 10 MB per failed bookmark.
     upsertContent(db, bookmarkId, {
-      raw_html: fetched.html,
+      raw_html: fetched.html ? fetched.html.slice(0, 500_000) : null,
       markdown: existingTitle ?? url,
     });
     setStatus(db, bookmarkId, "extracted");
@@ -163,8 +164,13 @@ export async function runPipeline(
     if (sets.length) {
       db.run(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ?`, [...setParams, bookmarkId]);
     }
+    // Cap raw HTML stored in the DB to 500 KB — up to 10 MB may have been fetched.
+    // Storing the full body would cause unbounded DB growth (10 MB per bookmark).
+    const RAW_HTML_STORE_LIMIT = 500_000;
     upsertContent(db, bookmarkId, {
-      raw_html: extracted.rawHtml,
+      raw_html: extracted.rawHtml
+        ? extracted.rawHtml.slice(0, RAW_HTML_STORE_LIMIT)
+        : null,
       markdown: extracted.markdown,
       author: extracted.author,
       published_at: extracted.publishedAt,
