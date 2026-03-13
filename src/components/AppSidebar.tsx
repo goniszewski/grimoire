@@ -208,16 +208,17 @@ export function AppSidebar({
 
   function commitRename() {
     const newName = renameValue.trim();
-    if (!newName || !renamingCategoryId) {
+    const id = renamingCategoryId;
+    if (!newName || !id) {
       setRenamingCategoryId(null);
       return;
     }
-    const currentName = findApiCatById(renamingCategoryId)?.name;
+    const currentName = findApiCatById(id)?.name;
     if (newName === currentName) {
       setRenamingCategoryId(null);
       return;
     }
-    renameMutation.mutate({ id: renamingCategoryId, name: newName });
+    renameMutation.mutate({ id, name: newName });
   }
 
   function handleRenameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -233,8 +234,9 @@ export function AppSidebar({
   }
 
   function confirmDelete() {
-    if (!deletingCategoryId) return;
-    deleteMutation.mutate(deletingCategoryId);
+    const id = deletingCategoryId;
+    if (!id) return;
+    deleteMutation.mutate(id);
   }
 
   function startMove(cat: UICategory) {
@@ -243,9 +245,10 @@ export function AppSidebar({
   }
 
   function confirmMove() {
-    if (!movingCategoryId) return;
+    const id = movingCategoryId;
+    if (!id) return;
     const parent_id = moveTargetId === "__root__" ? null : moveTargetId;
-    moveMutation.mutate({ id: movingCategoryId, parent_id });
+    moveMutation.mutate({ id, parent_id });
   }
 
   const { data: suggestionsData } = useQuery({

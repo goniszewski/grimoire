@@ -65,7 +65,7 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
         timelineRepo.insert(
           "suggestion_accepted",
           `User accepted suggestion: ${existing.value}`,
-          { suggestionId: id, type: existing.type, ...existing.metadata },
+          { ...existing.metadata, suggestionId: id, type: existing.type },
           "user",
           existing.bookmarkId
         );
@@ -99,11 +99,12 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
     }
 
     const updated = repo.reject(id);
+    if (!updated) return problem(c, 500, "Internal Server Error", "Failed to resolve suggestion");
 
     timelineRepo.insert(
       "suggestion_rejected",
       `User rejected suggestion: ${existing.value}`,
-      { suggestionId: id, type: existing.type, ...existing.metadata },
+      { ...existing.metadata, suggestionId: id, type: existing.type },
       "user",
       existing.bookmarkId
     );
@@ -147,8 +148,10 @@ function applyAction(
       const created = categoryRepo.create(categoryName, parentId);
       log.info("Suggestion accepted: created category", { name: categoryName, id: created.id });
 
-      // Move matching bookmarks into the new category if IDs are provided
-      const bookmarkIds = Array.isArray(metadata.bookmarkIds) ? metadata.bookmarkIds as string[] : [];
+      // Move matching bookmarks into the new category if IDs are provided.
+      // Validate each element is a non-empty string before using it in a query.
+      const rawIds = Array.isArray(metadata.bookmarkIds) ? metadata.bookmarkIds : [];
+      const bookmarkIds = rawIds.filter((id): id is string => typeof id === "string" && id.length > 0);
       for (const bmId of bookmarkIds) {
         db.run("UPDATE bookmarks SET category_id = ? WHERE id = ? AND is_trashed = 0", [created.id, bmId]);
       }
@@ -179,14 +182,13 @@ function applyAction(
         );
       }
 
-      // Move all bookmarks from B into A, then delete B
-      db.transaction(() => {
-        db.run(
-          "UPDATE bookmarks SET category_id = ? WHERE category_id = ? AND is_trashed = 0",
-          [categoryIdA, categoryIdB]
-        );
-        categoryRepo.delete(categoryIdB);
-      })();
+      // Move all bookmarks from B into A, then delete B.
+      // Note: already inside the outer transaction from the accept handler — run statements directly.
+      db.run(
+        "UPDATE bookmarks SET category_id = ? WHERE category_id = ? AND is_trashed = 0",
+        [categoryIdA, categoryIdB]
+      );
+      categoryRepo.delete(categoryIdB);
 
       log.info("Suggestion accepted: merged categories", {
         source: catB.name,

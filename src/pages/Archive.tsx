@@ -58,10 +58,12 @@ const Archive = () => {
           <ToastAction
             altText="Undo"
             onClick={() =>
-              updateBookmark(id, { is_archived: 1 }).then(() => {
-                qc.invalidateQueries({ queryKey: archiveQueryKey });
-                qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-              })
+              updateBookmark(id, { is_archived: 1 })
+                .then(() => {
+                  qc.invalidateQueries({ queryKey: archiveQueryKey });
+                  qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+                })
+                .catch(() => toast({ title: "Failed to undo", variant: "destructive" }))
             }
           >
             Undo

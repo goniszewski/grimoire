@@ -95,10 +95,14 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
         return problem(c, 409, "Conflict",
           "This URL is already in your trash. Restore or permanently delete it before re-adding.");
       }
-      if (!existing.is_archived) {
-        const bm = repo.findById(existing.id)!;
-        return ok(c, bm, 200);
+      if (existing.is_archived) {
+        // URL exists but is archived — inserting would violate the UNIQUE constraint.
+        return problem(c, 409, "Conflict",
+          "This URL is already in your archive. Restore it from the archive before re-adding.");
       }
+      // Active bookmark — return it idempotently
+      const bm = repo.findById(existing.id)!;
+      return ok(c, bm, 200);
     }
 
     const titleStr = typeof title === "string" && title.trim() ? title.trim() : undefined;

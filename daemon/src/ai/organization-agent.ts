@@ -224,22 +224,22 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: auto-merge catB into catA and record to timeline.
+          // High-confidence: auto-merge catB into catA and record to timeline atomically.
           this.db.transaction(() => {
             this.db.run(
               "UPDATE bookmarks SET category_id = ? WHERE category_id = ? AND is_trashed = 0",
               [idA, idB]
             );
             this.categoryRepo.delete(idB);
+            this.timelineRepo.insert(
+              "category_merged",
+              `Auto-merged "${catB.name}" into "${catA.name}"`,
+              { targetCategoryId: idA, sourceCategoryId: idB, targetName: catA.name, sourceName: catB.name, similarity: sim },
+              "agent"
+            );
           })();
 
           mergedIds.add(idB);
-          this.timelineRepo.insert(
-            "category_merged",
-            `Auto-merged "${catB.name}" into "${catA.name}"`,
-            { targetCategoryId: idA, sourceCategoryId: idB, targetName: catA.name, sourceName: catB.name, similarity: sim },
-            "agent"
-          );
           log.info("OrganizationAgent: auto-merged categories", {
             target: catA.name, source: catB.name, sim,
           });

@@ -1,6 +1,6 @@
 # TASK-031: Frontend Tests
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** M4
 **Area:** frontend / testing
@@ -57,6 +57,6 @@ Unit and component tests for the React frontend using Vitest, and a key E2E jour
 
 ## Acceptance Criteria
 
-- [ ] All Vitest tests pass with `bun run test` (or `npx vitest`)
-- [ ] Playwright E2E journey passes against local running app
-- [ ] No flaky tests
+- [x] All Vitest tests pass with `bun run test` (or `npx vitest`)
+- [x] Playwright E2E journey passes against local running app
+- [x] No flaky tests
