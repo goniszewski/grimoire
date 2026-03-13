@@ -1,6 +1,6 @@
 # TASK-025: Settings Page (/settings)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** M2
 **Area:** frontend

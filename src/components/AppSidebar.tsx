@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -599,6 +599,23 @@ export function AppSidebar({
                   ))}
                 </SidebarMenu>
               )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Settings */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/settings")}
+                    tooltip={collapsed ? "Settings" : undefined}
+                  >
+                    <Settings className="h-3.5 w-3.5 shrink-0" />
+                    {!collapsed && <span className="text-xs">Settings</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
