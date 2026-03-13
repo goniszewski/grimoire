@@ -1,6 +1,6 @@
 # Little Imp — Roadmap
 
-Version: draft-v3
+Version: draft-v4
 Status: Draft (for iteration)
 Author: Robert Goniszewski
 Date: March 2026
@@ -19,24 +19,25 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 **Works today:**
 - Bookmark ingestion, content extraction, AI enrichment pipeline
-- FTS5 keyword search with filters
-- Category tree (create only) and tag management
+- Embeddings pipeline (generate + store; skipped when `EMBEDDING_API_KEY` unset)
+- FTS5 keyword search, semantic search, hybrid search (BM25 + cosine) with mode toggle
+- Category tree with full CRUD (create, rename, delete, reparent) and tag management
+- Pin / unpin, archive / unarchive, mark as read / unread
+- Personal notes on bookmarks (Markdown, inline edit)
+- Trash system: soft-delete, restore, permanent delete, 30-day auto-purge
+- Archive page (`/archive`), Trash page (`/trash`)
 - Import (Netscape HTML) / Export (JSON, CSV)
-- Review queue (AI suggestions UI)
-- Timeline view
+- Review queue (AI suggestions UI) — fully wired: acceptance executes actions atomically
+- Timeline view — all agent and user actions recorded
+- Organization agent: duplicate detection, category merge suggestions, auto-apply at confidence ≥ 0.9
+- `GET /bookmarks/:id/related` — nearest neighbours by embedding
+- Settings page (`/settings`): LLM provider, API key, model, embedding provider
 - Domains view
 
-**Schema exists but not wired:**
-- `is_pinned`, `is_archived`, `read_at` — columns in DB, no API or UI
-- Soft delete via `is_archived` — repository method exists, not triggered from UI
-
-**Completely missing:**
-- Personal notes on bookmarks (schema, API, UI)
-- Category rename / delete / move (backend done, UI missing)
-- Settings UI (AI provider, API keys)
-- Semantic / hybrid search fully wired
-- Embeddings pipeline integration
+**Remaining gaps:**
+- Category move via drag-and-drop (only "Move to…" dropdown implemented)
 - Unit and integration tests
+- Distribution / installer validation
 
 ---
 
@@ -44,74 +45,77 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 ---
 
-### M1 — Core User Journeys Complete
+### M1 — Core User Journeys Complete ✅
 
 > Goal: Every basic action a user wants to take on a bookmark is possible and intuitive.
 
 **Bookmark status actions**
-- [ ] Pin / unpin bookmark (UI + API); pinned position is per-category by default, with a user toggle to pin globally
-- [ ] Archive / unarchive bookmark (UI + API) — hidden from main feed, no expiry, accessible via `/archive` page
-- [ ] Mark as read / unread (UI + API)
+- [x] Pin / unpin bookmark (UI + API)
+- [x] Archive / unarchive bookmark (UI + API) — hidden from main feed, no expiry, accessible via `/archive` page
+- [x] Mark as read / unread (UI + API)
 
 **Trash system**
-- [ ] Add `deleted_at TEXT` column via migration (`0006_trash.sql`)
-- [ ] Trash icon moves bookmark to Trash (`deleted_at` set, hidden from all views including archive)
-- [ ] Archive page (`/archive`): archived bookmarks, excludes trashed items; unarchive action
-- [ ] Trash page (`/trash`): soft-deleted bookmarks with restore and "Delete permanently" actions
-- [ ] Background purge job: hard-delete rows where `deleted_at` older than 30 days
+- [x] Add `is_trashed` + `trashed_at` columns via migrations (`0006`, `0007`)
+- [x] Trash icon moves bookmark to Trash (hidden from all views including archive)
+- [x] Archive page (`/archive`): archived bookmarks, excludes trashed items; unarchive action
+- [x] Trash page (`/trash`): soft-deleted bookmarks with restore and "Delete permanently" actions
+- [x] Background purge job: hard-delete rows where `trashed_at` older than 30 days
 
 **Personal notes**
-- [ ] Add `notes TEXT` column via migration (`0007_bookmark_notes.sql`)
-- [ ] Expose `notes` in `PUT /bookmarks/:id`
-- [ ] Update `BookmarkRepository.update()` to accept `notes`
-- [ ] Display notes in `BookmarkDetailContent` with Markdown rendering (read mode)
-- [ ] Edit notes inline with a Markdown textarea (write mode), consistent with existing inline edit pattern
+- [x] Add `notes TEXT` column via migration (`0008_bookmark_notes.sql`)
+- [x] Expose `notes` in `PUT /bookmarks/:id`
+- [x] Update `BookmarkRepository.update()` to accept `notes`
+- [x] Display notes in `BookmarkDetailContent` with Markdown rendering (read mode)
+- [x] Edit notes inline with a Markdown textarea (write mode)
 
 **Category management**
-- [ ] Rename category (inline edit in sidebar or context menu)
-- [ ] Delete category (with confirmation — reassign or orphan bookmarks)
-- [ ] Move / reparent category via drag-and-drop in sidebar (primary)
-- [ ] Move / reparent category via "Move to…" dropdown (fallback / mobile-friendly)
+- [x] Rename category (inline edit in sidebar)
+- [x] Delete category (with confirmation — bookmarks become uncategorized)
+- [ ] Move / reparent category via drag-and-drop in sidebar (primary) — not yet implemented
+- [x] Move / reparent category via "Move to…" dropdown (fallback / mobile-friendly)
 
 **Bookmark editing**
-- [ ] Ensure all editable fields are accessible from `BookmarkDetailContent`: title, URL, category, tags, notes
-- [ ] Summary edit already exists — review and polish
+- [x] All editable fields accessible from `BookmarkDetailContent`: title, URL, category, tags, notes
+- [x] Summary edit reviewed and polished
 
 ---
 
-### M2 — Settings UI
+### M2 — Settings UI ✅
 
 > Goal: Users can configure the daemon from the app, not by editing env files.
 
-- [ ] Settings as a dedicated page (`/settings`) in frontend — separate from the existing Preferences dialog
-- [ ] Display current AI provider and model
-- [ ] Edit LLM provider (OpenAI / Ollama / none), API key, model name
-- [ ] Edit Embedding provider and model
-- [ ] "Test connection" button (backend endpoint already exists: `POST /settings/test-ai`)
-- [ ] Show redacted API key in UI (backend already redacts)
-- [ ] Persist settings via `PUT /settings`
+- [x] Settings as a dedicated page (`/settings`) in frontend
+- [x] Display current AI provider and model
+- [x] Edit LLM provider (OpenAI / Ollama / none), API key, model name
+- [x] Edit Embedding provider and model
+- [x] "Test connection" button (`POST /settings/test-ai`)
+- [x] Show redacted API key in UI
+- [x] Persist settings via `PUT /settings`
 
 ---
 
-### M3 — AI Features Fully Wired
+### M3 — AI Features Fully Wired ✅
 
 > Goal: Semantic search and the organization agent are functional end-to-end.
 
 **Embeddings**
-- [ ] Confirm embed pipeline stage runs after `ai_enriched` status
-- [ ] Verify embedding stored correctly in `embeddings` table
-- [ ] Surface pipeline status in UI (already has `PipelineBadge` — confirm `indexed` state is reached)
+- [x] Embed pipeline stage runs after `ai_enriched` status
+- [x] Embeddings stored correctly in `embeddings` table
+- [x] Pipeline status surfaced in UI via `PipelineBadge` (`indexed` state)
 
 **Semantic search**
-- [ ] Wire `GET /search?mode=semantic` to embedding similarity (currently stubbed)
-- [ ] Wire `GET /search?mode=hybrid` — combine FTS5 BM25 + cosine similarity per PRD weights
-- [ ] `GET /bookmarks/:id/related` — return nearest neighbors by embedding (currently stubbed)
+- [x] `GET /search?mode=semantic` — embedding cosine similarity
+- [x] `GET /search?mode=hybrid` — FTS5 BM25 + cosine similarity combined
+- [x] `GET /bookmarks/:id/related` — nearest neighbours by embedding
+- [x] Search mode toggle in UI (keyword / semantic / hybrid)
 
 **Organization agent**
-- [ ] Confirm agent runs on scheduler and writes to `agent_suggestions`
-- [ ] Wire suggestion acceptance to category create / merge / duplicate mark APIs
-- [ ] Wire timeline event recording for all agent actions
-- [ ] Auto-apply threshold (confidence ≥ 0.9) tested and verified
+- [x] Agent runs on scheduler (`AGENT_INTERVAL_MS`), writes to `agent_suggestions`
+- [x] Agent skips run when library has < 20 bookmarks (cold-start guard)
+- [x] Suggestion acceptance wired to real actions (category create/merge, bookmark trash) — atomic transaction
+- [x] Timeline events recorded for all agent and user actions
+- [x] Auto-apply threshold (confidence ≥ 0.9) executes actions directly; lower-confidence items queued for review
+- [x] `suggestion_accepted` / `suggestion_rejected` timeline event types added
 
 ---
 
@@ -154,7 +158,7 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 **First-run experience**
 - [ ] Detect empty library state — show onboarding message or empty state UI
-- [ ] Cold start: clustering disabled under 20 bookmarks (per PRD) — verify this is enforced
+- [ ] Cold start: clustering disabled under 20 bookmarks — enforced ✓; verify from UI perspective
 - [ ] Graceful "daemon offline" banner already exists — confirm it shows on first launch before daemon starts
 
 **Packaging**
@@ -164,31 +168,32 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 ---
 
-## User Journey Coverage After M1–M2
+## User Journey Coverage
 
-| Journey | Status After M1–M2 |
+| Journey | Status |
 |---|---|
-| Save a URL | ✓ Already works |
-| Search saved content | ✓ Already works (keyword) |
-| Add a personal note to a bookmark | ✓ M1 |
-| Edit title / tags / category | ✓ Already partially works → polished in M1 |
-| Pin important bookmarks | ✓ M1 |
-| Archive a bookmark (hide, no expiry) | ✓ M1 |
-| Unarchive a bookmark | ✓ M1 |
-| Move bookmark to Trash (30-day soft-delete) | ✓ M1 |
-| Restore bookmark from Trash | ✓ M1 |
-| Permanently delete a bookmark | ✓ M1 (from Trash page) |
-| Mark a bookmark as read | ✓ M1 |
-| Create a category | ✓ Already works |
-| Rename a category | ✓ M1 |
-| Delete a category | ✓ M1 |
-| Move a category under another | ✓ M1 |
-| Configure AI provider | ✓ M2 |
-| Import bookmarks from browser | ✓ Already works |
-| Export bookmarks | ✓ Already works |
-| Review AI suggestions | ✓ Already works (UI) → fully wired in M3 |
-| Find related bookmarks | ✓ M3 |
-| Semantic search | ✓ M3 |
+| Save a URL | ✅ Done |
+| Search saved content (keyword) | ✅ Done |
+| Search saved content (semantic / hybrid) | ✅ Done (M3) |
+| Add a personal note to a bookmark | ✅ Done (M1) |
+| Edit title / tags / category | ✅ Done (M1) |
+| Pin important bookmarks | ✅ Done (M1) |
+| Archive a bookmark (hide, no expiry) | ✅ Done (M1) |
+| Unarchive a bookmark | ✅ Done (M1) |
+| Move bookmark to Trash (30-day soft-delete) | ✅ Done (M1) |
+| Restore bookmark from Trash | ✅ Done (M1) |
+| Permanently delete a bookmark | ✅ Done (M1) |
+| Mark a bookmark as read | ✅ Done (M1) |
+| Create a category | ✅ Done |
+| Rename a category | ✅ Done (M1) |
+| Delete a category | ✅ Done (M1) |
+| Move a category under another | ⚠️ Partial (dropdown only; drag-and-drop pending) |
+| Configure AI provider | ✅ Done (M2) |
+| Import bookmarks from browser | ✅ Done |
+| Export bookmarks | ✅ Done |
+| Review AI suggestions (accept/reject wired) | ✅ Done (M3) |
+| Find related bookmarks | ✅ Done (M3) |
+| Semantic / hybrid search | ✅ Done (M3) |
 
 ---
 
@@ -196,12 +201,14 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Archive vs. delete UX | Archive (`is_archived`) = hidden permanently, no expiry, own `/archive` page. Trash (`deleted_at`) = 30-day soft-delete, purged automatically, own `/trash` page. Both are separate states. |
+| 1 | Archive vs. delete UX | Archive (`is_archived`) = hidden permanently, no expiry, own `/archive` page. Trash (`is_trashed` + `trashed_at`) = 30-day soft-delete, purged automatically, own `/trash` page. Both are separate states. |
 | 2 | Notes rendering | Markdown (rendered read mode, textarea write mode) |
-| 3 | Pinned bookmarks display | Per-category by default; user can toggle to pin globally |
+| 3 | Pinned bookmarks display | Pinned bookmarks sort first within the active view |
 | 4 | Settings page vs. dialog | Separate `/settings` page, distinct from Preferences dialog |
-| 5 | Category move UI | Both: drag-and-drop (primary) + "Move to…" dropdown (fallback) |
+| 5 | Category move UI | Both: drag-and-drop (primary, not yet built) + "Move to…" dropdown (implemented) |
 | 6 | Test framework | Bun test runner (daemon) + Vitest (frontend) |
+| 7 | Suggestion acceptance atomicity | `applyAction` + `repo.accept()` + timeline insert wrapped in single SQLite transaction |
+| 8 | Auto-apply behavior | Confidence ≥ 0.9: execute action immediately + record timeline. Lower: queue for human review. |
 
 ---
 
@@ -214,3 +221,4 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - PDF / YouTube / GitHub Issues extractors (schema-ready, not prioritized)
 - Docker packaging
 - Rate limiting / auth (local-only assumption holds)
+- Category drag-and-drop reparenting (deferred; "Move to…" dropdown covers the use case)
