@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
-import { listBookmarks, updateBookmark, ApiBookmark } from "@/lib/api";
+import { listBookmarks, updateBookmark } from "@/lib/api";
 import { UIBookmark, bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,28 +10,6 @@ import { ArrowLeft, Archive as ArchiveIcon, Search, ArchiveRestore, ExternalLink
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { formatDistanceToNow } from "date-fns";
-
-function toUIBookmark(bm: ApiBookmark): UIBookmark {
-  return {
-    id: bm.id,
-    url: bm.url,
-    title: bm.title ?? bm.url,
-    rawTitle: bm.title,
-    summary: bm.description ?? "",
-    domain: bm.domain,
-    favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
-    tags: bm.tags,
-    category: "Uncategorized",
-    category_id: bm.category_id,
-    status: bm.status,
-    savedAt: bm.created_at,
-    updatedAt: bm.updated_at,
-    is_pinned: bm.is_pinned,
-    is_archived: bm.is_archived,
-    read_at: bm.read_at,
-    notes: bm.notes,
-  };
-}
 
 const archiveQueryKey = bookmarkKeys.archive;
 
@@ -54,7 +32,25 @@ const Archive = () => {
   });
 
   const bookmarks = useMemo<UIBookmark[]>(() => {
-    return (data?.data ?? []).map(toUIBookmark);
+    return (data?.data ?? []).map((bm) => ({
+      id: bm.id,
+      url: bm.url,
+      title: bm.title ?? bm.url,
+      rawTitle: bm.title,
+      summary: bm.description ?? "",
+      domain: bm.domain,
+      favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
+      tags: bm.tags,
+      category: "Uncategorized",
+      category_id: bm.category_id,
+      status: bm.status,
+      savedAt: bm.created_at,
+      updatedAt: bm.updated_at,
+      is_pinned: bm.is_pinned,
+      is_archived: bm.is_archived,
+      read_at: bm.read_at,
+      notes: bm.notes,
+    }));
   }, [data]);
 
   const filtered = useMemo(() => {

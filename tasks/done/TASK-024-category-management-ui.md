@@ -1,6 +1,6 @@
 # TASK-024: Category Management UI (Rename, Delete, Move)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** M1
 **Area:** frontend

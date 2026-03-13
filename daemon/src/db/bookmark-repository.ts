@@ -79,15 +79,6 @@ export class BookmarkRepository {
     return { ...bookmark, tags: this.getTagNames(id) };
   }
 
-  /** Find bookmark by ID regardless of trash state. Used internally for restore/permanent-delete flows. */
-  findByIdAny(id: string): BookmarkWithTags | null {
-    const bookmark = this.db
-      .query<BookmarkRow, [string]>("SELECT * FROM bookmarks WHERE id = ?")
-      .get(id);
-    if (!bookmark) return null;
-    return { ...bookmark, tags: this.getTagNames(id) };
-  }
-
   /** Find bookmark by URL. */
   findByUrl(url: string): BookmarkRow | null {
     return (

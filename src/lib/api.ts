@@ -275,6 +275,17 @@ export async function createCategory(name: string, parent_id?: string | null): P
   });
 }
 
+export async function updateCategory(id: string, patch: { name?: string; parent_id?: string | null }): Promise<{ data: ApiCategory }> {
+  return apiFetch<{ data: ApiCategory }>(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  await apiFetch<unknown>(`/categories/${id}`, { method: "DELETE" });
+}
+
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
 export async function listTags(): Promise<{ data: ApiTag[] }> {

@@ -6,6 +6,7 @@ import {
   createBookmark,
   updateBookmark,
   deleteBookmark,
+  restoreBookmark as apiRestoreBookmark,
   listCategories,
   listDomains,
   ApiBookmark,
@@ -46,6 +47,7 @@ export interface UIBookmark {
 }
 
 export interface UICategory {
+  id: string;
   name: string;
   count: number;
 }
@@ -227,10 +229,14 @@ export function useBookmarks() {
 
   // ─── Sidebar aggregates ───────────────────────────────────────────────────
   const categories = useMemo<UICategory[]>(() => {
-    const map = new Map<string, number>();
-    bookmarks.forEach((b) => map.set(b.category, (map.get(b.category) ?? 0) + 1));
-    return Array.from(map.entries())
-      .map(([name, count]) => ({ name, count }))
+    const countMap = new Map<string, number>();
+    const idMap = new Map<string, string>();
+    bookmarks.forEach((b) => {
+      countMap.set(b.category, (countMap.get(b.category) ?? 0) + 1);
+      if (b.category_id) idMap.set(b.category, b.category_id);
+    });
+    return Array.from(countMap.entries())
+      .map(([name, count]) => ({ id: idMap.get(name) ?? "", name, count }))
       .sort((a, b) => b.count - a.count);
   }, [bookmarks]);
 
@@ -308,11 +314,10 @@ export function useBookmarks() {
     return deleted;
   }, [bookmarks, deleteBookmarkMutation]);
 
-  const restoreBookmark = useCallback(async (bookmark: UIBookmark) => {
-    // Re-create the bookmark by URL (idempotent on the API).
-    // Use rawTitle (null if pipeline hasn't set it) so the pipeline can still overwrite it.
-    await createBookmark(bookmark.url, bookmark.rawTitle ?? undefined);
+  const restoreBookmark = useCallback(async (id: string) => {
+    await apiRestoreBookmark(id);
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+    qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
   }, [qc]);
 
   const updateBookmarkTags = useCallback((id: string, tags: string[]) => {

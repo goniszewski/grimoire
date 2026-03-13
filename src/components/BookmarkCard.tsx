@@ -72,6 +72,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
     setSwiping(false);
     isHorizontalSwipe.current = null;
     if (swipeX <= -threshold) {
+      setSwipeX(0);
       onDelete(bookmark.id);
     } else if (swipeX >= threshold) {
       // Open detail / edit

@@ -112,7 +112,7 @@ const Index = () => {
         title: "Bookmark deleted",
         description: deleted.title,
         action: (
-          <ToastAction altText="Undo delete" onClick={() => store.restoreBookmark(deleted)}>
+          <ToastAction altText="Undo delete" onClick={() => store.restoreBookmark(deleted.id)}>
             Undo
           </ToastAction>
         ),
@@ -145,7 +145,7 @@ const Index = () => {
       action: (
         <ToastAction
           altText="Undo delete"
-          onClick={() => deletedBookmarks.forEach((b) => store.restoreBookmark(b))}
+          onClick={() => deletedBookmarks.forEach((b) => store.restoreBookmark(b.id))}
         >
           Undo
         </ToastAction>
