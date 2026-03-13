@@ -89,9 +89,16 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
 
     // Idempotency: return existing active (not archived, not trashed) bookmark if URL already saved
     const existing = repo.findByUrl(url);
-    if (existing && !existing.is_archived && !existing.is_trashed) {
-      const bm = repo.findById(existing.id)!;
-      return ok(c, bm, 200);
+    if (existing) {
+      if (existing.is_trashed) {
+        // URL exists but is in trash — inserting would violate the UNIQUE constraint.
+        return problem(c, 409, "Conflict",
+          "This URL is already in your trash. Restore or permanently delete it before re-adding.");
+      }
+      if (!existing.is_archived) {
+        const bm = repo.findById(existing.id)!;
+        return ok(c, bm, 200);
+      }
     }
 
     const titleStr = typeof title === "string" && title.trim() ? title.trim() : undefined;

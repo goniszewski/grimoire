@@ -23,14 +23,6 @@ const Archive = () => {
     queryFn: () => listBookmarks({ archived: true, limit: 500 }),
   });
 
-  const unarchiveMutation = useMutation({
-    mutationFn: (id: string) => updateBookmark(id, { is_archived: 0 }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: archiveQueryKey });
-      qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-    },
-  });
-
   const bookmarks = useMemo<UIBookmark[]>(() => {
     return (data?.data ?? []).map((bm) => ({
       id: bm.id,
@@ -53,24 +45,15 @@ const Archive = () => {
     }));
   }, [data]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return bookmarks;
-    const q = search.toLowerCase();
-    return bookmarks.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.domain.toLowerCase().includes(q) ||
-        b.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [bookmarks, search]);
-
-  const handleUnarchive = (id: string) => {
-    const bm = bookmarks.find((b) => b.id === id);
-    unarchiveMutation.mutate(id);
-    if (bm) {
+  const unarchiveMutation = useMutation({
+    mutationFn: (id: string) => updateBookmark(id, { is_archived: 0 }),
+    onSuccess: (_data, id) => {
+      const bm = bookmarks.find((b) => b.id === id);
+      qc.invalidateQueries({ queryKey: archiveQueryKey });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       toast({
         title: "Restored to library",
-        description: bm.title,
+        description: bm?.title,
         action: (
           <ToastAction
             altText="Undo"
@@ -85,7 +68,23 @@ const Archive = () => {
           </ToastAction>
         ),
       });
-    }
+    },
+    onError: () => toast({ title: "Failed to restore bookmark", variant: "destructive" }),
+  });
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return bookmarks;
+    const q = search.toLowerCase();
+    return bookmarks.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.domain.toLowerCase().includes(q) ||
+        b.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [bookmarks, search]);
+
+  const handleUnarchive = (id: string) => {
+    unarchiveMutation.mutate(id);
   };
 
   return (

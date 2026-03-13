@@ -5,7 +5,7 @@
  *   1. fetch       — download the page HTML
  *   2. extract     — strategy-based content extraction
  *   3. ai_enrich   — LLM summary + tags + category
- *   4. embed       — generate embedding vector (stub; implemented in TASK-008)
+ *   4. embed       — generate embedding vector (skipped when EMBEDDING_API_KEY unset)
  *   5. index       — update FTS5 search index
  *
  * Each stage:

@@ -3,6 +3,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import {
   listBookmarks,
   searchBookmarks,
+  getRelatedBookmarks,
   createBookmark,
   updateBookmark,
   deleteBookmark,
@@ -12,6 +13,8 @@ import {
   ApiBookmark,
   ApiCategory,
 } from "@/lib/api";
+
+export type SearchMode = "keyword" | "semantic" | "hybrid";
 
 export type SortOption =
   | "newest"
@@ -106,6 +109,7 @@ export function useBookmarks() {
   // ─── UI filter state ───────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<SearchMode>("keyword");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
@@ -180,13 +184,14 @@ export function useBookmarks() {
   // ─── Search results ───────────────────────────────────────────────────────
   const searchParams = useMemo(() => ({
     q: debouncedQuery,
+    mode: searchMode,
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
     category: categoryIdForFilter,
     date_from: dateRange.from?.toISOString().slice(0, 10),
     date_to: dateRange.to?.toISOString().slice(0, 10),
     limit: 200,
-  }), [debouncedQuery, selectedTag, selectedDomain, categoryIdForFilter, dateRange]);
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, categoryIdForFilter, dateRange]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -292,6 +297,7 @@ export function useBookmarks() {
         is_pinned?: 0 | 1;
         is_archived?: 0 | 1;
         read_at?: string | null;
+        notes?: string | null;
       };
     }) => updateBookmark(id, patch),
     onSuccess: () => {
@@ -389,6 +395,8 @@ export function useBookmarks() {
     domains,
     searchQuery,
     setSearchQuery,
+    searchMode,
+    setSearchMode,
     selectedCategory,
     setSelectedCategory,
     selectedTag,
@@ -416,4 +424,59 @@ export function useBookmarks() {
     isLoading,
     isError,
   };
+}
+
+// ─── Related bookmarks hook ────────────────────────────────────────────────────
+
+export function useRelatedBookmarks(bookmarkId: string | null | undefined) {
+  const categoriesQuery = useQuery({
+    queryKey: bookmarkKeys.categories,
+    queryFn: async () => {
+      const res = await listCategories();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+
+  const categoryMap = useMemo<Map<string, string>>(() => {
+    const m = new Map<string, string>();
+    function walk(cats: ApiCategory[]) {
+      for (const c of cats) {
+        m.set(c.id, c.name);
+        if (c.children) walk(c.children);
+      }
+    }
+    walk(categoriesQuery.data ?? []);
+    return m;
+  }, [categoriesQuery.data]);
+
+  const query = useQuery({
+    queryKey: ["related", bookmarkId],
+    queryFn: async () => {
+      const res = await getRelatedBookmarks(bookmarkId!, 5);
+      return res.data.map((bm) => ({
+        id: bm.id,
+        url: bm.url,
+        title: bm.title ?? bm.url,
+        rawTitle: bm.title,
+        summary: bm.description ?? "",
+        domain: bm.domain,
+        favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
+        tags: bm.tags,
+        category: bm.category_id ? (categoryMap.get(bm.category_id) ?? "Uncategorized") : "Uncategorized",
+        category_id: bm.category_id,
+        status: bm.status,
+        savedAt: bm.created_at,
+        updatedAt: bm.updated_at,
+        is_pinned: bm.is_pinned,
+        is_archived: bm.is_archived,
+        read_at: bm.read_at,
+        notes: bm.notes,
+      } as UIBookmark));
+    },
+    enabled: !!bookmarkId,
+    staleTime: 60_000,
+  });
+
+  return query.data ?? [];
 }

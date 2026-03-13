@@ -1,6 +1,6 @@
 # TASK-027: Semantic & Hybrid Search
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** M3
 **Area:** backend / frontend
@@ -33,8 +33,8 @@ Wire up `mode=semantic` and `mode=hybrid` on `GET /search`. Both are currently s
 
 ## Acceptance Criteria
 
-- [ ] `mode=semantic` returns results ranked by vector similarity
-- [ ] `mode=hybrid` blends keyword and vector scores per PRD weights
-- [ ] Filters (tag, domain, category, date) apply to all search modes
-- [ ] `/bookmarks/:id/related` returns up to 5 similar bookmarks
-- [ ] Graceful fallback when bookmark has no embedding: semantic returns empty, hybrid falls back to keyword-only
+- [x] `mode=semantic` returns results ranked by vector similarity
+- [x] `mode=hybrid` blends keyword and vector scores per PRD weights
+- [x] Filters (tag, domain, category, date) apply to all search modes
+- [x] `/bookmarks/:id/related` returns up to 5 similar bookmarks
+- [x] Graceful fallback when bookmark has no embedding: semantic returns empty, hybrid falls back to keyword-only

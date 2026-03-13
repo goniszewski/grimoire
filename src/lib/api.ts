@@ -235,6 +235,10 @@ export async function getBookmarkStatus(id: string): Promise<{ data: PipelineSta
   return apiFetch<{ data: PipelineStatus }>(`/bookmarks/${id}/status`);
 }
 
+export async function getRelatedBookmarks(id: string, limit = 5): Promise<{ data: ApiBookmark[] }> {
+  return apiFetch<{ data: ApiBookmark[] }>(`/bookmarks/${id}/related?limit=${limit}`);
+}
+
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 export interface SearchParams {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAppLock } from "@/hooks/use-app-lock";
 import { LockScreen } from "@/components/LockScreen";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -9,7 +9,7 @@ import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { AIPalette } from "@/components/AIPalette";
-import { useBookmarks } from "@/hooks/use-bookmarks";
+import { useBookmarks, useRelatedBookmarks } from "@/hooks/use-bookmarks";
 import { useDaemonStatus } from "@/hooks/use-daemon-status";
 import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
@@ -191,16 +191,7 @@ const Index = () => {
     handleOpenDetail(uiBm);
   }, [handleOpenDetail]);
 
-  const relatedBookmarks = useMemo(() => {
-    if (!selectedBookmark) return [];
-    return store.bookmarks
-      .filter(
-        (b) =>
-          b.id !== selectedBookmark.id &&
-          b.tags.some((t) => selectedBookmark.tags.includes(t))
-      )
-      .slice(0, 5);
-  }, [selectedBookmark, store.bookmarks]);
+  const relatedBookmarks = useRelatedBookmarks(selectedBookmark?.id);
 
   const activeFilters = [
     store.selectedCategory && { label: store.selectedCategory, clear: () => store.setSelectedCategory(null) },
@@ -238,7 +229,12 @@ const Index = () => {
           <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 py-3">
             <SidebarTrigger className="shrink-0" />
             <div className="flex-1">
-              <SearchBar value={store.searchQuery} onChange={store.setSearchQuery} />
+              <SearchBar
+                value={store.searchQuery}
+                onChange={store.setSearchQuery}
+                searchMode={store.searchMode}
+                onSearchModeChange={store.setSearchMode}
+              />
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <ThemeToggle />

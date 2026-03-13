@@ -362,7 +362,7 @@ export function AppSidebar({
                           <X className="h-3 w-3" />
                         </button>
                       </div>
-                    ) : (
+                    ) : cat.id ? (
                       <ContextMenu>
                         <ContextMenuTrigger asChild>
                           <SidebarMenuButton
@@ -401,6 +401,23 @@ export function AppSidebar({
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
+                    ) : (
+                      <SidebarMenuButton
+                        onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
+                        className={cn(selectedCategory === cat.name && "bg-accent text-accent-foreground")}
+                        tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
+                      >
+                        {collapsed ? (
+                          <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
+                        ) : (
+                          <>
+                            <span className="text-xs truncate">{cat.name}</span>
+                            <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
+                              {cat.count}
+                            </Badge>
+                          </>
+                        )}
+                      </SidebarMenuButton>
                     )}
                   </SidebarMenuItem>
                 ))}
