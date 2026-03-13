@@ -23,6 +23,7 @@ export interface BookmarkRow {
   screenshot_url: string | null;
   is_pinned: 0 | 1;
   is_archived: 0 | 1;
+  is_trashed: 0 | 1;
   read_at: string | null;
   created_at: string;
   updated_at: string;

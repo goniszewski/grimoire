@@ -87,9 +87,9 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       return problem(c, 422, "Unprocessable Entity", "Invalid URL — must be http or https");
     }
 
-    // Idempotency: return existing non-archived bookmark if URL already saved
+    // Idempotency: return existing active (not archived, not trashed) bookmark if URL already saved
     const existing = repo.findByUrl(url);
-    if (existing && !existing.is_archived) {
+    if (existing && !existing.is_archived && !existing.is_trashed) {
       const bm = repo.findById(existing.id)!;
       return ok(c, bm, 200);
     }
@@ -111,7 +111,10 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
 
   // GET /bookmarks — list with pagination + filters
   router.get("/bookmarks", (c) => {
-    const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
+    const archived = c.req.query("archived") === "true";
+    // Archive page may have large collections; allow up to 500 for archived queries
+    const maxLimit = archived ? 500 : 100;
+    const limit = Math.min(parseIntParam(c.req.query("limit"), 20), maxLimit);
     const offset = parseIntParam(c.req.query("offset"), 0);
 
     const result = repo.list({
@@ -122,6 +125,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       category: c.req.query("category") ?? undefined,
       date_from: c.req.query("date_from") ?? undefined,
       date_to: c.req.query("date_to") ?? undefined,
+      archived,
     });
 
     return c.json({
@@ -183,7 +187,31 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       allowed.tags = patch.tags as string[];
     }
 
+    if ("is_pinned" in patch) {
+      if (patch.is_pinned !== 0 && patch.is_pinned !== 1) {
+        return problem(c, 422, "Unprocessable Entity", "`is_pinned` must be 0 or 1");
+      }
+      allowed.is_pinned = patch.is_pinned as 0 | 1;
+    }
+
+    if ("is_archived" in patch) {
+      if (patch.is_archived !== 0 && patch.is_archived !== 1) {
+        return problem(c, 422, "Unprocessable Entity", "`is_archived` must be 0 or 1");
+      }
+      allowed.is_archived = patch.is_archived as 0 | 1;
+    }
+
+    if ("read_at" in patch) {
+      if (patch.read_at !== null) {
+        if (typeof patch.read_at !== "string" || isNaN(Date.parse(patch.read_at as string))) {
+          return problem(c, 422, "Unprocessable Entity", "`read_at` must be an ISO 8601 date string or null");
+        }
+      }
+      allowed.read_at = patch.read_at as string | null;
+    }
+
     const updated = repo.update(id, allowed as Parameters<BookmarkRepository["update"]>[1]);
+    if (!updated) return problem(c, 404, "Not Found", "Bookmark not found");
     return ok(c, updated);
   });
 

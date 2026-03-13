@@ -25,6 +25,11 @@ interface BookmarkDetailProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
+  onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onMarkRead?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onMarkUnread?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   relatedBookmarks: Bookmark[];
   onSelectRelated: (bookmark: Bookmark) => void;
 }
@@ -36,6 +41,11 @@ export function BookmarkDetail({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
+  onPin,
+  onUnpin,
+  onArchive,
+  onMarkRead,
+  onMarkUnread,
   relatedBookmarks,
   onSelectRelated,
 }: BookmarkDetailProps) {
@@ -104,6 +114,11 @@ export function BookmarkDetail({
       onUpdateTags={onUpdateTags}
       onUpdateCategory={onUpdateCategory}
       onUpdateField={onUpdateField}
+      onPin={onPin}
+      onUnpin={onUnpin}
+      onArchive={onArchive}
+      onMarkRead={onMarkRead}
+      onMarkUnread={onMarkUnread}
       relatedBookmarks={relatedBookmarks}
       onSelectRelated={onSelectRelated}
     />

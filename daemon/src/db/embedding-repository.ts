@@ -62,7 +62,7 @@ export class EmbeddingRepository {
       .query<EmbeddingRow, [string]>(
         `SELECT e.* FROM embeddings e
          JOIN bookmarks b ON b.id = e.bookmark_id
-         WHERE e.model = ? AND b.is_archived = 0`
+         WHERE e.model = ? AND b.is_archived = 0 AND b.is_trashed = 0`
       )
       .all(model);
 

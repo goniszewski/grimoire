@@ -183,6 +183,9 @@ const Index = () => {
       status: bm.status,
       savedAt: bm.created_at,
       updatedAt: bm.updated_at,
+      is_pinned: bm.is_pinned,
+      is_archived: bm.is_archived,
+      read_at: bm.read_at,
     };
     handleOpenDetail(uiBm);
   }, [handleOpenDetail]);
@@ -377,6 +380,11 @@ const Index = () => {
                     bookmark={bookmark}
                     onDelete={handleDelete}
                     onClick={handleOpenDetail}
+                    onPin={store.pinBookmark}
+                    onUnpin={store.unpinBookmark}
+                    onArchive={store.archiveBookmark}
+                    onMarkRead={store.markAsRead}
+                    onMarkUnread={store.markAsUnread}
                     selectionMode={selectionMode}
                     selected={selectedIds.has(bookmark.id)}
                     onToggleSelect={toggleSelect}
@@ -456,6 +464,14 @@ const Index = () => {
         onUpdateTags={store.updateBookmarkTags}
         onUpdateCategory={store.updateBookmarkCategory}
         onUpdateField={store.updateBookmarkField}
+        onPin={store.pinBookmark}
+        onUnpin={store.unpinBookmark}
+        onArchive={(id, callbacks) => store.archiveBookmark(id, {
+          onSuccess: () => { setDetailOpen(false); callbacks.onSuccess(); },
+          onError: callbacks.onError,
+        })}
+        onMarkRead={store.markAsRead}
+        onMarkUnread={store.markAsUnread}
         relatedBookmarks={relatedBookmarks}
         onSelectRelated={handleOpenDetail}
       />

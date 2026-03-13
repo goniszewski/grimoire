@@ -169,7 +169,7 @@ export class OrganizationAgent {
     // Build bookmarkId → category_id lookup in a single query to avoid N+1
     const bmCatRows = this.db
       .query<{ id: string; category_id: string | null }, []>(
-        "SELECT id, category_id FROM bookmarks WHERE is_archived = 0"
+        "SELECT id, category_id FROM bookmarks WHERE is_archived = 0 AND is_trashed = 0"
       )
       .all();
     const bmCatMap = new Map<string, string | null>(
@@ -241,7 +241,7 @@ export class OrganizationAgent {
     return (
       this.db
         .query<{ count: number }, []>(
-          "SELECT COUNT(*) AS count FROM bookmarks WHERE is_archived = 0"
+          "SELECT COUNT(*) AS count FROM bookmarks WHERE is_archived = 0 AND is_trashed = 0"
         )
         .get()?.count ?? 0
     );

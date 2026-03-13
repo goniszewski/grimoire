@@ -19,6 +19,8 @@ export interface ListBookmarksOptions {
   category?: string;
   date_from?: string;
   date_to?: string;
+  /** When true, return only archived (non-trashed) bookmarks instead of active ones. */
+  archived?: boolean;
 }
 
 export interface ExportBookmarkRow {
@@ -103,7 +105,11 @@ export class BookmarkRepository {
 
   /** Paginated list with optional filters. */
   list(opts: ListBookmarksOptions): ListResult {
-    const conditions: string[] = ["b.is_archived = 0"];
+    // Always exclude trashed bookmarks; archived flag controls which archived state to show
+    const conditions: string[] = [
+      "b.is_trashed = 0",
+      opts.archived ? "b.is_archived = 1" : "b.is_archived = 0",
+    ];
     const params: (string | number)[] = [];
 
     if (opts.tag) {
@@ -143,7 +149,7 @@ export class BookmarkRepository {
     const rows = this.db
       .query<BookmarkRow, (string | number)[]>(
         `SELECT b.* FROM bookmarks b ${where}
-         ORDER BY b.created_at DESC
+         ORDER BY b.is_pinned DESC, b.created_at DESC
          LIMIT ? OFFSET ?`
       )
       .all(...params, opts.limit, opts.offset);
@@ -175,9 +181,9 @@ export class BookmarkRepository {
     return { items, total, limit: opts.limit, offset: opts.offset };
   }
 
-  /** Export all non-archived bookmarks with optional filters. Returns rows with resolved category name and tags. */
+  /** Export all active bookmarks (not archived, not trashed) with optional filters. */
   exportAll(filters: FilterOptions = {}): ExportBookmarkRow[] {
-    const conditions: string[] = ["b.is_archived = 0"];
+    const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
     const params: (string | number)[] = [];
 
     if (filters.tag) {
@@ -253,13 +259,20 @@ export class BookmarkRepository {
     }));
   }
 
-  /** Partial update: title, tags, category_id. */
+  /** Partial update: title, tags, category_id, is_pinned, is_archived, read_at. */
   update(
     id: string,
-    patch: { title?: string; category_id?: string | null; tags?: string[] }
+    patch: {
+      title?: string | null;
+      category_id?: string | null;
+      tags?: string[];
+      is_pinned?: 0 | 1;
+      is_archived?: 0 | 1;
+      read_at?: string | null;
+    }
   ): BookmarkWithTags | null {
     const sets: string[] = [];
-    const params: (string | null)[] = [];
+    const params: (string | number | null)[] = [];
 
     if ("title" in patch) {
       sets.push("title = ?");
@@ -268,6 +281,18 @@ export class BookmarkRepository {
     if ("category_id" in patch) {
       sets.push("category_id = ?");
       params.push(patch.category_id ?? null);
+    }
+    if ("is_pinned" in patch) {
+      sets.push("is_pinned = ?");
+      params.push(patch.is_pinned!);
+    }
+    if ("is_archived" in patch) {
+      sets.push("is_archived = ?");
+      params.push(patch.is_archived!);
+    }
+    if ("read_at" in patch) {
+      sets.push("read_at = ?");
+      params.push(patch.read_at ?? null);
     }
 
     this.db.transaction(() => {
@@ -285,10 +310,10 @@ export class BookmarkRepository {
     return this.findById(id);
   }
 
-  /** Soft delete: set is_archived = 1. */
+  /** Soft delete: mark as trashed (hidden from all views, including archive). */
   softDelete(id: string): boolean {
     const info = this.db.run(
-      "UPDATE bookmarks SET is_archived = 1 WHERE id = ? AND is_archived = 0",
+      "UPDATE bookmarks SET is_trashed = 1 WHERE id = ? AND is_trashed = 0",
       [id]
     );
     return info.changes > 0;
@@ -347,7 +372,7 @@ export class BookmarkRepository {
       .query<{ domain: string; count: number }, []>(
         `SELECT domain, COUNT(*) AS count
          FROM bookmarks
-         WHERE is_archived = 0
+         WHERE is_archived = 0 AND is_trashed = 0
          GROUP BY domain
          ORDER BY count DESC, domain ASC`
       )

@@ -2,7 +2,7 @@ import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { HighlightText } from "./HighlightText";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, ExternalLink, Pencil, Check } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Pencil, Check, Pin, PinOff, Archive, BookOpen, BookDashed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -19,10 +19,17 @@ import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useRef, useState, useCallback } from "react";
 
+type StatusCallback = (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+
 interface BookmarkCardProps {
   bookmark: Bookmark;
   onDelete: (id: string) => void;
   onClick: (bookmark: Bookmark) => void;
+  onPin?: StatusCallback;
+  onUnpin?: StatusCallback;
+  onArchive?: StatusCallback;
+  onMarkRead?: StatusCallback;
+  onMarkUnread?: StatusCallback;
   selectionMode?: boolean;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
@@ -30,7 +37,7 @@ interface BookmarkCardProps {
   compact?: boolean;
 }
 
-export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onArchive, onMarkRead, onMarkUnread, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const touchStartX = useRef(0);
@@ -88,6 +95,44 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
   const handleExternal = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(bookmark.url, "_blank");
+  };
+
+  const handlePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bookmark.is_pinned) {
+      onUnpin?.(bookmark.id, {
+        onSuccess: () => toast({ title: "Unpinned" }),
+        onError: () => toast({ title: "Failed to unpin", variant: "destructive" }),
+      });
+    } else {
+      onPin?.(bookmark.id, {
+        onSuccess: () => toast({ title: "Pinned" }),
+        onError: () => toast({ title: "Failed to pin", variant: "destructive" }),
+      });
+    }
+  };
+
+  const handleArchive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onArchive?.(bookmark.id, {
+      onSuccess: () => toast({ title: "Archived", description: "Bookmark moved to archive." }),
+      onError: () => toast({ title: "Failed to archive", variant: "destructive" }),
+    });
+  };
+
+  const handleToggleRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bookmark.read_at) {
+      onMarkUnread?.(bookmark.id, {
+        onSuccess: () => {},
+        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+      });
+    } else {
+      onMarkRead?.(bookmark.id, {
+        onSuccess: () => toast({ title: "Marked as read" }),
+        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+      });
+    }
   };
 
   const deleteRevealed = swipeX <= -threshold;
@@ -154,6 +199,21 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
               {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              {(onPin || onUnpin) && (
+                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
+                  {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                </Button>
+              )}
+              {onArchive && (
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleArchive} title="Archive">
+                  <Archive className="h-3 w-3" />
+                </Button>
+              )}
+              {(onMarkRead || onMarkUnread) && (
+                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
+                  {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
                 <Copy className="h-3 w-3" />
               </Button>
@@ -182,6 +242,12 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
                 <span className="text-xs text-muted-foreground font-mono truncate">
                   {bookmark.domain}
                 </span>
+                {!!bookmark.is_pinned && (
+                  <Pin className="h-3 w-3 text-primary shrink-0" />
+                )}
+                {bookmark.read_at && (
+                  <BookOpen className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                )}
               </div>
               <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
             </div>
@@ -219,6 +285,21 @@ export function BookmarkCard({ bookmark, onDelete, onClick, selectionMode, selec
                 {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
               </span>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {(onPin || onUnpin) && (
+                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
+                    {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                  </Button>
+                )}
+                {onArchive && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleArchive} title="Archive">
+                    <Archive className="h-3 w-3" />
+                  </Button>
+                )}
+                {(onMarkRead || onMarkUnread) && (
+                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
+                    {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
                   <Copy className="h-3 w-3" />
                 </Button>

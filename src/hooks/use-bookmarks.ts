@@ -39,6 +39,9 @@ export interface UIBookmark {
   updatedAt: string;
   // Keep original API fields for mutations
   category_id: string | null;
+  is_pinned: 0 | 1;
+  is_archived: 0 | 1;
+  read_at: string | null;
 }
 
 export interface UICategory {
@@ -71,6 +74,9 @@ function toUIBookmark(bm: ApiBookmark, categoryMap: Map<string, string>): UIBook
     status: bm.status,
     savedAt: bm.created_at,
     updatedAt: bm.updated_at,
+    is_pinned: bm.is_pinned,
+    is_archived: bm.is_archived,
+    read_at: bm.read_at,
   };
 }
 
@@ -80,6 +86,7 @@ export const bookmarkKeys = {
   all: ["bookmarks"] as const,
   lists: () => [...bookmarkKeys.all, "list"] as const,
   list: (filters: object) => [...bookmarkKeys.lists(), filters] as const,
+  archive: ["bookmarks", "archive"] as const,
   search: (q: string, filters: object) => ["search", q, filters] as const,
   categories: ["categories"] as const,
   tags: ["tags"] as const,
@@ -269,10 +276,18 @@ export function useBookmarks() {
       patch,
     }: {
       id: string;
-      patch: { title?: string | null; category_id?: string | null; tags?: string[] };
+      patch: {
+        title?: string | null;
+        category_id?: string | null;
+        tags?: string[];
+        is_pinned?: 0 | 1;
+        is_archived?: 0 | 1;
+        read_at?: string | null;
+      };
     }) => updateBookmark(id, patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.archive });
       qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
       qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     },
@@ -326,6 +341,30 @@ export function useBookmarks() {
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
   }, [qc]);
 
+  const pinBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { is_pinned: 1 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const unpinBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { is_pinned: 0 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const archiveBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { is_archived: 1 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const unarchiveBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { is_archived: 0 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const markAsRead = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { read_at: new Date().toISOString() } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const markAsUnread = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { read_at: null } }, callbacks);
+  }, [updateBookmarkMutation]);
+
   const isLoading = bookmarksQuery.isLoading || searchQuery_.isLoading;
   const isError = bookmarksQuery.isError || searchQuery_.isError;
 
@@ -355,6 +394,11 @@ export function useBookmarks() {
     updateBookmarkCategory,
     updateBookmarkField,
     importBookmarks,
+    pinBookmark,
+    unpinBookmark,
+    archiveBookmark,
+    markAsRead,
+    markAsUnread,
     isLoading,
     isError,
   };

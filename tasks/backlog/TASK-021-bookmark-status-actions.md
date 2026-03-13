@@ -1,6 +1,6 @@
 # TASK-021: Bookmark Status Actions (Pin, Archive, Read)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** M1
 **Area:** backend / frontend
@@ -28,9 +28,9 @@ Wire up the three status fields that exist in the DB schema but have no API or U
 
 ## Acceptance Criteria
 
-- [ ] Pin/unpin persists across page reload
-- [ ] Archived bookmarks do not appear in the main feed
-- [ ] `/archive` page shows only archived, non-trashed bookmarks
-- [ ] Read/unread toggle updates `read_at` (set to now) or clears it (null)
-- [ ] Pinned bookmarks appear at top of category list by default
-- [ ] Global pin preference is respected when toggled
+- [x] Pin/unpin persists across page reload
+- [x] Archived bookmarks do not appear in the main feed
+- [x] `/archive` page shows only archived, non-trashed bookmarks
+- [x] Read/unread toggle updates `read_at` (set to now) or clears it (null)
+- [x] Pinned bookmarks appear at top of category list by default
+- [x] Global pin preference is respected when toggled

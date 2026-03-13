@@ -165,6 +165,8 @@ export interface ListBookmarksParams {
   category?: string;
   date_from?: string;
   date_to?: string;
+  /** When true, returns only archived bookmarks (for the /archive page). */
+  archived?: boolean;
 }
 
 export async function listBookmarks(params: ListBookmarksParams = {}): Promise<ListResult<ApiBookmark>> {
@@ -176,6 +178,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<L
   if (params.category) q.set("category", params.category);
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
+  if (params.archived) q.set("archived", "true");
   const qs = q.toString();
   return apiFetch<ListResult<ApiBookmark>>(`/bookmarks${qs ? `?${qs}` : ""}`);
 }
@@ -193,7 +196,14 @@ export async function createBookmark(url: string, title?: string): Promise<{ dat
 
 export async function updateBookmark(
   id: string,
-  patch: { title?: string | null; category_id?: string | null; tags?: string[] }
+  patch: {
+    title?: string | null;
+    category_id?: string | null;
+    tags?: string[];
+    is_pinned?: 0 | 1;
+    is_archived?: 0 | 1;
+    read_at?: string | null;
+  }
 ): Promise<{ data: ApiBookmark }> {
   return apiFetch<{ data: ApiBookmark }>(`/bookmarks/${id}`, {
     method: "PUT",

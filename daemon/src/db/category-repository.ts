@@ -23,7 +23,7 @@ export class CategoryRepository {
         `SELECT c.*,
                 COUNT(b.id) AS bookmark_count
          FROM categories c
-         LEFT JOIN bookmarks b ON b.category_id = c.id AND b.is_archived = 0
+         LEFT JOIN bookmarks b ON b.category_id = c.id AND b.is_archived = 0 AND b.is_trashed = 0
          GROUP BY c.id
          ORDER BY c.name`
       )

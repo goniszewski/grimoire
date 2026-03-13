@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -14,6 +14,11 @@ interface BookmarkDetailContentProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
+  onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onMarkRead?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onMarkUnread?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   relatedBookmarks: Bookmark[];
   onSelectRelated: (bookmark: Bookmark) => void;
 }
@@ -23,6 +28,11 @@ export function BookmarkDetailContent({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
+  onPin,
+  onUnpin,
+  onArchive,
+  onMarkRead,
+  onMarkUnread,
   relatedBookmarks,
   onSelectRelated,
 }: BookmarkDetailContentProps) {
@@ -220,7 +230,7 @@ export function BookmarkDetailContent({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -238,6 +248,65 @@ export function BookmarkDetailContent({
             Open
           </a>
         </Button>
+        {(onPin || onUnpin) && (
+          <Button
+            variant={bookmark.is_pinned ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (bookmark.is_pinned) {
+                onUnpin?.(bookmark.id, {
+                  onSuccess: () => toast({ title: "Unpinned" }),
+                  onError: () => toast({ title: "Failed to unpin", variant: "destructive" }),
+                });
+              } else {
+                onPin?.(bookmark.id, {
+                  onSuccess: () => toast({ title: "Pinned" }),
+                  onError: () => toast({ title: "Failed to pin", variant: "destructive" }),
+                });
+              }
+            }}
+          >
+            {bookmark.is_pinned ? <PinOff className="h-3.5 w-3.5 mr-1.5" /> : <Pin className="h-3.5 w-3.5 mr-1.5" />}
+            {bookmark.is_pinned ? "Unpin" : "Pin"}
+          </Button>
+        )}
+        {onArchive && !bookmark.is_archived && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onArchive(bookmark.id, {
+                onSuccess: () => toast({ title: "Archived", description: "Bookmark moved to archive." }),
+                onError: () => toast({ title: "Failed to archive", variant: "destructive" }),
+              });
+            }}
+          >
+            <Archive className="h-3.5 w-3.5 mr-1.5" />
+            Archive
+          </Button>
+        )}
+        {(onMarkRead || onMarkUnread) && (
+          <Button
+            variant={bookmark.read_at ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (bookmark.read_at) {
+                onMarkUnread?.(bookmark.id, {
+                  onSuccess: () => {},
+                  onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+                });
+              } else {
+                onMarkRead?.(bookmark.id, {
+                  onSuccess: () => toast({ title: "Marked as read" }),
+                  onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+                });
+              }
+            }}
+          >
+            {bookmark.read_at ? <BookDashed className="h-3.5 w-3.5 mr-1.5" /> : <BookOpen className="h-3.5 w-3.5 mr-1.5" />}
+            {bookmark.read_at ? "Mark unread" : "Mark read"}
+          </Button>
+        )}
       </div>
 
       {/* Related */}

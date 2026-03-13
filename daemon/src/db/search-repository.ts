@@ -99,7 +99,7 @@ export class SearchRepository {
     const hasQuery = typeof q === "string" && q.trim().length > 0;
 
     // ── Build bookmark filter conditions ──────────────────────────────────────
-    const conditions: string[] = ["b.is_archived = 0"];
+    const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
     const filterParams: (string | number)[] = [];
 
     if (tag) {
@@ -401,7 +401,7 @@ export class SearchRepository {
 
   /** Return a Set of bookmark IDs that pass the structural filters (not archived, tag, domain, etc). */
   private getFilteredBookmarkIds(opts: SearchOptions): Set<string> {
-    const conditions: string[] = ["b.is_archived = 0"];
+    const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
     const params: (string | number)[] = [];
 
     if (opts.tag) {

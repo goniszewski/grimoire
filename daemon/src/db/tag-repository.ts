@@ -20,7 +20,7 @@ export class TagRepository {
                 COUNT(b.id) AS bookmark_count
          FROM tags t
          LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
-         LEFT JOIN bookmarks b ON b.id = bt.bookmark_id AND b.is_archived = 0
+         LEFT JOIN bookmarks b ON b.id = bt.bookmark_id AND b.is_archived = 0 AND b.is_trashed = 0
          GROUP BY t.id
          ORDER BY t.name`
       )
