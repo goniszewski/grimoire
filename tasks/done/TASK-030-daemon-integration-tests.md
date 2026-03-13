@@ -1,6 +1,6 @@
 # TASK-030: Daemon Integration Tests
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** M4
 **Area:** backend / testing
@@ -44,6 +44,6 @@ End-to-end tests for the daemon API using a real in-memory SQLite database and a
 
 ## Acceptance Criteria
 
-- [ ] All scenarios pass with `bun test`
-- [ ] No real HTTP requests made to external URLs
-- [ ] Tests run in < 10 seconds total
+- [x] All scenarios pass with `bun test`
+- [x] No real HTTP requests made to external URLs
+- [x] Tests run in < 10 seconds total

@@ -82,7 +82,8 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
       return problem(c, 500, "Internal Server Error", "Failed to apply suggestion action");
     }
 
-    return ok(c, updated!);
+    if (!updated) return problem(c, 500, "Internal Server Error", "Failed to resolve suggestion");
+    return ok(c, updated);
   });
 
   // POST /suggestions/:id/reject — reject a suggestion
@@ -165,7 +166,7 @@ function applyAction(
       const categoryIdA = metadata.categoryIdA as string | undefined;
       const categoryIdB = metadata.categoryIdB as string | undefined;
       if (!categoryIdA || !categoryIdB) {
-        throw new Error("merge_categories suggestion missing categoryIdA or categoryIdB in metadata");
+        throw new SuggestionActionError(422, "Unprocessable Entity", "Suggestion metadata is malformed or incomplete");
       }
 
       const catA = categoryRepo.findById(categoryIdA);
@@ -205,7 +206,7 @@ function applyAction(
       const bookmarkIdA = metadata.bookmarkIdA as string | undefined;
       const bookmarkIdB = metadata.bookmarkIdB as string | undefined;
       if (!bookmarkIdA || !bookmarkIdB) {
-        throw new Error("duplicate_bookmark suggestion missing bookmarkIdA or bookmarkIdB in metadata");
+        throw new SuggestionActionError(422, "Unprocessable Entity", "Suggestion metadata is malformed or incomplete");
       }
 
       // Trash the newer bookmark (B), keep the older (A) as canonical

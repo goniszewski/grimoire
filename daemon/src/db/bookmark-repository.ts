@@ -303,7 +303,7 @@ export class BookmarkRepository {
     this.db.transaction(() => {
       if (sets.length) {
         this.db
-          .query(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ?`)
+          .query(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ? AND is_trashed = 0`)
           .run(...params, id);
       }
 
@@ -372,6 +372,7 @@ export class BookmarkRepository {
 
   /** Hard-delete all trashed bookmarks older than the given number of days. Returns count deleted. */
   purgeExpired(days = 30): number {
+    if (days < 1) throw new Error("days must be at least 1");
     const modifier = `-${days} days`;
     const info = this.db.run(
       `DELETE FROM bookmarks

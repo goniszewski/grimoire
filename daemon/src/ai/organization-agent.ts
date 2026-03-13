@@ -8,9 +8,9 @@
  *   3. New subcategory suggestions — via LLM, when a cluster of uncategorized
  *      bookmarks has no existing matching category
  *
- * The agent never mutates data directly. All outcomes are written to the
- * `agent_suggestions` table for human review (or auto-applied when
- * confidence ≥ AUTO_APPLY_THRESHOLD).
+ * Low-confidence outcomes are written to the `agent_suggestions` table for
+ * human review. High-confidence outcomes (≥ AUTO_APPLY_THRESHOLD) are
+ * auto-applied directly: duplicates are trashed, similar categories are merged.
  */
 
 import { Database } from "bun:sqlite";
