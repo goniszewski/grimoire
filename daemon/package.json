@@ -7,7 +7,8 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "check": "bun tsc --noEmit",
-    "db:seed": "bun run src/db/seed/dev-seed.ts"
+    "db:seed": "bun run src/db/seed/dev-seed.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "hono": "^4.12.7",

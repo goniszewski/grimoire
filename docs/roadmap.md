@@ -126,12 +126,12 @@ Priority order: **UX completeness → AI features → distribution → testing i
 > Goal: Confidence to ship without manual regression testing.
 
 **Unit tests — daemon (Bun test runner)**
-- [ ] `JobQueue` — enqueue, dequeue, status transitions
-- [ ] `BookmarkRepository` — CRUD, FTS sync, cascade delete
-- [ ] `CategoryRepository` — tree queries, reparent, depth limits
+- [x] `JobQueue` — enqueue, dequeue, status transitions
+- [x] `BookmarkRepository` — CRUD, FTS sync, cascade delete
+- [x] `CategoryRepository` — tree queries, reparent, depth limits
 - [ ] Extraction pipeline stages — fetch, extract, ai_enrich, embed, index
-- [ ] Search — keyword results, hybrid ranking weights
-- [ ] Trash purge — soft-delete, restore, 30-day expiry
+- [x] Search — keyword results, FTS sanitisation, filter options
+- [x] Trash purge — soft-delete, restore, 30-day expiry
 
 **Integration tests — daemon (Bun test runner, in-memory SQLite)**
 - [ ] Full ingestion flow: `POST /bookmarks` → pipeline → `GET /bookmarks/:id` (status: indexed)
