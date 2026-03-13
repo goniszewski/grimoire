@@ -134,15 +134,26 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: record to timeline as a flag only — no data is deleted.
-          // Using "duplicate_flagged" to accurately reflect the action taken.
-          this.timelineRepo.insert(
-            "duplicate_flagged",
-            value,
-            { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
-            "agent"
-          );
-          log.info("OrganizationAgent: auto-flagged duplicate", { idA, idB, sim });
+          // High-confidence: auto-trash the duplicate (idB) and record to timeline.
+          const trashed = this.bookmarkRepo.softDelete(idB);
+          if (trashed) {
+            this.timelineRepo.insert(
+              "duplicate_removed",
+              `Auto-removed duplicate: "${bmB.title ?? bmB.url}" (kept "${bmA.title ?? bmA.url}")`,
+              { canonicalBookmarkId: idA, trashedBookmarkId: idB, similarity: sim },
+              "agent",
+              idB
+            );
+            log.info("OrganizationAgent: auto-removed duplicate", { canonical: idA, trashed: idB, sim });
+          } else {
+            this.timelineRepo.insert(
+              "duplicate_flagged",
+              value,
+              { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
+              "agent"
+            );
+            log.info("OrganizationAgent: auto-flagged duplicate (already trashed?)", { idA, idB, sim });
+          }
         } else {
           this.suggRepo.insert(
             "duplicate_bookmark",
@@ -191,10 +202,13 @@ export class OrganizationAgent {
     }
 
     const catIds = [...embMap.keys()];
+    const mergedIds = new Set<string>();
     let found = 0;
 
     for (let i = 0; i < catIds.length; i++) {
+      if (mergedIds.has(catIds[i])) continue;
       for (let j = i + 1; j < catIds.length; j++) {
+        if (mergedIds.has(catIds[j])) continue;
         const idA = catIds[i];
         const idB = catIds[j];
         const sim = cosineSimilarity(embMap.get(idA)!, embMap.get(idB)!);
@@ -210,17 +224,26 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: record as a suggestion to the timeline — no merge occurs.
-          // Using "category_merge_suggested" to accurately reflect the action taken.
+          // High-confidence: auto-merge catB into catA and record to timeline.
+          this.db.transaction(() => {
+            this.db.run(
+              "UPDATE bookmarks SET category_id = ? WHERE category_id = ? AND is_trashed = 0",
+              [idA, idB]
+            );
+            this.categoryRepo.delete(idB);
+          })();
+
+          mergedIds.add(idB);
           this.timelineRepo.insert(
-            "category_merge_suggested",
-            `High-confidence merge suggestion: "${catA.name}" and "${catB.name}"`,
-            { categoryIdA: idA, categoryIdB: idB, similarity: sim },
+            "category_merged",
+            `Auto-merged "${catB.name}" into "${catA.name}"`,
+            { targetCategoryId: idA, sourceCategoryId: idB, targetName: catA.name, sourceName: catB.name, similarity: sim },
             "agent"
           );
-          log.info("OrganizationAgent: auto-logged category merge suggestion", {
-            catA: catA.name, catB: catB.name, sim,
+          log.info("OrganizationAgent: auto-merged categories", {
+            target: catA.name, source: catB.name, sim,
           });
+          break; // stop inner loop — idA has absorbed idB; move to next idA
         } else {
           this.suggRepo.insert(
             "merge_categories",

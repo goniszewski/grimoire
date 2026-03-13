@@ -16,6 +16,9 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  CheckCheck,
+  XCircle,
+  Flag,
 } from "lucide-react";
 import type { TimelineEventType } from "@/lib/api";
 
@@ -49,6 +52,26 @@ const EVENT_CONFIG: Record<
     label: "Cluster labeled",
     icon: <Tag className="h-3.5 w-3.5" />,
     color: "text-purple-500",
+  },
+  category_merge_suggested: {
+    label: "Merge suggested",
+    icon: <GitMerge className="h-3.5 w-3.5" />,
+    color: "text-sky-500",
+  },
+  duplicate_flagged: {
+    label: "Duplicate flagged",
+    icon: <Flag className="h-3.5 w-3.5" />,
+    color: "text-orange-500",
+  },
+  suggestion_accepted: {
+    label: "Suggestion accepted",
+    icon: <CheckCheck className="h-3.5 w-3.5" />,
+    color: "text-emerald-500",
+  },
+  suggestion_rejected: {
+    label: "Suggestion rejected",
+    icon: <XCircle className="h-3.5 w-3.5" />,
+    color: "text-muted-foreground",
   },
 };
 

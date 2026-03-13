@@ -8,7 +8,9 @@ export type TimelineEventType =
   | "category_renamed"
   | "duplicate_removed"
   | "duplicate_flagged"
-  | "cluster_labeled";
+  | "cluster_labeled"
+  | "suggestion_accepted"
+  | "suggestion_rejected";
 
 export type TimelineSource = "agent" | "user";
 

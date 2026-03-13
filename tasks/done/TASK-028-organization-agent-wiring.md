@@ -1,6 +1,6 @@
 # TASK-028: Organization Agent — Full Wiring
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** M3
 **Area:** backend / frontend
@@ -35,9 +35,9 @@ The organization agent generates suggestions and writes them to `agent_suggestio
 
 ## Acceptance Criteria
 
-- [ ] Accepting a `new_subcategory` suggestion creates the category
-- [ ] Accepting a `merge_categories` suggestion merges correctly
-- [ ] Accepting a `duplicate` suggestion moves the duplicate to Trash
-- [ ] All agent actions are recorded in `timeline_events`
-- [ ] Auto-apply fires for confidence ≥ 0.9
-- [ ] Agent does not run with < 20 bookmarks
+- [x] Accepting a `new_subcategory` suggestion creates the category
+- [x] Accepting a `merge_categories` suggestion merges correctly
+- [x] Accepting a `duplicate` suggestion moves the duplicate to Trash
+- [x] All agent actions are recorded in `timeline_events`
+- [x] Auto-apply fires for confidence ≥ 0.9
+- [x] Agent does not run with < 20 bookmarks

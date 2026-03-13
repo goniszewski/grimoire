@@ -356,9 +356,13 @@ export async function listDomains(): Promise<{ data: ApiDomain[] }> {
 export type TimelineEventType =
   | "category_created"
   | "category_merged"
+  | "category_merge_suggested"
   | "category_renamed"
   | "duplicate_removed"
-  | "cluster_labeled";
+  | "duplicate_flagged"
+  | "cluster_labeled"
+  | "suggestion_accepted"
+  | "suggestion_rejected";
 
 export interface ApiTimelineEvent {
   id: string;

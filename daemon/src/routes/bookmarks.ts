@@ -243,7 +243,8 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
   router.post("/bookmarks/:id/restore", (c) => {
     const restored = repo.restore(c.req.param("id"));
     if (!restored) return problem(c, 404, "Not Found", "Bookmark not found or not in trash");
-    const bm = repo.findById(c.req.param("id"))!;
+    const bm = repo.findById(c.req.param("id"));
+    if (!bm) return problem(c, 500, "Internal Server Error", "Bookmark restored but could not be fetched");
     return ok(c, bm);
   });
 
