@@ -24,6 +24,7 @@ export interface BookmarkRow {
   is_pinned: 0 | 1;
   is_archived: 0 | 1;
   is_trashed: 0 | 1;
+  trashed_at: string | null;
   read_at: string | null;
   created_at: string;
   updated_at: string;

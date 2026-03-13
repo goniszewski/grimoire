@@ -87,6 +87,7 @@ export const bookmarkKeys = {
   lists: () => [...bookmarkKeys.all, "list"] as const,
   list: (filters: object) => [...bookmarkKeys.lists(), filters] as const,
   archive: ["bookmarks", "archive"] as const,
+  trash: ["bookmarks", "trash"] as const,
   search: (q: string, filters: object) => ["search", q, filters] as const,
   categories: ["categories"] as const,
   tags: ["tags"] as const,

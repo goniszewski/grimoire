@@ -11,3 +11,5 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_is_trashed ON bookmarks(is_trashed);
 -- Because the old system used is_archived=1 for both delete and archive, we cannot
 -- distinguish them retroactively, so we treat all existing is_archived=1 rows as trashed.
 UPDATE bookmarks SET is_trashed = 1, is_archived = 0 WHERE is_archived = 1;
+
+INSERT OR IGNORE INTO schema_migrations(version) VALUES ('0006');

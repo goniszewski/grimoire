@@ -1,6 +1,6 @@
 # TASK-022: Trash System (Soft Delete + 30-day Purge)
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** M1
 **Area:** backend / frontend

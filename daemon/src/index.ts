@@ -8,6 +8,7 @@ import { createApp } from "./server.js";
 import { getDatabase, closeDatabase } from "./db/database.js";
 import { runPipeline } from "./pipeline/pipeline.js";
 import { OrganizationAgent } from "./ai/organization-agent.js";
+import { BookmarkRepository } from "./db/bookmark-repository.js";
 import type { IngestJobPayload } from "./types/job.js";
 
 const startTime = new Date();
@@ -32,6 +33,13 @@ scheduler.register("heartbeat", 60_000, () => {
 const AGENT_INTERVAL_MS = parseInt(process.env.AGENT_INTERVAL_MS ?? "", 10) || 24 * 60 * 60_000; // default: daily
 const agent = new OrganizationAgent(db);
 scheduler.register("organization-agent", AGENT_INTERVAL_MS, () => agent.run());
+
+const bookmarkRepo = new BookmarkRepository(db);
+const PURGE_INTERVAL_MS = parseInt(process.env.PURGE_INTERVAL_MS ?? "", 10) || 24 * 60 * 60_000; // default: daily
+scheduler.register("trash-purge", PURGE_INTERVAL_MS, () => {
+  const count = bookmarkRepo.purgeExpired(30);
+  if (count > 0) log.info("Trash purge: deleted expired bookmarks", { count });
+});
 
 const app = createApp({ db, queue, startTime, version: VERSION });
 

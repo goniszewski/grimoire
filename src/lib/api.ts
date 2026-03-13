@@ -25,6 +25,8 @@ export interface ApiBookmark {
   screenshot_url: string | null;
   is_pinned: 0 | 1;
   is_archived: 0 | 1;
+  is_trashed: 0 | 1;
+  trashed_at: string | null;
   read_at: string | null;
   created_at: string;
   updated_at: string;
@@ -213,6 +215,18 @@ export async function updateBookmark(
 
 export async function deleteBookmark(id: string): Promise<void> {
   await apiFetch<void>(`/bookmarks/${id}`, { method: "DELETE" });
+}
+
+export async function restoreBookmark(id: string): Promise<{ data: ApiBookmark }> {
+  return apiFetch<{ data: ApiBookmark }>(`/bookmarks/${id}/restore`, { method: "POST" });
+}
+
+export async function permanentDeleteBookmark(id: string): Promise<void> {
+  await apiFetch<void>(`/bookmarks/${id}/permanent`, { method: "DELETE" });
+}
+
+export async function listTrashedBookmarks(): Promise<{ data: ApiBookmark[] }> {
+  return apiFetch<{ data: ApiBookmark[] }>("/trash");
 }
 
 export async function getBookmarkStatus(id: string): Promise<{ data: PipelineStatus }> {

@@ -8,6 +8,7 @@ import Domains from "./pages/Domains";
 import Timeline from "./pages/Timeline";
 import ReviewQueue from "./pages/ReviewQueue";
 import Archive from "./pages/Archive";
+import Trash from "./pages/Trash";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/review-queue" element={<ReviewQueue />} />
           <Route path="/archive" element={<Archive />} />
+          <Route path="/trash" element={<Trash />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

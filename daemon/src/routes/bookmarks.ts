@@ -215,11 +215,32 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     return ok(c, updated);
   });
 
-  // DELETE /bookmarks/:id — soft delete
+  // DELETE /bookmarks/:id — soft delete (moves to trash)
   router.delete("/bookmarks/:id", (c) => {
     const deleted = repo.softDelete(c.req.param("id"));
     if (!deleted) return problem(c, 404, "Not Found", "Bookmark not found");
     return c.body(null, 204);
+  });
+
+  // POST /bookmarks/:id/restore — restore from trash
+  router.post("/bookmarks/:id/restore", (c) => {
+    const restored = repo.restore(c.req.param("id"));
+    if (!restored) return problem(c, 404, "Not Found", "Bookmark not found or not in trash");
+    const bm = repo.findById(c.req.param("id"))!;
+    return ok(c, bm);
+  });
+
+  // DELETE /bookmarks/:id/permanent — hard delete immediately (bookmark must be in trash)
+  router.delete("/bookmarks/:id/permanent", (c) => {
+    const deleted = repo.permanentDelete(c.req.param("id"));
+    if (!deleted) return problem(c, 404, "Not Found", "Bookmark not found or not in trash");
+    return c.body(null, 204);
+  });
+
+  // GET /trash — list trashed bookmarks
+  router.get("/trash", (c) => {
+    const items = repo.listTrashed();
+    return ok(c, items);
   });
 
   // GET /bookmarks/:id/related — semantically similar bookmarks

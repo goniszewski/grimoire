@@ -313,10 +313,69 @@ export class BookmarkRepository {
   /** Soft delete: mark as trashed (hidden from all views, including archive). */
   softDelete(id: string): boolean {
     const info = this.db.run(
-      "UPDATE bookmarks SET is_trashed = 1 WHERE id = ? AND is_trashed = 0",
+      "UPDATE bookmarks SET is_trashed = 1, trashed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ? AND is_trashed = 0",
       [id]
     );
     return info.changes > 0;
+  }
+
+  /** Restore a trashed bookmark back to the active library. */
+  restore(id: string): boolean {
+    const info = this.db.run(
+      "UPDATE bookmarks SET is_trashed = 0, trashed_at = NULL WHERE id = ? AND is_trashed = 1",
+      [id]
+    );
+    return info.changes > 0;
+  }
+
+  /** Hard-delete a trashed bookmark immediately. Only operates on bookmarks already in trash. */
+  permanentDelete(id: string): boolean {
+    const info = this.db.run("DELETE FROM bookmarks WHERE id = ? AND is_trashed = 1", [id]);
+    return info.changes > 0;
+  }
+
+  /** List trashed bookmarks, ordered by trashed_at desc. */
+  listTrashed(): BookmarkWithTags[] {
+    const rows = this.db
+      .query<BookmarkRow, []>(
+        "SELECT * FROM bookmarks WHERE is_trashed = 1 ORDER BY trashed_at DESC, created_at DESC"
+      )
+      .all();
+
+    if (rows.length === 0) return [];
+
+    const ids = rows.map((r) => r.id);
+    const placeholders = ids.map(() => "?").join(",");
+    const tagRows = this.db
+      .query<{ bookmark_id: string; name: string }, string[]>(
+        `SELECT bt.bookmark_id, t.name FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id IN (${placeholders})
+         ORDER BY t.name`
+      )
+      .all(...ids);
+
+    const tagMap = new Map<string, string[]>();
+    for (const tr of tagRows) {
+      const list = tagMap.get(tr.bookmark_id) ?? [];
+      list.push(tr.name);
+      tagMap.set(tr.bookmark_id, list);
+    }
+
+    return rows.map((r) => ({ ...r, tags: tagMap.get(r.id) ?? [] }));
+  }
+
+  /** Hard-delete all trashed bookmarks older than the given number of days. Returns count deleted. */
+  purgeExpired(days = 30): number {
+    const modifier = `-${days} days`;
+    const info = this.db.run(
+      `DELETE FROM bookmarks
+       WHERE is_trashed = 1
+         AND trashed_at IS NOT NULL
+         AND trashed_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', ?)`,
+      [modifier]
+    );
+    return info.changes;
   }
 
   /** Upsert a tag by name (case-insensitive) and link it to a bookmark. */

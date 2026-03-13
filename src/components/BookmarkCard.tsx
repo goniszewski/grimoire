@@ -319,9 +319,9 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
                   </AlertDialogTrigger>
                   <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete bookmark?</AlertDialogTitle>
+                      <AlertDialogTitle>Move to trash?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        "{bookmark.title}" will be removed. You can undo this from the toast notification.
+                        "{bookmark.title}" will be moved to trash and permanently deleted after 30 days.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -330,7 +330,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         onClick={() => onDelete(bookmark.id)}
                       >
-                        Delete
+                        Move to trash
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
