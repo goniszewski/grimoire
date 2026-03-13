@@ -2,8 +2,8 @@
 
 Product Requirements Document (PRD)
 
-Version: v0.4  
-Status: Pre-implementation  
+Version: v0.5  
+Status: Living document aligned to post-v0-alpha implementation  
 Author: Robert Goniszewski  
 Date: March 2026
 
@@ -24,6 +24,12 @@ Users save URLs and the system:
 - creates embeddings
 - classifies bookmarks into categories
 - detects emerging topics over time
+
+Current product state:
+
+- v0-alpha is complete
+- v0-beta is in progress
+- core save, extract, keyword search, semantic search, and review flows already exist
 
 Core promise:
 
@@ -234,11 +240,14 @@ Extraction strategies vary by content type.
 | Documentation pages | main page content |
 | Fallback | Readability |
 
-Future extractors:
+Additional implemented extractors:
 
 - PDF
-- GitHub issues
 - YouTube transcripts
+
+Future extractors:
+
+- GitHub issues
 
 ---
 
@@ -268,7 +277,7 @@ Future imports:
 The AI agent periodically analyzes the library to:
 
 - detect clusters
-- create new subcategories
+- propose or create new categories when confidence is high enough
 - merge related categories
 - detect duplicates
 
@@ -344,9 +353,10 @@ Users configure providers manually.
 
 For new libraries (<20 bookmarks):
 
-- clustering disabled
-- categories created manually or by AI
-- search uses only keyword results
+- organization clustering and auto-apply actions are disabled
+- categories may still be created manually or via normal bookmark enrichment
+- keyword search always works
+- semantic and hybrid search work only when embeddings exist for the relevant bookmarks
 
 Clustering activates when library size exceeds threshold.
 
@@ -375,11 +385,11 @@ UI connects via:
 
 | Component | Technology |
 | --------- | ------------ |
-| Runtime | Node.js or Bun |
+| Runtime | Bun |
 | API | Hono |
 | Database | SQLite |
 | Search | FTS5 |
-| Vectors | sqlite-vec |
+| Vectors | float32 embeddings stored in SQLite BLOBs (sqlite-vec compatible schema deferred) |
 | Frontend | React SPA |
 | Installer | Shell script |
 | Autostart | LaunchAgent (macOS), systemd (Linux) |
@@ -409,7 +419,7 @@ bookmark 1—1 embedding
 bookmark 1—many suggestions  
 ```
 
-Embeddings stored per bookmark.
+Embeddings are stored per bookmark.
 
 ---
 
@@ -463,6 +473,42 @@ Future:
 
 - automated periodic backup
 
+### Backup Strategy
+
+Little Imp should treat backup as a separate concern from sync.
+
+Principles:
+
+- backups must be restorable without requiring the original machine
+- backup must preserve SQLite data, uploaded metadata, settings, and future schema versions
+- backup should be append-only snapshots, not live multi-writer replication
+- restore should always create a local copy first, never run directly from a remote mount
+
+Recommended backup model:
+
+1. create a consistent local snapshot
+2. compress and checksum it
+3. store a small manifest with app version, schema version, created-at timestamp, and backup format version
+4. upload the snapshot to a configured target or copy it to a user-selected folder
+
+Suggested backup targets in priority order:
+
+- local folder / external disk
+- S3-compatible object storage
+- cloud-synced folder chosen by the user (for example iCloud Drive, Dropbox, Google Drive)
+
+Not recommended for the first implementation:
+
+- direct multi-provider integrations for every consumer cloud drive
+- true multi-device sync of the live database
+- CloudKit-specific sync as the primary backup path
+
+Rationale:
+
+- S3-compatible storage gives the best cross-provider abstraction for managed remote backups
+- user-selected synced folders give the simplest path to iCloud Drive and similar providers without app-specific integrations
+- backup and restore remain understandable because the product always produces the same portable snapshot format
+
 ---
 
 ## 17. Security
@@ -473,12 +519,13 @@ Principles:
 - API bound to localhost
 - no telemetry
 - optional external AI providers
+- remote backup credentials, if configured, stored locally and scoped to backup only
 
 ---
 
 ## 18. Development Milestones
 
-### v0-alpha
+### v0-alpha ✅
 
 Goal: validate **save → search → retrieve** workflow.
 
@@ -491,11 +538,11 @@ Features:
 - minimal React UI
 - daemon installer
 
-No AI.
+Delivered.
 
 ---
 
-### v0-beta
+### v0-beta (current target)
 
 Adds AI enrichment:
 
@@ -507,7 +554,7 @@ Adds AI enrichment:
 
 ---
 
-### v0.2
+### v0.2 (later)
 
 Adds autonomous organization:
 

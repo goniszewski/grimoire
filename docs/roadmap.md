@@ -38,6 +38,8 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - Category move via drag-and-drop (only "Move to…" dropdown implemented)
 - Unit and integration tests
 - Distribution / installer validation
+- First-run onboarding / empty state polish
+- Backup / restore documentation
 
 ---
 
@@ -140,7 +142,7 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - [ ] Trash: delete → appears in `/trash` → restore → no longer in trash; purge after 30 days
 
 **Frontend tests (Vitest)**
-- [ ] Unit tests for hooks (`use-bookmarks`, `use-preferences`)
+- [ ] Unit tests for hooks (`use-bookmarks`, `use-daemon-status`, `use-suggestions`)
 - [ ] Component tests for `BookmarkCard`, `BookmarkDetailContent`, `AppSidebar`
 - [ ] E2E: add bookmark → appears in list → open detail → edit notes → save
 
@@ -159,12 +161,23 @@ Priority order: **UX completeness → AI features → distribution → testing i
 **First-run experience**
 - [ ] Detect empty library state — show onboarding message or empty state UI
 - [ ] Cold start: clustering disabled under 20 bookmarks — enforced ✓; verify from UI perspective
+- [ ] Explain degraded mode clearly when AI providers are unset: keyword search works, enrichment / embeddings are skipped
 - [ ] Graceful "daemon offline" banner already exists — confirm it shows on first launch before daemon starts
 
 **Packaging**
 - [ ] Single-command install: `curl | sh` or Homebrew formula (future)
 - [ ] Document `DATA_DIR` location and manual backup procedure
+- [ ] Document restore procedure from an existing data directory on a fresh install
 - [ ] Release notes / changelog format established
+
+**Backup and restore**
+- [ ] Define portable backup bundle format: SQLite DB + manifest + checksums + optional attachments
+- [ ] Add "Create backup now" action that writes to a local folder
+- [ ] Add "Restore from backup" flow with compatibility checks and clear overwrite rules
+- [ ] Add scheduled local snapshots with retention policy
+- [ ] Add remote backup target abstraction with first-class S3-compatible support
+- [ ] Support user-selected cloud-synced folders as normal local destinations (iCloud Drive, Dropbox, Google Drive, OneDrive)
+- [ ] Defer provider-specific APIs unless folder-based backup proves insufficient
 
 ---
 
@@ -194,6 +207,8 @@ Priority order: **UX completeness → AI features → distribution → testing i
 | Review AI suggestions (accept/reject wired) | ✅ Done (M3) |
 | Find related bookmarks | ✅ Done (M3) |
 | Semantic / hybrid search | ✅ Done (M3) |
+| Understand degraded mode when AI is not configured | ❌ Not yet explicit in UI/docs |
+| Back up and restore local data confidently | ⚠️ Partial (backup path planned; restore flow undocumented) |
 
 ---
 
@@ -209,6 +224,10 @@ Priority order: **UX completeness → AI features → distribution → testing i
 | 6 | Test framework | Bun test runner (daemon) + Vitest (frontend) |
 | 7 | Suggestion acceptance atomicity | `applyAction` + `repo.accept()` + timeline insert wrapped in single SQLite transaction |
 | 8 | Auto-apply behavior | Confidence ≥ 0.9: execute action immediately + record timeline. Lower: queue for human review. |
+| 9 | Cold-start search behavior | Under 20 bookmarks, clustering/organization automation is limited, but keyword search remains available and semantic search can still work for bookmarks that already have embeddings. |
+| 10 | Vector storage approach | Embeddings are currently stored as float32 BLOBs in SQLite; sqlite-vec remains a future optimization, not a current dependency. |
+| 11 | Backup model | Backup is snapshot-based, not live sync. Restore always recreates a local data directory from a portable backup bundle. |
+| 12 | Cloud backup scope | First remote target is S3-compatible object storage. iCloud Drive and similar services are supported initially via user-selected synced folders, not dedicated APIs. |
 
 ---
 
