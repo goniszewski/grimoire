@@ -4,8 +4,10 @@ import { TimelineEventRow } from "./types.js";
 export type TimelineEventType =
   | "category_created"
   | "category_merged"
+  | "category_merge_suggested"
   | "category_renamed"
   | "duplicate_removed"
+  | "duplicate_flagged"
   | "cluster_labeled";
 
 export type TimelineSource = "agent" | "user";

@@ -44,12 +44,17 @@ export interface SearchResult {
  * certain positions. Rather than trying to replicate the full FTS5 grammar we
  * take a conservative approach:
  *   1. Strip control characters that have no meaning in a search term.
- *   2. Wrap the entire input in double-quotes so it is treated as a phrase
- *      query, then escape any embedded double-quotes by doubling them.
+ *   2. Split on whitespace and wrap each token individually in double-quotes,
+ *      escaping any embedded double-quotes by doubling them.
  *
- * This turns user input like:  hello "world" OR NOT foo
- * into the FTS5 literal phrase: "hello ""world"" OR NOT foo"
- * which matches the exact phrase rather than being interpreted as operators.
+ * Quoting per-token (rather than the whole string as a phrase) means that
+ * multi-word queries like "typescript react" match documents containing both
+ * words anywhere — not just as an adjacent phrase — while still preventing
+ * FTS5 operator injection.
+ *
+ * Example:  hello "world" OR NOT foo
+ *  tokens:  ["hello", '"world"', 'OR', 'NOT', 'foo']
+ *  output:  "hello" """world""" "OR" "NOT" "foo"
  *
  * For more expressive power (operators, prefix search, etc.) callers can
  * switch to an "advanced" mode where the input is trusted — but that requires
@@ -59,8 +64,13 @@ function sanitizeFtsQuery(raw: string): string {
   // Remove ASCII control characters (NUL–US, DEL) which have no search value
   const stripped = raw.replace(/[\x00-\x1f\x7f]/g, " ").trim();
   if (!stripped) return '""';
-  // Double any embedded double-quotes, then wrap in double-quotes for a phrase
-  return `"${stripped.replace(/"/g, '""')}"`;
+  // Quote each whitespace-separated token individually so multi-word queries
+  // match documents containing all tokens (AND semantics) rather than requiring
+  // an exact phrase.
+  return stripped
+    .split(/\s+/)
+    .map((token) => `"${token.replace(/"/g, '""')}"`)
+    .join(" ");
 }
 
 // ─── Repository ───────────────────────────────────────────────────────────────

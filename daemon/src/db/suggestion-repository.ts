@@ -137,17 +137,30 @@ export class SuggestionRepository {
         )
         .all(type);
 
+      let anyParseable = false;
       for (const row of rows) {
         try {
           const stored = JSON.parse(row.metadata) as Record<string, unknown>;
+          anyParseable = true;
           // Check that every key in the provided metadata matches the stored value.
           const allMatch = Object.entries(metadata).every(
             ([k, v]) => JSON.stringify(stored[k]) === JSON.stringify(v)
           );
           if (allMatch) return true;
         } catch {
-          // unparseable stored metadata — fall through to value check
+          // unparseable stored metadata — skip this row
         }
+      }
+      // If every stored row had corrupt metadata we couldn't compare, fall
+      // through to the value-string check so we don't produce duplicates.
+      if (!anyParseable && rows.length > 0) {
+        const row = this.db
+          .query<{ c: number }, [string, string]>(
+            `SELECT COUNT(*) AS c FROM agent_suggestions
+             WHERE type = ? AND value = ? AND status = 'pending'`
+          )
+          .get(type, value);
+        return (row?.c ?? 0) > 0;
       }
       return false;
     }

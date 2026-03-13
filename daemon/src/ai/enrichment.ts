@@ -84,18 +84,24 @@ function parseResponse(raw: string): EnrichmentResponse | null {
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
 function upsertCategory(db: Database, name: string): string {
-  db.run(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, [name]);
+  // Single atomic statement: insert or no-op, then always return the row.
+  // Relies on the UNIQUE index on categories(name, COALESCE(parent_id, '')).
   const row = db.query<CategoryRow, [string]>(
-    "SELECT * FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1"
+    `INSERT INTO categories (name) VALUES (?)
+     ON CONFLICT(name, COALESCE(parent_id, '')) DO UPDATE SET name = name
+     RETURNING *`
   ).get(name);
   if (!row) throw new Error(`Failed to upsert category: ${name}`);
   return row.id;
 }
 
 function upsertTag(db: Database, name: string): string {
-  db.run(`INSERT OR IGNORE INTO tags (name) VALUES (?)`, [name]);
+  // Single atomic statement: insert or no-op, then always return the row.
+  // Relies on the UNIQUE index on tags(name).
   const row = db.query<TagRow, [string]>(
-    "SELECT * FROM tags WHERE name = ? COLLATE NOCASE"
+    `INSERT INTO tags (name) VALUES (?)
+     ON CONFLICT(name) DO UPDATE SET name = name
+     RETURNING *`
   ).get(name);
   if (!row) throw new Error(`Failed to upsert tag: ${name}`);
   return row.id;

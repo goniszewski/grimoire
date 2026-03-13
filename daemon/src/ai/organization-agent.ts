@@ -134,9 +134,10 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: auto-record to timeline but don't delete — flag only
+          // High-confidence: record to timeline as a flag only — no data is deleted.
+          // Using "duplicate_flagged" to accurately reflect the action taken.
           this.timelineRepo.insert(
-            "duplicate_removed",
+            "duplicate_flagged",
             value,
             { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
             "agent"
@@ -209,9 +210,11 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
+          // High-confidence: record as a suggestion to the timeline — no merge occurs.
+          // Using "category_merge_suggested" to accurately reflect the action taken.
           this.timelineRepo.insert(
-            "category_merged",
-            `Auto-merged "${catA.name}" into "${catB.name}"`,
+            "category_merge_suggested",
+            `High-confidence merge suggestion: "${catA.name}" and "${catB.name}"`,
             { categoryIdA: idA, categoryIdB: idB, similarity: sim },
             "agent"
           );
