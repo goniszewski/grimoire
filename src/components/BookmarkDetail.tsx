@@ -25,6 +25,7 @@ interface BookmarkDetailProps {
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
+  onUpdateNotes: (id: string, notes: string | null) => void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -41,6 +42,7 @@ export function BookmarkDetail({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
+  onUpdateNotes,
   onPin,
   onUnpin,
   onArchive,
@@ -114,6 +116,7 @@ export function BookmarkDetail({
       onUpdateTags={onUpdateTags}
       onUpdateCategory={onUpdateCategory}
       onUpdateField={onUpdateField}
+      onUpdateNotes={onUpdateNotes}
       onPin={onPin}
       onUnpin={onUnpin}
       onArchive={onArchive}

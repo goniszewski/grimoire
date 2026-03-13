@@ -42,6 +42,7 @@ export interface UIBookmark {
   is_pinned: 0 | 1;
   is_archived: 0 | 1;
   read_at: string | null;
+  notes: string | null;
 }
 
 export interface UICategory {
@@ -77,6 +78,7 @@ function toUIBookmark(bm: ApiBookmark, categoryMap: Map<string, string>): UIBook
     is_pinned: bm.is_pinned,
     is_archived: bm.is_archived,
     read_at: bm.read_at,
+    notes: bm.notes,
   };
 }
 
@@ -366,6 +368,10 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { read_at: null } }, callbacks);
   }, [updateBookmarkMutation]);
 
+  const updateBookmarkNotes = useCallback((id: string, notes: string | null) => {
+    updateBookmarkMutation.mutate({ id, patch: { notes } });
+  }, [updateBookmarkMutation]);
+
   const isLoading = bookmarksQuery.isLoading || searchQuery_.isLoading;
   const isError = bookmarksQuery.isError || searchQuery_.isError;
 
@@ -398,8 +404,10 @@ export function useBookmarks() {
     pinBookmark,
     unpinBookmark,
     archiveBookmark,
+    unarchiveBookmark,
     markAsRead,
     markAsUnread,
+    updateBookmarkNotes,
     isLoading,
     isError,
   };

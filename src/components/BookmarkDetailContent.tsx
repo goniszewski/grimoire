@@ -5,15 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import ReactMarkdown from "react-markdown";
 
 interface BookmarkDetailContentProps {
   bookmark: Bookmark;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
   onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
+  onUpdateNotes: (id: string, notes: string | null) => void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -28,6 +30,7 @@ export function BookmarkDetailContent({
   onUpdateTags,
   onUpdateCategory,
   onUpdateField,
+  onUpdateNotes,
   onPin,
   onUnpin,
   onArchive,
@@ -43,6 +46,8 @@ export function BookmarkDetailContent({
   const [urlInput, setUrlInput] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryInput, setSummaryInput] = useState("");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesInput, setNotesInput] = useState("");
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -82,6 +87,14 @@ export function BookmarkDetailContent({
       }
     }
     setEditingUrl(false);
+  };
+
+  const handleNotesSubmit = () => {
+    const trimmed = notesInput.trim() || null;
+    if (trimmed !== (bookmark.notes?.trim() || null)) {
+      onUpdateNotes(bookmark.id, trimmed);
+    }
+    setEditingNotes(false);
   };
 
   return (
@@ -125,6 +138,59 @@ export function BookmarkDetailContent({
         )}
       </div>
 
+
+      {/* Personal Notes */}
+      <div className="space-y-2 pt-2 border-t">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <NotebookPen className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</span>
+          </div>
+          {!editingNotes && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => { setNotesInput(bookmark.notes ?? ""); setEditingNotes(true); }}
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {editingNotes ? (
+          <div className="space-y-1.5">
+            <Textarea
+              value={notesInput}
+              onChange={(e) => setNotesInput(e.target.value)}
+              placeholder="Add a personal note… (Markdown supported)"
+              className="text-sm leading-relaxed min-h-[80px] font-mono"
+              autoFocus
+            />
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNotesSubmit}>
+                <Check className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingNotes(false)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        ) : bookmark.notes ? (
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none text-sm cursor-pointer hover:bg-muted/40 rounded-md p-1 -mx-1 transition-colors"
+            onClick={() => { setNotesInput(bookmark.notes ?? ""); setEditingNotes(true); }}
+          >
+            <ReactMarkdown>{bookmark.notes}</ReactMarkdown>
+          </div>
+        ) : (
+          <p
+            className="text-sm text-muted-foreground/60 italic cursor-pointer hover:text-muted-foreground transition-colors"
+            onClick={() => { setNotesInput(""); setEditingNotes(true); }}
+          >
+            Add a personal note…
+          </p>
+        )}
+      </div>
 
       {/* Tags */}
       <div className="space-y-2">

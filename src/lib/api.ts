@@ -28,6 +28,7 @@ export interface ApiBookmark {
   is_trashed: 0 | 1;
   trashed_at: string | null;
   read_at: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   tags: string[];
@@ -205,6 +206,7 @@ export async function updateBookmark(
     is_pinned?: 0 | 1;
     is_archived?: 0 | 1;
     read_at?: string | null;
+    notes?: string | null;
   }
 ): Promise<{ data: ApiBookmark }> {
   return apiFetch<{ data: ApiBookmark }>(`/bookmarks/${id}`, {

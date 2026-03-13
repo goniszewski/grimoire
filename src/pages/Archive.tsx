@@ -29,6 +29,7 @@ function toUIBookmark(bm: ApiBookmark): UIBookmark {
     is_pinned: bm.is_pinned,
     is_archived: bm.is_archived,
     read_at: bm.read_at,
+    notes: bm.notes,
   };
 }
 

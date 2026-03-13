@@ -70,8 +70,17 @@ export class BookmarkRepository {
     return row;
   }
 
-  /** Find bookmark by ID (without content). */
+  /** Find bookmark by ID (without content). Excludes trashed bookmarks. */
   findById(id: string): BookmarkWithTags | null {
+    const bookmark = this.db
+      .query<BookmarkRow, [string]>("SELECT * FROM bookmarks WHERE id = ? AND is_trashed = 0")
+      .get(id);
+    if (!bookmark) return null;
+    return { ...bookmark, tags: this.getTagNames(id) };
+  }
+
+  /** Find bookmark by ID regardless of trash state. Used internally for restore/permanent-delete flows. */
+  findByIdAny(id: string): BookmarkWithTags | null {
     const bookmark = this.db
       .query<BookmarkRow, [string]>("SELECT * FROM bookmarks WHERE id = ?")
       .get(id);
@@ -259,7 +268,7 @@ export class BookmarkRepository {
     }));
   }
 
-  /** Partial update: title, tags, category_id, is_pinned, is_archived, read_at. */
+  /** Partial update: title, tags, category_id, is_pinned, is_archived, read_at, notes. */
   update(
     id: string,
     patch: {
@@ -269,6 +278,7 @@ export class BookmarkRepository {
       is_pinned?: 0 | 1;
       is_archived?: 0 | 1;
       read_at?: string | null;
+      notes?: string | null;
     }
   ): BookmarkWithTags | null {
     const sets: string[] = [];
@@ -293,6 +303,10 @@ export class BookmarkRepository {
     if ("read_at" in patch) {
       sets.push("read_at = ?");
       params.push(patch.read_at ?? null);
+    }
+    if ("notes" in patch) {
+      sets.push("notes = ?");
+      params.push(patch.notes ?? null);
     }
 
     this.db.transaction(() => {

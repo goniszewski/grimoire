@@ -1,6 +1,6 @@
 # TASK-023: Personal Notes on Bookmarks
 
-**Status:** backlog
+**Status:** done
 **Priority:** high
 **Phase:** M1
 **Area:** backend / frontend
@@ -11,7 +11,7 @@ Allow users to attach personal Markdown notes to any bookmark. Notes are separat
 
 ## Backend
 
-- Migration `0007_bookmark_notes.sql`: add `notes TEXT` column to `bookmarks`
+- Migration `0008_bookmark_notes.sql`: add `notes TEXT` column to `bookmarks`
 - Extend `PUT /bookmarks/:id` to accept `notes` field
 - Update `BookmarkRepository.update()` to handle `notes`
 - Include `notes` in `GET /bookmarks/:id` response
@@ -26,8 +26,8 @@ Allow users to attach personal Markdown notes to any bookmark. Notes are separat
 
 ## Acceptance Criteria
 
-- [ ] Notes render as Markdown in read mode
-- [ ] Notes are editable inline with a textarea
-- [ ] Empty notes show a placeholder
-- [ ] Notes persist across page reload
-- [ ] Notes field is included in bookmark detail API response
+- [x] Notes render as Markdown in read mode
+- [x] Notes are editable inline with a textarea
+- [x] Empty notes show a placeholder
+- [x] Notes persist across page reload
+- [x] Notes field is included in bookmark detail API response

@@ -79,9 +79,12 @@ const Trash = () => {
   });
 
   const emptyTrashMutation = useMutation({
-    mutationFn: () => {
-      const ids = (qc.getQueryData<Awaited<ReturnType<typeof listTrashedBookmarks>>>(trashQueryKey)?.data ?? []).map((b) => b.id);
-      return Promise.all(ids.map((id) => permanentDeleteBookmark(id)));
+    mutationFn: async () => {
+      // Fetch fresh list so we don't operate on a stale cache snapshot.
+      const fresh = await listTrashedBookmarks();
+      const ids = fresh.data.map((b) => b.id);
+      // allSettled: individual 404s (already-purged) don't abort the rest.
+      await Promise.allSettled(ids.map((id) => permanentDeleteBookmark(id)));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: trashQueryKey });

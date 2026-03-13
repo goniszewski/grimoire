@@ -210,6 +210,16 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       allowed.read_at = patch.read_at as string | null;
     }
 
+    if ("notes" in patch) {
+      if (patch.notes !== null && typeof patch.notes !== "string") {
+        return problem(c, 422, "Unprocessable Entity", "`notes` must be a string or null");
+      }
+      if (typeof patch.notes === "string" && patch.notes.length > 100_000) {
+        return problem(c, 422, "Unprocessable Entity", "`notes` must not exceed 100 000 characters");
+      }
+      allowed.notes = patch.notes as string | null;
+    }
+
     const updated = repo.update(id, allowed as Parameters<BookmarkRepository["update"]>[1]);
     if (!updated) return problem(c, 404, "Not Found", "Bookmark not found");
     return ok(c, updated);

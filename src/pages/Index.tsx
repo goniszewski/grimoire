@@ -186,6 +186,7 @@ const Index = () => {
       is_pinned: bm.is_pinned,
       is_archived: bm.is_archived,
       read_at: bm.read_at,
+      notes: bm.notes,
     };
     handleOpenDetail(uiBm);
   }, [handleOpenDetail]);
@@ -464,6 +465,7 @@ const Index = () => {
         onUpdateTags={store.updateBookmarkTags}
         onUpdateCategory={store.updateBookmarkCategory}
         onUpdateField={store.updateBookmarkField}
+        onUpdateNotes={store.updateBookmarkNotes}
         onPin={store.pinBookmark}
         onUnpin={store.unpinBookmark}
         onArchive={(id, callbacks) => store.archiveBookmark(id, {
