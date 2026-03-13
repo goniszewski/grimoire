@@ -22,6 +22,9 @@ export function isPrivateHost(hostname: string): boolean {
   if (/^169\.254\./.test(host)) return true;
   if (/^fe80:/i.test(host)) return true;
 
+  // IPv6 ULA (Unique Local Address, RFC 4193) — fc00::/7 covers fc** and fd**
+  if (/^f[cd][0-9a-f]{2}:/i.test(host)) return true;
+
   // IPv6 site-local (deprecated but still routable internally)
   if (/^fec[0-9a-f]:/i.test(host)) return true;
 

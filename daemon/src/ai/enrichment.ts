@@ -84,13 +84,16 @@ function parseResponse(raw: string): EnrichmentResponse | null {
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
 function upsertCategory(db: Database, name: string): string {
-  // Single atomic statement: insert or no-op, then always return the row.
-  // Relies on the UNIQUE index on categories(name, COALESCE(parent_id, '')).
-  const row = db.query<CategoryRow, [string]>(
-    `INSERT INTO categories (name) VALUES (?)
-     ON CONFLICT(name, COALESCE(parent_id, '')) DO UPDATE SET name = name
-     RETURNING *`
-  ).get(name);
+  // INSERT OR IGNORE is universally supported; the fallback SELECT handles
+  // the case where the row already existed (no-op insert returns nothing).
+  // The UNIQUE index on categories(name, COALESCE(parent_id, '')) ensures
+  // the SELECT will always find exactly one root-level row with this name.
+  db.run(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, [name]);
+  const row = db
+    .query<CategoryRow, [string]>(
+      `SELECT * FROM categories WHERE name = ? AND parent_id IS NULL`
+    )
+    .get(name);
   if (!row) throw new Error(`Failed to upsert category: ${name}`);
   return row.id;
 }

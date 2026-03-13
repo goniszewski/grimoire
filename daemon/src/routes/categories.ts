@@ -83,8 +83,16 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
       parentId = parent.id;
     }
 
-    const category = repo.create(name, parentId);
-    return ok(c, category, 201);
+    try {
+      const category = repo.create(name, parentId);
+      return ok(c, category, 201);
+    } catch (err) {
+      // UNIQUE constraint violation → duplicate name under the same parent
+      if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
+        return problem(c, 409, "Conflict", `A category named "${name}" already exists under this parent`);
+      }
+      throw err;
+    }
   });
 
   // PUT /categories/:id — rename or reparent
@@ -140,9 +148,16 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
       }
     }
 
-    const updated = repo.update(id, patch);
-    if (!updated) return problem(c, 404, "Not Found", "Category not found");
-    return ok(c, updated);
+    try {
+      const updated = repo.update(id, patch);
+      if (!updated) return problem(c, 404, "Not Found", "Category not found");
+      return ok(c, updated);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
+        return problem(c, 409, "Conflict", `A category with that name already exists under this parent`);
+      }
+      throw err;
+    }
   });
 
   // DELETE /categories/:id — delete, reparent children, bookmarks keep their rows

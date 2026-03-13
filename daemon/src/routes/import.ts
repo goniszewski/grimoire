@@ -187,11 +187,14 @@ export function createImportRoute(deps: ImportDeps): Hono {
         }
 
         function poll() {
+          // Guard against both client-disconnect (cancelled) and a previous
+          // iteration already closing the controller (closed flag below).
           if (cancelled) return;
 
           const state = progressMap.get(importId);
           if (!state) {
-            controller.close();
+            // State was cleaned up externally; close only if not cancelled.
+            if (!cancelled) controller.close();
             return;
           }
 
@@ -205,6 +208,7 @@ export function createImportRoute(deps: ImportDeps): Hono {
 
           if (state.done) {
             progressMap.delete(importId);
+            cancelled = true; // prevent any further enqueue/close after this
             controller.close();
             return;
           }

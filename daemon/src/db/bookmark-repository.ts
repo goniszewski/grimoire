@@ -296,13 +296,20 @@ export class BookmarkRepository {
 
   /** Upsert a tag by name (case-insensitive) and link it to a bookmark. */
   addTag(bookmarkId: string, tagName: string): void {
-    this.db.run(
-      `INSERT OR IGNORE INTO tags (name) VALUES (?)`,
-      [tagName.toLowerCase()]
-    );
-    const tag = this.db
-      .query<TagRow, [string]>("SELECT * FROM tags WHERE name = ? COLLATE NOCASE")
-      .get(tagName);
+    const normalised = tagName.toLowerCase();
+    // INSERT OR IGNORE ensures we never duplicate; RETURNING gives us the id
+    // whether the row is new or already existed (SELECT fallback handles the
+    // case where INSERT was a no-op and nothing is returned).
+    const inserted = this.db
+      .query<TagRow, [string]>(
+        `INSERT OR IGNORE INTO tags (name) VALUES (?) RETURNING *`
+      )
+      .get(normalised);
+    const tag =
+      inserted ??
+      this.db
+        .query<TagRow, [string]>("SELECT * FROM tags WHERE name = ? COLLATE NOCASE")
+        .get(normalised);
     if (!tag) return;
     this.db.run(
       `INSERT OR IGNORE INTO bookmark_tags (bookmark_id, tag_id) VALUES (?, ?)`,
