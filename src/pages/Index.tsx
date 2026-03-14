@@ -12,6 +12,8 @@ import { AIPalette } from "@/components/AIPalette";
 import { useBookmarks, useRelatedBookmarks } from "@/hooks/use-bookmarks";
 import { useDaemonStatus } from "@/hooks/use-daemon-status";
 import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
+import { DegradedModeBanner } from "@/components/DegradedModeBanner";
+import { useSettings } from "@/hooks/use-settings";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
@@ -52,7 +54,7 @@ const Index = () => {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
   const appLock = useAppLock();
-
+  const { aiEnabled, isLoading: settingsLoading } = useSettings();
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -225,6 +227,7 @@ const Index = () => {
 
         <div className="flex-1 flex flex-col min-w-0">
           <DaemonOfflineBanner online={online} loading={daemonChecking} />
+          {!settingsLoading && <DegradedModeBanner aiEnabled={aiEnabled} />}
           {/* Header */}
           <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 py-3">
             <SidebarTrigger className="shrink-0" />
