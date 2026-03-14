@@ -56,6 +56,18 @@ async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
     route.fulfill({ json: { data: [], meta: { pending: 0, total: 0 } } })
   );
 
+  // Settings
+  await page.route(`${BASE}/settings`, (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          ai: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
+          embedding: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
+        },
+      },
+    })
+  );
+
   // Bookmark list
   await page.route(`${BASE}/bookmarks**`, async (route) => {
     const method = route.request().method();
@@ -124,7 +136,7 @@ test.describe("Core bookmark journey", () => {
     await page.goto("/");
 
     // Open Add Bookmark dialog
-    await page.getByRole("button", { name: /add bookmark/i }).first().click();
+    await page.getByRole("button", { name: /add your first bookmark/i }).click();
     await expect(page.getByPlaceholder("https://example.com/article")).toBeVisible();
 
     // Fill in URL and submit
@@ -236,7 +248,7 @@ test.describe("Core bookmark journey", () => {
     await setupDaemonMocks(page, []);
     await page.goto("/");
 
-    await page.getByRole("button", { name: /add bookmark/i }).first().click();
+    await page.getByRole("button", { name: /add your first bookmark/i }).click();
     await page.getByPlaceholder("https://example.com/article").fill("not-a-url");
     await page.getByRole("button", { name: /save bookmark/i }).click();
 
