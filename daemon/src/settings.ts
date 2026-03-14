@@ -54,11 +54,22 @@ export interface BackupScheduleSettings {
   retention_count: number;
 }
 
+export interface BackupS3Settings {
+  /** Custom endpoint URL for S3-compatible services (R2, MinIO). Empty = use AWS. */
+  endpoint: string;
+  bucket: string;
+  access_key: string;
+  secret_key: string;
+  region: string;
+  prefix: string;
+}
+
 export interface Settings {
   ai: AiSettings;
   app: AppSettings;
   backup: {
     schedule: BackupScheduleSettings;
+    s3: BackupS3Settings;
   };
 }
 
@@ -93,6 +104,14 @@ const DEFAULT_SETTINGS: Settings = {
       enabled: Config.BACKUP_SCHEDULE_ENABLED,
       cron: Config.BACKUP_SCHEDULE_CRON,
       retention_count: Config.BACKUP_RETENTION_COUNT,
+    },
+    s3: {
+      endpoint: Config.BACKUP_S3_ENDPOINT,
+      bucket: Config.BACKUP_S3_BUCKET,
+      access_key: Config.BACKUP_S3_ACCESS_KEY,
+      secret_key: Config.BACKUP_S3_SECRET_KEY,
+      region: Config.BACKUP_S3_REGION,
+      prefix: Config.BACKUP_S3_PREFIX,
     },
   },
 };
@@ -244,6 +263,23 @@ export function validateSettingsPatch(patch: unknown): string | null {
         }
       }
     }
+
+    if ("s3" in b) {
+      const s3 = b.s3;
+      if (typeof s3 !== "object" || s3 === null || Array.isArray(s3)) {
+        return "`backup.s3` must be an object";
+      }
+      const s = s3 as Record<string, unknown>;
+      const strFields = ["endpoint", "bucket", "access_key", "secret_key", "region", "prefix"] as const;
+      for (const field of strFields) {
+        if (field in s && typeof s[field] !== "string") {
+          return `\`backup.s3.${field}\` must be a string`;
+        }
+      }
+      if ("endpoint" in s && s.endpoint) {
+        try { new URL(s.endpoint as string); } catch { return "`backup.s3.endpoint` must be a valid URL or empty string"; }
+      }
+    }
   }
 
   return null;
@@ -267,6 +303,14 @@ export function redactSettings(settings: Settings): object {
       lock: {
         ...settings.app.lock,
         pin_hash: settings.app.lock.pin_hash ? "***" : "",
+      },
+    },
+    backup: {
+      ...settings.backup,
+      s3: {
+        ...settings.backup.s3,
+        secret_key: settings.backup.s3.secret_key ? "***" : "",
+        access_key: settings.backup.s3.access_key ? "***" : "",
       },
     },
   };
@@ -305,8 +349,10 @@ export class SettingsManager {
     const updated = deepMerge(current, patch);
 
     try {
-      mkdirSync(CONFIG_DIR, { recursive: true });
-      writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2), "utf-8");
+      // 0o700: owner rwx only — config file contains API keys and S3 credentials.
+      mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+      // 0o600: owner read/write only.
+      writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2), { encoding: "utf-8", mode: 0o600 });
       this.cache = updated;
       log.info("Settings saved", { file: CONFIG_FILE });
     } catch (err) {

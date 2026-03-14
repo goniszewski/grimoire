@@ -23,6 +23,7 @@ import {
   Download,
   Upload,
   RotateCcw,
+  Cloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -36,8 +37,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useBackupList, useCreateBackup, useRestoreBackup, useBackupSchedule, useUpdateBackupSchedule } from "@/hooks/use-backup";
-import type { ApiBackupEntry } from "@/lib/api";
+import {
+  useBackupList,
+  useCreateBackup,
+  useRestoreBackup,
+  useRestoreRemoteBackup,
+  useBackupListWithRemote,
+  useTestS3Connection,
+  useBackupSchedule,
+  useUpdateBackupSchedule,
+} from "@/hooks/use-backup";
+import type { ApiBackupEntry, ApiS3Config } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -57,6 +67,9 @@ interface DaemonSettings {
     autostart: boolean;
     theme: "light" | "dark" | "system";
     lock: { enabled: boolean; pin_hash: string };
+  };
+  backup?: {
+    s3?: ApiS3Config;
   };
 }
 
@@ -123,8 +136,24 @@ const Settings = () => {
   const backupList = useBackupList();
   const createBackupMutation = useCreateBackup();
   const restoreMutation = useRestoreBackup();
+  const restoreRemoteMutation = useRestoreRemoteBackup();
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
+
+  // ─── S3 Remote Backup ────────────────────────────────────────────────────────
+  const remoteBackupList = useBackupListWithRemote(showRemote && !!s3Form.bucket);
+  const testS3Mutation = useTestS3Connection();
+  const [showRemote, setShowRemote] = useState(false);
+  const [s3Form, setS3Form] = useState<ApiS3Config>({
+    endpoint: "",
+    bucket: "",
+    access_key: "",
+    secret_key: "",
+    region: "us-east-1",
+    prefix: "little-imp-backups/",
+  });
+  const [s3Dirty, setS3Dirty] = useState(false);
+  const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   // ─── Backup schedule ──────────────────────────────────────────────────────────
   const scheduleQuery = useBackupSchedule();
@@ -153,6 +182,17 @@ const Settings = () => {
     });
     setEmbeddings({ provider: s.ai.embeddings.provider, model: s.ai.embeddings.model });
     setDirty(false);
+
+    // Populate S3 form from settings (credentials will be redacted "***")
+    if (s.backup?.s3) {
+      setS3Form((prev) => ({
+        ...prev,
+        ...s.backup!.s3,
+        // Keep local password inputs blank when redacted so users re-enter intentionally
+        access_key: s.backup!.s3!.access_key === "***" ? "" : (s.backup!.s3!.access_key ?? ""),
+        secret_key: s.backup!.s3!.secret_key === "***" ? "" : (s.backup!.s3!.secret_key ?? ""),
+      }));
+    }
   }, [data]);
 
   const saveMutation = useMutation({
@@ -598,6 +638,216 @@ const Settings = () => {
                     </AlertDialog>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Remote Backup (S3) */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Remote Backup (S3)</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Upload backups to an S3-compatible storage target (AWS S3, Cloudflare R2, MinIO, etc.).
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* S3 config fields */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bucket</Label>
+                    <Input
+                      value={s3Form.bucket}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, bucket: e.target.value })); setS3Dirty(true); }}
+                      placeholder="my-backup-bucket"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Region</Label>
+                    <Input
+                      value={s3Form.region}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, region: e.target.value })); setS3Dirty(true); }}
+                      placeholder="us-east-1"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Access Key</Label>
+                    <Input
+                      value={s3Form.access_key}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, access_key: e.target.value })); setS3Dirty(true); }}
+                      placeholder="AKIAIOSFODNN7EXAMPLE"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Secret Key</Label>
+                    <Input
+                      type="password"
+                      value={s3Form.secret_key}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, secret_key: e.target.value })); setS3Dirty(true); }}
+                      placeholder="••••••••••••••••••••"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Endpoint URL <span className="text-muted-foreground">(optional — for R2/MinIO)</span></Label>
+                    <Input
+                      value={s3Form.endpoint}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, endpoint: e.target.value })); setS3Dirty(true); }}
+                      placeholder="https://your-account.r2.cloudflarestorage.com"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Key Prefix</Label>
+                    <Input
+                      value={s3Form.prefix}
+                      onChange={(e) => { setS3Form((f) => ({ ...f, prefix: e.target.value })); setS3Dirty(true); }}
+                      placeholder="little-imp-backups/"
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!s3Dirty || !s3Form.bucket}
+                    onClick={() => {
+                      // Omit blank credential fields so we don't overwrite stored secrets
+                      // when the user edits non-credential fields (access_key/secret_key are
+                      // cleared to "" when the server returns them as redacted "***").
+                      const patch: Partial<ApiS3Config> = { ...s3Form };
+                      if (!patch.access_key) delete patch.access_key;
+                      if (!patch.secret_key) delete patch.secret_key;
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      updateSettings({ backup: { s3: patch } } as any).then(() => {
+                        setS3Dirty(false);
+                        toast.success("S3 settings saved");
+                        qc.invalidateQueries({ queryKey: settingsKeys.all });
+                      }).catch((err: Error) => {
+                        toast.error("Failed to save S3 settings", { description: err.message });
+                      });
+                    }}
+                  >
+                    Save S3 settings
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={testS3Mutation.isPending || !s3Form.bucket}
+                    onClick={() => {
+                      setS3TestResult(null);
+                      testS3Mutation.mutate(undefined, {
+                        onSuccess: (r) => {
+                          setS3TestResult(r);
+                          toast.success("S3 connection successful");
+                        },
+                        onError: (err: Error) => {
+                          setS3TestResult({ ok: false, message: err.message });
+                          toast.error("S3 connection failed", { description: err.message });
+                        },
+                      });
+                    }}
+                  >
+                    {testS3Mutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <Cloud className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Test connection
+                  </Button>
+
+                  {s3TestResult && (
+                    <span className={`text-xs font-mono ${s3TestResult.ok ? "text-green-500" : "text-destructive"}`}>
+                      {s3TestResult.ok ? "Connected" : s3TestResult.message}
+                    </span>
+                  )}
+                </div>
+
+                {/* Remote backup list toggle */}
+                {s3Form.bucket && (
+                  <div className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7 px-2"
+                      onClick={() => setShowRemote((v) => !v)}
+                    >
+                      <Cloud className="h-3 w-3 mr-1.5" />
+                      {showRemote ? "Hide remote backups" : "Show remote backups"}
+                    </Button>
+
+                    {showRemote && (
+                      <div className="space-y-1">
+                        {remoteBackupList.isLoading && (
+                          <p className="text-xs text-muted-foreground">Loading…</p>
+                        )}
+                        {remoteBackupList.data && remoteBackupList.data.filter((e) => e.source === "remote").length === 0 && (
+                          <p className="text-xs text-muted-foreground">No remote backups found.</p>
+                        )}
+                        {remoteBackupList.data && (
+                          <ul className="space-y-1">
+                            {remoteBackupList.data
+                              .filter((e) => e.source === "remote")
+                              .map((entry: ApiBackupEntry) => (
+                                <li
+                                  key={entry.name}
+                                  className="flex items-center justify-between text-xs rounded border px-3 py-2 bg-muted/30"
+                                >
+                                  <Cloud className="h-3 w-3 text-muted-foreground mr-2 shrink-0" />
+                                  <span className="font-mono truncate flex-1" title={entry.name}>
+                                    {entry.name}
+                                  </span>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" title="Restore from remote">
+                                        <RotateCcw className="h-3 w-3" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Restore from remote?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This will download and restore the remote backup{" "}
+                                          <strong className="font-mono break-all">{entry.name}</strong>.
+                                          The daemon will need to be restarted after restoring.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => {
+                                            restoreRemoteMutation.mutate(entry.name, {
+                                              onSuccess: () => {
+                                                toast.success("Remote restore complete", {
+                                                  description: "Restart the daemon to apply the restored database.",
+                                                });
+                                              },
+                                              onError: (err: Error) => {
+                                                toast.error("Restore failed", { description: err.message });
+                                              },
+                                            });
+                                          }}
+                                        >
+                                          Restore
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </li>
+                              ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
 

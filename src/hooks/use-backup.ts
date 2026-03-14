@@ -1,18 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createBackup, listBackups, restoreBackup, getBackupSchedule, updateBackupSchedule } from "@/lib/api";
+import {
+  createBackup,
+  listBackups,
+  restoreBackup,
+  restoreRemoteBackup,
+  getBackupSchedule,
+  updateBackupSchedule,
+  testS3Connection,
+} from "@/lib/api";
 import type { ApiBackupSchedule } from "@/lib/api";
 
 export const backupKeys = {
   all: ["backup"] as const,
   list: () => [...backupKeys.all, "list"] as const,
+  listRemote: () => [...backupKeys.all, "list-remote"] as const,
   schedule: () => [...backupKeys.all, "schedule"] as const,
 };
 
 export function useBackupList() {
   return useQuery({
     queryKey: backupKeys.list(),
-    queryFn: () => listBackups().then((r) => r.data),
+    queryFn: () => listBackups(false).then((r) => r.data),
     staleTime: 30_000,
+  });
+}
+
+/** Lazy — only fetches when `enabled` is true so we don't hit S3 on every page load. */
+export function useBackupListWithRemote(enabled: boolean) {
+  return useQuery({
+    queryKey: backupKeys.listRemote(),
+    queryFn: () => listBackups(true).then((r) => r.data),
+    staleTime: 30_000,
+    enabled,
   });
 }
 
@@ -34,6 +53,22 @@ export function useRestoreBackup() {
       // The database on disk has been replaced; all cached data is now stale.
       qc.clear();
     },
+  });
+}
+
+export function useRestoreRemoteBackup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (key: string) => restoreRemoteBackup(key),
+    onSuccess: () => {
+      qc.clear();
+    },
+  });
+}
+
+export function useTestS3Connection() {
+  return useMutation({
+    mutationFn: testS3Connection,
   });
 }
 

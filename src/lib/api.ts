@@ -135,9 +135,10 @@ async function apiFetch<T>(
     let title = `HTTP ${res.status}`;
     let detail: string | undefined;
     try {
-      const body = await res.json() as { title?: string; detail?: string };
+      const body = await res.json() as { title?: string; detail?: string; error?: string };
       if (body.title) title = body.title;
       if (body.detail) detail = body.detail;
+      else if (body.error) detail = body.error;
     } catch {}
     throw new ApiError(res.status, title, detail);
   }
@@ -316,9 +317,10 @@ export async function importBookmarksFile(file: File): Promise<{ data: ImportRes
     let title = `HTTP ${res.status}`;
     let detail: string | undefined;
     try {
-      const body = await res.json() as { title?: string; detail?: string };
+      const body = await res.json() as { title?: string; detail?: string; error?: string };
       if (body.title) title = body.title;
       if (body.detail) detail = body.detail;
+      else if (body.error) detail = body.error;
     } catch {}
     throw new ApiError(res.status, title, detail);
   }
@@ -442,6 +444,7 @@ export interface ApiBackupEntry {
   size_bytes: number;
   bookmark_count: number;
   created_at: string;
+  source: "local" | "remote";
 }
 
 export interface ApiBackupResult {
@@ -449,6 +452,7 @@ export interface ApiBackupResult {
   size_bytes: number;
   bookmark_count: number;
   created_at: string;
+  remote_url?: string;
 }
 
 export interface ApiRestoreResult {
@@ -458,20 +462,43 @@ export interface ApiRestoreResult {
   restart_required: boolean;
 }
 
+export interface ApiS3Config {
+  endpoint: string;
+  bucket: string;
+  access_key: string;
+  secret_key: string;
+  region: string;
+  prefix: string;
+}
+
 export async function createBackup(): Promise<ApiBackupResult> {
   return apiFetch<ApiBackupResult>("/backup", { method: "POST" });
 }
 
-export async function listBackups(): Promise<{ data: ApiBackupEntry[] }> {
-  return apiFetch<{ data: ApiBackupEntry[] }>("/backup/list");
+export async function listBackups(includeRemote = false): Promise<{ data: ApiBackupEntry[] }> {
+  const url = includeRemote ? "/backup/list?include_remote=true" : "/backup/list";
+  return apiFetch<{ data: ApiBackupEntry[] }>(url);
 }
 
-/** Restore from a backup by its directory name (basename only — no path traversal). */
+/** Restore from a local backup by its directory name (basename only — no path traversal). */
 export async function restoreBackup(name: string): Promise<ApiRestoreResult> {
   return apiFetch<ApiRestoreResult>("/restore", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
+}
+
+/** Restore from a remote S3 backup by its object key. */
+export async function restoreRemoteBackup(key: string): Promise<ApiRestoreResult> {
+  return apiFetch<ApiRestoreResult>("/restore", {
+    method: "POST",
+    body: JSON.stringify({ source: "remote", key }),
+  });
+}
+
+/** Test the S3 connection using current backup.s3 settings. */
+export async function testS3Connection(): Promise<{ ok: boolean; message: string }> {
+  return apiFetch<{ ok: boolean; message: string }>("/settings/test-s3", { method: "POST" });
 }
 
 // ─── Backup schedule ──────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1009.0",
     "hono": "^4.12.7",
     "pdf-parse": "^2.4.5",
     "sqlite-vec": "^0.1.7-alpha.2"

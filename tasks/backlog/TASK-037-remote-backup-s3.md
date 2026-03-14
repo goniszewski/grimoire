@@ -1,6 +1,6 @@
 # TASK-037: Remote Backup — S3-Compatible Target
 
-**Status:** todo
+**Status:** done
 **Priority:** low
 **Phase:** M5
 **Area:** daemon / frontend
@@ -64,9 +64,9 @@ Add a collapsible "Remote Backup (S3)" subsection under Backup & Restore:
 
 ## Acceptance Criteria
 
-- [ ] `POST /backup` uploads to S3 when config is present; skips cleanly when absent
-- [ ] `GET /backup/list?include_remote=true` returns merged local + remote entries
-- [ ] `POST /restore` with `source: "remote"` restores from S3 correctly
-- [ ] Invalid/missing S3 config returns 422 with actionable error message
-- [ ] Settings page shows S3 config fields; test connection works
-- [ ] All new tests pass with mocked S3 client
+- [x] `POST /backup` uploads to S3 when config is present; skips cleanly when absent
+- [x] `GET /backup/list?include_remote=true` returns merged local + remote entries
+- [x] `POST /restore` with `source: "remote"` restores from S3 correctly
+- [x] Invalid/missing S3 config returns 422 with actionable error message
+- [x] Settings page shows S3 config fields; test connection works
+- [x] All new tests pass with mocked S3 client

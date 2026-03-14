@@ -54,6 +54,16 @@ export const Config = {
   BACKUP_SCHEDULE_ENABLED: (process.env.BACKUP_SCHEDULE_ENABLED ?? "false") === "true",
   BACKUP_SCHEDULE_CRON: process.env.BACKUP_SCHEDULE_CRON ?? "0 3 * * *",
   BACKUP_RETENTION_COUNT: Math.max(1, parseInt(process.env.BACKUP_RETENTION_COUNT ?? "7", 10) || 1),
+
+  // ─── Remote backup / S3 (TASK-037) ───────────────────────────────────────────
+  // Set BACKUP_S3_BUCKET + credentials to enable S3-compatible remote backups.
+  // Leave BACKUP_S3_BUCKET empty to disable remote upload (local-only behavior).
+  BACKUP_S3_ENDPOINT: process.env.BACKUP_S3_ENDPOINT ?? "",      // custom endpoint (R2, MinIO); omit for AWS
+  BACKUP_S3_BUCKET: process.env.BACKUP_S3_BUCKET ?? "",
+  BACKUP_S3_ACCESS_KEY: process.env.BACKUP_S3_ACCESS_KEY ?? "",
+  BACKUP_S3_SECRET_KEY: process.env.BACKUP_S3_SECRET_KEY ?? "",
+  BACKUP_S3_REGION: process.env.BACKUP_S3_REGION ?? "us-east-1",
+  BACKUP_S3_PREFIX: process.env.BACKUP_S3_PREFIX ?? "little-imp-backups/",
 } as const;
 
 export type AppConfig = typeof Config;

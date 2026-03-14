@@ -8,12 +8,21 @@ import {
   readFileSync,
   rmSync,
   existsSync,
+  writeFileSync,
 } from "fs";
-import { join, resolve } from "path";
+import { join, resolve, basename } from "path";
+import { tmpdir } from "os";
 import { Config } from "../config.js";
 import { log } from "../logger.js";
 import { settingsManager } from "../settings.js";
 import { nextCronRunAt } from "../lib/cron.js";
+import {
+  s3ConfigPresent,
+  uploadToS3,
+  downloadFromS3,
+  listS3Objects,
+  testS3Connection,
+} from "../lib/s3.js";
 
 interface BackupDeps {
   db: Database;
@@ -21,6 +30,11 @@ interface BackupDeps {
   dbPath: string;
   /** Data directory root. Defaults to Config.DATA_DIR. */
   dataDir?: string;
+  /**
+   * Override S3 config — used in tests to inject mocked settings without
+   * touching the settingsManager singleton.
+   */
+  s3Config?: import("../settings.js").BackupS3Settings;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -67,6 +81,7 @@ export interface BackupResult {
   size_bytes: number;
   bookmark_count: number;
   created_at: string;
+  remote_url?: string;
 }
 
 /**
@@ -130,6 +145,7 @@ interface BackupEntry {
   size_bytes: number;
   bookmark_count: number;
   created_at: string;
+  source: "local" | "remote";
 }
 
 /** Lists all valid backups in a directory, sorted newest first. */
@@ -142,30 +158,32 @@ function listBackups(resolvedBackupsDir: string): BackupEntry[] {
     return [];
   }
 
-  return entries
-    .map((name) => {
-      const fullPath = join(resolvedBackupsDir, name);
+  const mapped: Array<BackupEntry | null> = entries.map((name) => {
+    const fullPath = join(resolvedBackupsDir, name);
+    try {
+      const st = statSync(fullPath);
+      if (!st.isDirectory()) return null;
+      const manifestPath = join(fullPath, "manifest.json");
+      let manifest: { created_at?: string; db_size_bytes?: number; bookmark_count?: number } = {};
       try {
-        const st = statSync(fullPath);
-        if (!st.isDirectory()) return null;
-        const manifestPath = join(fullPath, "manifest.json");
-        let manifest: { created_at?: string; db_size_bytes?: number; bookmark_count?: number } = {};
-        try {
-          manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as typeof manifest;
-        } catch {
-          return null;
-        }
-        return {
-          name,
-          path: fullPath,
-          size_bytes: manifest.db_size_bytes ?? st.size,
-          bookmark_count: manifest.bookmark_count ?? 0,
-          created_at: manifest.created_at ?? new Date(st.mtimeMs).toISOString(),
-        };
+        manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as typeof manifest;
       } catch {
         return null;
       }
-    })
+      return {
+        name,
+        path: fullPath,
+        size_bytes: manifest.db_size_bytes ?? st.size,
+        bookmark_count: manifest.bookmark_count ?? 0,
+        created_at: manifest.created_at ?? new Date(st.mtimeMs).toISOString(),
+        source: "local" as BackupEntry["source"],
+      };
+    } catch {
+      return null;
+    }
+  });
+
+  return mapped
     .filter((e): e is BackupEntry => e !== null)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 }
@@ -197,13 +215,19 @@ export function createBackupRoute(deps: BackupDeps): Hono {
   const resolvedDataDir = deps.dataDir ?? Config.DATA_DIR;
   const resolvedBackupsDir = resolve(backupsDir(resolvedDataDir));
 
+  /** Returns the effective S3 config: injected dep (tests) or live settings. */
+  function getS3Config() {
+    return deps.s3Config ?? settingsManager.read().backup.s3;
+  }
+
   /** In-flight operation guard — prevents concurrent backup or restore operations. */
   let operationInProgress = false;
 
   /**
    * POST /backup
    * Creates a new backup snapshot in DATA_DIR/backups/<timestamp>/.
-   * Returns metadata about the created backup.
+   * If S3 config is present, also uploads the snapshot to S3.
+   * Returns metadata about the created backup (including remote_url when uploaded).
    */
   router.post("/backup", async (c) => {
     if (operationInProgress) {
@@ -213,6 +237,29 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
     try {
       const result = await createBackupSnapshot(deps.db, resolvedBackupsDir);
+
+      // S3 upload — optional, runs after local backup succeeds
+      const s3cfg = getS3Config();
+      if (s3ConfigPresent(s3cfg)) {
+        try {
+          const snapshotPath = join(result.path, "snapshot.db");
+          const checksumPath = join(result.path, "checksums.sha256");
+          const backupName = basename(result.path);
+          const snapshotData = await Bun.file(snapshotPath).bytes();
+          const s3Key = `${s3cfg.prefix}${backupName}/snapshot.db`;
+          const remoteUrl = await uploadToS3(s3cfg, s3Key, snapshotData);
+          // Upload checksum file so remote restores can verify integrity
+          if (existsSync(checksumPath)) {
+            const checksumData = await Bun.file(checksumPath).bytes();
+            await uploadToS3(s3cfg, `${s3cfg.prefix}${backupName}/checksums.sha256`, checksumData, "text/plain");
+          }
+          return c.json({ ...result, remote_url: remoteUrl }, 201);
+        } catch (uploadErr) {
+          log.warn("S3 upload failed (local backup kept)", { error: String(uploadErr) });
+          // Local backup is still valid — return it without remote_url
+        }
+      }
+
       return c.json(result, 201);
     } catch (err) {
       log.error("Backup failed", { error: String(err) });
@@ -223,11 +270,44 @@ export function createBackupRoute(deps: BackupDeps): Hono {
   });
 
   /**
-   * GET /backup/list
-   * Lists all backups in DATA_DIR/backups/, newest first.
+   * GET /backup/list[?include_remote=true]
+   * Lists local backups (newest first).
+   * When ?include_remote=true, also lists objects from S3 and merges them.
    */
-  router.get("/backup/list", (c) => {
-    return c.json({ data: listBackups(resolvedBackupsDir) });
+  router.get("/backup/list", async (c) => {
+    const local = listBackups(resolvedBackupsDir);
+
+    const includeRemote = c.req.query("include_remote") === "true";
+    if (!includeRemote) {
+      return c.json({ data: local });
+    }
+
+    const s3cfg = getS3Config();
+    if (!s3ConfigPresent(s3cfg)) {
+      return c.json({ error: "S3 is not configured" }, 422);
+    }
+
+    let remoteEntries: BackupEntry[] = [];
+    try {
+      const objects = await listS3Objects(s3cfg);
+      remoteEntries = objects.map((obj) => ({
+        name: obj.key,
+        path: `s3://${s3cfg.bucket}/${obj.key}`,
+        size_bytes: obj.size_bytes,
+        bookmark_count: 0,
+        created_at: obj.last_modified,
+        source: "remote" as const,
+      }));
+    } catch (err) {
+      log.warn("Failed to list S3 objects", { error: String(err) });
+      return c.json({ error: "Failed to list remote backups" }, 500);
+    }
+
+    // Merge: local first, then remote, sorted newest first
+    const all = [...local, ...remoteEntries].sort(
+      (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)
+    );
+    return c.json({ data: all });
   });
 
   /**
@@ -289,7 +369,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
             cron: ("cron" in patch ? patch.cron : undefined) as string | undefined,
             retention_count: ("retention_count" in patch ? patch.retention_count : undefined) as number | undefined,
           } as { enabled: boolean; cron: string; retention_count: number },
-        },
+        } as import("../settings.js").Settings["backup"],
       });
       const s = updated.backup.schedule;
       const next_run_at = s.enabled ? nextCronRunAt(s.cron)?.toISOString() ?? null : null;
@@ -301,124 +381,201 @@ export function createBackupRoute(deps: BackupDeps): Hono {
   });
 
   /**
+   * Shared restore logic: given a resolved snapshotPath, replaces the live database file.
+   */
+  async function restoreFromSnapshot(
+    snapshotPath: string,
+    checksumPath: string | null,
+    manifestPath: string | null
+  ): Promise<{ bookmark_count: number; checksum_verified: boolean }> {
+    // --- Verify checksum (when available) ---
+    let checksumVerified = false;
+    if (checksumPath && existsSync(checksumPath)) {
+      const checksumFile = await Bun.file(checksumPath).text();
+      const expectedHash = checksumFile.trim().split(/\s+/)[0];
+      const actualHash = await sha256File(snapshotPath);
+      if (actualHash !== expectedHash) {
+        throw Object.assign(new Error("Checksum mismatch — backup file may be corrupted"), { status: 422 });
+      }
+      checksumVerified = true;
+    }
+
+    // --- Parse manifest for bookmark count ---
+    let bookmarkCount = 0;
+    if (manifestPath) {
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bookmark_count?: number };
+        bookmarkCount = manifest.bookmark_count ?? 0;
+      } catch {
+        // ignore — non-fatal
+      }
+    }
+
+    // --- Checkpoint WAL and replace database file ---
+    try {
+      deps.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    } catch (err) {
+      log.warn("Restore: WAL checkpoint failed (proceeding anyway)", { error: String(err) });
+    }
+
+    copyFileSync(snapshotPath, deps.dbPath);
+    const walPath = `${deps.dbPath}-wal`;
+    const shmPath = `${deps.dbPath}-shm`;
+    if (existsSync(walPath)) rmSync(walPath);
+    if (existsSync(shmPath)) rmSync(shmPath);
+    log.info("Restore: database file replaced", { from: snapshotPath, to: deps.dbPath });
+
+    return { bookmark_count: bookmarkCount, checksum_verified: checksumVerified };
+  }
+
+  /**
    * POST /restore
-   * Restores the database from a backup directory.
-   * Body: { name: string }  — basename of a backup directory inside DATA_DIR/backups/.
+   * Restores the database from a local backup directory or a remote S3 object.
    *
-   * Accepts only directory names (not arbitrary paths) to prevent path traversal.
-   * The daemon must be restarted after a successful restore for the new database
-   * to take effect on the open SQLite connection.
+   * Local form:   { name: string }  — basename of a directory inside DATA_DIR/backups/.
+   * Remote form:  { source: "remote", key: string }  — S3 object key to download.
+   *
+   * The daemon must be restarted after a successful restore.
    */
   router.post("/restore", async (c) => {
     if (operationInProgress) {
       return c.json({ error: "A backup or restore operation is already in progress" }, 409);
     }
-    // Acquire the lock immediately — all validation below is async and a second
-    // concurrent request could otherwise pass the check above while we are still
-    // reading and verifying the backup files.
     operationInProgress = true;
 
     try {
-
-    let body: { name?: unknown };
-    try {
-      body = await c.req.json() as { name?: unknown };
-    } catch {
-      return c.json({ error: "Request body must be valid JSON" }, 400);
-    }
-
-    if (!body.name || typeof body.name !== "string") {
-      return c.json({ error: "Field 'name' (string) is required" }, 422);
-    }
-
-    // Reject any name containing path separators or traversal sequences.
-    const name = body.name;
-    if (name.includes("/") || name.includes("\\") || name.includes("..")) {
-      return c.json({ error: "Invalid backup name" }, 422);
-    }
-
-    // Resolve server-side — the caller never controls the base directory.
-    const backupPath = resolve(join(resolvedBackupsDir, name));
-
-    // Double-check the resolved path is still inside backupsDir (defense-in-depth).
-    if (!backupPath.startsWith(resolvedBackupsDir + "/") && backupPath !== resolvedBackupsDir) {
-      log.warn("Restore rejected: path traversal attempt", { name });
-      return c.json({ error: "Invalid backup name" }, 422);
-    }
-
-    const snapshotPath = join(backupPath, "snapshot.db");
-    const manifestPath = join(backupPath, "manifest.json");
-    const checksumPath = join(backupPath, "checksums.sha256");
-
-    // --- Validate backup directory exists ---
-    try {
-      statSync(backupPath);
-    } catch {
-      return c.json({ error: "Backup not found" }, 422);
-    }
-
-    // --- Validate required files exist ---
-    if (!existsSync(snapshotPath) || !existsSync(manifestPath)) {
-      return c.json({ error: "Backup directory is missing snapshot.db or manifest.json" }, 422);
-    }
-
-    // --- Verify checksum ---
-    let checksumVerified = false;
-    if (existsSync(checksumPath)) {
-      const checksumFile = await Bun.file(checksumPath).text();
-      const expectedHash = checksumFile.trim().split(/\s+/)[0];
-      const actualHash = await sha256File(snapshotPath);
-      if (actualHash !== expectedHash) {
-        log.warn("Restore rejected: checksum mismatch", { name });
-        return c.json({ error: "Checksum mismatch — backup file may be corrupted" }, 422);
-      }
-      checksumVerified = true;
-    } else {
-      log.warn("Restore: no checksum file found, proceeding without verification", { name });
-    }
-
-    // --- Parse manifest for bookmark count ---
-    let bookmarkCount = 0;
-    try {
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bookmark_count?: number };
-      bookmarkCount = manifest.bookmark_count ?? 0;
-    } catch {
-      // ignore — non-fatal
-    }
-
-    // --- Checkpoint WAL and replace database files ---
-    try {
+      let body: Record<string, unknown>;
       try {
-        deps.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-      } catch (err) {
-        log.warn("Restore: WAL checkpoint failed (proceeding anyway)", { error: String(err) });
+        body = await c.req.json() as Record<string, unknown>;
+      } catch {
+        return c.json({ error: "Request body must be valid JSON" }, 400);
       }
 
+      // ── Remote restore ────────────────────────────────────────────────────────
+      if (body.source === "remote") {
+        if (!body.key || typeof body.key !== "string") {
+          return c.json({ error: "Field 'key' (string) is required for remote restore" }, 422);
+        }
+
+        const s3cfg = getS3Config();
+        if (!s3ConfigPresent(s3cfg)) {
+          return c.json({ error: "S3 is not configured" }, 422);
+        }
+
+        // Download snapshot to a temp file
+        const tmpPath = join(tmpdir(), `littleimp-restore-${Date.now()}.db`);
+        const tmpChecksumPath = `${tmpPath}.sha256`;
+        try {
+          const s3Key = body.key as string;
+          const data = await downloadFromS3(s3cfg, s3Key);
+          writeFileSync(tmpPath, data);
+
+          // Attempt to download a matching checksum file for integrity verification
+          const checksumKey = s3Key.replace(/\/snapshot\.db$/, "/checksums.sha256");
+          let resolvedChecksumPath: string | null = null;
+          try {
+            const checksumData = await downloadFromS3(s3cfg, checksumKey);
+            writeFileSync(tmpChecksumPath, checksumData);
+            resolvedChecksumPath = tmpChecksumPath;
+          } catch {
+            log.warn("Remote restore: no checksum file found on S3, proceeding without verification", { checksumKey });
+          }
+
+          const { bookmark_count, checksum_verified } = await restoreFromSnapshot(tmpPath, resolvedChecksumPath, null);
+
+          return c.json({
+            restored_at: new Date().toISOString(),
+            bookmark_count,
+            checksum_verified,
+            restart_required: true,
+          });
+        } catch (err) {
+          const status = (err as { status?: number }).status;
+          if (status === 422) return c.json({ error: (err as Error).message }, 422);
+          log.error("Remote restore failed", { error: String(err) });
+          return c.json({ error: "Remote restore failed" }, 500);
+        } finally {
+          try { rmSync(tmpPath, { force: true }); } catch { /* best-effort */ }
+          try { rmSync(tmpChecksumPath, { force: true }); } catch { /* best-effort */ }
+        }
+      }
+
+      // ── Local restore ─────────────────────────────────────────────────────────
+      if (!body.name || typeof body.name !== "string") {
+        return c.json({ error: "Field 'name' (string) is required" }, 422);
+      }
+
+      const name = body.name as string;
+
+      // Reject any name containing path separators or traversal sequences.
+      if (name.includes("/") || name.includes("\\") || name.includes("..")) {
+        return c.json({ error: "Invalid backup name" }, 422);
+      }
+
+      // Resolve server-side — the caller never controls the base directory.
+      const backupPath = resolve(join(resolvedBackupsDir, name));
+
+      // Double-check the resolved path is still inside backupsDir (defense-in-depth).
+      if (!backupPath.startsWith(resolvedBackupsDir + "/") && backupPath !== resolvedBackupsDir) {
+        log.warn("Restore rejected: path traversal attempt", { name });
+        return c.json({ error: "Invalid backup name" }, 422);
+      }
+
+      const snapshotPath = join(backupPath, "snapshot.db");
+      const manifestPath = join(backupPath, "manifest.json");
+      const checksumPath = join(backupPath, "checksums.sha256");
+
+      try { statSync(backupPath); } catch {
+        return c.json({ error: "Backup not found" }, 422);
+      }
+
+      if (!existsSync(snapshotPath) || !existsSync(manifestPath)) {
+        return c.json({ error: "Backup directory is missing snapshot.db or manifest.json" }, 422);
+      }
+
+      if (!existsSync(checksumPath)) {
+        log.warn("Restore: no checksum file found, proceeding without verification", { name });
+      }
+
       try {
-        copyFileSync(snapshotPath, deps.dbPath);
-        const walPath = `${deps.dbPath}-wal`;
-        const shmPath = `${deps.dbPath}-shm`;
-        if (existsSync(walPath)) rmSync(walPath);
-        if (existsSync(shmPath)) rmSync(shmPath);
-        log.info("Restore: database file replaced", { from: snapshotPath, to: deps.dbPath });
+        const { bookmark_count, checksum_verified } = await restoreFromSnapshot(
+          snapshotPath,
+          checksumPath,
+          manifestPath
+        );
+        return c.json({
+          restored_at: new Date().toISOString(),
+          bookmark_count,
+          checksum_verified,
+          restart_required: true,
+        });
       } catch (err) {
+        const status = (err as { status?: number }).status;
+        if (status === 422) return c.json({ error: (err as Error).message }, 422);
         log.error("Restore failed: could not overwrite database", { error: String(err) });
         return c.json({ error: "Failed to replace database file" }, 500);
       }
-
-      return c.json({
-        restored_at: new Date().toISOString(),
-        bookmark_count: bookmarkCount,
-        checksum_verified: checksumVerified,
-        restart_required: true,
-      });
-    } catch (err) {
-      log.error("Restore: unexpected error", { error: String(err) });
-      return c.json({ error: "Restore failed" }, 500);
-    }
-
     } finally {
       operationInProgress = false;
+    }
+  });
+
+  /**
+   * POST /settings/test-s3
+   * Tests the S3 connection using the current backup.s3 settings.
+   * Returns 200 on success or 422 with error details on failure.
+   */
+  router.post("/settings/test-s3", async (c) => {
+    const s3cfg = getS3Config();
+    if (!s3ConfigPresent(s3cfg)) {
+      return c.json({ error: "S3 is not configured (bucket, access_key, and secret_key are required)" }, 422);
+    }
+    try {
+      await testS3Connection(s3cfg);
+      return c.json({ ok: true, message: "S3 connection successful" });
+    } catch (err) {
+      log.warn("S3 connection test failed", { error: String(err) });
+      return c.json({ error: `S3 connection failed: ${String(err)}` }, 422);
     }
   });
 
