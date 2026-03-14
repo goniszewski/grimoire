@@ -73,7 +73,7 @@ Priority order: **UX completeness → AI features → distribution → testing i
 **Category management**
 - [x] Rename category (inline edit in sidebar)
 - [x] Delete category (with confirmation — bookmarks become uncategorized)
-- [ ] Move / reparent category via drag-and-drop in sidebar (primary) — not yet implemented
+- [x] Move / reparent category via drag-and-drop in sidebar (primary) — TASK-034
 - [x] Move / reparent category via "Move to…" dropdown (fallback / mobile-friendly)
 
 **Bookmark editing**
@@ -200,7 +200,7 @@ Priority order: **UX completeness → AI features → distribution → testing i
 | Create a category | ✅ Done |
 | Rename a category | ✅ Done (M1) |
 | Delete a category | ✅ Done (M1) |
-| Move a category under another | ⚠️ Partial (dropdown only; drag-and-drop pending) |
+| Move a category under another | ✅ Done (M1, TASK-034) |
 | Configure AI provider | ✅ Done (M2) |
 | Import bookmarks from browser | ✅ Done |
 | Export bookmarks | ✅ Done |

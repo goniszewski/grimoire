@@ -63,10 +63,10 @@ function assertSafeSqlPath(path: string): void {
 export function createBackupRoute(deps: BackupDeps): Hono {
   const router = new Hono();
   const resolvedDataDir = deps.dataDir ?? Config.DATA_DIR;
-  const resolvedBackupsDir = backupsDir(resolvedDataDir);
+  const resolvedBackupsDir = resolve(backupsDir(resolvedDataDir));
 
-  /** In-flight backup guard — prevents concurrent VACUUM INTO the same path. */
-  let backupInProgress = false;
+  /** In-flight operation guard — prevents concurrent backup or restore operations. */
+  let operationInProgress = false;
 
   /**
    * POST /backup
@@ -74,10 +74,10 @@ export function createBackupRoute(deps: BackupDeps): Hono {
    * Returns metadata about the created backup.
    */
   router.post("/backup", async (c) => {
-    if (backupInProgress) {
-      return c.json({ error: "A backup is already in progress" }, 409);
+    if (operationInProgress) {
+      return c.json({ error: "A backup or restore operation is already in progress" }, 409);
     }
-    backupInProgress = true;
+    operationInProgress = true;
 
     mkdirSync(resolvedBackupsDir, { recursive: true });
 
@@ -126,7 +126,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       try { rmSync(backupDir, { recursive: true, force: true }); } catch { /* best-effort */ }
       return c.json({ error: "Failed to create backup" }, 500);
     } finally {
-      backupInProgress = false;
+      operationInProgress = false;
     }
   });
 
@@ -188,6 +188,10 @@ export function createBackupRoute(deps: BackupDeps): Hono {
    * to take effect on the open SQLite connection.
    */
   router.post("/restore", async (c) => {
+    if (operationInProgress) {
+      return c.json({ error: "A backup or restore operation is already in progress" }, 409);
+    }
+
     let body: { name?: unknown };
     try {
       body = await c.req.json() as { name?: unknown };
@@ -255,35 +259,42 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     }
 
     // --- Checkpoint WAL and replace database files ---
-    // Run a full WAL checkpoint so the main database file is self-contained,
-    // then copy the snapshot over it. Also remove the sidecar -wal and -shm
-    // files from the previous session so SQLite doesn't try to replay them
-    // against the restored database on next open.
+    // Acquire the operation lock for the destructive phase only — validation errors above
+    // should not block future legitimate requests.
+    operationInProgress = true;
     try {
-      deps.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    } catch (err) {
-      log.warn("Restore: WAL checkpoint failed (proceeding anyway)", { error: String(err) });
-    }
+      // Run a full WAL checkpoint so the main database file is self-contained,
+      // then copy the snapshot over it. Also remove the sidecar -wal and -shm
+      // files from the previous session so SQLite doesn't try to replay them
+      // against the restored database on next open.
+      try {
+        deps.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+      } catch (err) {
+        log.warn("Restore: WAL checkpoint failed (proceeding anyway)", { error: String(err) });
+      }
 
-    try {
-      copyFileSync(snapshotPath, deps.dbPath);
-      // Remove stale WAL / shared-memory sidecar files from the previous session.
-      const walPath = `${deps.dbPath}-wal`;
-      const shmPath = `${deps.dbPath}-shm`;
-      if (existsSync(walPath)) rmSync(walPath);
-      if (existsSync(shmPath)) rmSync(shmPath);
-      log.info("Restore: database file replaced", { from: snapshotPath, to: deps.dbPath });
-    } catch (err) {
-      log.error("Restore failed: could not overwrite database", { error: String(err) });
-      return c.json({ error: "Failed to replace database file" }, 500);
-    }
+      try {
+        copyFileSync(snapshotPath, deps.dbPath);
+        // Remove stale WAL / shared-memory sidecar files from the previous session.
+        const walPath = `${deps.dbPath}-wal`;
+        const shmPath = `${deps.dbPath}-shm`;
+        if (existsSync(walPath)) rmSync(walPath);
+        if (existsSync(shmPath)) rmSync(shmPath);
+        log.info("Restore: database file replaced", { from: snapshotPath, to: deps.dbPath });
+      } catch (err) {
+        log.error("Restore failed: could not overwrite database", { error: String(err) });
+        return c.json({ error: "Failed to replace database file" }, 500);
+      }
 
-    return c.json({
-      restored_at: new Date().toISOString(),
-      bookmark_count: bookmarkCount,
-      checksum_verified: checksumVerified,
-      restart_required: true,
-    });
+      return c.json({
+        restored_at: new Date().toISOString(),
+        bookmark_count: bookmarkCount,
+        checksum_verified: checksumVerified,
+        restart_required: true,
+      });
+    } finally {
+      operationInProgress = false;
+    }
   });
 
   return router;

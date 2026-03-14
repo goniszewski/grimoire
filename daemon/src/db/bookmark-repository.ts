@@ -305,8 +305,14 @@ export class BookmarkRepository {
         const info = this.db
           .query(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ? AND is_trashed = 0`)
           .run(...params, id);
-        // If no rows were updated the bookmark is trashed or missing — skip tag writes.
-        if (info.changes === 0 && patch.tags !== undefined) return;
+        // If no rows were updated the bookmark is trashed or missing — skip all writes.
+        if (info.changes === 0) return;
+      } else if (patch.tags !== undefined) {
+        // Tags-only patch: verify the bookmark exists and isn't trashed before writing.
+        const exists = this.db
+          .query<{ id: string }, [string]>("SELECT id FROM bookmarks WHERE id = ? AND is_trashed = 0")
+          .get(id);
+        if (!exists) return;
       }
 
       if (patch.tags !== undefined) {

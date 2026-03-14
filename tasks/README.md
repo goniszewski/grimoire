@@ -46,7 +46,9 @@ tasks/
 | TASK-029 | [Daemon Unit Tests](backlog/TASK-029-daemon-unit-tests.md) | M4 | medium | backlog |
 | TASK-030 | [Daemon Integration Tests](backlog/TASK-030-daemon-integration-tests.md) | M4 | medium | backlog |
 | TASK-031 | [Frontend Tests](backlog/TASK-031-frontend-tests.md) | M4 | medium | backlog |
-| TASK-032 | [Distribution Readiness](backlog/TASK-032-distribution-readiness.md) | M5 | low | backlog |
+| TASK-032 | [Distribution Readiness](done/TASK-032-distribution-readiness.md) | M5 | low | done |
+| TASK-033 | [Backup & Restore](done/TASK-033-backup-restore.md) | M5 | medium | done |
+| TASK-034 | [Category Drag-and-Drop Reparenting](done/TASK-034-category-drag-drop.md) | M1 | medium | done |
 
 ## Current Status
 

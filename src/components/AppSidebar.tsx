@@ -4,6 +4,18 @@ import { listSuggestions, createCategory, updateCategory, deleteCategory, listCa
 import { suggestionKeys } from "@/hooks/use-suggestions";
 import { bookmarkKeys, type UICategory } from "@/hooks/use-bookmarks";
 import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+} from "@dnd-kit/core";
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -40,7 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput, Settings } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput, Settings, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +61,131 @@ import { toast } from "sonner";
 const DOMAINS_COLLAPSED_COUNT = 5;
 const DOMAINS_PAGE_THRESHOLD = 20;
 const TAGS_COLLAPSED_COUNT = 8;
+
+// ── Drag-and-drop sub-components ──────────────────────────────────────────────
+
+interface DraggableCategoryProps {
+  cat: UICategory;
+  collapsed: boolean;
+  selectedCategory: string | null;
+  onSelectCategory: (category: string | null) => void;
+  onStartRename: (cat: UICategory) => void;
+  onStartMove: (cat: UICategory) => void;
+  onStartDelete: (cat: UICategory) => void;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  isDraggingAny: boolean;
+}
+
+function DraggableCategory({
+  cat,
+  collapsed,
+  selectedCategory,
+  onSelectCategory,
+  onStartRename,
+  onStartMove,
+  onStartDelete,
+  isDragging,
+  isDropTarget,
+  isDraggingAny,
+}: DraggableCategoryProps) {
+  const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
+    id: cat.id,
+    disabled: collapsed,
+  });
+  const { setNodeRef: setDropRef } = useDroppable({ id: cat.id });
+
+  const setRef = (el: HTMLElement | null) => {
+    setDragRef(el);
+    setDropRef(el);
+  };
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          ref={setRef}
+          className={cn(
+            "group relative flex items-center rounded-md transition-colors",
+            isDragging && "opacity-40",
+            isDropTarget && "ring-2 ring-primary/60 bg-primary/10"
+          )}
+        >
+          {!collapsed && isDraggingAny && (
+            <span
+              {...attributes}
+              {...listeners}
+              className="absolute left-0 flex items-center justify-center h-full w-5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-3 w-3" />
+            </span>
+          )}
+          {!collapsed && !isDraggingAny && (
+            <span
+              {...attributes}
+              {...listeners}
+              className="absolute left-0 flex items-center justify-center h-full w-5 text-muted-foreground/0 group-hover:text-muted-foreground/40 cursor-grab active:cursor-grabbing z-10 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-3 w-3" />
+            </span>
+          )}
+          <SidebarMenuButton
+            onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
+            className={cn(
+              selectedCategory === cat.name && "bg-accent text-accent-foreground",
+              !collapsed && "pl-6"
+            )}
+            tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
+          >
+            {collapsed ? (
+              <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
+            ) : (
+              <>
+                <span className="text-xs truncate">{cat.name}</span>
+                <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
+                  {cat.count}
+                </Badge>
+              </>
+            )}
+          </SidebarMenuButton>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => onStartRename(cat)}>
+          <Pencil className="h-3.5 w-3.5 mr-2" />
+          Rename
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onStartMove(cat)}>
+          <FolderInput className="h-3.5 w-3.5 mr-2" />
+          Move to…
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onClick={() => onStartDelete(cat)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5 mr-2" />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function RootDropZone({ isOver }: { isOver: boolean }) {
+  const { setNodeRef } = useDroppable({ id: "__root__" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "absolute inset-0 rounded-md pointer-events-none",
+        isOver && "ring-2 ring-primary/60 bg-primary/10"
+      )}
+    />
+  );
+}
 
 interface AppSidebarProps {
   categories: UICategory[];
@@ -92,9 +229,17 @@ export function AppSidebar({
   // Delete state — tracks category id
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
-  // Move state — tracks category id
+  // Move state — tracks category id (used by "Move to…" dropdown)
   const [movingCategoryId, setMovingCategoryId] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string>("");
+
+  // Drag-and-drop state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
 
   const qc = useQueryClient();
 
@@ -251,6 +396,31 @@ export function AppSidebar({
     moveMutation.mutate({ id, parent_id });
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setDraggingId(event.active.id as string);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    setDragOverId(event.over ? (event.over.id as string) : null);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const draggedId = event.active.id as string;
+    const targetId = event.over?.id as string | undefined;
+    setDraggingId(null);
+    setDragOverId(null);
+
+    if (!targetId || targetId === draggedId) return;
+
+    // Check that target is not a descendant of dragged (prevent cycles)
+    const validTargets = getMoveTargets(draggedId);
+    const isValidTarget = targetId === "__root__" || validTargets.some((c) => c.id === targetId);
+    if (!isValidTarget) return;
+
+    const parent_id = targetId === "__root__" ? null : targetId;
+    moveMutation.mutate({ id: draggedId, parent_id });
+  }
+
   const { data: suggestionsData } = useQuery({
     queryKey: suggestionKeys.pending(),
     queryFn: listSuggestions,
@@ -270,6 +440,7 @@ export function AppSidebar({
   function getMoveTargets(movingId: string): ApiCategory[] {
     const excluded = new Set<string>();
     function collectSubtree(id: string) {
+      if (excluded.has(id)) return; // already visited — also breaks any data cycles
       excluded.add(id);
       flatApiCategories.forEach((c) => {
         if (c.parent_id === id) collectSubtree(c.id);
@@ -316,11 +487,21 @@ export function AppSidebar({
               )}
             </SidebarGroupLabel>
             <SidebarGroupContent>
+              <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+              >
               <SidebarMenu>
+                {/* "Root" drop zone — drop here to make a category top-level */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => onSelectCategory(null)}
-                    className={cn(!selectedCategory && "bg-accent text-accent-foreground")}
+                    className={cn(
+                      !selectedCategory && "bg-accent text-accent-foreground",
+                      draggingId && dragOverId === "__root__" && "ring-2 ring-primary/60 bg-primary/10"
+                    )}
                     tooltip={collapsed ? `All (${totalCount})` : undefined}
                   >
                     {collapsed ? (
@@ -334,6 +515,8 @@ export function AppSidebar({
                       </>
                     )}
                   </SidebarMenuButton>
+                  {/* Invisible droppable that covers the "All" item for root-level drops */}
+                  {draggingId && !collapsed && <RootDropZone isOver={dragOverId === "__root__"} />}
                 </SidebarMenuItem>
                 {categories.map((cat) => (
                   <SidebarMenuItem key={cat.name}>
@@ -366,44 +549,18 @@ export function AppSidebar({
                         </button>
                       </div>
                     ) : cat.id ? (
-                      <ContextMenu>
-                        <ContextMenuTrigger asChild>
-                          <SidebarMenuButton
-                            onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
-                            className={cn(selectedCategory === cat.name && "bg-accent text-accent-foreground")}
-                            tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
-                          >
-                            {collapsed ? (
-                              <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
-                            ) : (
-                              <>
-                                <span className="text-xs truncate">{cat.name}</span>
-                                <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
-                                  {cat.count}
-                                </Badge>
-                              </>
-                            )}
-                          </SidebarMenuButton>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent>
-                          <ContextMenuItem onClick={() => startRename(cat)}>
-                            <Pencil className="h-3.5 w-3.5 mr-2" />
-                            Rename
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => startMove(cat)}>
-                            <FolderInput className="h-3.5 w-3.5 mr-2" />
-                            Move to…
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem
-                            onClick={() => startDelete(cat)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mr-2" />
-                            Delete
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
+                      <DraggableCategory
+                        cat={cat}
+                        collapsed={collapsed}
+                        selectedCategory={selectedCategory}
+                        onSelectCategory={onSelectCategory}
+                        onStartRename={startRename}
+                        onStartMove={startMove}
+                        onStartDelete={startDelete}
+                        isDragging={draggingId === cat.id}
+                        isDropTarget={dragOverId === cat.id && draggingId !== cat.id}
+                        isDraggingAny={!!draggingId}
+                      />
                     ) : (
                       <SidebarMenuButton
                         onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
@@ -461,6 +618,19 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 )}
               </SidebarMenu>
+              <DragOverlay dropAnimation={null}>
+                {draggingId && (() => {
+                  const cat = categories.find((c) => c.id === draggingId);
+                  if (!cat) return null;
+                  return (
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-accent text-accent-foreground text-xs shadow-lg border border-border opacity-90 w-40">
+                      <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="truncate">{cat.name}</span>
+                    </div>
+                  );
+                })()}
+              </DragOverlay>
+              </DndContext>
             </SidebarGroupContent>
           </SidebarGroup>
 

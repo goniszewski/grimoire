@@ -134,24 +134,30 @@ export class OrganizationAgent {
         found++;
 
         if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: auto-trash the duplicate (idB) and record to timeline.
-          const trashed = this.bookmarkRepo.softDelete(idB);
+          // High-confidence: auto-trash the duplicate (idB) and record to timeline atomically.
+          let trashed = false;
+          this.db.transaction(() => {
+            trashed = this.bookmarkRepo.softDelete(idB);
+            if (trashed) {
+              this.timelineRepo.insert(
+                "duplicate_removed",
+                `Auto-removed duplicate: "${bmB.title ?? bmB.url}" (kept "${bmA.title ?? bmA.url}")`,
+                { canonicalBookmarkId: idA, trashedBookmarkId: idB, similarity: sim },
+                "agent",
+                idB
+              );
+            } else {
+              this.timelineRepo.insert(
+                "duplicate_flagged",
+                value,
+                { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
+                "agent"
+              );
+            }
+          })();
           if (trashed) {
-            this.timelineRepo.insert(
-              "duplicate_removed",
-              `Auto-removed duplicate: "${bmB.title ?? bmB.url}" (kept "${bmA.title ?? bmA.url}")`,
-              { canonicalBookmarkId: idA, trashedBookmarkId: idB, similarity: sim },
-              "agent",
-              idB
-            );
             log.info("OrganizationAgent: auto-removed duplicate", { canonical: idA, trashed: idB, sim });
           } else {
-            this.timelineRepo.insert(
-              "duplicate_flagged",
-              value,
-              { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
-              "agent"
-            );
             log.info("OrganizationAgent: auto-flagged duplicate (already trashed?)", { idA, idB, sim });
           }
         } else {
