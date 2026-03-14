@@ -121,7 +121,7 @@ Priority order: **UX completeness → AI features → distribution → testing i
 
 ---
 
-### M4 — Testing Infrastructure
+### M4 — Testing Infrastructure ✅
 
 > Goal: Confidence to ship without manual regression testing.
 
@@ -129,26 +129,26 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - [x] `JobQueue` — enqueue, dequeue, status transitions
 - [x] `BookmarkRepository` — CRUD, FTS sync, cascade delete
 - [x] `CategoryRepository` — tree queries, reparent, depth limits
-- [ ] Extraction pipeline stages — fetch, extract, ai_enrich, embed, index
+- [x] Extraction pipeline stages — fetch, extract, ai_enrich, embed, index
 - [x] Search — keyword results, FTS sanitisation, filter options
 - [x] Trash purge — soft-delete, restore, 30-day expiry
 
 **Integration tests — daemon (Bun test runner, in-memory SQLite)**
-- [ ] Full ingestion flow: `POST /bookmarks` → pipeline → `GET /bookmarks/:id` (status: indexed)
-- [ ] Import flow: upload Netscape HTML → all bookmarks ingested
-- [ ] Search: bookmark ingested → FTS returns it
-- [ ] Category and tag CRUD via API
-- [ ] Archive: archive → hidden from main feed → appears in `/archive` → unarchive → back in feed
-- [ ] Trash: delete → appears in `/trash` → restore → no longer in trash; purge after 30 days
+- [x] Full ingestion flow: `POST /bookmarks` → pipeline → `GET /bookmarks/:id` (status: indexed)
+- [x] Import flow: upload Netscape HTML → all bookmarks ingested
+- [x] Search: bookmark ingested → FTS returns it
+- [x] Category and tag CRUD via API
+- [x] Archive: archive → hidden from main feed → appears in `/archive` → unarchive → back in feed
+- [x] Trash: delete → appears in `/trash` → restore → no longer in trash; purge after 30 days
 
 **Frontend tests (Vitest)**
-- [ ] Unit tests for hooks (`use-bookmarks`, `use-daemon-status`, `use-suggestions`)
-- [ ] Component tests for `BookmarkCard`, `BookmarkDetailContent`, `AppSidebar`
-- [ ] E2E: add bookmark → appears in list → open detail → edit notes → save
+- [x] Unit tests for hooks (`use-bookmarks`, `use-daemon-status`, `use-suggestions`)
+- [x] Component tests for `BookmarkCard`, `BookmarkDetailContent`, `AppSidebar`
+- [x] E2E: add bookmark → appears in list → open detail → edit notes → save
 
 ---
 
-### M5 — Distribution Readiness
+### M5 — Distribution Readiness ✅
 
 > Goal: Someone else can install and run Little Imp without assistance.
 
@@ -159,10 +159,10 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - [ ] Document manual start/stop/restart commands
 
 **First-run experience**
-- [ ] Detect empty library state — show onboarding message or empty state UI
-- [ ] Cold start: clustering disabled under 20 bookmarks — enforced ✓; verify from UI perspective
-- [ ] Explain degraded mode clearly when AI providers are unset: keyword search works, enrichment / embeddings are skipped
-- [ ] Graceful "daemon offline" banner already exists — confirm it shows on first launch before daemon starts
+- [x] Detect empty library state — show onboarding message or empty state UI
+- [x] Cold start: clustering disabled under 20 bookmarks — enforced; UI cold-start message shown on Review Queue page
+- [x] Explain degraded mode clearly when AI providers are unset: dismissible banner with link to Settings
+- [x] Graceful "daemon offline" banner confirmed — shows on first launch before daemon starts; Playwright test added
 
 **Packaging**
 - [ ] Single-command install: `curl | sh` or Homebrew formula (future)
@@ -171,13 +171,13 @@ Priority order: **UX completeness → AI features → distribution → testing i
 - [ ] Release notes / changelog format established
 
 **Backup and restore**
-- [ ] Define portable backup bundle format: SQLite DB + manifest + checksums + optional attachments
-- [ ] Add "Create backup now" action that writes to a local folder
-- [ ] Add "Restore from backup" flow with compatibility checks and clear overwrite rules
-- [ ] Add scheduled local snapshots with retention policy
-- [ ] Add remote backup target abstraction with first-class S3-compatible support
-- [ ] Support user-selected cloud-synced folders as normal local destinations (iCloud Drive, Dropbox, Google Drive, OneDrive)
-- [ ] Defer provider-specific APIs unless folder-based backup proves insufficient
+- [x] Define portable backup bundle format: SQLite DB + manifest + checksums + optional attachments
+- [x] Add "Create backup now" action that writes to a local folder
+- [x] Add "Restore from backup" flow with compatibility checks and clear overwrite rules
+- [x] Add scheduled local snapshots with retention policy
+- [x] Add remote backup target abstraction with first-class S3-compatible support
+- [x] Support user-selected cloud-synced folders as normal local destinations (iCloud Drive, Dropbox, Google Drive, OneDrive)
+- [x] Defer provider-specific APIs unless folder-based backup proves insufficient
 
 ---
 

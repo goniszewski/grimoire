@@ -271,6 +271,9 @@ export function validateSettingsPatch(patch: unknown): string | null {
         if (dp.includes("..")) {
           return "`backup.local.destination_path` must not contain path traversal sequences (..)";
         }
+        if (dp.includes("'")) {
+          return "`backup.local.destination_path` must not contain single-quote characters";
+        }
       }
     }
 

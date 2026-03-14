@@ -98,16 +98,18 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
       return problem(c, 422, "Unprocessable Entity", `Suggestion is already ${existing.status}`);
     }
 
-    const updated = repo.reject(id);
+    let updated: ReturnType<typeof repo.reject> = null;
+    deps.db.transaction(() => {
+      updated = repo.reject(id);
+      timelineRepo.insert(
+        "suggestion_rejected",
+        `User rejected suggestion: ${existing.value}`,
+        { ...existing.metadata, suggestionId: id, type: existing.type },
+        "user",
+        existing.bookmarkId
+      );
+    })();
     if (!updated) return problem(c, 500, "Internal Server Error", "Failed to resolve suggestion");
-
-    timelineRepo.insert(
-      "suggestion_rejected",
-      `User rejected suggestion: ${existing.value}`,
-      { ...existing.metadata, suggestionId: id, type: existing.type },
-      "user",
-      existing.bookmarkId
-    );
 
     return ok(c, updated);
   });

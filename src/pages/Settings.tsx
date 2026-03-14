@@ -144,8 +144,6 @@ const Settings = () => {
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
 
   // ─── S3 Remote Backup ────────────────────────────────────────────────────────
-  const remoteBackupList = useBackupListWithRemote(showRemote && !!s3Form.bucket);
-  const testS3Mutation = useTestS3Connection();
   const [showRemote, setShowRemote] = useState(false);
   const [s3Form, setS3Form] = useState<ApiS3Config>({
     endpoint: "",
@@ -155,6 +153,8 @@ const Settings = () => {
     region: "us-east-1",
     prefix: "little-imp-backups/",
   });
+  const remoteBackupList = useBackupListWithRemote(showRemote && !!s3Form.bucket);
+  const testS3Mutation = useTestS3Connection();
   const [s3Dirty, setS3Dirty] = useState(false);
   const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; message: string } | null>(null);
 

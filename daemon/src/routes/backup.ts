@@ -475,6 +475,10 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       return c.json({ error: "`path` must not contain path traversal sequences (..)" }, 422);
     }
 
+    if (rawPath.includes("'")) {
+      return c.json({ error: "`path` must not contain single-quote characters" }, 422);
+    }
+
     // Probe write access before persisting (unless clearing — the default path is always writable).
     // ensureWritable creates the dir if absent, which is intentional: we want to confirm the
     // path is usable before committing it to settings.
