@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSettings } from "@/lib/api";
-
-export const settingsKeys = {
-  all: ["settings"] as const,
-};
+import { settingsKeys } from "@/pages/Settings";
 
 export function useSettings() {
   const query = useQuery({

@@ -131,6 +131,9 @@ export default function ReviewQueue() {
   });
   const bookmarkTotal = bookmarkCountQuery.data?.pagination?.total ?? null;
   const isColdStart = bookmarkTotal !== null && bookmarkTotal < 20;
+  // Unify loading states so the skeleton covers both queries and avoids a layout flash
+  // where "All caught up" renders briefly before the bookmark count resolves.
+  const combinedLoading = isLoading || bookmarkCountQuery.isLoading;
 
   return (
     <div className="min-h-screen flex flex-col w-full">
@@ -157,7 +160,7 @@ export default function ReviewQueue() {
       </header>
 
       <main className="flex-1 p-4 sm:p-6 max-w-2xl mx-auto w-full">
-        {isLoading && (
+        {combinedLoading && (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-lg" />
@@ -165,14 +168,14 @@ export default function ReviewQueue() {
           </div>
         )}
 
-        {isError && (
+        {!combinedLoading && isError && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Bot className="h-10 w-10 text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">Failed to load suggestions.</p>
           </div>
         )}
 
-        {!isLoading && !isError && isColdStart && (
+        {!combinedLoading && !isError && isColdStart && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Inbox className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="font-medium text-muted-foreground mb-1">Almost there!</h3>
@@ -183,7 +186,7 @@ export default function ReviewQueue() {
           </div>
         )}
 
-        {!isLoading && !isError && !isColdStart && suggestions.length === 0 && (
+        {!combinedLoading && !isError && !isColdStart && suggestions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Inbox className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="font-medium text-muted-foreground mb-1">All caught up</h3>
@@ -194,7 +197,7 @@ export default function ReviewQueue() {
           </div>
         )}
 
-        {!isLoading && !isError && !isColdStart && suggestions.length > 0 && (
+        {!combinedLoading && !isError && !isColdStart && suggestions.length > 0 && (
           <div className="space-y-3">
             {suggestions.map((s) => (
               <SuggestionCard

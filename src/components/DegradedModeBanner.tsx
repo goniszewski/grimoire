@@ -14,13 +14,15 @@ export function DegradedModeBanner({ aiEnabled }: DegradedModeBannerProps) {
     return localStorage.getItem(STORAGE_KEY) === "true";
   });
 
-  // Clear dismiss flag when AI becomes enabled so banner can reappear if disabled again
+  // Clear dismiss flag when AI becomes enabled so banner can reappear if disabled again.
+  // `dismissed` is in the dep array so the closure is always fresh; React no-ops the
+  // setDismissed(false) call when dismissed is already false.
   useEffect(() => {
     if (aiEnabled) {
       localStorage.removeItem(STORAGE_KEY);
-      if (dismissed) setDismissed(false);
+      setDismissed(false);
     }
-  }, [aiEnabled]);
+  }, [aiEnabled, dismissed]);
 
   if (aiEnabled || dismissed) return null;
 
