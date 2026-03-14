@@ -1,5 +1,7 @@
 import { useSuggestions } from "@/hooks/use-suggestions";
 import type { ApiSuggestion, SuggestionType } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { listBookmarks } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,6 +124,14 @@ export default function ReviewQueue() {
   const navigate = useNavigate();
   const { suggestions, pendingCount, isLoading, isError, accept, reject } = useSuggestions();
 
+  const bookmarkCountQuery = useQuery({
+    queryKey: ["bookmarks", "count-for-cold-start"],
+    queryFn: () => listBookmarks({ limit: 1 }),
+    staleTime: 60_000,
+  });
+  const bookmarkTotal = bookmarkCountQuery.data?.pagination?.total ?? null;
+  const isColdStart = bookmarkTotal !== null && bookmarkTotal < 20;
+
   return (
     <div className="min-h-screen flex flex-col w-full">
       {/* Header */}
@@ -162,7 +172,18 @@ export default function ReviewQueue() {
           </div>
         )}
 
-        {!isLoading && !isError && suggestions.length === 0 && (
+        {!isLoading && !isError && isColdStart && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Inbox className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <h3 className="font-medium text-muted-foreground mb-1">Almost there!</h3>
+            <p className="text-sm text-muted-foreground/60 max-w-sm">
+              The organisation agent needs at least 20 bookmarks before it can make
+              suggestions. Keep saving! ({bookmarkTotal ?? 0}/20 saved)
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && !isColdStart && suggestions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Inbox className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="font-medium text-muted-foreground mb-1">All caught up</h3>
@@ -173,7 +194,7 @@ export default function ReviewQueue() {
           </div>
         )}
 
-        {!isLoading && !isError && suggestions.length > 0 && (
+        {!isLoading && !isError && !isColdStart && suggestions.length > 0 && (
           <div className="space-y-3">
             {suggestions.map((s) => (
               <SuggestionCard
