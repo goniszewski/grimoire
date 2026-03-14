@@ -9,6 +9,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { log } from "./logger.js";
+import { Config } from "./config.js";
 
 // ─── Config file path ─────────────────────────────────────────────────────────
 
@@ -45,9 +46,20 @@ export interface AppSettings {
   };
 }
 
+export interface BackupScheduleSettings {
+  enabled: boolean;
+  /** 5-part cron expression, e.g. "0 3 * * *" */
+  cron: string;
+  /** Maximum number of local backup snapshots to retain. */
+  retention_count: number;
+}
+
 export interface Settings {
   ai: AiSettings;
   app: AppSettings;
+  backup: {
+    schedule: BackupScheduleSettings;
+  };
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -74,6 +86,13 @@ const DEFAULT_SETTINGS: Settings = {
     lock: {
       enabled: false,
       pin_hash: "",
+    },
+  },
+  backup: {
+    schedule: {
+      enabled: Config.BACKUP_SCHEDULE_ENABLED,
+      cron: Config.BACKUP_SCHEDULE_CRON,
+      retention_count: Config.BACKUP_RETENTION_COUNT,
     },
   },
 };
@@ -192,6 +211,38 @@ export function validateSettingsPatch(patch: unknown): string | null {
       const l = lock as Record<string, unknown>;
       if ("enabled" in l && typeof l.enabled !== "boolean") return "`app.lock.enabled` must be a boolean";
       if ("pin_hash" in l && typeof l.pin_hash !== "string") return "`app.lock.pin_hash` must be a string";
+    }
+  }
+
+  if ("backup" in p) {
+    const backup = p.backup;
+    if (typeof backup !== "object" || backup === null || Array.isArray(backup)) {
+      return "`backup` must be an object";
+    }
+    const b = backup as Record<string, unknown>;
+
+    if ("schedule" in b) {
+      const schedule = b.schedule;
+      if (typeof schedule !== "object" || schedule === null || Array.isArray(schedule)) {
+        return "`backup.schedule` must be an object";
+      }
+      const s = schedule as Record<string, unknown>;
+      if ("enabled" in s && typeof s.enabled !== "boolean") return "`backup.schedule.enabled` must be a boolean";
+      if ("cron" in s) {
+        if (typeof s.cron !== "string" || !(s.cron as string).trim()) {
+          return "`backup.schedule.cron` must be a non-empty string";
+        }
+        const parts = (s.cron as string).trim().split(/\s+/);
+        if (parts.length !== 5) {
+          return "`backup.schedule.cron` must be a 5-part cron expression (e.g. \"0 3 * * *\")";
+        }
+      }
+      if ("retention_count" in s) {
+        const rc = s.retention_count;
+        if (typeof rc !== "number" || !Number.isInteger(rc) || rc < 1) {
+          return "`backup.schedule.retention_count` must be a positive integer";
+        }
+      }
     }
   }
 

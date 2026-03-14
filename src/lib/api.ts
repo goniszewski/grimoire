@@ -473,3 +473,25 @@ export async function restoreBackup(name: string): Promise<ApiRestoreResult> {
     body: JSON.stringify({ name }),
   });
 }
+
+// ─── Backup schedule ──────────────────────────────────────────────────────────
+
+export interface ApiBackupSchedule {
+  enabled: boolean;
+  cron: string;
+  retention_count: number;
+  next_run_at: string | null;
+}
+
+export async function getBackupSchedule(): Promise<{ data: ApiBackupSchedule }> {
+  return apiFetch<{ data: ApiBackupSchedule }>("/backup/schedule");
+}
+
+export async function updateBackupSchedule(
+  patch: Partial<Pick<ApiBackupSchedule, "enabled" | "cron" | "retention_count">>
+): Promise<{ data: ApiBackupSchedule }> {
+  return apiFetch<{ data: ApiBackupSchedule }>("/backup/schedule", {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+}

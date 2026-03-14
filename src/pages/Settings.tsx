@@ -36,8 +36,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useBackupList, useCreateBackup, useRestoreBackup } from "@/hooks/use-backup";
+import { useBackupList, useCreateBackup, useRestoreBackup, useBackupSchedule, useUpdateBackupSchedule } from "@/hooks/use-backup";
 import type { ApiBackupEntry } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,22 @@ const Settings = () => {
   const restoreMutation = useRestoreBackup();
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
+
+  // ─── Backup schedule ──────────────────────────────────────────────────────────
+  const scheduleQuery = useBackupSchedule();
+  const updateScheduleMutation = useUpdateBackupSchedule();
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleCron, setScheduleCron] = useState("0 3 * * *");
+  const [scheduleRetention, setScheduleRetention] = useState(7);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+
+  useEffect(() => {
+    if (!scheduleQuery.data) return;
+    setScheduleEnabled(scheduleQuery.data.enabled);
+    setScheduleCron(scheduleQuery.data.cron);
+    setScheduleRetention(scheduleQuery.data.retention_count);
+    setScheduleDirty(false);
+  }, [scheduleQuery.data]);
 
   // Sync server data into local form state once on load (and after save).
   useEffect(() => {
@@ -582,6 +599,124 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Backup Schedule */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Automatic Snapshots</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Create backups on a schedule and automatically remove old snapshots.
+                </p>
+              </div>
+
+              {scheduleQuery.isLoading ? (
+                <div className="text-xs text-muted-foreground">Loading…</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="schedule-enabled"
+                      checked={scheduleEnabled}
+                      onCheckedChange={(v) => {
+                        setScheduleEnabled(v);
+                        setScheduleDirty(true);
+                      }}
+                    />
+                    <Label htmlFor="schedule-enabled" className="text-sm cursor-pointer">
+                      Enable automatic daily snapshots
+                    </Label>
+                  </div>
+
+                  {scheduleEnabled && (
+                    <div className="space-y-3 pl-1">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Schedule (cron expression)</Label>
+                        <Input
+                          value={scheduleCron}
+                          onChange={(e) => {
+                            setScheduleCron(e.target.value);
+                            setScheduleDirty(true);
+                          }}
+                          placeholder="0 3 * * *"
+                          className="h-8 text-sm font-mono max-w-xs"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          5-part cron: minute hour dom month dow. Default runs daily at 3 AM.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Backups to keep</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={scheduleRetention}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (n >= 1) {
+                              setScheduleRetention(n);
+                              setScheduleDirty(true);
+                            }
+                          }}
+                          className="h-8 text-sm font-mono max-w-[120px]"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Older snapshots beyond this count are deleted automatically.
+                        </p>
+                      </div>
+
+                      {scheduleQuery.data?.next_run_at && (
+                        <p className="text-xs text-muted-foreground">
+                          Next backup:{" "}
+                          <span className="font-mono">
+                            {new Date(scheduleQuery.data.next_run_at).toLocaleString()}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!scheduleDirty || updateScheduleMutation.isPending}
+                      onClick={() => {
+                        const cronParts = scheduleCron.trim().split(/\s+/);
+                        if (scheduleEnabled && cronParts.length !== 5) {
+                          toast.error("Invalid cron expression", {
+                            description: "Must be a 5-part cron (e.g. \"0 3 * * *\")",
+                          });
+                          return;
+                        }
+                        updateScheduleMutation.mutate(
+                          { enabled: scheduleEnabled, cron: scheduleCron, retention_count: scheduleRetention },
+                          {
+                            onSuccess: () => {
+                              setScheduleDirty(false);
+                              toast.success("Schedule saved");
+                            },
+                            onError: (err: Error) => {
+                              toast.error("Failed to save schedule", { description: err.message });
+                            },
+                          }
+                        );
+                      }}
+                    >
+                      {updateScheduleMutation.isPending && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      )}
+                      Save schedule
+                    </Button>
+                    {scheduleDirty && (
+                      <span className="text-xs text-amber-500 font-mono">Unsaved</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
           </>
         )}

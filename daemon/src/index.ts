@@ -10,6 +10,10 @@ import { runPipeline } from "./pipeline/pipeline.js";
 import { OrganizationAgent } from "./ai/organization-agent.js";
 import { BookmarkRepository } from "./db/bookmark-repository.js";
 import type { IngestJobPayload } from "./types/job.js";
+import { join } from "path";
+import { createBackupSnapshot, applyRetentionPolicy } from "./routes/backup.js";
+import { settingsManager } from "./settings.js";
+import { cronToIntervalMs } from "./lib/cron.js";
 
 const startTime = new Date();
 
@@ -39,6 +43,27 @@ const PURGE_INTERVAL_MS = parseInt(process.env.PURGE_INTERVAL_MS ?? "", 10) || 2
 scheduler.register("trash-purge", PURGE_INTERVAL_MS, () => {
   const count = bookmarkRepo.purgeExpired(30);
   if (count > 0) log.info("Trash purge: deleted expired bookmarks", { count });
+});
+
+// ─── Backup snapshot scheduler ────────────────────────────────────────────────
+// Always register the task — it reads live settings on each fire so that
+// enabling/disabling or changing the cron expression via PUT /backup/schedule
+// takes effect without restarting the daemon. The interval is fixed at startup
+// to the configured (or default) cron heuristic; changing the cron expression
+// affects next_run_at display but not the firing interval until next restart.
+const backupsDir = join(Config.DATA_DIR, "backups");
+const backupInitialSettings = settingsManager.read().backup.schedule;
+const backupIntervalMs = cronToIntervalMs(backupInitialSettings.cron);
+scheduler.register("backup-snapshot", backupIntervalMs, async () => {
+  const settings = settingsManager.read().backup.schedule;
+  if (!settings.enabled) return; // honour live enable/disable without restart
+  try {
+    await createBackupSnapshot(db, backupsDir);
+    const deleted = applyRetentionPolicy(backupsDir, settings.retention_count);
+    if (deleted > 0) log.info("Backup snapshot: retention applied", { deleted });
+  } catch (err) {
+    log.error("Backup snapshot: failed", { error: String(err) });
+  }
 });
 
 const app = createApp({ db, queue, startTime, version: VERSION });

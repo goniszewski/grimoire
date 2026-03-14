@@ -46,6 +46,14 @@ export const Config = {
   EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY ?? process.env.LLM_API_KEY ?? "",
   EMBEDDING_BASE_URL: process.env.EMBEDDING_BASE_URL ?? process.env.LLM_BASE_URL ?? "https://api.openai.com/v1",
   EMBEDDING_MODEL: process.env.EMBEDDING_MODEL ?? "text-embedding-3-small",
+
+  // ─── Backup schedule (TASK-038) ───────────────────────────────────────────────
+  // BACKUP_SCHEDULE_ENABLED: set to "true" to enable automatic snapshots.
+  // BACKUP_SCHEDULE_CRON: cron expression (default: daily at 3 AM).
+  // BACKUP_RETENTION_COUNT: max local backups to keep (older ones are deleted).
+  BACKUP_SCHEDULE_ENABLED: (process.env.BACKUP_SCHEDULE_ENABLED ?? "false") === "true",
+  BACKUP_SCHEDULE_CRON: process.env.BACKUP_SCHEDULE_CRON ?? "0 3 * * *",
+  BACKUP_RETENTION_COUNT: Math.max(1, parseInt(process.env.BACKUP_RETENTION_COUNT ?? "7", 10) || 1),
 } as const;
 
 export type AppConfig = typeof Config;

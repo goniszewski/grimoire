@@ -12,6 +12,8 @@ import {
 import { join, resolve } from "path";
 import { Config } from "../config.js";
 import { log } from "../logger.js";
+import { settingsManager } from "../settings.js";
+import { nextCronRunAt } from "../lib/cron.js";
 
 interface BackupDeps {
   db: Database;
@@ -58,6 +60,136 @@ function assertSafeSqlPath(path: string): void {
   }
 }
 
+// ─── Shared backup creation ───────────────────────────────────────────────────
+
+export interface BackupResult {
+  path: string;
+  size_bytes: number;
+  bookmark_count: number;
+  created_at: string;
+}
+
+/**
+ * Creates a new backup snapshot in <resolvedBackupsDir>/<timestamp>/.
+ * Exported for use by the scheduler (backup-snapshot task).
+ */
+export async function createBackupSnapshot(
+  db: Database,
+  resolvedBackupsDir: string
+): Promise<BackupResult> {
+  mkdirSync(resolvedBackupsDir, { recursive: true });
+
+  const ts = safeTimestamp();
+  const backupDir = join(resolvedBackupsDir, ts);
+  mkdirSync(backupDir, { recursive: true });
+
+  const snapshotPath = join(backupDir, "snapshot.db");
+  const manifestPath = join(backupDir, "manifest.json");
+  const checksumPath = join(backupDir, "checksums.sha256");
+
+  try {
+    assertSafeSqlPath(snapshotPath);
+    db.exec(`VACUUM INTO '${snapshotPath}'`);
+
+    const snapshotStat = statSync(snapshotPath);
+    const bookmarkCount = countBookmarks(db);
+    const createdAt = new Date().toISOString();
+
+    const manifest = {
+      version: 1,
+      created_at: createdAt,
+      db_size_bytes: snapshotStat.size,
+      bookmark_count: bookmarkCount,
+    };
+
+    await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
+
+    const checksum = await sha256File(snapshotPath);
+    await Bun.write(checksumPath, `${checksum}  snapshot.db\n`);
+
+    log.info("Backup created", { path: backupDir, bookmarkCount });
+
+    return {
+      path: backupDir,
+      size_bytes: snapshotStat.size,
+      bookmark_count: bookmarkCount,
+      created_at: createdAt,
+    };
+  } catch (err) {
+    // Clean up partial backup directory so the list doesn't show corrupt entries.
+    try { rmSync(backupDir, { recursive: true, force: true }); } catch { /* best-effort */ }
+    throw err;
+  }
+}
+
+// ─── Retention ────────────────────────────────────────────────────────────────
+
+interface BackupEntry {
+  name: string;
+  path: string;
+  size_bytes: number;
+  bookmark_count: number;
+  created_at: string;
+}
+
+/** Lists all valid backups in a directory, sorted newest first. */
+function listBackups(resolvedBackupsDir: string): BackupEntry[] {
+  let entries: string[];
+  try {
+    mkdirSync(resolvedBackupsDir, { recursive: true });
+    entries = readdirSync(resolvedBackupsDir);
+  } catch {
+    return [];
+  }
+
+  return entries
+    .map((name) => {
+      const fullPath = join(resolvedBackupsDir, name);
+      try {
+        const st = statSync(fullPath);
+        if (!st.isDirectory()) return null;
+        const manifestPath = join(fullPath, "manifest.json");
+        let manifest: { created_at?: string; db_size_bytes?: number; bookmark_count?: number } = {};
+        try {
+          manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as typeof manifest;
+        } catch {
+          return null;
+        }
+        return {
+          name,
+          path: fullPath,
+          size_bytes: manifest.db_size_bytes ?? st.size,
+          bookmark_count: manifest.bookmark_count ?? 0,
+          created_at: manifest.created_at ?? new Date(st.mtimeMs).toISOString(),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((e): e is BackupEntry => e !== null)
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+}
+
+/**
+ * Deletes the oldest backups beyond retentionCount.
+ * Returns the number of backups deleted.
+ */
+export function applyRetentionPolicy(resolvedBackupsDir: string, retentionCount: number): number {
+  const all = listBackups(resolvedBackupsDir);
+  const toDelete = all.slice(retentionCount); // oldest are at the end (sorted newest-first)
+  let deleted = 0;
+  for (const entry of toDelete) {
+    try {
+      rmSync(entry.path, { recursive: true, force: true });
+      log.info("Backup retention: deleted old snapshot", { name: entry.name });
+      deleted++;
+    } catch (err) {
+      log.warn("Backup retention: failed to delete snapshot", { name: entry.name, error: String(err) });
+    }
+  }
+  return deleted;
+}
+
 // ─── Route factory ────────────────────────────────────────────────────────────
 
 export function createBackupRoute(deps: BackupDeps): Hono {
@@ -79,51 +211,11 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     }
     operationInProgress = true;
 
-    mkdirSync(resolvedBackupsDir, { recursive: true });
-
-    const ts = safeTimestamp();
-    const backupDir = join(resolvedBackupsDir, ts);
-    mkdirSync(backupDir, { recursive: true });
-
-    const snapshotPath = join(backupDir, "snapshot.db");
-    const manifestPath = join(backupDir, "manifest.json");
-    const checksumPath = join(backupDir, "checksums.sha256");
-
     try {
-      assertSafeSqlPath(snapshotPath);
-
-      // VACUUM INTO creates a clean, defragmented copy of the live database.
-      // Works with WAL mode and does not hold a long lock on the source.
-      deps.db.exec(`VACUUM INTO '${snapshotPath}'`);
-
-      const snapshotStat = statSync(snapshotPath);
-      const bookmarkCount = countBookmarks(deps.db);
-      const createdAt = new Date().toISOString();
-
-      const manifest = {
-        version: 1,
-        created_at: createdAt,
-        db_size_bytes: snapshotStat.size,
-        bookmark_count: bookmarkCount,
-      };
-
-      await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
-
-      const checksum = await sha256File(snapshotPath);
-      await Bun.write(checksumPath, `${checksum}  snapshot.db\n`);
-
-      log.info("Backup created", { path: backupDir, bookmarkCount });
-
-      return c.json({
-        path: backupDir,
-        size_bytes: snapshotStat.size,
-        bookmark_count: bookmarkCount,
-        created_at: createdAt,
-      }, 201);
+      const result = await createBackupSnapshot(deps.db, resolvedBackupsDir);
+      return c.json(result, 201);
     } catch (err) {
       log.error("Backup failed", { error: String(err) });
-      // Clean up partial backup directory so the list doesn't show corrupt entries.
-      try { rmSync(backupDir, { recursive: true, force: true }); } catch { /* best-effort */ }
       return c.json({ error: "Failed to create backup" }, 500);
     } finally {
       operationInProgress = false;
@@ -135,47 +227,77 @@ export function createBackupRoute(deps: BackupDeps): Hono {
    * Lists all backups in DATA_DIR/backups/, newest first.
    */
   router.get("/backup/list", (c) => {
+    return c.json({ data: listBackups(resolvedBackupsDir) });
+  });
+
+  /**
+   * GET /backup/schedule
+   * Returns the current schedule configuration and next run time.
+   */
+  router.get("/backup/schedule", (c) => {
+    const settings = settingsManager.read();
+    const { enabled, cron, retention_count } = settings.backup.schedule;
+    const next_run_at = enabled ? nextCronRunAt(cron)?.toISOString() ?? null : null;
+    return c.json({ data: { enabled, cron, retention_count, next_run_at } });
+  });
+
+  /**
+   * PUT /backup/schedule
+   * Updates the backup schedule configuration.
+   * Body: { enabled?: boolean; cron?: string; retention_count?: number }
+   */
+  router.put("/backup/schedule", async (c) => {
+    let body: unknown;
     try {
-      mkdirSync(resolvedBackupsDir, { recursive: true });
+      body = await c.req.json();
     } catch {
-      // ignore
+      return c.json({ error: "Request body must be valid JSON" }, 400);
     }
 
-    let entries: string[];
-    try {
-      entries = readdirSync(resolvedBackupsDir);
-    } catch {
-      return c.json({ data: [] });
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return c.json({ error: "Request body must be an object" }, 400);
     }
 
-    const backups = entries
-      .map((name) => {
-        const fullPath = join(resolvedBackupsDir, name);
-        try {
-          const st = statSync(fullPath);
-          if (!st.isDirectory()) return null;
-          const manifestPath = join(fullPath, "manifest.json");
-          let manifest: { created_at?: string; db_size_bytes?: number; bookmark_count?: number } = {};
-          try {
-            manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as typeof manifest;
-          } catch {
-            return null; // missing or malformed manifest — skip this entry
-          }
-          return {
-            name,
-            path: fullPath,
-            size_bytes: manifest.db_size_bytes ?? st.size,
-            bookmark_count: manifest.bookmark_count ?? 0,
-            created_at: manifest.created_at ?? new Date(st.mtimeMs).toISOString(),
-          };
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean)
-      .sort((a, b) => Date.parse(b!.created_at) - Date.parse(a!.created_at));
+    const patch = body as Record<string, unknown>;
 
-    return c.json({ data: backups });
+    if ("enabled" in patch && typeof patch.enabled !== "boolean") {
+      return c.json({ error: "`enabled` must be a boolean" }, 422);
+    }
+
+    if ("cron" in patch) {
+      if (typeof patch.cron !== "string" || !(patch.cron as string).trim()) {
+        return c.json({ error: "`cron` must be a non-empty string" }, 422);
+      }
+      const parts = (patch.cron as string).trim().split(/\s+/);
+      if (parts.length !== 5) {
+        return c.json({ error: "`cron` must be a 5-part cron expression (e.g. \"0 3 * * *\")" }, 422);
+      }
+    }
+
+    if ("retention_count" in patch) {
+      const rc = patch.retention_count;
+      if (typeof rc !== "number" || !Number.isInteger(rc) || rc < 1) {
+        return c.json({ error: "`retention_count` must be a positive integer" }, 422);
+      }
+    }
+
+    try {
+      const updated = settingsManager.write({
+        backup: {
+          schedule: {
+            enabled: ("enabled" in patch ? patch.enabled : undefined) as boolean | undefined,
+            cron: ("cron" in patch ? patch.cron : undefined) as string | undefined,
+            retention_count: ("retention_count" in patch ? patch.retention_count : undefined) as number | undefined,
+          } as { enabled: boolean; cron: string; retention_count: number },
+        },
+      });
+      const s = updated.backup.schedule;
+      const next_run_at = s.enabled ? nextCronRunAt(s.cron)?.toISOString() ?? null : null;
+      return c.json({ data: { enabled: s.enabled, cron: s.cron, retention_count: s.retention_count, next_run_at } });
+    } catch (err) {
+      log.error("Failed to persist schedule settings", { error: String(err) });
+      return c.json({ error: "Failed to save schedule settings" }, 500);
+    }
   });
 
   /**
@@ -191,6 +313,12 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     if (operationInProgress) {
       return c.json({ error: "A backup or restore operation is already in progress" }, 409);
     }
+    // Acquire the lock immediately — all validation below is async and a second
+    // concurrent request could otherwise pass the check above while we are still
+    // reading and verifying the backup files.
+    operationInProgress = true;
+
+    try {
 
     let body: { name?: unknown };
     try {
@@ -259,14 +387,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     }
 
     // --- Checkpoint WAL and replace database files ---
-    // Acquire the operation lock for the destructive phase only — validation errors above
-    // should not block future legitimate requests.
-    operationInProgress = true;
     try {
-      // Run a full WAL checkpoint so the main database file is self-contained,
-      // then copy the snapshot over it. Also remove the sidecar -wal and -shm
-      // files from the previous session so SQLite doesn't try to replay them
-      // against the restored database on next open.
       try {
         deps.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
       } catch (err) {
@@ -275,7 +396,6 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
       try {
         copyFileSync(snapshotPath, deps.dbPath);
-        // Remove stale WAL / shared-memory sidecar files from the previous session.
         const walPath = `${deps.dbPath}-wal`;
         const shmPath = `${deps.dbPath}-shm`;
         if (existsSync(walPath)) rmSync(walPath);
@@ -292,6 +412,11 @@ export function createBackupRoute(deps: BackupDeps): Hono {
         checksum_verified: checksumVerified,
         restart_required: true,
       });
+    } catch (err) {
+      log.error("Restore: unexpected error", { error: String(err) });
+      return c.json({ error: "Restore failed" }, 500);
+    }
+
     } finally {
       operationInProgress = false;
     }

@@ -1,6 +1,6 @@
 # TASK-038: Scheduled Local Snapshots with Retention Policy
 
-**Status:** todo
+**Status:** done
 **Priority:** low
 **Phase:** M5
 **Area:** daemon / frontend
@@ -54,9 +54,9 @@ Add under "Backup & Restore":
 
 ## Acceptance Criteria
 
-- [ ] Snapshot job runs on schedule when enabled
-- [ ] Retention policy deletes oldest backups beyond configured count
-- [ ] `GET /backup/schedule` returns accurate `next_run_at`
-- [ ] `PUT /backup/schedule` with invalid cron returns 422
-- [ ] Settings UI lets user enable/configure schedule
-- [ ] All tests pass
+- [x] Snapshot job runs on schedule when enabled
+- [x] Retention policy deletes oldest backups beyond configured count
+- [x] `GET /backup/schedule` returns accurate `next_run_at`
+- [x] `PUT /backup/schedule` with invalid cron returns 422
+- [x] Settings UI lets user enable/configure schedule
+- [x] All tests pass

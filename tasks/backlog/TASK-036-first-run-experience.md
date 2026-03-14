@@ -1,6 +1,6 @@
 # TASK-036: First-Run Experience & Degraded Mode UI
 
-**Status:** todo
+**Status:** done
 **Priority:** medium
 **Phase:** M5
 **Area:** frontend
