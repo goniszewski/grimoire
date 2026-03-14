@@ -9,8 +9,10 @@ import {
   rmSync,
   existsSync,
   writeFileSync,
+  accessSync,
+  constants as fsConstants,
 } from "fs";
-import { join, resolve, basename } from "path";
+import { join, resolve, basename, isAbsolute } from "path";
 import { tmpdir } from "os";
 import { Config } from "../config.js";
 import { log } from "../logger.js";
@@ -210,14 +212,58 @@ export function applyRetentionPolicy(resolvedBackupsDir: string, retentionCount:
 
 // ─── Route factory ────────────────────────────────────────────────────────────
 
+/**
+ * Check whether an existing directory is writable WITHOUT creating it.
+ * Use this for read-only status probes (e.g. GET /backup/destination).
+ */
+function checkWritable(dir: string): boolean {
+  try {
+    accessSync(dir, fsConstants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ensure a directory exists and is writable.
+ * Creates the directory if absent (idempotent via mkdirSync recursive).
+ * Use this before writing — not for read-only status checks.
+ */
+function ensureWritable(dir: string): boolean {
+  try {
+    mkdirSync(dir, { recursive: true });
+    accessSync(dir, fsConstants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function createBackupRoute(deps: BackupDeps): Hono {
   const router = new Hono();
   const resolvedDataDir = deps.dataDir ?? Config.DATA_DIR;
-  const resolvedBackupsDir = resolve(backupsDir(resolvedDataDir));
+  const defaultBackupsDir = resolve(backupsDir(resolvedDataDir));
 
   /** Returns the effective S3 config: injected dep (tests) or live settings. */
   function getS3Config() {
     return deps.s3Config ?? settingsManager.read().backup.s3;
+  }
+
+  /**
+   * Returns the effective backup directory:
+   * custom destination_path from settings (when set and absolute), or the default.
+   */
+  function getBackupsDir(): string {
+    if (deps.dataDir !== undefined) {
+      // In tests we always use the injected dataDir — skip settings lookup.
+      return defaultBackupsDir;
+    }
+    const customPath = settingsManager.read().backup.local?.destination_path ?? "";
+    if (customPath && isAbsolute(customPath)) {
+      return resolve(customPath);
+    }
+    return defaultBackupsDir;
   }
 
   /** In-flight operation guard — prevents concurrent backup or restore operations. */
@@ -225,7 +271,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
   /**
    * POST /backup
-   * Creates a new backup snapshot in DATA_DIR/backups/<timestamp>/.
+   * Creates a new backup snapshot in the configured backup directory.
    * If S3 config is present, also uploads the snapshot to S3.
    * Returns metadata about the created backup (including remote_url when uploaded).
    */
@@ -236,7 +282,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     operationInProgress = true;
 
     try {
-      const result = await createBackupSnapshot(deps.db, resolvedBackupsDir);
+      const result = await createBackupSnapshot(deps.db, getBackupsDir());
 
       // S3 upload — optional, runs after local backup succeeds
       const s3cfg = getS3Config();
@@ -275,7 +321,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
    * When ?include_remote=true, also lists objects from S3 and merges them.
    */
   router.get("/backup/list", async (c) => {
-    const local = listBackups(resolvedBackupsDir);
+    const local = listBackups(getBackupsDir());
 
     const includeRemote = c.req.query("include_remote") === "true";
     if (!includeRemote) {
@@ -378,6 +424,82 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       log.error("Failed to persist schedule settings", { error: String(err) });
       return c.json({ error: "Failed to save schedule settings" }, 500);
     }
+  });
+
+  /**
+   * GET /backup/destination
+   * Returns the current backup folder path, whether it's custom, and whether it's writable.
+   */
+  router.get("/backup/destination", (c) => {
+    const currentPath = getBackupsDir();
+    const customPath = deps.dataDir !== undefined
+      ? ""
+      : (settingsManager.read().backup.local?.destination_path ?? "");
+    const isCustom = !!(customPath && isAbsolute(customPath));
+    // Use checkWritable (not ensureWritable) — a GET must not create directories.
+    const writable = checkWritable(currentPath);
+    return c.json({ data: { path: currentPath, is_custom: isCustom, writable } });
+  });
+
+  /**
+   * PUT /backup/destination
+   * Sets (or clears) the custom backup folder path.
+   * Body: { path: string }  — empty string resets to default (DATA_DIR/backups/).
+   * Validates that the path is absolute (or empty) and probes write access.
+   */
+  router.put("/backup/destination", async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "Request body must be valid JSON" }, 400);
+    }
+
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return c.json({ error: "Request body must be an object" }, 400);
+    }
+
+    const patch = body as Record<string, unknown>;
+
+    if (!("path" in patch) || typeof patch.path !== "string") {
+      return c.json({ error: "`path` (string) is required" }, 422);
+    }
+
+    const rawPath = (patch.path as string).trim();
+
+    if (rawPath !== "" && !isAbsolute(rawPath)) {
+      return c.json({ error: "`path` must be an absolute path (starting with /) or an empty string to reset to default" }, 422);
+    }
+
+    if (rawPath.includes("..")) {
+      return c.json({ error: "`path` must not contain path traversal sequences (..)" }, 422);
+    }
+
+    // Probe write access before persisting (unless clearing — the default path is always writable).
+    // ensureWritable creates the dir if absent, which is intentional: we want to confirm the
+    // path is usable before committing it to settings.
+    if (rawPath) {
+      const writable = ensureWritable(rawPath);
+      if (!writable) {
+        return c.json({ error: `Cannot write to the specified path: ${rawPath}` }, 422);
+      }
+    }
+
+    try {
+      settingsManager.write({
+        backup: { local: { destination_path: rawPath } } as import("../settings.js").Settings["backup"],
+      });
+    } catch (err) {
+      log.error("Failed to persist backup destination", { error: String(err) });
+      return c.json({ error: "Failed to save backup destination" }, 500);
+    }
+
+    // Re-read effective path after persisting.
+    // checkWritable (no mkdirSync) is safe here: ensureWritable above already created the dir.
+    const effectivePath = rawPath && isAbsolute(rawPath) ? resolve(rawPath) : defaultBackupsDir;
+    const isCustom = !!(rawPath && isAbsolute(rawPath));
+    const writable = rawPath ? checkWritable(effectivePath) : checkWritable(defaultBackupsDir);
+    return c.json({ data: { path: effectivePath, is_custom: isCustom, writable } });
   });
 
   /**
@@ -511,6 +633,8 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       if (name.includes("/") || name.includes("\\") || name.includes("..")) {
         return c.json({ error: "Invalid backup name" }, 422);
       }
+
+      const resolvedBackupsDir = getBackupsDir();
 
       // Resolve server-side — the caller never controls the base directory.
       const backupPath = resolve(join(resolvedBackupsDir, name));

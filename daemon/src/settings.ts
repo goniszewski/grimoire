@@ -54,6 +54,16 @@ export interface BackupScheduleSettings {
   retention_count: number;
 }
 
+export interface BackupLocalSettings {
+  /**
+   * Absolute path to a custom backup folder.
+   * Empty string = use DATA_DIR/backups/ (default).
+   * Point to a cloud-synced folder (iCloud Drive, Dropbox, etc.) to get offsite backups
+   * without any API — the OS sync client handles the rest.
+   */
+  destination_path: string;
+}
+
 export interface BackupS3Settings {
   /** Custom endpoint URL for S3-compatible services (R2, MinIO). Empty = use AWS. */
   endpoint: string;
@@ -68,6 +78,7 @@ export interface Settings {
   ai: AiSettings;
   app: AppSettings;
   backup: {
+    local: BackupLocalSettings;
     schedule: BackupScheduleSettings;
     s3: BackupS3Settings;
   };
@@ -100,6 +111,9 @@ const DEFAULT_SETTINGS: Settings = {
     },
   },
   backup: {
+    local: {
+      destination_path: "",
+    },
     schedule: {
       enabled: Config.BACKUP_SCHEDULE_ENABLED,
       cron: Config.BACKUP_SCHEDULE_CRON,
@@ -240,6 +254,26 @@ export function validateSettingsPatch(patch: unknown): string | null {
     }
     const b = backup as Record<string, unknown>;
 
+    if ("local" in b) {
+      const local = b.local;
+      if (typeof local !== "object" || local === null || Array.isArray(local)) {
+        return "`backup.local` must be an object";
+      }
+      const l = local as Record<string, unknown>;
+      if ("destination_path" in l) {
+        if (typeof l.destination_path !== "string") {
+          return "`backup.local.destination_path` must be a string";
+        }
+        const dp = l.destination_path as string;
+        if (dp !== "" && !dp.startsWith("/")) {
+          return "`backup.local.destination_path` must be an absolute path (starting with /) or an empty string to use the default";
+        }
+        if (dp.includes("..")) {
+          return "`backup.local.destination_path` must not contain path traversal sequences (..)";
+        }
+      }
+    }
+
     if ("schedule" in b) {
       const schedule = b.schedule;
       if (typeof schedule !== "object" || schedule === null || Array.isArray(schedule)) {
@@ -312,7 +346,7 @@ export function redactSettings(settings: Settings): object {
         secret_key: settings.backup.s3.secret_key ? "***" : "",
         access_key: settings.backup.s3.access_key ? "***" : "",
       },
-    },
+    } as Settings["backup"],
   };
 }
 

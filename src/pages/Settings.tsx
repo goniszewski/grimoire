@@ -24,6 +24,7 @@ import {
   Upload,
   RotateCcw,
   Cloud,
+  FolderOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -46,6 +47,8 @@ import {
   useTestS3Connection,
   useBackupSchedule,
   useUpdateBackupSchedule,
+  useBackupDestination,
+  useUpdateBackupDestination,
 } from "@/hooks/use-backup";
 import type { ApiBackupEntry, ApiS3Config } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
@@ -154,6 +157,17 @@ const Settings = () => {
   });
   const [s3Dirty, setS3Dirty] = useState(false);
   const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // ─── Backup destination ───────────────────────────────────────────────────────
+  const destinationQuery = useBackupDestination();
+  const updateDestinationMutation = useUpdateBackupDestination();
+  const [destinationPath, setDestinationPath] = useState("");
+  const [destinationDirty, setDestinationDirty] = useState(false);
+
+  useEffect(() => {
+    if (!destinationQuery.data || destinationDirty) return;
+    setDestinationPath(destinationQuery.data.is_custom ? destinationQuery.data.path : "");
+  }, [destinationQuery.data, destinationDirty]);
 
   // ─── Backup schedule ──────────────────────────────────────────────────────────
   const scheduleQuery = useBackupSchedule();
@@ -637,6 +651,124 @@ const Settings = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Backup Destination */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Backup Folder</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choose where local backups are saved. Point to a cloud-synced folder (iCloud Drive,
+                  Dropbox, Google Drive…) for automatic offsite copies — no API keys needed.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Backup path</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={destinationPath}
+                      onChange={(e) => {
+                        setDestinationPath(e.target.value);
+                        setDestinationDirty(true);
+                      }}
+                      placeholder={destinationQuery.data?.is_custom ? "" : destinationQuery.data?.path ?? "~/.local/share/littleimp/backups"}
+                      className="h-8 text-sm font-mono"
+                    />
+                    {/* Directory picker — webkitdirectory lets users choose a folder */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      title="Browse for folder"
+                      onClick={() => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        // @ts-expect-error — non-standard but widely supported
+                        input.webkitdirectory = true;
+                        input.addEventListener("change", () => {
+                          const file = input.files?.[0];
+                          if (file) {
+                            // webkitRelativePath gives "folder/..." — extract base path from the first file
+                            const parts = file.webkitRelativePath.split("/");
+                            // We only have the relative path from the picker; use the name as a hint.
+                            // Browsers don't expose the absolute path for security reasons.
+                            // Show the folder name so the user can confirm then type the full path.
+                            setDestinationPath(parts[0] ?? "");
+                            setDestinationDirty(true);
+                            toast.info("Folder selected", {
+                              description: "Browsers can't provide the full path. Please verify or complete the absolute path in the field above.",
+                            });
+                          }
+                        });
+                        input.click();
+                      }}
+                    >
+                      <FolderOpen className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to use the default location.{" "}
+                    {destinationQuery.data && (
+                      <>
+                        Currently: <span className="font-mono">{destinationQuery.data.path}</span>
+                        {destinationQuery.data.writable ? (
+                          <CheckCircle2 className="inline h-3 w-3 ml-1 text-green-500" />
+                        ) : (
+                          <XCircle className="inline h-3 w-3 ml-1 text-destructive" />
+                        )}
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!destinationDirty || updateDestinationMutation.isPending}
+                    onClick={() => {
+                      updateDestinationMutation.mutate(destinationPath, {
+                        onSuccess: (result) => {
+                          setDestinationDirty(false);
+                          if (result.data.is_custom) {
+                            toast.success("Backup folder saved", { description: result.data.path });
+                          } else {
+                            toast.success("Backup folder reset to default");
+                          }
+                        },
+                        onError: (err: Error) => {
+                          toast.error("Failed to set backup folder", { description: err.message });
+                        },
+                      });
+                    }}
+                  >
+                    {updateDestinationMutation.isPending && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    )}
+                    Save folder
+                  </Button>
+                  {destinationPath && destinationDirty && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        setDestinationPath("");
+                        setDestinationDirty(true);
+                      }}
+                    >
+                      Reset to default
+                    </Button>
+                  )}
+                  {destinationDirty && (
+                    <span className="text-xs text-amber-500 font-mono">Unsaved</span>
+                  )}
                 </div>
               </div>
             </section>

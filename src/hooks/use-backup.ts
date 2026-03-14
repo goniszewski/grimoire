@@ -6,6 +6,8 @@ import {
   restoreRemoteBackup,
   getBackupSchedule,
   updateBackupSchedule,
+  getBackupDestination,
+  updateBackupDestination,
   testS3Connection,
 } from "@/lib/api";
 import type { ApiBackupSchedule } from "@/lib/api";
@@ -15,6 +17,7 @@ export const backupKeys = {
   list: () => [...backupKeys.all, "list"] as const,
   listRemote: () => [...backupKeys.all, "list-remote"] as const,
   schedule: () => [...backupKeys.all, "schedule"] as const,
+  destination: () => [...backupKeys.all, "destination"] as const,
 };
 
 export function useBackupList() {
@@ -87,6 +90,24 @@ export function useUpdateBackupSchedule() {
       updateBackupSchedule(patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: backupKeys.schedule() });
+    },
+  });
+}
+
+export function useBackupDestination() {
+  return useQuery({
+    queryKey: backupKeys.destination(),
+    queryFn: () => getBackupDestination().then((r) => r.data),
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateBackupDestination() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (path: string) => updateBackupDestination(path),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: backupKeys.destination() });
     },
   });
 }

@@ -522,3 +522,25 @@ export async function updateBackupSchedule(
     body: JSON.stringify(patch),
   });
 }
+
+// ─── Backup destination ───────────────────────────────────────────────────────
+
+export interface ApiBackupDestination {
+  /** Resolved absolute path of the current backup folder. */
+  path: string;
+  /** True when the user has set a custom path (not the default DATA_DIR/backups/). */
+  is_custom: boolean;
+  /** True when the daemon can write to the backup folder. */
+  writable: boolean;
+}
+
+export async function getBackupDestination(): Promise<{ data: ApiBackupDestination }> {
+  return apiFetch<{ data: ApiBackupDestination }>("/backup/destination");
+}
+
+export async function updateBackupDestination(path: string): Promise<{ data: ApiBackupDestination }> {
+  return apiFetch<{ data: ApiBackupDestination }>("/backup/destination", {
+    method: "PUT",
+    body: JSON.stringify({ path }),
+  });
+}
