@@ -18,7 +18,7 @@ export function DegradedModeBanner({ aiEnabled }: DegradedModeBannerProps) {
   useEffect(() => {
     if (aiEnabled) {
       localStorage.removeItem(STORAGE_KEY);
-      setDismissed(false);
+      if (dismissed) setDismissed(false);
     }
   }, [aiEnabled]);
 
@@ -29,18 +29,19 @@ export function DegradedModeBanner({ aiEnabled }: DegradedModeBannerProps) {
     setDismissed(true);
   };
 
+  const handleNavigate = () => navigate("/settings");
+
   return (
     <div
-      role="status"
-      aria-label="AI enrichment disabled"
+      role="note"
       className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs px-4 py-2 mx-4 mt-3 rounded-md"
     >
       <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
       <span className="flex-1">
         AI enrichment is disabled. Keyword search works —{" "}
         <button
-          onClick={() => navigate("/settings")}
-          className="underline underline-offset-2 hover:no-underline font-medium"
+          onClick={handleNavigate}
+          className="underline underline-offset-2 hover:no-underline font-medium dark:text-blue-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded"
         >
           configure an AI provider in Settings
         </button>{" "}
@@ -49,7 +50,7 @@ export function DegradedModeBanner({ aiEnabled }: DegradedModeBannerProps) {
       <button
         onClick={handleDismiss}
         aria-label="Dismiss"
-        className="shrink-0 opacity-70 hover:opacity-100"
+        className="shrink-0 opacity-70 hover:opacity-100 dark:text-blue-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded"
       >
         <X className="h-3.5 w-3.5" />
       </button>
