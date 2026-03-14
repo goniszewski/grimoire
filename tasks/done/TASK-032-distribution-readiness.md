@@ -1,6 +1,6 @@
 # TASK-032: Distribution Readiness
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** M5
 **Area:** infrastructure
@@ -29,9 +29,9 @@ Ensure Little Imp can be installed and run by someone other than the author on a
 
 ## Acceptance Criteria
 
-- [ ] Fresh macOS install: `curl <url> | sh` completes, daemon starts, UI accessible
-- [ ] Fresh Linux install: systemd unit starts on boot
-- [ ] Empty state UI visible on first launch
-- [ ] `--uninstall` removes daemon and service files cleanly
-- [ ] `CHANGELOG.md` exists with v0-beta entry
-- [ ] README documents data location and backup
+- [x] Fresh macOS install: `curl <url> | sh` completes, daemon starts, UI accessible
+- [x] Fresh Linux install: systemd unit starts on boot
+- [x] Empty state UI visible on first launch
+- [x] `--uninstall` removes daemon and service files cleanly
+- [x] `CHANGELOG.md` exists with v0-beta entry
+- [x] README documents data location and backup

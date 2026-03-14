@@ -57,7 +57,7 @@ export function createSuggestionsRoute(deps: SuggestionsDeps): Hono {
       return problem(c, 422, "Unprocessable Entity", `Suggestion is already ${existing.status}`);
     }
 
-    let updated: ReturnType<typeof repo.accept>;
+    let updated: ReturnType<typeof repo.accept> = null;
     try {
       deps.db.transaction(() => {
         applyAction(existing.type, existing.metadata, existing.value, deps.db, categoryRepo, bookmarkRepo, timelineRepo);

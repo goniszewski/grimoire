@@ -178,6 +178,9 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       if (patch.title !== null && (typeof patch.title !== "string" || patch.title.trim() === "")) {
         return problem(c, 422, "Unprocessable Entity", "`title` must be a non-empty string or null");
       }
+      if (typeof patch.title === "string" && patch.title.length > 2000) {
+        return problem(c, 422, "Unprocessable Entity", "`title` must not exceed 2000 characters");
+      }
       allowed.title = patch.title as string | undefined;
     }
 
@@ -194,6 +197,9 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
         (patch.tags as unknown[]).some((t) => typeof t !== "string")
       ) {
         return problem(c, 422, "Unprocessable Entity", "`tags` must be an array of strings");
+      }
+      if ((patch.tags as string[]).some((t) => t.length > 100)) {
+        return problem(c, 422, "Unprocessable Entity", "Each tag must not exceed 100 characters");
       }
       allowed.tags = patch.tags as string[];
     }

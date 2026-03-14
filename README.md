@@ -1,73 +1,193 @@
-# Welcome to your Lovable project
+# Little Imp
 
-## Project info
+A local-first bookmark manager. Save links, extract content, search semantically, and let an AI organise your library — all on your own machine.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## How it works
 
-## How can I edit this code?
+Little Imp has two parts:
 
-There are several ways of editing your application.
+- **Frontend** — a React SPA served by Vite (dev) or any static file server (production).
+- **`littleimpd`** — a background daemon (Bun + Hono) that listens on `127.0.0.1:3210`. It stores bookmarks in SQLite, runs the content extraction pipeline, and exposes a REST API the frontend talks to.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Requirements
 
-Changes made via Lovable will be committed automatically to this repo.
+- [Bun](https://bun.sh) 1.x or later
+- macOS 12+ or a modern Linux distribution with systemd
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. Clone the repository
+git clone https://github.com/goniszewski/little-imp.git
+cd little-imp/daemon
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# 2. Run the installer
+./install.sh
 ```
 
-**Edit a file directly in GitHub**
+The installer will:
+1. Copy daemon files to `~/.local/share/littleimp/daemon`
+2. Install npm dependencies (production only)
+3. Create a default config at `~/.local/share/littleimp/.env`
+4. Register a LaunchAgent (macOS) or systemd user unit (Linux) so the daemon starts on login
+5. Start the daemon and wait for it to become healthy
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Verify the install
 
-**Use GitHub Codespaces**
+```sh
+curl http://127.0.0.1:3210/health
+# → {"status":"ok","version":"...","uptime":...,"queueSize":0}
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Daemon management
 
-This project is built with:
+### macOS (LaunchAgent)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```sh
+# Start
+launchctl start com.littleimp.daemon
 
-## How can I deploy this project?
+# Stop
+launchctl stop com.littleimp.daemon
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+# Restart
+launchctl stop com.littleimp.daemon && launchctl start com.littleimp.daemon
 
-## Can I connect a custom domain to my Lovable project?
+# View logs
+tail -f ~/.local/share/littleimp/logs/daemon.log
+tail -f ~/.local/share/littleimp/logs/daemon.error.log
+```
 
-Yes, you can!
+### Linux (systemd user unit)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+# Start
+systemctl --user start littleimpd
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# Stop
+systemctl --user stop littleimpd
+
+# Restart
+systemctl --user restart littleimpd
+
+# Enable auto-start on login
+systemctl --user enable littleimpd
+
+# View logs
+journalctl --user -u littleimpd -f
+# or
+tail -f ~/.local/share/littleimp/logs/daemon.log
+```
+
+---
+
+## Upgrade
+
+```sh
+cd little-imp/daemon
+./install.sh --upgrade
+```
+
+This stops the daemon, replaces the files, reinstalls dependencies, and restarts.
+
+---
+
+## Uninstall
+
+```sh
+# Remove daemon and service file — data is preserved
+./install.sh --uninstall
+
+# Remove daemon, service file, AND all data
+./install.sh --uninstall --purge
+```
+
+---
+
+## Data location
+
+All application data lives in `~/.local/share/littleimp/`:
+
+| Path | Contents |
+|------|----------|
+| `~/.local/share/littleimp/littleimp.db` | SQLite database (bookmarks, categories, embeddings) |
+| `~/.local/share/littleimp/.env` | Runtime configuration |
+| `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
+
+### Manual backup
+
+```sh
+# Back up the database
+cp ~/.local/share/littleimp/littleimp.db ~/Desktop/littleimp-backup-$(date +%Y%m%d).db
+
+# Restore
+cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
+```
+
+Stop the daemon before restoring to avoid corruption:
+
+```sh
+# macOS
+launchctl stop com.littleimp.daemon
+cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
+launchctl start com.littleimp.daemon
+
+# Linux
+systemctl --user stop littleimpd
+cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
+systemctl --user start littleimpd
+```
+
+---
+
+## Frontend development
+
+```sh
+# Install dependencies
+npm install
+
+# Start the dev server (requires daemon running)
+npm run dev
+
+# Run frontend unit tests
+npm run test
+
+# Run end-to-end tests
+npm run test:e2e
+```
+
+## Daemon development
+
+```sh
+npm run daemon:dev    # hot-reload with bun --watch
+npm run daemon:start  # production start (no watch)
+
+# Unit tests
+cd daemon && bun test src/test/
+```
+
+---
+
+## Configuration
+
+The daemon reads its configuration from `~/.local/share/littleimp/.env` at startup.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `127.0.0.1` | Bind address (keep localhost for security) |
+| `PORT` | `3210` | HTTP port |
+| `DATA_DIR` | `~/.local/share/littleimp` | Database and log directory |
+| `NODE_ENV` | `production` | `development` enables pretty logs |
+| `LOG_FORMAT` | `json` | `json` or `pretty` |
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md).

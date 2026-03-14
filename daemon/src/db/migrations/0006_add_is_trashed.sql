@@ -6,10 +6,9 @@ ALTER TABLE bookmarks ADD COLUMN is_trashed INTEGER NOT NULL DEFAULT 0 CHECK (is
 
 CREATE INDEX IF NOT EXISTS idx_bookmarks_is_trashed ON bookmarks(is_trashed);
 
--- Migrate existing soft-deleted rows: rows where is_archived=1 that were set by the
--- old softDelete() path are moved to is_trashed=1, is_archived=0.
--- Because the old system used is_archived=1 for both delete and archive, we cannot
--- distinguish them retroactively, so we treat all existing is_archived=1 rows as trashed.
-UPDATE bookmarks SET is_trashed = 1, is_archived = 0 WHERE is_archived = 1;
+-- No data migration needed: existing is_archived=1 rows are user archives and must be
+-- preserved. The old softDelete() path (is_archived=1 as delete) was replaced by
+-- TASK-022 before any production data existed. Existing rows remain as archives and
+-- will correctly appear on the /archive page (is_archived=1, is_trashed=0).
 
 INSERT OR IGNORE INTO schema_migrations(version) VALUES ('0006');

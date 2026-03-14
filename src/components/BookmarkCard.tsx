@@ -95,7 +95,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
 
   const handleExternal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(bookmark.url, "_blank");
+    window.open(bookmark.url, "_blank", "noopener,noreferrer");
   };
 
   const handlePin = (e: React.MouseEvent) => {

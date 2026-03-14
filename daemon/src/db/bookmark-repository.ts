@@ -302,9 +302,11 @@ export class BookmarkRepository {
 
     this.db.transaction(() => {
       if (sets.length) {
-        this.db
+        const info = this.db
           .query(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ? AND is_trashed = 0`)
           .run(...params, id);
+        // If no rows were updated the bookmark is trashed or missing — skip tag writes.
+        if (info.changes === 0 && patch.tags !== undefined) return;
       }
 
       if (patch.tags !== undefined) {
@@ -339,32 +341,36 @@ export class BookmarkRepository {
     return info.changes > 0;
   }
 
-  /** List trashed bookmarks, ordered by trashed_at desc. */
-  listTrashed(): BookmarkWithTags[] {
+  /** List trashed bookmarks, ordered by trashed_at desc. Capped at 500 rows. */
+  listTrashed(limit = 500): BookmarkWithTags[] {
     const rows = this.db
-      .query<BookmarkRow, []>(
-        "SELECT * FROM bookmarks WHERE is_trashed = 1 ORDER BY trashed_at DESC, created_at DESC"
+      .query<BookmarkRow, [number]>(
+        "SELECT * FROM bookmarks WHERE is_trashed = 1 ORDER BY trashed_at DESC, created_at DESC LIMIT ?"
       )
-      .all();
+      .all(limit);
 
     if (rows.length === 0) return [];
 
+    // Chunk IDs to avoid exceeding SQLite's SQLITE_LIMIT_VARIABLE_NUMBER (999 by default).
     const ids = rows.map((r) => r.id);
-    const placeholders = ids.map(() => "?").join(",");
-    const tagRows = this.db
-      .query<{ bookmark_id: string; name: string }, string[]>(
-        `SELECT bt.bookmark_id, t.name FROM tags t
-         JOIN bookmark_tags bt ON bt.tag_id = t.id
-         WHERE bt.bookmark_id IN (${placeholders})
-         ORDER BY t.name`
-      )
-      .all(...ids);
-
+    const CHUNK = 900;
     const tagMap = new Map<string, string[]>();
-    for (const tr of tagRows) {
-      const list = tagMap.get(tr.bookmark_id) ?? [];
-      list.push(tr.name);
-      tagMap.set(tr.bookmark_id, list);
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const chunk = ids.slice(i, i + CHUNK);
+      const placeholders = chunk.map(() => "?").join(",");
+      const tagRows = this.db
+        .query<{ bookmark_id: string; name: string }, string[]>(
+          `SELECT bt.bookmark_id, t.name FROM tags t
+           JOIN bookmark_tags bt ON bt.tag_id = t.id
+           WHERE bt.bookmark_id IN (${placeholders})
+           ORDER BY t.name`
+        )
+        .all(...chunk);
+      for (const tr of tagRows) {
+        const list = tagMap.get(tr.bookmark_id) ?? [];
+        list.push(tr.name);
+        tagMap.set(tr.bookmark_id, list);
+      }
     }
 
     return rows.map((r) => ({ ...r, tags: tagMap.get(r.id) ?? [] }));

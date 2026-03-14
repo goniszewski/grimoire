@@ -220,7 +220,7 @@ const Trash = () => {
                       size="icon"
                       className="h-6 w-6"
                       title="Open"
-                      onClick={() => window.open(bm.url, "_blank")}
+                      onClick={() => window.open(bm.url, "_blank", "noopener,noreferrer")}
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>

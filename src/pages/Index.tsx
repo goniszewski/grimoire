@@ -390,14 +390,39 @@ const Index = () => {
                   />
                 ))}
               </div>
+            ) : store.bookmarks.length === 0 && !store.searchQuery && !store.selectedCategory && !store.selectedTag && !store.selectedDomain ? (
+              /* First-run / empty library state */
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="relative mb-6">
+                  <BookmarkIcon className="h-16 w-16 text-muted-foreground/20" />
+                  <div className="absolute -bottom-1 -right-1 rounded-full bg-primary p-1">
+                    <Plus className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Your library is empty</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mb-6">
+                  Save links you want to read later, revisit, or organise. Paste a URL anywhere on this page to add it instantly.
+                </p>
+                <div className="flex gap-3">
+                  <Button onClick={() => setAddOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add your first bookmark
+                  </Button>
+                  <Button variant="outline" onClick={() => setImportOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import from browser
+                  </Button>
+                </div>
+              </div>
             ) : (
+              /* No results from search / filters */
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <BookmarkIcon className="h-12 w-12 text-muted-foreground/30 mb-4" />
                 <h3 className="font-medium text-muted-foreground mb-1">No bookmarks found</h3>
                 <p className="text-sm text-muted-foreground/60 max-w-sm">
                   {store.searchQuery
                     ? `No results for "${store.searchQuery}". Try a different search term.`
-                    : "Add your first bookmark or import from your browser to get started."}
+                    : "No bookmarks match the active filters."}
                 </p>
                 <div className="flex gap-2 mt-4">
                   <Button size="sm" onClick={() => setAddOpen(true)}>

@@ -203,6 +203,7 @@ print_success() {
 
 # ---------- uninstall ----------
 uninstall() {
+  local purge="${1:-}"
   info "Uninstalling littleimpd…"
   local os
   os="$(detect_os)"
@@ -218,8 +219,20 @@ uninstall() {
     systemctl --user daemon-reload
     info "systemd unit removed"
   fi
-  info "Daemon files left in place at ${INSTALL_DIR}."
-  info "To fully remove data, delete: ${DATA_DIR}"
+  # Remove daemon installation files
+  if [[ -d "${INSTALL_DIR}" ]]; then
+    rm -rf "${INSTALL_DIR}"
+    info "Daemon files removed from ${INSTALL_DIR}"
+  fi
+  if [[ "${purge}" == "--purge" ]]; then
+    if [[ -d "${DATA_DIR}" ]]; then
+      rm -rf "${DATA_DIR}"
+      info "Data directory removed: ${DATA_DIR}"
+    fi
+  else
+    info "Data preserved at: ${DATA_DIR}"
+    info "To also remove data, run: $0 --uninstall --purge"
+  fi
 }
 
 # ---------- main ----------
@@ -228,17 +241,18 @@ main() {
 
   case "${1:-}" in
     --uninstall)
-      uninstall
+      uninstall "${2:-}"
       exit 0
       ;;
     --upgrade)
       mode="upgrade"
       ;;
     --help|-h)
-      printf 'Usage: %s [--upgrade] [--uninstall]\n' "$(basename "$0")"
-      printf '  (no flags)   Fresh install of littleimpd\n'
-      printf '  --upgrade    Stop daemon, update files, restart\n'
-      printf '  --uninstall  Stop and remove daemon (data preserved)\n'
+      printf 'Usage: %s [--upgrade] [--uninstall [--purge]]\n' "$(basename "$0")"
+      printf '  (no flags)         Fresh install of littleimpd\n'
+      printf '  --upgrade          Stop daemon, update files, restart\n'
+      printf '  --uninstall        Stop and remove daemon and files (data preserved)\n'
+      printf '  --uninstall --purge  Also delete all data at %s\n' "${DATA_DIR}"
       exit 0
       ;;
     "")
