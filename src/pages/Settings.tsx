@@ -20,8 +20,24 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
+  Download,
+  Upload,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useBackupList, useCreateBackup, useRestoreBackup } from "@/hooks/use-backup";
+import type { ApiBackupEntry } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,6 +86,12 @@ function isKeyRedacted(key: string) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -95,6 +117,13 @@ const Settings = () => {
   const [dirty, setDirty] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
   const [testing, setTesting] = useState(false);
+
+  // ─── Backup & Restore ────────────────────────────────────────────────────────
+  const backupList = useBackupList();
+  const createBackupMutation = useCreateBackup();
+  const restoreMutation = useRestoreBackup();
+  // Separate state for the manual-path input — keeps it independent from list-row actions.
+  const [manualRestoreName, setManualRestoreName] = useState<string>("");
 
   // Sync server data into local form state once on load (and after save).
   useEffect(() => {
@@ -384,6 +413,173 @@ const Settings = () => {
                     }
                     className="h-8 text-sm font-mono"
                   />
+                </div>
+              </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Backup & Restore */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Backup &amp; Restore</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Create a local snapshot of your library or restore from a previous backup.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Create backup */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      createBackupMutation.mutate(undefined, {
+                        onSuccess: (result) => {
+                          toast.success("Backup created", {
+                            description: `${formatBytes(result.size_bytes)} · ${result.bookmark_count} bookmarks`,
+                          });
+                        },
+                        onError: (err: Error) => {
+                          toast.error("Backup failed", { description: err.message });
+                        },
+                      })
+                    }
+                    disabled={createBackupMutation.isPending}
+                  >
+                    {createBackupMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Create backup now
+                  </Button>
+                </div>
+
+                {/* Backup list — each row's dialog closes over entry.name to avoid shared-state race */}
+                {backupList.data && backupList.data.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground font-medium">Recent backups</p>
+                    <ul className="space-y-1">
+                      {backupList.data.map((entry: ApiBackupEntry) => (
+                        <li
+                          key={entry.name}
+                          className="flex items-center justify-between text-xs rounded border px-3 py-2 bg-muted/30"
+                        >
+                          <span className="font-mono truncate max-w-xs" title={entry.name}>
+                            {entry.name}
+                          </span>
+                          <span className="text-muted-foreground ml-3 shrink-0">
+                            {formatBytes(entry.size_bytes)} · {entry.bookmark_count} bookmarks
+                          </span>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 ml-2"
+                                title="Restore this backup"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Restore backup?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will overwrite your current library with the snapshot from{" "}
+                                  <strong>{entry.name}</strong>. The daemon will need to be
+                                  restarted after restoring.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                {/* onClick closes over entry.name — not shared state */}
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    restoreMutation.mutate(entry.name, {
+                                      onSuccess: () => {
+                                        toast.success("Restore complete", {
+                                          description:
+                                            "Restart the daemon to apply the restored database.",
+                                        });
+                                      },
+                                      onError: (err: Error) => {
+                                        toast.error("Restore failed", { description: err.message });
+                                      },
+                                    });
+                                  }}
+                                >
+                                  Restore
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Restore by name — separate state from the list above */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground font-medium">Restore by name</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="2026-03-14T07-45-04-815Z"
+                      className="h-8 text-sm font-mono"
+                      value={manualRestoreName}
+                      onChange={(e) => setManualRestoreName(e.target.value)}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!manualRestoreName || restoreMutation.isPending}
+                        >
+                          {restoreMutation.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5 mr-1.5" />
+                          )}
+                          Restore
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Restore backup?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will overwrite your current library with the snapshot{" "}
+                            <strong className="font-mono break-all">{manualRestoreName}</strong>.
+                            The daemon will need to be restarted after restoring.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              restoreMutation.mutate(manualRestoreName, {
+                                onSuccess: () => {
+                                  toast.success("Restore complete", {
+                                    description:
+                                      "Restart the daemon to apply the restored database.",
+                                  });
+                                  setManualRestoreName("");
+                                },
+                                onError: (err: Error) => {
+                                  toast.error("Restore failed", { description: err.message });
+                                },
+                              });
+                            }}
+                          >
+                            Restore
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
             </section>

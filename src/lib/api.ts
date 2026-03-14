@@ -433,3 +433,43 @@ export async function updateSettings(patch: Partial<ApiSettings>): Promise<{ dat
     body: JSON.stringify(patch),
   });
 }
+
+// ─── Backup & Restore ─────────────────────────────────────────────────────────
+
+export interface ApiBackupEntry {
+  name: string;
+  path: string;
+  size_bytes: number;
+  bookmark_count: number;
+  created_at: string;
+}
+
+export interface ApiBackupResult {
+  path: string;
+  size_bytes: number;
+  bookmark_count: number;
+  created_at: string;
+}
+
+export interface ApiRestoreResult {
+  restored_at: string;
+  bookmark_count: number;
+  checksum_verified: boolean;
+  restart_required: boolean;
+}
+
+export async function createBackup(): Promise<ApiBackupResult> {
+  return apiFetch<ApiBackupResult>("/backup", { method: "POST" });
+}
+
+export async function listBackups(): Promise<{ data: ApiBackupEntry[] }> {
+  return apiFetch<{ data: ApiBackupEntry[] }>("/backup/list");
+}
+
+/** Restore from a backup by its directory name (basename only — no path traversal). */
+export async function restoreBackup(name: string): Promise<ApiRestoreResult> {
+  return apiFetch<ApiRestoreResult>("/restore", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
