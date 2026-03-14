@@ -584,11 +584,21 @@ export function createBackupRoute(deps: BackupDeps): Hono {
           return c.json({ error: "S3 is not configured" }, 422);
         }
 
+        const s3Key = body.key as string;
+
+        // Validate that the key is within the configured prefix and points to a snapshot file.
+        // This prevents an operator script from accidentally restoring an arbitrary S3 object.
+        if (!s3Key.startsWith(s3cfg.prefix)) {
+          return c.json({ error: `Key must be within the configured prefix: ${s3cfg.prefix}` }, 422);
+        }
+        if (!s3Key.endsWith("/snapshot.db")) {
+          return c.json({ error: "Key must point to a snapshot.db file (e.g. prefix/timestamp/snapshot.db)" }, 422);
+        }
+
         // Download snapshot to a temp file
         const tmpPath = join(tmpdir(), `littleimp-restore-${Date.now()}.db`);
         const tmpChecksumPath = `${tmpPath}.sha256`;
         try {
-          const s3Key = body.key as string;
           const data = await downloadFromS3(s3cfg, s3Key);
           writeFileSync(tmpPath, data);
 

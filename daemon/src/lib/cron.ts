@@ -41,20 +41,21 @@ function isFixed(field: string): boolean {
 }
 
 /**
- * Computes the next Date when a 5-part cron expression will fire, based only
- * on the minute and hour fields (dom/month/dow are not yet evaluated).
+ * Computes the next Date when a 5-part cron expression will fire.
+ * Evaluates minute, hour, and day-of-week fields.
  *
  * - If hour is "*", returns null — a fixed next_run_at cannot be determined.
  * - If minute is "*", defaults to :00 of the next matching hour.
+ * - DOW is evaluated when it is a single fixed digit (0=Sun … 6=Sat).
  * - Returns null if the expression cannot be parsed.
  */
 export function nextCronRunAt(cron: string): Date | null {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) return null;
 
-  const [minuteStr, hourStr] = parts;
+  const [minuteStr, hourStr, , , dowStr] = parts;
 
-  // If both fields are wildcards, we cannot pinpoint a next-run time.
+  // If hour is a wildcard, we cannot pinpoint a next-run time.
   if (hourStr === "*") return null;
 
   const hour = parseInt(hourStr, 10);
@@ -76,6 +77,17 @@ export function nextCronRunAt(cron: string): Date | null {
   // If the computed time is in the past (or equal to now), advance by one day.
   if (next <= now) {
     next.setDate(next.getDate() + 1);
+  }
+
+  // If DOW is a fixed value, advance until the correct weekday.
+  if (isFixed(dowStr)) {
+    const targetDow = parseInt(dowStr, 10); // 0 = Sunday, 6 = Saturday
+    if (targetDow >= 0 && targetDow <= 6) {
+      let safety = 0;
+      while (next.getDay() !== targetDow && safety++ < 7) {
+        next.setDate(next.getDate() + 1);
+      }
+    }
   }
 
   return next;

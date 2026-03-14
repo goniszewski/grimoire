@@ -72,8 +72,12 @@ export async function uploadToS3(
   return `s3://${s3cfg.bucket}/${key}`;
 }
 
+/** Maximum size of a downloadable backup object (2 GiB). Protects against OOM on corrupt/wrong keys. */
+const DOWNLOAD_MAX_BYTES = 2 * 1024 * 1024 * 1024;
+
 /**
  * Downloads an object from S3 and returns its bytes.
+ * Rejects objects larger than DOWNLOAD_MAX_BYTES before streaming.
  */
 export async function downloadFromS3(s3cfg: BackupS3Settings, key: string): Promise<Uint8Array> {
   const client = makeS3Client(s3cfg);
@@ -81,12 +85,24 @@ export async function downloadFromS3(s3cfg: BackupS3Settings, key: string): Prom
     new GetObjectCommand({ Bucket: s3cfg.bucket, Key: key })
   );
   if (!res.Body) throw new Error(`S3 object ${key} has no body`);
+
+  // Reject oversized objects before loading into memory.
+  if (res.ContentLength !== undefined && res.ContentLength > DOWNLOAD_MAX_BYTES) {
+    throw new Error(`S3 object ${key} is too large to restore (${res.ContentLength} bytes; limit ${DOWNLOAD_MAX_BYTES})`);
+  }
+
   const chunks: Uint8Array[] = [];
+  let running = 0;
   // @ts-expect-error — Body is a ReadableStream in Bun/Node; we consume it manually
   for await (const chunk of res.Body) {
-    chunks.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+    const c = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk);
+    running += c.length;
+    if (running > DOWNLOAD_MAX_BYTES) {
+      throw new Error(`S3 object ${key} exceeds the ${DOWNLOAD_MAX_BYTES}-byte download limit`);
+    }
+    chunks.push(c);
   }
-  const total = chunks.reduce((acc, c) => acc + c.length, 0);
+  const total = running;
   const buf = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
