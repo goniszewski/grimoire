@@ -124,7 +124,8 @@ test.describe("First-run experience", () => {
 
     // Reload — should still be dismissed (localStorage persisted)
     await page.reload();
-    await page.waitForTimeout(1000); // let queries settle
+    // Wait for the page to be interactive (positive anchor before asserting absence)
+    await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/AI enrichment is disabled/i)).not.toBeVisible();
   });
 
@@ -132,8 +133,8 @@ test.describe("First-run experience", () => {
     await setupBaseMocks(page, [], "openai");
     await page.goto("/");
 
-    // Give time for settings to load
-    await page.waitForTimeout(1500);
+    // Wait for the page to fully load (empty-state is the reliable anchor)
+    await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/AI enrichment is disabled/i)).not.toBeVisible();
   });
 });
@@ -142,6 +143,25 @@ test.describe("Review Queue cold-start guard", () => {
   async function setupReviewMocks(page: Page, bookmarkTotal: number) {
     await page.route(`${BASE}/health`, (route) =>
       route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 1, queueSize: 0 } })
+    );
+    await page.route(`${BASE}/categories`, (route) =>
+      route.fulfill({ json: { data: [] } })
+    );
+    await page.route(`${BASE}/domains**`, (route) =>
+      route.fulfill({ json: { data: [] } })
+    );
+    await page.route(`${BASE}/tags**`, (route) =>
+      route.fulfill({ json: { data: [] } })
+    );
+    await page.route(`${BASE}/settings`, (route) =>
+      route.fulfill({
+        json: {
+          data: {
+            ai: { provider: "openai", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
+            embedding: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
+          },
+        },
+      })
     );
     await page.route(`${BASE}/suggestions**`, (route) =>
       route.fulfill({ json: { data: [], meta: { pending: 0 } } })
@@ -169,7 +189,8 @@ test.describe("Review Queue cold-start guard", () => {
     await setupReviewMocks(page, 25);
     await page.goto("/review-queue");
 
-    await page.waitForTimeout(1000);
+    // Positive anchor: "All caught up" renders when no cold-start + no suggestions
+    await expect(page.getByText(/all caught up/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/needs at least 20 bookmarks/i)).not.toBeVisible();
   });
 });
