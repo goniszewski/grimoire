@@ -27,6 +27,16 @@ function textContent(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
 
+function renderCategoryTree(nodes: { name: string; id: string; bookmark_count: number; children: any[] }[], indent = ""): string {
+  return nodes
+    .map((n) => {
+      const line = `${indent}- **${n.name}** (id:${n.id}, ${n.bookmark_count} bookmark${n.bookmark_count !== 1 ? "s" : ""})`;
+      const children = n.children.length > 0 ? "\n" + renderCategoryTree(n.children, indent + "  ") : "";
+      return line + children;
+    })
+    .join("\n");
+}
+
 // ─── Server factory ───────────────────────────────────────────────────────────
 
 export interface McpDeps {
@@ -56,7 +66,8 @@ export function createMcpServer(deps: McpDeps): McpServer {
     {
       title: "Search Bookmarks",
       description:
-        "Search the bookmark library using full-text keyword search. " +
+        "Search the bookmark library. Defaults to full-text keyword search (FTS5). " +
+        "Set mode=semantic or mode=hybrid for embedding-based search (requires embedding API key). " +
         "Returns ranked results with title, URL, summary, tags, and category.",
       inputSchema: z.object({
         query: z.string().describe("Search query string"),
@@ -172,9 +183,9 @@ export function createMcpServer(deps: McpDeps): McpServer {
     "list_bookmarks",
     {
       title: "List Bookmarks",
-      description: "List recent bookmarks with optional filtering by category or pin status.",
+      description: "List recent bookmarks, newest first, with optional category filter.",
       inputSchema: z.object({
-        category_id: z.string().optional().describe("Filter by category ID"),
+        category_id: z.string().optional().describe("Filter by category ID (from list_categories)"),
         limit: z
           .number()
           .int()
@@ -225,7 +236,7 @@ export function createMcpServer(deps: McpDeps): McpServer {
         "Save a URL to the Little Imp library. " +
         "The daemon will automatically fetch the page, extract content, and enrich it with AI.",
       inputSchema: z.object({
-        url: z.string().url().describe("URL to save (must be http or https)"),
+        url: z.string().describe("Public http or https URL to save"),
         title: z.string().optional().describe("Optional title override"),
       }),
     },
@@ -281,17 +292,7 @@ export function createMcpServer(deps: McpDeps): McpServer {
         return textContent("No categories found.");
       }
 
-      function renderTree(nodes: typeof tree, indent = ""): string {
-        return nodes
-          .map((n) => {
-            const line = `${indent}- **${n.name}** (id:${n.id}, ${n.bookmark_count} bookmark${n.bookmark_count !== 1 ? "s" : ""})`;
-            const children = n.children.length > 0 ? "\n" + renderTree(n.children, indent + "  ") : "";
-            return line + children;
-          })
-          .join("\n");
-      }
-
-      return textContent(`Categories:\n\n${renderTree(tree)}`);
+      return textContent(`Categories:\n\n${renderCategoryTree(tree)}`);
     }
   );
 
@@ -336,7 +337,7 @@ export function createMcpServer(deps: McpDeps): McpServer {
 
 /**
  * Creates a fresh stateless transport for a single HTTP request.
- * The McpServer is shared across requests; each request gets its own transport.
+ * Pair with a new McpServer instance — one (server, transport) pair per request.
  */
 export function createTransport(): WebStandardStreamableHTTPServerTransport {
   return new WebStandardStreamableHTTPServerTransport({

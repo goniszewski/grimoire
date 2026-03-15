@@ -13,9 +13,12 @@ interface McpRouteDeps {
 /**
  * Mounts the MCP (Model Context Protocol) server at /mcp.
  *
- * Uses stateless Streamable HTTP transport — each request creates a fresh
- * transport instance connected to the shared McpServer. This means no session
- * management overhead, which is appropriate for a local-only daemon.
+ * Stateless: each request gets its own McpServer + transport pair.
+ * The McpServer protocol layer throws if you call connect() on an already-
+ * connected instance, so a shared server cannot be reused across requests
+ * without explicit close/reconnect logic. Creating fresh instances per request
+ * is the correct pattern for stateless HTTP transport — repositories are cheap
+ * value objects backed by the shared SQLite Database handle.
  *
  * Compatible with Claude Desktop, Cursor, and any MCP client that supports
  * the Streamable HTTP transport (MCP spec 2025-03-26+).
@@ -23,13 +26,11 @@ interface McpRouteDeps {
 export function createMcpRoute(deps: McpRouteDeps): Hono {
   const router = new Hono();
 
-  // Lazily create the MCP server once and reuse it across requests
-  const mcpServer = createMcpServer(deps);
-
   router.all("/mcp", async (c) => {
     try {
+      const server = createMcpServer(deps);
       const transport = createTransport();
-      await mcpServer.connect(transport);
+      await server.connect(transport);
       return await transport.handleRequest(c.req.raw);
     } catch (err) {
       log.error("MCP request error", { error: String(err) });
