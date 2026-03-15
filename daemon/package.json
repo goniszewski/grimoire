@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "hono": "^4.12.7",
     "pdf-parse": "^2.4.5",
-    "sqlite-vec": "^0.1.7-alpha.2"
+    "sqlite-vec": "^0.1.7-alpha.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bun": "^1.2"

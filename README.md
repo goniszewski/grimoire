@@ -188,6 +188,39 @@ The daemon reads its configuration from `~/.local/share/littleimp/.env` at start
 
 ---
 
+## MCP (Model Context Protocol) integration
+
+Little Imp exposes an MCP server at `http://127.0.0.1:3210/mcp`. This lets AI assistants like Claude Desktop or Cursor query and add bookmarks directly.
+
+### Available tools
+
+| Tool | Description |
+|------|-------------|
+| `search_bookmarks` | Full-text or hybrid search over your library |
+| `get_bookmark` | Fetch full details of a bookmark by ID |
+| `list_bookmarks` | List recent bookmarks with optional filters |
+| `add_bookmark` | Save a URL and trigger the ingestion pipeline |
+| `list_categories` | Return the category tree with bookmark counts |
+
+### Claude Desktop configuration
+
+Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "little-imp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:3210/mcp"]
+    }
+  }
+}
+```
+
+> **Note:** `mcp-remote` is only needed because Claude Desktop does not yet support HTTP MCP servers directly. Any MCP client that supports the Streamable HTTP transport (spec 2025-03-26+) can connect to `http://127.0.0.1:3210/mcp` directly.
+
+---
+
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md).

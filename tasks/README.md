@@ -49,6 +49,7 @@ tasks/
 | TASK-032 | [Distribution Readiness](done/TASK-032-distribution-readiness.md) | M5 | low | done |
 | TASK-033 | [Backup & Restore](done/TASK-033-backup-restore.md) | M5 | medium | done |
 | TASK-034 | [Category Drag-and-Drop Reparenting](done/TASK-034-category-drag-drop.md) | M1 | medium | done |
+| TASK-040 | [MCP Server Integration](done/TASK-040-mcp-server.md) | v1.0 | medium | done |
 
 ## Current Status
 

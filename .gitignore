@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .claude
+
+# Test artifacts
+test-results/
+playwright-report/
