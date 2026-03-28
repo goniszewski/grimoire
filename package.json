@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "daemon:dev": "cd daemon && bun run dev",
     "daemon:start": "cd daemon && bun run start",
+    "docs:api": "bun run scripts/generate-api-docs.ts",
     "prepare": "husky"
   },
   "dependencies": {

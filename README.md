@@ -30,6 +30,7 @@ cd little-imp/daemon
 ```
 
 The installer will:
+
 1. Copy daemon files to `~/.local/share/littleimp/daemon`
 2. Install npm dependencies (production only)
 3. Create a default config at `~/.local/share/littleimp/.env`
@@ -221,6 +222,31 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ---
 
+## Documentation
+
+- [API Reference](./API.md) - Complete API documentation for the daemon
+- [Contributing Guide](./CONTRIBUTING.md) - Development setup and contribution guidelines
+- [Product Requirements](./docs/prd.md) - Detailed product specifications
+- [Development Roadmap](./docs/roadmap.md) - Future development plans
+- [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
+- [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
+
+## Development
+
+Little Imp is built with:
+
+- **Frontend:** React, Vite, Tailwind CSS, shadcn/ui
+- **Backend:** Bun, Hono, SQLite
+- **AI:** Optional local LLM (Ollama) or external providers
+
+For development setup and contribution guidelines, see the [Contributing Guide](./CONTRIBUTING.md).
+
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
+## License
+
+MIT License - see [LICENSE](./LICENSE) file for details.
