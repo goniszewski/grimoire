@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  little-imp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: little-imp
+    ports:
+      - "3210:3210"
+    volumes:
+      - little-imp-data:/data
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3210
+      - DATA_DIR=/data
+      - NODE_ENV=production
+      - LOG_FORMAT=json
+      # Optional: Configure AI providers
+      # - LLM_PROVIDER=ollama
+      # - LLM_API_KEY=your-api-key
+      # - LLM_MODEL=llama2
+      # - EMBEDDING_PROVIDER=ollama
+      # - EMBEDDING_API_KEY=your-api-key
+      # - EMBEDDING_MODEL=nomic-embed-text
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3210/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Ollama service for local AI
+  # Uncomment if you want to use local AI processing
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+volumes:
+  little-imp-data:
+    driver: local
+  # ollama-data:
+  #   driver: local
+
+networks:
+  default:
+    driver: bridge

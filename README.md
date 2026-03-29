@@ -230,6 +230,34 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - [Development Roadmap](./docs/roadmap.md) - Future development plans
 - [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
 - [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
+- [Update System](./docs/update-system.md) - Update mechanism design and roadmap
+- [Docker Deployment](./docs/docker-deployment.md) - Container deployment guide
+
+## Quick Start
+
+### Option 1: Native Installation (Recommended)
+
+```bash
+# Clone and install
+git clone https://github.com/goniszewski/little-imp.git
+cd little-imp/daemon
+./install.sh
+```
+
+### Option 2: Docker (Alternative)
+
+```bash
+# Using Docker Compose (recommended)
+git clone https://github.com/goniszewski/little-imp.git
+cd little-imp
+docker-compose up -d
+
+# Or using Docker directly
+docker build -t little-imp .
+docker run -d -p 3210:3210 -v little-imp-data:/data --name little-imp little-imp
+```
+
+Access the application at `http://localhost:3210`
 
 ## Development
 
