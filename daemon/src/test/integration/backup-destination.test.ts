@@ -5,6 +5,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { createBackupRoute } from "../../routes/backup.js";
 import { runMigrations } from "../../db/migrations.js";
+import { settingsManager } from "../../settings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ function makeFileDb(dir: string): { db: Database; dbPath: string } {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("Backup Destination API", () => {
+  const originalConfigHome = process.env.XDG_CONFIG_HOME;
   let tmpDir: string;
   let dataDir: string;
   let db: Database;
@@ -34,6 +36,9 @@ describe("Backup Destination API", () => {
 
   beforeEach(() => {
     tmpDir = makeTempDir();
+    process.env.XDG_CONFIG_HOME = join(tmpDir, "config-home");
+    settingsManager.invalidate();
+
     dataDir = join(tmpDir, "data");
     mkdirSync(dataDir, { recursive: true });
     ({ db, dbPath } = makeFileDb(dataDir));
@@ -43,6 +48,12 @@ describe("Backup Destination API", () => {
   afterEach(() => {
     try { db.close(); } catch { /* ignore */ }
     try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    if (originalConfigHome === undefined) {
+      delete process.env.XDG_CONFIG_HOME;
+    } else {
+      process.env.XDG_CONFIG_HOME = originalConfigHome;
+    }
+    settingsManager.invalidate();
   });
 
   // ─── GET /backup/destination ─────────────────────────────────────────────────

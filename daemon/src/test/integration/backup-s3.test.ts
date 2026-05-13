@@ -63,6 +63,7 @@ mock.module("../../lib/s3.js", () => ({
 
 // Import route AFTER mocking so the mock is in effect
 const { createBackupRoute } = await import("../../routes/backup.js");
+const { settingsManager } = await import("../../settings.js");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -104,6 +105,7 @@ const S3_CONFIG_EMPTY = {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("Backup S3 API", () => {
+  const originalConfigHome = process.env.XDG_CONFIG_HOME;
   let tmpDir: string;
   let dataDir: string;
   let db: Database;
@@ -111,6 +113,9 @@ describe("Backup S3 API", () => {
 
   beforeEach(() => {
     tmpDir = makeTempDir();
+    process.env.XDG_CONFIG_HOME = join(tmpDir, "config-home");
+    settingsManager.invalidate();
+
     dataDir = join(tmpDir, "data");
     mkdirSync(dataDir, { recursive: true });
 
@@ -128,6 +133,12 @@ describe("Backup S3 API", () => {
   afterEach(() => {
     try { db.close(); } catch { /* ignore */ }
     try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    if (originalConfigHome === undefined) {
+      delete process.env.XDG_CONFIG_HOME;
+    } else {
+      process.env.XDG_CONFIG_HOME = originalConfigHome;
+    }
+    settingsManager.invalidate();
   });
 
   // ─── POST /backup + S3 ───────────────────────────────────────────────────
@@ -141,10 +152,13 @@ describe("Backup S3 API", () => {
     expect(json.remote_url).toBeString();
     expect(json.remote_url).toStartWith("s3://test-bucket/");
 
-    // Snapshot + checksum file both uploaded
-    expect(mockUploads).toHaveLength(2);
+    // Snapshot, manifest, durable settings, and checksum file are uploaded.
+    expect(mockUploads).toHaveLength(4);
     expect(mockUploads.some((u) => u.key.endsWith("snapshot.db"))).toBeTrue();
+    expect(mockUploads.some((u) => u.key.endsWith("manifest.json"))).toBeTrue();
+    expect(mockUploads.some((u) => u.key.endsWith("data/settings.json"))).toBeTrue();
     expect(mockUploads.some((u) => u.key.endsWith("checksums.sha256"))).toBeTrue();
+    expect(mockUploads.at(-1)?.key.endsWith("snapshot.db")).toBeTrue();
   });
 
   it("POST /backup skips S3 cleanly when config is absent — still returns 201", async () => {
@@ -171,11 +185,24 @@ describe("Backup S3 API", () => {
   // ─── GET /backup/list?include_remote=true ─────────────────────────────────
 
   it("GET /backup/list?include_remote=true merges local and remote entries", async () => {
-    mockRemoteObjects.push({
-      key: "little-imp-backups/remote-snapshot/snapshot.db",
-      size_bytes: 12345,
-      last_modified: new Date(Date.now() - 1000).toISOString(),
-    });
+    const lastModified = new Date(Date.now() - 1000).toISOString();
+    mockRemoteObjects.push(
+      {
+        key: "little-imp-backups/remote-snapshot/manifest.json",
+        size_bytes: 300,
+        last_modified: lastModified,
+      },
+      {
+        key: "little-imp-backups/remote-snapshot/checksums.sha256",
+        size_bytes: 160,
+        last_modified: lastModified,
+      },
+      {
+        key: "little-imp-backups/remote-snapshot/snapshot.db",
+        size_bytes: 12345,
+        last_modified: lastModified,
+      }
+    );
 
     const app = createBackupRoute({ db, dbPath, dataDir, s3Config: S3_CONFIG });
 
@@ -191,6 +218,67 @@ describe("Backup S3 API", () => {
     const sources = json.data.map((e) => e.source);
     expect(sources).toContain("local");
     expect(sources).toContain("remote");
+  });
+
+  it("GET /backup/list?include_remote=true only exposes restorable remote snapshots", async () => {
+    const timestamp = new Date().toISOString();
+    mockRemoteObjects.push(
+      {
+        key: "little-imp-backups/complete-snapshot/snapshot.db",
+        size_bytes: 12345,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/complete-snapshot/manifest.json",
+        size_bytes: 300,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/complete-snapshot/data/settings.json",
+        size_bytes: 200,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/complete-snapshot/checksums.sha256",
+        size_bytes: 160,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/incomplete-snapshot/snapshot.db",
+        size_bytes: 12345,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/no-checksum-snapshot/snapshot.db",
+        size_bytes: 12345,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/no-checksum-snapshot/manifest.json",
+        size_bytes: 300,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/metadata-only/manifest.json",
+        size_bytes: 300,
+        last_modified: timestamp,
+      },
+      {
+        key: "little-imp-backups/metadata-only/checksums.sha256",
+        size_bytes: 160,
+        last_modified: timestamp,
+      }
+    );
+
+    const app = createBackupRoute({ db, dbPath, dataDir, s3Config: S3_CONFIG });
+
+    const res = await app.request("/backup/list?include_remote=true");
+    expect(res.status).toBe(200);
+
+    const json = await res.json() as { data: Array<{ name: string; source: string }> };
+    const remoteEntries = json.data.filter((entry) => entry.source === "remote");
+    expect(remoteEntries).toHaveLength(1);
+    expect(remoteEntries[0]?.name).toBe("little-imp-backups/complete-snapshot/snapshot.db");
   });
 
   it("GET /backup/list?include_remote=true returns 422 when S3 not configured", async () => {
@@ -230,9 +318,13 @@ describe("Backup S3 API", () => {
 
     const snapshotKey = "little-imp-backups/some-snapshot/snapshot.db";
     const checksumKey = "little-imp-backups/some-snapshot/checksums.sha256";
+    const manifestKey = "little-imp-backups/some-snapshot/manifest.json";
+    const settingsKey = "little-imp-backups/some-snapshot/data/settings.json";
 
     mockDownloadByKey.set(snapshotKey, await Bun.file(join(backupPath, "snapshot.db")).bytes());
     mockDownloadByKey.set(checksumKey, await Bun.file(join(backupPath, "checksums.sha256")).bytes());
+    mockDownloadByKey.set(manifestKey, await Bun.file(join(backupPath, "manifest.json")).bytes());
+    mockDownloadByKey.set(settingsKey, await Bun.file(join(backupPath, "data", "settings.json")).bytes());
 
     const res = await app.request("/restore", {
       method: "POST",
@@ -250,6 +342,24 @@ describe("Backup S3 API", () => {
 
     // Verify the live DB file was replaced
     expect(existsSync(dbPath)).toBeTrue();
+  });
+
+  it("POST /restore with source:remote returns 422 when the checksum object is missing", async () => {
+    const app = createBackupRoute({ db, dbPath, dataDir, s3Config: S3_CONFIG });
+    const backupRes = await app.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+
+    const snapshotKey = "little-imp-backups/some-snapshot/snapshot.db";
+    mockDownloadByKey.set(snapshotKey, await Bun.file(join(backupPath, "snapshot.db")).bytes());
+
+    const res = await app.request("/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "remote", key: snapshotKey }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("checksum");
   });
 
   it("POST /restore with source:remote returns 422 when S3 not configured", async () => {

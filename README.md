@@ -131,15 +131,27 @@ secret instead of writing the redacted placeholder.
 
 ### Manual backup
 
-```sh
-# Back up the database
-cp ~/.local/share/littleimp/littleimp.db ~/Desktop/littleimp-backup-$(date +%Y%m%d).db
+The supported backup flow is the daemon backup API/UI, which creates a portable
+snapshot directory under `~/.local/share/littleimp/backups/` by default. Each
+snapshot contains `snapshot.db`, `manifest.json`, `checksums.sha256`, and
+`data/settings.json`. Settings backups omit secrets such as API keys and PIN
+hashes; restoring settings preserves the current local secrets.
 
-# Restore
-cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
+```sh
+# Create a backup through the daemon
+curl -X POST http://127.0.0.1:3210/backup
+
+# Restore a named backup snapshot
+curl -X POST http://127.0.0.1:3210/restore \
+  -H "Content-Type: application/json" \
+  -d '{"name":"BACKUP_DIRECTORY_NAME"}'
 ```
 
-Stop the daemon before restoring to avoid corruption:
+Restore verifies checksums before replacing data, creates a rollback directory
+named like `~/.local/share/littleimp.pre-restore-...`, and returns
+`restart_required: true`.
+
+For emergency database-only recovery, stop the daemon before copying files:
 
 ```sh
 # macOS

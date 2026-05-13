@@ -493,6 +493,7 @@ export interface ApiRestoreResult {
   restored_at: string;
   bookmark_count: number;
   checksum_verified: boolean;
+  rollback_path: string;
   restart_required: boolean;
 }
 

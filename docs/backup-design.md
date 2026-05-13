@@ -78,26 +78,27 @@ The backup system assumes:
 - the application has a single writable local data directory (`DATA_DIR`)
 - restore creates a new local data directory from backup artifacts
 
-If future versions move durable data outside SQLite, those files must be added to the bundle manifest and checksum list.
+If future versions move durable data outside SQLite, those files must be added to the snapshot manifest and checksum list.
 
 ---
 
 ## 6. Backup Format
 
-### 6.1 Bundle
+### 6.1 Snapshot Directory
 
-Backup artifact filename:
+Current backup artifact directory:
 
-`little-imp-backup-YYYYMMDDTHHMMSSZ.tar.zst`
+`<DATA_DIR>/backups/YYYY-MM-DDTHH-MM-SS-sssZ/`
 
 Example:
 
-`little-imp-backup-20260313T183500Z.tar.zst`
+`~/.local/share/littleimp/backups/2026-05-13T13-15-46-497Z/`
 
-Compression:
+Remote backup targets mirror the same relative layout under the configured
+remote prefix.
 
-- `tar` archive
-- `zstd` compression
+Archive compression remains a future-compatible packaging option, but the
+release format is the implemented directory snapshot.
 
 Rationale:
 
@@ -105,22 +106,22 @@ Rationale:
 - simple to inspect manually
 - efficient enough for SQLite snapshots
 
-### 6.2 Archive layout
+### 6.2 Directory layout
 
 ```text
 little-imp-backup/
   manifest.json
-  checksums.txt
+  checksums.sha256
+  snapshot.db
   data/
-    littleimp.db
     settings.json
-    attachments/
 ```
 
 Notes:
 
-- `attachments/` may be absent if unused
-- file names inside the archive are stable and versioned by the manifest, not by path guessing
+- `snapshot.db` is created with SQLite `VACUUM INTO`.
+- `data/settings.json` contains durable non-secret settings.
+- file names inside the directory are stable and versioned by the manifest, not by path guessing.
 
 ### 6.3 Manifest schema
 
@@ -128,27 +129,27 @@ Notes:
 
 ```json
 {
+  "version": 1,
   "backup_format_version": 1,
-  "created_at": "2026-03-13T18:35:00Z",
-  "app": {
-    "name": "little-imp",
-    "version": "0.1.0"
-  },
+  "app_version": "0.0.0",
+  "created_at": "2026-05-13T13:15:46.497Z",
+  "db_size_bytes": 155648,
+  "bookmark_count": 42,
   "database": {
-    "filename": "data/littleimp.db",
-    "schema_version": 8
+    "filename": "snapshot.db",
+    "schema_version": "0008",
+    "size_bytes": 155648
   },
   "settings": {
     "filename": "data/settings.json",
-    "present": true
+    "included": true,
+    "secrets_policy": "secrets omitted; current local secrets are preserved on restore"
   },
-  "attachments": {
-    "path": "data/attachments",
-    "present": false
-  },
-  "integrity": {
-    "checksum_algorithm": "sha256",
-    "checksums_file": "checksums.txt"
+  "checksum_algorithm": "sha256",
+  "included_files": ["snapshot.db", "data/settings.json"],
+  "compatibility": {
+    "min_app_version": "0.0.0",
+    "restore_supported": true
   }
 }
 ```
@@ -157,19 +158,18 @@ Manifest requirements:
 
 - `backup_format_version` is required and governs restore compatibility
 - `created_at` must be UTC ISO-8601
-- `app.version` is the creating app version
+- `app_version` is the creating daemon package version
 - `database.schema_version` must match the migration state at backup time
-- every durable payload included in the archive must be represented either directly in the manifest or by convention documented in this spec
+- every durable payload included in the snapshot must be represented either directly in the manifest or by convention documented in this spec
 
 ### 6.4 Checksums
 
-`checksums.txt` uses SHA-256 with one entry per payload file.
+`checksums.sha256` uses SHA-256 with one entry per restorable payload file.
 
 Example:
 
 ```text
-<sha256>  manifest.json
-<sha256>  data/littleimp.db
+<sha256>  snapshot.db
 <sha256>  data/settings.json
 ```
 
@@ -177,7 +177,7 @@ Rules:
 
 - the checksum file must include all restorable payload files
 - the checksum file must not include itself
-- restore must verify checksums before replacing local data
+- restore must verify checksums before replacing local data unless the caller explicitly requests unsafe recovery with `allow_unsafe_no_checksum: true`
 
 ---
 
@@ -195,13 +195,13 @@ Preferred approach:
 2. create a SQLite-consistent snapshot copy
 3. copy settings and other durable files into a staging directory
 4. write manifest and checksums
-5. archive and compress the staging directory
-6. send the final artifact to the chosen destination
+5. move the completed staging directory into the configured local backup location
+6. upload the same relative files to the chosen remote destination when configured
 
 Implementation note:
 
 - use SQLite backup-safe mechanisms rather than raw file copying where possible
-- create the archive from a staging directory under the same machine, not directly from the live data directory
+- build the completed snapshot from a staging directory under the same machine, not directly from the live data directory
 
 ### 7.2 Local staging path
 
@@ -242,16 +242,22 @@ The app must not restore over a running instance without:
 Preferred restore flow:
 
 1. select backup artifact
-2. extract to temporary directory
+2. copy or download the snapshot directory to a temporary directory when needed
 3. validate manifest version
 4. validate checksums
 5. validate minimum compatibility rules
-6. stop daemon or enter maintenance mode
-7. move current data directory to a timestamped rollback location
-8. copy restored files into a fresh local data directory
-9. run migrations if required and supported
+6. stop daemon or enter maintenance mode for packaged restore flows
+7. create a timestamped rollback directory before local replacement
+8. run migrations on a temporary copy of the restored database when required and supported
+9. copy restored files into the local data directory
 10. start daemon
 11. report success or provide rollback instructions
+
+Current API behavior performs restore in the daemon process, verifies the
+snapshot first, creates the rollback directory, migrates a temporary copy,
+closes the live SQLite handle, replaces the SQLite file, and returns
+`restart_required: true`. Packaged UI/CLI restore should still stop the daemon
+or enter maintenance mode before invoking replacement.
 
 ### 8.2 Compatibility rules
 
@@ -260,7 +266,7 @@ Restore must reject backups when:
 - `backup_format_version` is newer than the current app understands
 - required files are missing
 - checksums do not match
-- the archive is malformed
+- the snapshot directory is malformed
 
 Restore may proceed with migration when:
 
@@ -277,7 +283,7 @@ Restore policy:
 
 Before replacing local data, the restore flow must create:
 
-`<DATA_DIR>.pre-restore-YYYYMMDDTHHMMSSZ`
+`<DATA_DIR>.pre-restore-YYYY-MM-DDTHH-MM-SS-sssZ`
 
 If restore fails after local replacement starts, the app should attempt automatic rollback from this directory.
 
@@ -285,7 +291,7 @@ If restore fails after local replacement starts, the app should attempt automati
 
 ## 9. Destination Abstraction
 
-Backup creation and restore use one portable bundle format regardless of destination.
+Backup creation and restore use one portable snapshot-directory format regardless of destination.
 
 Destination interface:
 
@@ -310,7 +316,7 @@ Deferred destination types:
 
 Behavior:
 
-- copy completed backup bundle into a user-selected local path
+- create or copy the completed snapshot directory into a user-selected local path
 - support removable drives and cloud-synced folders because they appear as normal filesystem paths
 
 Examples:
@@ -347,7 +353,13 @@ Rules:
 
 Example object key:
 
-`little-imp/backups/2026/03/13/little-imp-backup-20260313T183500Z.tar.zst`
+```text
+little-imp/backups/2026-05-13T13-15-46-497Z/
+  snapshot.db
+  manifest.json
+  checksums.sha256
+  data/settings.json
+```
 
 ---
 
@@ -388,19 +400,21 @@ Rules:
 
 - backup credentials are stored locally only
 - secrets must never be written into backup manifests
+- `data/settings.json` omits secrets, including OpenAI API keys, lock PIN hashes, and S3 access keys
+- restoring `data/settings.json` preserves existing local secret values while restoring non-secret durable settings
 - checksums protect integrity, not confidentiality
 - password-based encryption is optional but supported by the backup format
 
 Encryption policy:
 
-- encryption wraps the final backup artifact rather than changing the internal portable layout
-- the same manifest schema and archive layout remain valid before encryption
+- encryption wraps a future packaged backup artifact rather than changing the internal portable layout
+- the same manifest schema and snapshot layout remain valid before encryption
 - password material must never be stored in the manifest, checksums file, or destination metadata
 - the restore flow must clearly distinguish "wrong password" from "corrupt backup" where possible
 
 Recommended encrypted artifact naming:
 
-`little-imp-backup-YYYYMMDDTHHMMSSZ.tar.zst.enc`
+`little-imp-backup-YYYYMMDDTHHMMSSZ.zip.enc`
 
 Initial encryption UX:
 
@@ -441,7 +455,7 @@ Initial UI surface:
 - backup history list
 - "Restore from backup" entry point with warning dialog
 
-Initial CLI surface:
+Future CLI surface:
 
 - `littleimp backup create`
 - `littleimp backup list`
@@ -453,6 +467,9 @@ Restore confirmation must communicate:
 - target local data will be replaced
 - current data will be moved to a rollback directory first
 - backup compatibility checks run before replacement
+- checksum verification is required by default
+- secrets are not restored from backup and must already exist locally or be re-entered
+- the daemon closes its database handle after restore and must be restarted before further use
 
 ---
 
@@ -460,10 +477,10 @@ Restore confirmation must communicate:
 
 ### Phase 1
 
-- define backup bundle format
+- define backup snapshot-directory format
 - implement local snapshot creation
 - implement local restore
-- expose manual backup and restore in both UI and CLI
+- expose manual backup and restore in the daemon API and Settings UI
 - document manual backup and restore
 
 ### Phase 2
@@ -491,18 +508,22 @@ Recommended internal modules:
 - `backup/manifest.ts`
 - `backup/checksums.ts`
 - `backup/snapshot.ts`
-- `backup/archive.ts`
+- `backup/package.ts` for future compressed/encrypted packaging
 - `backup/encryption.ts`
 - `backup/restore.ts`
 - `backup/destinations/local-folder.ts`
 - `backup/destinations/s3.ts`
 
-Recommended API surface:
+Implemented daemon API surface:
 
-- `POST /backups`
-- `GET /backups`
-- `POST /backups/restore`
-- `GET /backups/destinations/health`
+- `POST /backup`
+- `GET /backup/list`
+- `POST /restore`
+- `GET /backup/destination`
+- `PUT /backup/destination`
+- `GET /backup/schedule`
+- `PUT /backup/schedule`
+- `POST /settings/test-s3`
 
 Recommended CLI surface:
 
@@ -512,7 +533,7 @@ Recommended CLI surface:
 - `littleimp backup restore --file <artifact>`
 - `littleimp backup verify --file <artifact>`
 
-The exact route names may change, but the implementation should keep backup creation, listing, and restore as separate operations.
+The implementation keeps backup creation, listing, restore, destination, and schedule management as separate operations.
 
 ---
 
@@ -521,8 +542,8 @@ The exact route names may change, but the implementation should keep backup crea
 Resolved implementation decisions:
 
 1. `settings.json` is the correct durable settings source and must be included in every backup.
-2. Backup and restore must be available in both UI and CLI.
-3. Optional password-based encryption is in scope and supported by the backup format.
+2. Backup and restore are available through the daemon API and Settings UI; CLI support can wrap those operations later.
+3. Optional password-based encryption is future packaging work and must preserve the same internal manifest and snapshot layout.
 4. A short maintenance window during backup or restore is acceptable.
 
 Operational note:

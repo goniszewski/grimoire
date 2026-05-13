@@ -6,6 +6,7 @@ import { tmpdir } from "os";
 import { createBackupRoute, applyRetentionPolicy, createBackupSnapshot } from "../../routes/backup.js";
 import { runMigrations } from "../../db/migrations.js";
 import { cronToIntervalMs, nextCronRunAt } from "../../lib/cron.js";
+import { settingsManager } from "../../settings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,22 @@ function makeFileDb(dir: string): { db: Database; dbPath: string } {
   db.exec("PRAGMA foreign_keys = ON");
   runMigrations(db);
   return { db, dbPath };
+}
+
+const originalConfigHome = process.env.XDG_CONFIG_HOME;
+
+function useIsolatedConfigHome(tmpDir: string): void {
+  process.env.XDG_CONFIG_HOME = join(tmpDir, "config-home");
+  settingsManager.invalidate();
+}
+
+function restoreConfigHome(): void {
+  if (originalConfigHome === undefined) {
+    delete process.env.XDG_CONFIG_HOME;
+  } else {
+    process.env.XDG_CONFIG_HOME = originalConfigHome;
+  }
+  settingsManager.invalidate();
 }
 
 // ─── Cron utilities ───────────────────────────────────────────────────────────
@@ -101,6 +118,7 @@ describe("applyRetentionPolicy", () => {
 
   beforeEach(() => {
     tmpDir = makeTempDir();
+    useIsolatedConfigHome(tmpDir);
     backupsDir = join(tmpDir, "backups");
     mkdirSync(backupsDir, { recursive: true });
     const result = makeFileDb(tmpDir);
@@ -111,6 +129,7 @@ describe("applyRetentionPolicy", () => {
   afterEach(() => {
     try { db.close(); } catch { /* ignore */ }
     try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    restoreConfigHome();
   });
 
   it("deletes oldest backups beyond retention count", async () => {
@@ -160,6 +179,7 @@ describe("GET /backup/schedule", () => {
 
   beforeEach(() => {
     tmpDir = makeTempDir();
+    useIsolatedConfigHome(tmpDir);
     const dataDir = join(tmpDir, "data");
     mkdirSync(dataDir, { recursive: true });
     const result = makeFileDb(dataDir);
@@ -171,6 +191,7 @@ describe("GET /backup/schedule", () => {
   afterEach(() => {
     try { db.close(); } catch { /* ignore */ }
     try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    restoreConfigHome();
   });
 
   it("returns schedule config with correct shape", async () => {
@@ -224,6 +245,7 @@ describe("PUT /backup/schedule", () => {
 
   beforeEach(() => {
     tmpDir = makeTempDir();
+    useIsolatedConfigHome(tmpDir);
     const dataDir = join(tmpDir, "data");
     mkdirSync(dataDir, { recursive: true });
     const result = makeFileDb(dataDir);
@@ -235,6 +257,7 @@ describe("PUT /backup/schedule", () => {
   afterEach(() => {
     try { db.close(); } catch { /* ignore */ }
     try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    restoreConfigHome();
   });
 
   it("accepts valid schedule update and returns updated config", async () => {

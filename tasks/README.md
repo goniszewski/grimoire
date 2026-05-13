@@ -57,21 +57,20 @@ tasks/
 | TASK-041 | [Unify Runtime Settings with AI and Embedding Execution](done/TASK-041-unify-runtime-settings.md) | v0-beta hardening | high | done |
 | TASK-042 | [Fix Docker Distribution and Network Safety](todo/TASK-042-fix-docker-distribution-network-safety.md) | v0-beta hardening | high | todo |
 | TASK-043 | [Restore Quality Gates and Add CI](todo/TASK-043-restore-quality-gates-and-ci.md) | v0-beta hardening | high | todo |
-| TASK-044 | [Make Backup and Restore Safe and Match the Design](todo/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | todo |
+| TASK-044 | [Make Backup and Restore Safe and Match the Design](done/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | done |
 | TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](todo/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | todo |
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](todo/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | todo |
 | TASK-047 | [Align Roadmap, Release, and Product Documentation](todo/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | todo |
 
 ## Current Status
 
-Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041 is complete. The remaining recommended implementation order is based on dependency and release risk:
+Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041 and TASK-044 are complete. The remaining recommended implementation order is based on dependency and release risk:
 
-1. TASK-044 - Make backup and restore safe and match the design
-2. TASK-042 - Fix Docker distribution and network safety
-3. TASK-045 - Create a source-of-truth API contract and regenerated docs
-4. TASK-046 - Adopt the shared API contract in the frontend
-5. TASK-043 - Restore quality gates and add CI
-6. TASK-047 - Align roadmap, release, and product documentation
+1. TASK-042 - Fix Docker distribution and network safety
+2. TASK-045 - Create a source-of-truth API contract and regenerated docs
+3. TASK-046 - Adopt the shared API contract in the frontend
+4. TASK-043 - Restore quality gates and add CI
+5. TASK-047 - Align roadmap, release, and product documentation
 
 Notes:
 

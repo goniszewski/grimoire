@@ -50,7 +50,13 @@ import {
   useBackupDestination,
   useUpdateBackupDestination,
 } from "@/hooks/use-backup";
-import type { ApiAiProvider, ApiBackupEntry, ApiEmbeddingProvider, ApiS3Config } from "@/lib/api";
+import type {
+  ApiAiProvider,
+  ApiBackupEntry,
+  ApiEmbeddingProvider,
+  ApiRestoreResult,
+  ApiS3Config,
+} from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -88,6 +94,12 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function restoreSuccessDescription(result: ApiRestoreResult): string {
+  return result.rollback_path
+    ? `Restart the daemon before using Little Imp again. Rollback: ${result.rollback_path}`
+    : "Restart the daemon before using Little Imp again.";
 }
 
 const Settings = () => {
@@ -540,9 +552,10 @@ const Settings = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Restore backup?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will overwrite your current library with the snapshot from{" "}
-                                  <strong>{entry.name}</strong>. The daemon will need to be
-                                  restarted after restoring.
+                                  This verifies checksums, creates a rollback copy, preserves
+                                  local secrets, and replaces your current library with{" "}
+                                  <strong>{entry.name}</strong>. The daemon must be restarted
+                                  after restoring.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -551,10 +564,9 @@ const Settings = () => {
                                 <AlertDialogAction
                                   onClick={() => {
                                     restoreMutation.mutate(entry.name, {
-                                      onSuccess: () => {
+                                      onSuccess: (result) => {
                                         toast.success("Restore complete", {
-                                          description:
-                                            "Restart the daemon to apply the restored database.",
+                                          description: restoreSuccessDescription(result),
                                         });
                                       },
                                       onError: (err: Error) => {
@@ -603,9 +615,10 @@ const Settings = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Restore backup?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will overwrite your current library with the snapshot{" "}
+                            This verifies checksums, creates a rollback copy, preserves local
+                            secrets, and replaces your current library with the snapshot{" "}
                             <strong className="font-mono break-all">{manualRestoreName}</strong>.
-                            The daemon will need to be restarted after restoring.
+                            The daemon must be restarted after restoring.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -613,10 +626,9 @@ const Settings = () => {
                           <AlertDialogAction
                             onClick={() => {
                               restoreMutation.mutate(manualRestoreName, {
-                                onSuccess: () => {
+                                onSuccess: (result) => {
                                   toast.success("Restore complete", {
-                                    description:
-                                      "Restart the daemon to apply the restored database.",
+                                    description: restoreSuccessDescription(result),
                                   });
                                   setManualRestoreName("");
                                 },
@@ -926,9 +938,10 @@ const Settings = () => {
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Restore from remote?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          This will download and restore the remote backup{" "}
+                                          This downloads the backup, verifies checksums, creates a
+                                          rollback copy, preserves local secrets, and restores{" "}
                                           <strong className="font-mono break-all">{entry.name}</strong>.
-                                          The daemon will need to be restarted after restoring.
+                                          The daemon must be restarted after restoring.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
@@ -936,9 +949,9 @@ const Settings = () => {
                                         <AlertDialogAction
                                           onClick={() => {
                                             restoreRemoteMutation.mutate(entry.name, {
-                                              onSuccess: () => {
+                                              onSuccess: (result) => {
                                                 toast.success("Remote restore complete", {
-                                                  description: "Restart the daemon to apply the restored database.",
+                                                  description: restoreSuccessDescription(result),
                                                 });
                                               },
                                               onError: (err: Error) => {
