@@ -324,6 +324,51 @@ GET /settings
 
 Response: Current settings object
 
+Secrets are redacted as `"***"`. The `runtime` block reports effective
+capabilities without exposing API keys.
+
+```json
+{
+  "data": {
+    "ai": {
+      "provider": "openai",
+      "openai": {
+        "api_key": "***",
+        "model": "gpt-4o-mini"
+      },
+      "ollama": {
+        "base_url": "http://localhost:11434",
+        "model": "llama3"
+      },
+      "embeddings": {
+        "provider": "openai",
+        "model": "text-embedding-3-small"
+      }
+    },
+    "runtime": {
+      "llm": {
+        "enabled": true,
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "base_url": "https://api.openai.com/v1"
+      },
+      "embeddings": {
+        "enabled": true,
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "base_url": "https://api.openai.com/v1"
+      },
+      "capabilities": {
+        "enrichment": true,
+        "semantic_search": true,
+        "related_bookmarks": true,
+        "organization_agent": true
+      }
+    }
+  }
+}
+```
+
 #### Update Settings
 
 ```http
@@ -334,14 +379,25 @@ Request body:
 
 ```json
 {
-  "llm_provider": "ollama",
-  "llm_api_key": "optional-api-key",
-  "llm_model": "llama2",
-  "embedding_provider": "ollama",
-  "embedding_api_key": "optional-api-key",
-  "embedding_model": "nomic-embed-text"
+  "ai": {
+    "provider": "ollama",
+    "ollama": {
+      "base_url": "http://localhost:11434",
+      "model": "llama3"
+    },
+    "embeddings": {
+      "provider": "ollama",
+      "model": "nomic-embed-text"
+    }
+  }
 }
 ```
+
+`PUT /settings` accepts partial nested patches. Persisted settings are the
+runtime source of truth for ingestion, semantic search, related bookmarks, MCP
+search, and organization suggestions. Environment variables are fallback
+defaults when a value has not been persisted. Redacted secret placeholders from
+`GET /settings` are ignored on save so clients can round-trip settings safely.
 
 ### Backup
 

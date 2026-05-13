@@ -21,7 +21,7 @@ import { TimelineRepository } from "../db/timeline-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { cosineSimilarity } from "./embeddings.js";
-import { Config } from "../config.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 // ─── Thresholds ───────────────────────────────────────────────────────────────
 
@@ -77,7 +77,13 @@ export class OrganizationAgent {
       return;
     }
 
-    const model = Config.EMBEDDING_MODEL;
+    const { embeddingConfig } = resolveRuntimeSettings();
+    if (!embeddingConfig) {
+      log.info("OrganizationAgent: embedding provider not configured, skipping");
+      return;
+    }
+
+    const model = embeddingConfig.model;
     const embeddings = this.embRepo.getAllForModel(model);
 
     if (embeddings.length < 2) {

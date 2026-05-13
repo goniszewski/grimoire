@@ -11,12 +11,13 @@ export function useSettings() {
   });
 
   const aiProvider = query.data?.data?.ai?.provider ?? null;
-  const aiEnabled = aiProvider !== null && aiProvider !== "none";
+  const aiEnabled = query.data?.data?.runtime?.capabilities?.enrichment ?? false;
 
   return {
     settings: query.data?.data ?? null,
     aiProvider,
     aiEnabled,
+    runtime: query.data?.data?.runtime ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
   };

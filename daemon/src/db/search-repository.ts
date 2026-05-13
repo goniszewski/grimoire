@@ -307,7 +307,7 @@ export class SearchRepository {
     limit = 10
   ): BookmarkWithTags[] {
     const source = this.embRepo.getByBookmarkId(bookmarkId);
-    if (!source) return [];
+    if (!source || source.model !== model) return [];
 
     const all = this.embRepo.getAllForModel(model);
     const scored = all

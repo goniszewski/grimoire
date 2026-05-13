@@ -5,7 +5,7 @@
  *   1. fetch       — download the page HTML
  *   2. extract     — strategy-based content extraction
  *   3. ai_enrich   — LLM summary + tags + category
- *   4. embed       — generate embedding vector (skipped when EMBEDDING_API_KEY unset)
+ *   4. embed       — generate embedding vector (skipped when embeddings are not configured)
  *   5. index       — update FTS5 search index
  *
  * Each stage:
@@ -26,8 +26,8 @@ import { extractContent } from "./extractor.js";
 import { enrichBookmark } from "../ai/enrichment.js";
 import { getEmbedding, buildEmbedInput } from "../ai/embeddings.js";
 import { EmbeddingRepository } from "../db/embedding-repository.js";
-import { Config } from "../config.js";
 import { BookmarkContentRow } from "../db/types.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 export interface PipelinePayload {
   bookmarkId: string;
@@ -181,15 +181,13 @@ export async function runPipeline(
   })();
   log.info("Pipeline: extract done", { bookmarkId, wordCount: extracted.wordCount });
 
+  const runtimeSettings = resolveRuntimeSettings();
+
   // ── Stage 3: ai_enrich ────────────────────────────────────────────────────
-  if (Config.LLM_API_KEY) {
+  if (runtimeSettings.llmConfig) {
     log.info("Pipeline: ai_enrich", { bookmarkId });
     try {
-      await enrichBookmark(db, {
-        baseUrl: Config.LLM_BASE_URL,
-        apiKey: Config.LLM_API_KEY,
-        model: Config.LLM_MODEL,
-      }, {
+      await enrichBookmark(db, runtimeSettings.llmConfig, {
         bookmarkId,
         title,
         content: extracted.markdown ?? "",
@@ -203,11 +201,14 @@ export async function runPipeline(
       // Non-fatal: bookmark is fully usable without LLM enrichment
     }
   } else {
-    log.info("Pipeline: ai_enrich skipped (LLM_API_KEY not set)", { bookmarkId });
+    log.info("Pipeline: ai_enrich skipped (LLM not configured)", {
+      bookmarkId,
+      provider: runtimeSettings.runtime.llm.provider,
+    });
   }
 
   // ── Stage 4: embed ────────────────────────────────────────────────────────
-  if (Config.EMBEDDING_API_KEY) {
+  if (runtimeSettings.embeddingConfig) {
     log.info("Pipeline: embed", { bookmarkId });
     try {
       // Read current summary and tags for embedding input
@@ -232,16 +233,12 @@ export async function runPipeline(
       });
 
       const vector = await getEmbedding(
-        {
-          baseUrl: Config.EMBEDDING_BASE_URL,
-          apiKey: Config.EMBEDDING_API_KEY,
-          model: Config.EMBEDDING_MODEL,
-        },
+        runtimeSettings.embeddingConfig,
         embedText
       );
 
       const embRepo = new EmbeddingRepository(db);
-      embRepo.upsert(bookmarkId, Config.EMBEDDING_MODEL, vector);
+      embRepo.upsert(bookmarkId, runtimeSettings.embeddingConfig.model, vector);
       log.info("Pipeline: embed done", { bookmarkId, dimensions: vector.length });
     } catch (err) {
       log.warn("Pipeline: embed failed, continuing without embedding", {
@@ -251,7 +248,10 @@ export async function runPipeline(
       // Non-fatal: bookmark is fully usable without embedding
     }
   } else {
-    log.info("Pipeline: embed skipped (EMBEDDING_API_KEY not set)", { bookmarkId });
+    log.info("Pipeline: embed skipped (embedding provider not configured)", {
+      bookmarkId,
+      provider: runtimeSettings.runtime.embeddings.provider,
+    });
   }
 
   // ── Stage 5: index ────────────────────────────────────────────────────────

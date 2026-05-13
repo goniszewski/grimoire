@@ -4,8 +4,8 @@
  * The index stage updates the FTS5 table so the bookmark becomes searchable.
  * We run the full pipeline in a controlled way:
  *   - fetch stage: mocked via globalThis.fetch to return static HTML
- *   - ai_enrich stage: skipped (LLM_API_KEY unset in Config during test)
- *   - embed stage: skipped (EMBEDDING_API_KEY unset in Config during test)
+ *   - ai_enrich stage: skipped (AI provider unset in runtime settings during test)
+ *   - embed stage: skipped (embedding provider has no usable API key during test)
  *   - index stage: real, writing to in-memory SQLite
  *
  * We then verify the bookmark is returned by an FTS search query.

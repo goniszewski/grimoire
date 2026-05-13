@@ -1,7 +1,7 @@
 import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { SearchRepository, SearchMode } from "../db/search-repository.js";
-import { Config } from "../config.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 interface SearchDeps {
   db: Database;
@@ -43,17 +43,13 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     }
     const mode = rawMode as SearchMode;
 
-    // Semantic/hybrid require embedding config
-    if ((mode === "semantic" || mode === "hybrid") && !Config.EMBEDDING_API_KEY) {
-      return problem(c, 422, "Unprocessable Entity",
-        `mode=${mode} requires EMBEDDING_API_KEY to be configured`);
-    }
+    const { embeddingConfig } = resolveRuntimeSettings();
 
-    const embeddingConfig = Config.EMBEDDING_API_KEY ? {
-      baseUrl: Config.EMBEDDING_BASE_URL,
-      apiKey: Config.EMBEDDING_API_KEY,
-      model: Config.EMBEDDING_MODEL,
-    } : undefined;
+    // Semantic/hybrid require embedding config
+    if ((mode === "semantic" || mode === "hybrid") && !embeddingConfig) {
+      return problem(c, 422, "Unprocessable Entity",
+        `mode=${mode} requires an embedding provider to be configured`);
+    }
 
     let result;
     try {
@@ -67,7 +63,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         date_to: c.req.query("date_to") ?? undefined,
         limit,
         offset,
-        embeddingConfig,
+        embeddingConfig: embeddingConfig ?? undefined,
       });
     } catch (err) {
       // FTS5 MATCH syntax errors surface as SQLite exceptions

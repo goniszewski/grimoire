@@ -91,18 +91,52 @@ export interface ListResult<T> {
   pagination: Pagination;
 }
 
-export interface ApiSettings {
-  ai: {
-    provider: "openai" | "ollama" | "none";
-    openai: { api_key: string; model: string };
-    ollama: { base_url: string; model: string };
-  };
-  embedding: {
-    provider: "openai" | "ollama" | "none";
-    openai: { api_key: string; model: string };
-    ollama: { base_url: string; model: string };
+export type ApiAiProvider = "openai" | "ollama" | "none";
+export type ApiEmbeddingProvider = "openai" | "ollama";
+
+export interface ApiRuntimeCapability {
+  enabled: boolean;
+  provider: ApiAiProvider;
+  model: string | null;
+  base_url: string | null;
+}
+
+export interface ApiRuntimeCapabilities {
+  llm: ApiRuntimeCapability;
+  embeddings: ApiRuntimeCapability;
+  capabilities: {
+    enrichment: boolean;
+    semantic_search: boolean;
+    related_bookmarks: boolean;
+    organization_agent: boolean;
   };
 }
+
+export interface ApiSettings {
+  ai: {
+    provider: ApiAiProvider;
+    openai: { api_key: string; model: string };
+    ollama: { base_url: string; model: string };
+    embeddings: { provider: ApiEmbeddingProvider; model: string };
+  };
+  app: {
+    autostart: boolean;
+    theme: "light" | "dark" | "system";
+    lock: { enabled: boolean; pin_hash: string };
+  };
+  backup: {
+    local: { destination_path: string };
+    schedule: { enabled: boolean; cron: string; retention_count: number };
+    s3: ApiS3Config;
+  };
+  runtime: ApiRuntimeCapabilities;
+}
+
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+};
+
+export type ApiSettingsPatch = DeepPartial<Omit<ApiSettings, "runtime">>;
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -429,7 +463,7 @@ export async function getSettings(): Promise<{ data: ApiSettings }> {
   return apiFetch<{ data: ApiSettings }>("/settings");
 }
 
-export async function updateSettings(patch: Partial<ApiSettings>): Promise<{ data: ApiSettings }> {
+export async function updateSettings(patch: ApiSettingsPatch): Promise<{ data: ApiSettings }> {
   return apiFetch<{ data: ApiSettings }>("/settings", {
     method: "PUT",
     body: JSON.stringify(patch),

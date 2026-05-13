@@ -3,9 +3,9 @@ import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { SearchRepository } from "../db/search-repository.js";
-import { Config } from "../config.js";
 import { log } from "../logger.js";
 import { isPrivateHost } from "../lib/network.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 interface BookmarksDeps {
   db: Database;
@@ -276,9 +276,10 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const id = c.req.param("id");
     if (!repo.findById(id)) return problem(c, 404, "Not Found", "Bookmark not found");
 
-    if (!Config.EMBEDDING_API_KEY) {
+    const { embeddingConfig } = resolveRuntimeSettings();
+    if (!embeddingConfig) {
       return problem(c, 422, "Unprocessable Entity",
-        "Related bookmarks require EMBEDDING_API_KEY to be configured");
+        "Related bookmarks require an embedding provider to be configured");
     }
 
     const limit = Math.min(
@@ -286,7 +287,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       50
     );
 
-    const related = searchRepo.findRelated(id, Config.EMBEDDING_MODEL, limit);
+    const related = searchRepo.findRelated(id, embeddingConfig.model, limit);
     return ok(c, related);
   });
 

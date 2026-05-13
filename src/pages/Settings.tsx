@@ -50,31 +50,12 @@ import {
   useBackupDestination,
   useUpdateBackupDestination,
 } from "@/hooks/use-backup";
-import type { ApiBackupEntry, ApiS3Config } from "@/lib/api";
+import type { ApiAiProvider, ApiBackupEntry, ApiEmbeddingProvider, ApiS3Config } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Provider = "openai" | "ollama" | "none";
-
-// Mirrors the actual daemon Settings schema (daemon/src/settings.ts).
-// The daemon nests embeddings under `ai.embeddings`, not a top-level `embedding`.
-interface DaemonSettings {
-  ai: {
-    provider: Provider;
-    openai: { api_key: string; model: string };
-    ollama: { base_url: string; model: string };
-    embeddings: { provider: "openai" | "ollama"; model: string };
-  };
-  app: {
-    autostart: boolean;
-    theme: "light" | "dark" | "system";
-    lock: { enabled: boolean; pin_hash: string };
-  };
-  backup?: {
-    s3?: ApiS3Config;
-  };
-}
+type Provider = ApiAiProvider;
 
 interface AiFormState {
   provider: Provider;
@@ -83,7 +64,7 @@ interface AiFormState {
 }
 
 interface EmbeddingsFormState {
-  provider: "openai" | "ollama";
+  provider: ApiEmbeddingProvider;
   model: string;
 }
 
@@ -115,9 +96,7 @@ const Settings = () => {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: settingsKeys.all,
-    // Cast through unknown: the ApiSettings type in api.ts doesn't match the real
-    // daemon schema. DaemonSettings is the authoritative shape.
-    queryFn: () => getSettings() as unknown as Promise<{ data: DaemonSettings }>,
+    queryFn: getSettings,
   });
 
   const [ai, setAi] = useState<AiFormState>({
@@ -198,13 +177,13 @@ const Settings = () => {
     setDirty(false);
 
     // Populate S3 form from settings (credentials will be redacted "***")
-    if (s.backup?.s3) {
+    if (s.backup.s3) {
       setS3Form((prev) => ({
         ...prev,
-        ...s.backup!.s3,
+        ...s.backup.s3,
         // Keep local password inputs blank when redacted so users re-enter intentionally
-        access_key: s.backup!.s3!.access_key === "***" ? "" : (s.backup!.s3!.access_key ?? ""),
-        secret_key: s.backup!.s3!.secret_key === "***" ? "" : (s.backup!.s3!.secret_key ?? ""),
+        access_key: s.backup.s3.access_key === "***" ? "" : (s.backup.s3.access_key ?? ""),
+        secret_key: s.backup.s3.secret_key === "***" ? "" : (s.backup.s3.secret_key ?? ""),
       }));
     }
   }, [data]);
@@ -228,7 +207,7 @@ const Settings = () => {
         },
       };
 
-      return updateSettings(patch as Parameters<typeof updateSettings>[0]);
+      return updateSettings(patch);
     },
     onSuccess: () => {
       setDirty(false);
@@ -256,7 +235,9 @@ const Settings = () => {
         try {
           const body = await res.json() as { detail?: string };
           if (body.detail) detail = body.detail;
-        } catch {}
+        } catch {
+          // Keep the HTTP status text fallback when the error body is not JSON.
+        }
         json = { ok: false, error: `Server returned ${res.status}: ${detail}` };
       }
       setTestResult(json);
@@ -284,7 +265,7 @@ const Settings = () => {
     setDirty(true);
   }
 
-  function updateEmbeddingsProvider(provider: "openai" | "ollama") {
+  function updateEmbeddingsProvider(provider: ApiEmbeddingProvider) {
     setEmbeddings((prev) => ({ ...prev, provider }));
     setDirty(true);
   }
@@ -460,7 +441,7 @@ const Settings = () => {
                   <Label className="text-xs">Provider</Label>
                   <Select
                     value={embeddings.provider}
-                    onValueChange={(v) => updateEmbeddingsProvider(v as "openai" | "ollama")}
+                    onValueChange={(v) => updateEmbeddingsProvider(v as ApiEmbeddingProvider)}
                   >
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
@@ -856,8 +837,7 @@ const Settings = () => {
                       const patch: Partial<ApiS3Config> = { ...s3Form };
                       if (!patch.access_key) delete patch.access_key;
                       if (!patch.secret_key) delete patch.secret_key;
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      updateSettings({ backup: { s3: patch } } as any).then(() => {
+                      updateSettings({ backup: { s3: patch } }).then(() => {
                         setS3Dirty(false);
                         toast.success("S3 settings saved");
                         qc.invalidateQueries({ queryKey: settingsKeys.all });

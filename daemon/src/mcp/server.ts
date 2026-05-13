@@ -6,9 +6,9 @@ import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
 import { SearchRepository, SearchMode } from "../db/search-repository.js";
 import { JobQueue } from "../queue.js";
-import { Config } from "../config.js";
 import { log } from "../logger.js";
 import { isPrivateHost } from "../lib/network.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -87,18 +87,11 @@ export function createMcpServer(deps: McpDeps): McpServer {
       }),
     },
     async ({ query, mode = "keyword", limit = 10 }) => {
-      // Semantic/hybrid require embedding config
-      const embeddingConfig = Config.EMBEDDING_API_KEY
-        ? {
-            baseUrl: Config.EMBEDDING_BASE_URL,
-            apiKey: Config.EMBEDDING_API_KEY,
-            model: Config.EMBEDDING_MODEL,
-          }
-        : undefined;
+      const { embeddingConfig } = resolveRuntimeSettings();
 
       if ((mode === "semantic" || mode === "hybrid") && !embeddingConfig) {
         return textContent(
-          `Error: mode=${mode} requires an embedding API key to be configured. ` +
+          `Error: mode=${mode} requires an embedding provider to be configured. ` +
             "Use keyword mode instead, or configure an embedding provider in settings."
         );
       }
@@ -109,7 +102,7 @@ export function createMcpServer(deps: McpDeps): McpServer {
           mode: mode as SearchMode,
           limit,
           offset: 0,
-          embeddingConfig,
+          embeddingConfig: embeddingConfig ?? undefined,
         });
 
         if (result.items.length === 0) {

@@ -35,30 +35,47 @@ tasks/
 | TASK-018 | [Shell Installer Script](done/TASK-018-installer-script.md) | v0-alpha | medium | done |
 | TASK-019 | [PDF Extractor](done/TASK-019-pdf-extractor.md) | future | low | done |
 | TASK-020 | [YouTube Transcript Extractor](done/TASK-020-youtube-transcript-extractor.md) | future | low | done |
-| TASK-021 | [Bookmark Status Actions (Pin, Archive, Read)](backlog/TASK-021-bookmark-status-actions.md) | M1 | high | backlog |
-| TASK-022 | [Trash System (Soft Delete + 30-day Purge)](backlog/TASK-022-trash-system.md) | M1 | high | backlog |
-| TASK-023 | [Personal Notes on Bookmarks](backlog/TASK-023-personal-notes.md) | M1 | high | backlog |
-| TASK-024 | [Category Management UI (Rename, Delete, Move)](backlog/TASK-024-category-management-ui.md) | M1 | high | backlog |
-| TASK-025 | [Settings Page (/settings)](backlog/TASK-025-settings-page.md) | M2 | high | backlog |
-| TASK-026 | [Embeddings Pipeline Integration](backlog/TASK-026-embeddings-pipeline.md) | M3 | medium | backlog |
-| TASK-027 | [Semantic & Hybrid Search](backlog/TASK-027-semantic-hybrid-search.md) | M3 | medium | backlog |
-| TASK-028 | [Organization Agent — Full Wiring](backlog/TASK-028-organization-agent-wiring.md) | M3 | medium | backlog |
-| TASK-029 | [Daemon Unit Tests](backlog/TASK-029-daemon-unit-tests.md) | M4 | medium | backlog |
-| TASK-030 | [Daemon Integration Tests](backlog/TASK-030-daemon-integration-tests.md) | M4 | medium | backlog |
-| TASK-031 | [Frontend Tests](backlog/TASK-031-frontend-tests.md) | M4 | medium | backlog |
+| TASK-021 | [Bookmark Status Actions (Pin, Archive, Read)](done/TASK-021-bookmark-status-actions.md) | M1 | high | done |
+| TASK-022 | [Trash System (Soft Delete + 30-day Purge)](done/TASK-022-trash-system.md) | M1 | high | done |
+| TASK-023 | [Personal Notes on Bookmarks](done/TASK-023-personal-notes.md) | M1 | high | done |
+| TASK-024 | [Category Management UI (Rename, Delete, Move)](done/TASK-024-category-management-ui.md) | M1 | high | done |
+| TASK-025 | [Settings Page (/settings)](done/TASK-025-settings-page.md) | M2 | high | done |
+| TASK-026 | [Embeddings Pipeline Integration](done/TASK-026-embeddings-pipeline.md) | M3 | medium | done |
+| TASK-027 | [Semantic & Hybrid Search](done/TASK-027-semantic-hybrid-search.md) | M3 | medium | done |
+| TASK-028 | [Organization Agent — Full Wiring](done/TASK-028-organization-agent-wiring.md) | M3 | medium | done |
+| TASK-030 | [Daemon Integration Tests](done/TASK-030-daemon-integration-tests.md) | M4 | medium | done |
+| TASK-031 | [Frontend Tests](done/TASK-031-frontend-tests.md) | M4 | medium | done |
 | TASK-032 | [Distribution Readiness](done/TASK-032-distribution-readiness.md) | M5 | low | done |
 | TASK-033 | [Backup & Restore](done/TASK-033-backup-restore.md) | M5 | medium | done |
 | TASK-034 | [Category Drag-and-Drop Reparenting](done/TASK-034-category-drag-drop.md) | M1 | medium | done |
+| TASK-035 | [Pipeline Stage Unit Tests](done/TASK-035-pipeline-unit-tests.md) | M4 | medium | done |
+| TASK-036 | [First-Run Experience](done/TASK-036-first-run-experience.md) | M5 | medium | done |
+| TASK-037 | [Remote Backup S3](done/TASK-037-remote-backup-s3.md) | M5 | medium | done |
+| TASK-038 | [Scheduled Backup Snapshots](done/TASK-038-scheduled-snapshots.md) | M5 | medium | done |
+| TASK-039 | [Custom Backup Destination](done/TASK-039-custom-backup-destination.md) | M5 | medium | done |
 | TASK-040 | [MCP Server Integration](done/TASK-040-mcp-server.md) | v1.0 | medium | done |
+| TASK-041 | [Unify Runtime Settings with AI and Embedding Execution](done/TASK-041-unify-runtime-settings.md) | v0-beta hardening | high | done |
+| TASK-042 | [Fix Docker Distribution and Network Safety](todo/TASK-042-fix-docker-distribution-network-safety.md) | v0-beta hardening | high | todo |
+| TASK-043 | [Restore Quality Gates and Add CI](todo/TASK-043-restore-quality-gates-and-ci.md) | v0-beta hardening | high | todo |
+| TASK-044 | [Make Backup and Restore Safe and Match the Design](todo/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | todo |
+| TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](todo/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | todo |
+| TASK-046 | [Adopt the Shared API Contract in the Frontend](todo/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | todo |
+| TASK-047 | [Align Roadmap, Release, and Product Documentation](todo/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | todo |
 
 ## Current Status
 
-All v0-alpha and v0-beta tasks are complete. Active work is on the roadmap milestones M1–M5.
+Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041 is complete. The remaining recommended implementation order is based on dependency and release risk:
+
+1. TASK-044 - Make backup and restore safe and match the design
+2. TASK-042 - Fix Docker distribution and network safety
+3. TASK-045 - Create a source-of-truth API contract and regenerated docs
+4. TASK-046 - Adopt the shared API contract in the frontend
+5. TASK-043 - Restore quality gates and add CI
+6. TASK-047 - Align roadmap, release, and product documentation
+
+Notes:
+
+- TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
+- TASK-047 should be the final consistency pass after the implementation-facing hardening tasks land.
+
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
-
-## M1 Implementation Order (start here)
-
-1. TASK-022 — Trash system (schema migration first)
-2. TASK-021 — Pin / archive / read status actions
-3. TASK-023 — Personal notes (second migration)
-4. TASK-024 — Category management UI

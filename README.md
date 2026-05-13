@@ -118,8 +118,16 @@ All application data lives in `~/.local/share/littleimp/`:
 | Path | Contents |
 |------|----------|
 | `~/.local/share/littleimp/littleimp.db` | SQLite database (bookmarks, categories, embeddings) |
-| `~/.local/share/littleimp/.env` | Runtime configuration |
+| `~/.local/share/littleimp/.env` | Install-time daemon defaults |
 | `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
+
+Runtime user settings are stored separately at `~/.config/littleimp/config.json`.
+AI and embedding execution uses those persisted settings first. Environment
+variables such as `LLM_API_KEY`, `LLM_MODEL`, `EMBEDDING_API_KEY`,
+`EMBEDDING_MODEL`, and provider base URLs are fallback defaults for first
+install or unattended deployments. `GET /settings` redacts secrets as `"***"`;
+round-tripping that response through `PUT /settings` preserves the stored
+secret instead of writing the redacted placeholder.
 
 ### Manual backup
 

@@ -1,6 +1,7 @@
 import { Hono, Context } from "hono";
 import { settingsManager, redactSettings, validateSettingsPatch } from "../settings.js";
 import { log } from "../logger.js";
+import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -37,7 +38,10 @@ export function createSettingsRoute(): Hono {
    */
   app.get("/settings", (c) => {
     const settings = settingsManager.read();
-    return ok(c, redactSettings(settings));
+    return ok(c, {
+      ...redactSettings(settings),
+      runtime: resolveRuntimeSettings(settings).runtime,
+    });
   });
 
   /**
@@ -60,7 +64,10 @@ export function createSettingsRoute(): Hono {
 
     try {
       const updated = settingsManager.write(body as Parameters<typeof settingsManager.write>[0]);
-      return ok(c, redactSettings(updated));
+      return ok(c, {
+        ...redactSettings(updated),
+        runtime: resolveRuntimeSettings(updated).runtime,
+      });
     } catch (err) {
       return problem(c, 500, "Internal Server Error", String(err));
     }
@@ -73,51 +80,34 @@ export function createSettingsRoute(): Hono {
    */
   app.post("/settings/test-ai", async (c) => {
     const settings = settingsManager.read();
-    const { provider, openai, ollama } = settings.ai;
+    const { provider } = settings.ai;
+    const { llmConfig } = resolveRuntimeSettings(settings);
 
-    if (provider === "none") {
-      return c.json({ ok: false, error: "AI provider is set to 'none'" });
-    }
-
-    let baseUrl: string;
-    let apiKey: string;
-    let model: string;
-
-    if (provider === "openai") {
-      if (!openai.api_key) {
-        return c.json({ ok: false, error: "OpenAI API key is not configured" });
-      }
-      baseUrl = "https://api.openai.com/v1";
-      apiKey = openai.api_key;
-      model = openai.model;
-    } else {
-      // ollama — validate base_url (Ollama is a local service so private/loopback hosts are allowed)
-      const rawUrl = ollama.base_url.replace(/\/$/, "");
-      try {
-        const u = new URL(rawUrl);
-        if (u.protocol !== "http:" && u.protocol !== "https:") {
-          return c.json({ ok: false, error: "ollama.base_url must use http or https" });
-        }
-        // Note: we intentionally do NOT reject private/loopback addresses here.
-        // Ollama runs locally by design (typically http://localhost:11434).
-        // The isPrivateHost check is not appropriate for an intentionally-local service.
-      } catch {
-        return c.json({ ok: false, error: "ollama.base_url is not a valid URL" });
-      }
-      baseUrl = rawUrl;
-      apiKey = "";
-      model = ollama.model;
+    if (!llmConfig) {
+      const error = provider === "none"
+        ? "AI provider is set to 'none'"
+        : `AI provider '${provider}' is not fully configured`;
+      return c.json({ ok: false, error });
     }
 
     try {
-      const res = await fetch(`${baseUrl}/chat/completions`, {
+      const u = new URL(llmConfig.baseUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") {
+        return c.json({ ok: false, error: "AI provider base URL must use http or https" });
+      }
+    } catch {
+      return c.json({ ok: false, error: "AI provider base URL is not a valid URL" });
+    }
+
+    try {
+      const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          ...(llmConfig.apiKey ? { Authorization: `Bearer ${llmConfig.apiKey}` } : {}),
         },
         body: JSON.stringify({
-          model,
+          model: llmConfig.model,
           messages: [{ role: "user", content: "ping" }],
           max_tokens: 1,
         }),

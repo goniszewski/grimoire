@@ -13,11 +13,16 @@ import { Config } from "./config.js";
 
 // ─── Config file path ─────────────────────────────────────────────────────────
 
-const CONFIG_DIR = join(
-  process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
-  "littleimp"
-);
-const CONFIG_FILE = join(CONFIG_DIR, "config.json");
+function getConfigDir(): string {
+  return join(
+    process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
+    "littleimp"
+  );
+}
+
+function getConfigFile(): string {
+  return join(getConfigDir(), "config.json");
+}
 
 // ─── Settings schema ──────────────────────────────────────────────────────────
 
@@ -88,10 +93,11 @@ export interface Settings {
 
 const DEFAULT_SETTINGS: Settings = {
   ai: {
-    provider: "none",
+    provider: Config.LLM_API_KEY ? "openai" : "none",
     openai: {
+      // Runtime resolution falls back to Config.LLM_API_KEY without persisting it.
       api_key: "",
-      model: "gpt-4o-mini",
+      model: Config.LLM_MODEL,
     },
     ollama: {
       base_url: "http://localhost:11434",
@@ -99,7 +105,7 @@ const DEFAULT_SETTINGS: Settings = {
     },
     embeddings: {
       provider: "openai",
-      model: "text-embedding-3-small",
+      model: Config.EMBEDDING_MODEL,
     },
   },
   app: {
@@ -130,6 +136,8 @@ const DEFAULT_SETTINGS: Settings = {
   },
 };
 
+const REDACTED_SECRET = "***";
+
 // ─── Deep merge helper ────────────────────────────────────────────────────────
 
 /**
@@ -156,6 +164,24 @@ function deepMerge<T extends object>(base: T, override: Partial<T>): T {
     }
   }
   return result;
+}
+
+function removeRedactedSecretPlaceholders(patch: Partial<Settings>): Partial<Settings> {
+  const sanitized = structuredClone(patch) as Partial<Settings>;
+
+  removeIfRedacted(sanitized.ai?.openai, "api_key");
+  removeIfRedacted(sanitized.app?.lock, "pin_hash");
+  removeIfRedacted(sanitized.backup?.s3, "access_key");
+  removeIfRedacted(sanitized.backup?.s3, "secret_key");
+
+  return sanitized;
+}
+
+function removeIfRedacted(target: object | undefined, key: string): void {
+  const record = target as Record<string, unknown> | undefined;
+  if (record?.[key] === REDACTED_SECRET) {
+    delete record[key];
+  }
 }
 
 // ─── Settings validation ──────────────────────────────────────────────────────
@@ -361,19 +387,20 @@ export class SettingsManager {
   read(): Settings {
     if (this.cache) return this.cache;
 
-    if (!existsSync(CONFIG_FILE)) {
+    const configFile = getConfigFile();
+    if (!existsSync(configFile)) {
       this.cache = structuredClone(DEFAULT_SETTINGS);
       return this.cache;
     }
 
     try {
-      const raw = readFileSync(CONFIG_FILE, "utf-8");
+      const raw = readFileSync(configFile, "utf-8");
       const parsed = JSON.parse(raw) as Partial<Settings>;
       this.cache = deepMerge(DEFAULT_SETTINGS, parsed);
       return this.cache;
     } catch (err) {
       log.error("Failed to read settings file, using defaults", {
-        file: CONFIG_FILE,
+        file: configFile,
         error: String(err),
       });
       this.cache = structuredClone(DEFAULT_SETTINGS);
@@ -383,18 +410,20 @@ export class SettingsManager {
 
   write(patch: Partial<Settings>): Settings {
     const current = this.read();
-    const updated = deepMerge(current, patch);
+    const updated = deepMerge(current, removeRedactedSecretPlaceholders(patch));
 
     try {
+      const configDir = getConfigDir();
+      const configFile = getConfigFile();
       // 0o700: owner rwx only — config file contains API keys and S3 credentials.
-      mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+      mkdirSync(configDir, { recursive: true, mode: 0o700 });
       // 0o600: owner read/write only.
-      writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2), { encoding: "utf-8", mode: 0o600 });
+      writeFileSync(configFile, JSON.stringify(updated, null, 2), { encoding: "utf-8", mode: 0o600 });
       this.cache = updated;
-      log.info("Settings saved", { file: CONFIG_FILE });
+      log.info("Settings saved", { file: configFile });
     } catch (err) {
       log.error("Failed to write settings file", {
-        file: CONFIG_FILE,
+        file: getConfigFile(),
         error: String(err),
       });
       throw new Error(`Could not persist settings: ${String(err)}`);
