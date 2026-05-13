@@ -11,7 +11,13 @@ export const timelineKeys = {
 export function useTimeline(limit = 50, offset = 0) {
   return useQuery({
     queryKey: timelineKeys.list({ limit, offset }),
-    queryFn: () => listTimeline({ limit, offset }),
+    queryFn: async () => {
+      const response = await listTimeline({ limit, offset });
+      return {
+        data: response.data as unknown as ApiTimelineEvent[],
+        pagination: response.pagination,
+      };
+    },
     staleTime: 30_000,
   });
 }

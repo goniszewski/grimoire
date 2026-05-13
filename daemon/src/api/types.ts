@@ -16,9 +16,11 @@ export type BookmarkDetailDto = ApiDto<"BookmarkDetail">;
 export type BookmarkCreateRequestDto = ApiDto<"BookmarkCreateRequest">;
 export type BookmarkUpdateRequestDto = ApiDto<"BookmarkUpdateRequest">;
 export type BookmarkListResponseDto = ApiDto<"BookmarkListResponse">;
+export type BookmarkArrayResponseDto = ApiDto<"BookmarkArrayResponse">;
 export type BookmarkResponseDto = ApiDto<"BookmarkResponse">;
 export type BookmarkDetailResponseDto = ApiDto<"BookmarkDetailResponse">;
 export type BookmarkPipelineStatusResponseDto = ApiDto<"BookmarkPipelineStatusResponse">;
+export type RelatedBookmarksResponseDto = ApiDto<"RelatedBookmarksResponse">;
 
 export type SearchResponseDto = ApiDto<"SearchResponse">;
 export type CategoryRecordDto = ApiDto<"CategoryRecord">;
@@ -27,11 +29,16 @@ export type CategoryDto = CategoryRecordDto;
 export type CategoryNodeDto = ApiDto<"CategoryNode">;
 export type CategoryRequestDto = ApiDto<"CategoryRequest">;
 export type CategoryPatchRequestDto = ApiDto<"CategoryPatchRequest">;
+export type CategoryTreeResponseDto = ApiDto<"CategoryTreeResponse">;
+export type CategoryResponseDto = ApiDto<"CategoryResponse">;
 export type TagRecordDto = ApiDto<"TagRecord">;
 export type TagWithCountDto = ApiDto<"TagWithCount">;
 export type TagDto = TagRecordDto;
 export type TagRequestDto = ApiDto<"TagRequest">;
+export type TagListResponseDto = ApiDto<"TagListResponse">;
+export type TagResponseDto = ApiDto<"TagResponse">;
 export type DomainDto = ApiDto<"Domain">;
+export type DomainListResponseDto = ApiDto<"DomainListResponse">;
 
 export type SettingsDto = ApiDto<"Settings">;
 export type SettingsPatchDto = ApiDto<"SettingsPatch">;
@@ -40,14 +47,18 @@ export type ConnectivityTestResponseDto = ApiDto<"ConnectivityTestResponse">;
 
 export type BackupScheduleDto = ApiDto<"BackupSchedule">;
 export type BackupSchedulePatchDto = ApiDto<"BackupSchedulePatch">;
+export type BackupScheduleResponseDto = ApiDto<"BackupScheduleResponse">;
 export type BackupDestinationDto = ApiDto<"BackupDestination">;
 export type BackupDestinationPatchDto = ApiDto<"BackupDestinationPatch">;
+export type BackupDestinationResponseDto = ApiDto<"BackupDestinationResponse">;
 export type BackupResultDto = ApiDto<"BackupResult">;
 export type BackupEntryDto = ApiDto<"BackupEntry">;
+export type BackupListResponseDto = ApiDto<"BackupListResponse">;
 export type RestoreRequestDto = ApiDto<"RestoreRequest">;
 export type RestoreResultDto = ApiDto<"RestoreResult">;
 
 export type ImportSummaryDto = ApiDto<"ImportSummary">;
+export type ImportSummaryResponseDto = ApiDto<"ImportSummaryResponse">;
 export type ImportProgressEventDto = ApiDto<"ImportProgressEvent">;
 export type TimelinePageDto = ApiDto<"TimelinePage">;
 export type SuggestionDto = ApiDto<"Suggestion">;

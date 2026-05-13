@@ -1,39 +1,14 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
+import { BASE, makeApiBookmark, makeHealthResponse, makeSettingsResponse } from "./api-fixtures";
 
 // ─── Shared fixture data ───────────────────────────────────────────────────────
-
-const BASE = "http://127.0.0.1:3210";
-
-function makeBookmark(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "bm-test-1",
-    url: "https://playwright.dev/docs/intro",
-    domain: "playwright.dev",
-    title: "Introduction | Playwright",
-    description: "Playwright enables reliable end-to-end testing",
-    status: "ai_enriched",
-    category_id: null,
-    favicon_url: null,
-    screenshot_url: null,
-    is_pinned: 0,
-    is_archived: 0,
-    is_trashed: 0,
-    trashed_at: null,
-    read_at: null,
-    notes: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    tags: ["testing", "e2e"],
-    ...overrides,
-  };
-}
 
 // ─── Mock daemon routes ────────────────────────────────────────────────────────
 
 async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
   // Health
   await page.route(`${BASE}/health`, (route) =>
-    route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 100, queueSize: 0 } })
+    route.fulfill({ json: makeHealthResponse() })
   );
 
   // Categories
@@ -59,12 +34,7 @@ async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
   // Settings
   await page.route(`${BASE}/settings`, (route) =>
     route.fulfill({
-      json: {
-        data: {
-          ai: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-          embedding: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-        },
-      },
+      json: makeSettingsResponse("none"),
     })
   );
 
@@ -76,7 +46,7 @@ async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
     }
     if (method === "POST") {
       const body = route.request().postDataJSON();
-      const bm = makeBookmark({ url: body.url, domain: new URL(body.url).hostname });
+      const bm = makeApiBookmark({ url: body.url, domain: new URL(body.url).hostname });
       bookmarks.push(bm);
       return route.fulfill({ status: 201, json: { data: bm } });
     }
@@ -122,7 +92,7 @@ test.describe("Core bookmark journey", () => {
       }
       if (method === "POST") {
         const body = route.request().postDataJSON();
-        const bm = makeBookmark({
+        const bm = makeApiBookmark({
           url: body.url,
           domain: new URL(body.url).hostname,
           title: "Playwright Docs",
@@ -151,7 +121,7 @@ test.describe("Core bookmark journey", () => {
   });
 
   test("open bookmark detail panel", async ({ page }) => {
-    const bm = makeBookmark();
+    const bm = makeApiBookmark();
     await setupDaemonMocks(page, [bm]);
 
     await page.route(`${BASE}/bookmarks/bm-test-1`, (route) =>
@@ -170,7 +140,7 @@ test.describe("Core bookmark journey", () => {
   });
 
   test("archive bookmark disappears from main feed", async ({ page }) => {
-    const bm = makeBookmark();
+    const bm = makeApiBookmark();
     const bookmarks = [bm];
 
     await setupDaemonMocks(page, bookmarks);
@@ -197,7 +167,7 @@ test.describe("Core bookmark journey", () => {
   });
 
   test("archive page shows archived bookmarks", async ({ page }) => {
-    const archivedBm = makeBookmark({ is_archived: 1 });
+    const archivedBm = makeApiBookmark({ is_archived: 1 });
 
     // Archive page fetches with is_archived=1
     await page.route(`${BASE}/bookmarks**`, (route) => {
@@ -208,7 +178,7 @@ test.describe("Core bookmark journey", () => {
       return route.fulfill({ json: { data: [] } });
     });
     await page.route(`${BASE}/health`, (route) =>
-      route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 100, queueSize: 0 } })
+      route.fulfill({ json: makeHealthResponse() })
     );
     await page.route(`${BASE}/categories`, (route) => route.fulfill({ json: { data: [] } }));
     await page.route(`${BASE}/domains**`, (route) => route.fulfill({ json: { data: [] } }));
@@ -222,13 +192,13 @@ test.describe("Core bookmark journey", () => {
   });
 
   test("trash page shows trashed bookmarks", async ({ page }) => {
-    const trashedBm = makeBookmark({ is_trashed: 1, trashed_at: new Date().toISOString() });
+    const trashedBm = makeApiBookmark({ is_trashed: 1, trashed_at: new Date().toISOString() });
 
     await page.route(`${BASE}/trash`, (route) =>
       route.fulfill({ json: { data: [trashedBm] } })
     );
     await page.route(`${BASE}/health`, (route) =>
-      route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 100, queueSize: 0 } })
+      route.fulfill({ json: makeHealthResponse() })
     );
     await page.route(`${BASE}/categories`, (route) => route.fulfill({ json: { data: [] } }));
     await page.route(`${BASE}/domains**`, (route) => route.fulfill({ json: { data: [] } }));

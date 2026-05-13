@@ -65,7 +65,25 @@ export interface UIDomainCount {
   count: number;
 }
 
-function toUIBookmark(bm: ApiBookmark, categoryMap: Map<string, string>): UIBookmark {
+type BookmarkForUi = {
+  id: ApiBookmark["id"];
+  url: ApiBookmark["url"];
+  title: ApiBookmark["title"];
+  description: ApiBookmark["description"];
+  domain: ApiBookmark["domain"];
+  favicon_url: ApiBookmark["favicon_url"];
+  tags: ApiBookmark["tags"];
+  category_id: ApiBookmark["category_id"];
+  status: ApiBookmark["status"];
+  created_at: ApiBookmark["created_at"];
+  updated_at: ApiBookmark["updated_at"];
+  is_pinned: ApiBookmark["is_pinned"];
+  is_archived: ApiBookmark["is_archived"];
+  read_at: ApiBookmark["read_at"];
+  notes: ApiBookmark["notes"];
+};
+
+function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBookmark {
   return {
     id: bm.id,
     url: bm.url,
@@ -127,7 +145,7 @@ export function useBookmarks() {
     queryKey: bookmarkKeys.categories,
     queryFn: async () => {
       const res = await listCategories();
-      return res.data;
+      return res.data as unknown as ApiCategory[];
     },
     staleTime: 30_000,
   });
@@ -202,9 +220,9 @@ export function useBookmarks() {
   });
 
   // ─── Resolved bookmark list ───────────────────────────────────────────────
-  const rawBookmarks = useMemo<ApiBookmark[]>(() => {
-    if (debouncedQuery.trim()) return searchQuery_.data?.data ?? [];
-    return bookmarksQuery.data?.data ?? [];
+  const rawBookmarks = useMemo<BookmarkForUi[]>(() => {
+    if (debouncedQuery.trim()) return (searchQuery_.data?.data ?? []) as BookmarkForUi[];
+    return (bookmarksQuery.data?.data ?? []) as BookmarkForUi[];
   }, [debouncedQuery, searchQuery_.data, bookmarksQuery.data]);
 
   const bookmarks = useMemo<UIBookmark[]>(
@@ -253,9 +271,14 @@ export function useBookmarks() {
       .sort((a, b) => b.count - a.count);
   }, [bookmarks]);
 
+  const domainRows = domainsQuery.data as unknown as Array<{ domain: string; count: number }> | undefined;
   const domains = useMemo<UIDomainCount[]>(() => {
-    return (domainsQuery.data ?? []).map((d) => ({ domain: d.domain, count: d.count }));
-  }, [domainsQuery.data]);
+    const result: UIDomainCount[] = [];
+    for (const d of domainRows ?? []) {
+      result.push({ domain: d.domain, count: d.count });
+    }
+    return result;
+  }, [domainRows]);
 
   // ─── Mutations ────────────────────────────────────────────────────────────
 
@@ -433,7 +456,7 @@ export function useRelatedBookmarks(bookmarkId: string | null | undefined) {
     queryKey: bookmarkKeys.categories,
     queryFn: async () => {
       const res = await listCategories();
-      return res.data;
+      return res.data as unknown as ApiCategory[];
     },
     staleTime: 30_000,
   });
@@ -454,25 +477,7 @@ export function useRelatedBookmarks(bookmarkId: string | null | undefined) {
     queryKey: ["related", bookmarkId],
     queryFn: async () => {
       const res = await getRelatedBookmarks(bookmarkId!, 5);
-      return res.data.map((bm) => ({
-        id: bm.id,
-        url: bm.url,
-        title: bm.title ?? bm.url,
-        rawTitle: bm.title,
-        summary: bm.description ?? "",
-        domain: bm.domain,
-        favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
-        tags: bm.tags,
-        category: bm.category_id ? (categoryMap.get(bm.category_id) ?? "Uncategorized") : "Uncategorized",
-        category_id: bm.category_id,
-        status: bm.status,
-        savedAt: bm.created_at,
-        updatedAt: bm.updated_at,
-        is_pinned: bm.is_pinned,
-        is_archived: bm.is_archived,
-        read_at: bm.read_at,
-        notes: bm.notes,
-      } as UIBookmark));
+      return (res.data as unknown as BookmarkForUi[]).map((bm) => toUIBookmark(bm, categoryMap));
     },
     enabled: !!bookmarkId,
     staleTime: 60_000,

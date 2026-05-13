@@ -1,6 +1,6 @@
 # TASK-046: Adopt the Shared API Contract in the Frontend
 
-**Status:** todo
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta hardening
 **Area:** frontend, daemon, TypeScript
@@ -35,10 +35,10 @@ This task consumes the contract produced by TASK-045 in the frontend and test mo
 
 ## Acceptance Criteria
 
-- [ ] `ApiSettings` matches the daemon settings schema without local overrides.
-- [ ] Settings page no longer casts `getSettings()` through `unknown`.
-- [ ] Settings page no longer uses `as any` for S3 settings writes.
-- [ ] E2E mocks use current API response shapes.
-- [ ] Frontend types cover settings, backup, bookmark list/detail, search, suggestions, and timeline from the shared contract.
-- [ ] Frontend and daemon type checks catch contract changes.
-- [ ] No user-facing behavior regresses.
+- [x] `ApiSettings` matches the daemon settings schema without local overrides.
+- [x] Settings page no longer casts `getSettings()` through `unknown`.
+- [x] Settings page no longer uses `as any` for S3 settings writes.
+- [x] E2E mocks use current API response shapes.
+- [x] Frontend types cover settings, backup, bookmark list/detail, search, suggestions, and timeline from the shared contract.
+- [x] Frontend and daemon type checks catch contract changes.
+- [x] No user-facing behavior regresses.

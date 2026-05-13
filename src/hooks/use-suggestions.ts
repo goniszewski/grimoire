@@ -13,6 +13,10 @@ export const suggestionKeys = {
   pending: () => [...suggestionKeys.all, "pending"] as const,
 };
 
+function removeSuggestionById(suggestions: ApiSuggestion[], id: string): ApiSuggestion[] {
+  return (suggestions as Array<{ id: string }>).filter((suggestion) => suggestion.id !== id) as ApiSuggestion[];
+}
+
 export function useSuggestions() {
   const qc = useQueryClient();
 
@@ -24,6 +28,7 @@ export function useSuggestions() {
   });
 
   const pendingCount = query.data?.meta.pending ?? 0;
+  const suggestions = (query.data?.data ?? []) as unknown as ApiSuggestion[];
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => acceptSuggestion(id),
@@ -36,7 +41,7 @@ export function useSuggestions() {
       if (previous) {
         qc.setQueryData(suggestionKeys.pending(), {
           ...previous,
-          data: previous.data.filter((s) => s.id !== id),
+          data: removeSuggestionById(previous.data, id),
           meta: { pending: Math.max(0, previous.meta.pending - 1) },
         });
       }
@@ -60,7 +65,7 @@ export function useSuggestions() {
       if (previous) {
         qc.setQueryData(suggestionKeys.pending(), {
           ...previous,
-          data: previous.data.filter((s) => s.id !== id),
+          data: removeSuggestionById(previous.data, id),
           meta: { pending: Math.max(0, previous.meta.pending - 1) },
         });
       }
@@ -75,7 +80,7 @@ export function useSuggestions() {
   });
 
   return {
-    suggestions: query.data?.data ?? [],
+    suggestions,
     pendingCount,
     isLoading: query.isLoading,
     isError: query.isError,

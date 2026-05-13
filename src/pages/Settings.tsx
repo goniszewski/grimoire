@@ -56,6 +56,7 @@ import type {
   ApiEmbeddingProvider,
   ApiRestoreResult,
   ApiS3Config,
+  ApiSettingsPatch,
 } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 
@@ -147,7 +148,7 @@ const Settings = () => {
   const remoteBackupList = useBackupListWithRemote(showRemote && !!s3Form.bucket);
   const testS3Mutation = useTestS3Connection();
   const [s3Dirty, setS3Dirty] = useState(false);
-  const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [s3TestResult, setS3TestResult] = useState<{ ok: boolean; message?: string; error?: string } | null>(null);
 
   // ─── Backup destination ───────────────────────────────────────────────────────
   const destinationQuery = useBackupDestination();
@@ -682,7 +683,6 @@ const Settings = () => {
                       onClick={() => {
                         const input = document.createElement("input");
                         input.type = "file";
-                        // @ts-expect-error — non-standard but widely supported
                         input.webkitdirectory = true;
                         input.addEventListener("change", () => {
                           const file = input.files?.[0];
@@ -846,9 +846,14 @@ const Settings = () => {
                       // Omit blank credential fields so we don't overwrite stored secrets
                       // when the user edits non-credential fields (access_key/secret_key are
                       // cleared to "" when the server returns them as redacted "***").
-                      const patch: Partial<ApiS3Config> = { ...s3Form };
-                      if (!patch.access_key) delete patch.access_key;
-                      if (!patch.secret_key) delete patch.secret_key;
+                      const patch: NonNullable<NonNullable<ApiSettingsPatch["backup"]>["s3"]> = {
+                        endpoint: s3Form.endpoint,
+                        bucket: s3Form.bucket,
+                        region: s3Form.region,
+                        prefix: s3Form.prefix,
+                        ...(s3Form.access_key ? { access_key: s3Form.access_key } : {}),
+                        ...(s3Form.secret_key ? { secret_key: s3Form.secret_key } : {}),
+                      };
                       updateSettings({ backup: { s3: patch } }).then(() => {
                         setS3Dirty(false);
                         toast.success("S3 settings saved");
@@ -889,7 +894,7 @@ const Settings = () => {
 
                   {s3TestResult && (
                     <span className={`text-xs font-mono ${s3TestResult.ok ? "text-green-500" : "text-destructive"}`}>
-                      {s3TestResult.ok ? "Connected" : s3TestResult.message}
+                      {s3TestResult.ok ? "Connected" : s3TestResult.message ?? s3TestResult.error}
                     </span>
                   )}
                 </div>

@@ -2,141 +2,171 @@
  * API client for the littleimpd daemon at http://127.0.0.1:3210
  */
 
+import type {
+  BackupDestinationDto,
+  BackupDestinationPatchDto,
+  BackupDestinationResponseDto,
+  BackupEntryDto,
+  BackupListResponseDto,
+  BackupResultDto,
+  BackupScheduleDto,
+  BackupSchedulePatchDto,
+  BackupScheduleResponseDto,
+  BookmarkArrayResponseDto,
+  BookmarkCreateRequestDto,
+  BookmarkDetailDto,
+  BookmarkDetailResponseDto,
+  BookmarkDto,
+  BookmarkListResponseDto,
+  BookmarkPipelineStatusResponseDto,
+  BookmarkResponseDto,
+  BookmarkUpdateRequestDto,
+  CategoryNodeDto,
+  CategoryRecordDto,
+  CategoryResponseDto,
+  CategoryTreeResponseDto,
+  ConnectivityTestResponseDto,
+  DomainDto,
+  DomainListResponseDto,
+  ImportProgressEventDto,
+  ImportSummaryResponseDto,
+  PaginationDto,
+  RelatedBookmarksResponseDto,
+  RestoreRequestDto,
+  RestoreResultDto,
+  SearchResponseDto,
+  SettingsDto,
+  SettingsPatchDto,
+  SuggestionDto,
+  SuggestionsResponseDto,
+  TagListResponseDto,
+  TimelinePageDto,
+} from "../../daemon/src/api/types";
+
 export const DAEMON_URL = "http://127.0.0.1:3210";
 
-// ─── API types (mirrors daemon DB types) ─────────────────────────────────────
+// ─── API types (derived from daemon-owned contract) ──────────────────────────
 
-export type BookmarkStatus =
-  | "saved"
-  | "fetched"
-  | "extracted"
-  | "ai_enriched"
-  | "indexed";
+type Simplify<T> = { [K in keyof T]: T[K] };
 
 export interface ApiBookmark {
-  id: string;
-  url: string;
-  domain: string;
-  title: string | null;
-  description: string | null;
-  status: BookmarkStatus;
-  category_id: string | null;
-  favicon_url: string | null;
-  screenshot_url: string | null;
-  is_pinned: 0 | 1;
-  is_archived: 0 | 1;
-  is_trashed: 0 | 1;
-  trashed_at: string | null;
-  read_at: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  tags: string[];
+  id: BookmarkDto["id"];
+  url: BookmarkDto["url"];
+  domain: BookmarkDto["domain"];
+  title: BookmarkDto["title"];
+  description: BookmarkDto["description"];
+  status: BookmarkDto["status"];
+  category_id: BookmarkDto["category_id"];
+  favicon_url: BookmarkDto["favicon_url"];
+  screenshot_url: BookmarkDto["screenshot_url"];
+  is_pinned: BookmarkDto["is_pinned"];
+  is_archived: BookmarkDto["is_archived"];
+  is_trashed: BookmarkDto["is_trashed"];
+  trashed_at: BookmarkDto["trashed_at"];
+  read_at: BookmarkDto["read_at"];
+  notes: BookmarkDto["notes"];
+  created_at: BookmarkDto["created_at"];
+  updated_at: BookmarkDto["updated_at"];
+  tags: BookmarkDto["tags"];
 }
 
-export interface ApiBookmarkWithContent extends ApiBookmark {
-  content: {
-    bookmark_id: string;
-    raw_html: string | null;
-    markdown: string | null;
-    summary: string | null;
-    author: string | null;
-    published_at: string | null;
-    word_count: number | null;
-    language: string | null;
-    extracted_at: string;
-  } | null;
-}
-
+export type ApiBookmarkWithContent = ApiBookmark & {
+  content: BookmarkDetailDto["content"];
+};
 export interface ApiCategory {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  created_at: string;
-  updated_at: string;
-  children?: ApiCategory[];
-  bookmark_count?: number;
+  id: CategoryNodeDto["id"];
+  name: CategoryNodeDto["name"];
+  parent_id: CategoryNodeDto["parent_id"];
+  created_at: CategoryNodeDto["created_at"];
+  updated_at: CategoryNodeDto["updated_at"];
+  bookmark_count: CategoryNodeDto["bookmark_count"];
+  children: ApiCategory[];
 }
 
-export interface ApiTag {
-  id: string;
-  name: string;
-  created_at: string;
-  bookmark_count?: number;
+export interface ApiCategoryRecord {
+  id: CategoryRecordDto["id"];
+  name: CategoryRecordDto["name"];
+  parent_id: CategoryRecordDto["parent_id"];
+  created_at: CategoryRecordDto["created_at"];
+  updated_at: CategoryRecordDto["updated_at"];
 }
-
-export interface PipelineStatus {
-  bookmarkId: string;
-  bookmarkStatus: BookmarkStatus;
-  job: {
-    id: string;
-    type: string;
-    status: "pending" | "running" | "done" | "failed";
-    error: string | null;
-    created_at: string;
-    started_at: string | null;
-    finished_at: string | null;
-  } | null;
-}
-
-export interface Pagination {
-  total: number;
-  limit: number;
-  offset: number;
-  has_more: boolean;
-}
+export type ApiTag = TagListResponseDto["data"][number];
+export type PipelineStatus = BookmarkPipelineStatusResponseDto["data"];
+export type Pagination = PaginationDto;
 
 export interface ListResult<T> {
   data: T[];
   pagination: Pagination;
 }
 
-export type ApiAiProvider = "openai" | "ollama" | "none";
-export type ApiEmbeddingProvider = "openai" | "ollama";
+export type ApiSettingsPatch = SettingsPatchDto;
+export type ApiAiProvider = SettingsDto["ai"]["provider"];
+export type ApiEmbeddingProvider = SettingsDto["ai"]["embeddings"]["provider"];
 
 export interface ApiRuntimeCapability {
-  enabled: boolean;
-  provider: ApiAiProvider;
-  model: string | null;
-  base_url: string | null;
+  enabled: SettingsDto["runtime"]["llm"]["enabled"];
+  provider: SettingsDto["runtime"]["llm"]["provider"];
+  model: SettingsDto["runtime"]["llm"]["model"];
+  base_url: SettingsDto["runtime"]["llm"]["base_url"];
 }
 
 export interface ApiRuntimeCapabilities {
   llm: ApiRuntimeCapability;
   embeddings: ApiRuntimeCapability;
   capabilities: {
-    enrichment: boolean;
-    semantic_search: boolean;
-    related_bookmarks: boolean;
-    organization_agent: boolean;
+    enrichment: SettingsDto["runtime"]["capabilities"]["enrichment"];
+    semantic_search: SettingsDto["runtime"]["capabilities"]["semantic_search"];
+    related_bookmarks: SettingsDto["runtime"]["capabilities"]["related_bookmarks"];
+    organization_agent: SettingsDto["runtime"]["capabilities"]["organization_agent"];
   };
+}
+
+export interface ApiS3Config {
+  endpoint: SettingsDto["backup"]["s3"]["endpoint"];
+  bucket: SettingsDto["backup"]["s3"]["bucket"];
+  access_key: SettingsDto["backup"]["s3"]["access_key"];
+  secret_key: SettingsDto["backup"]["s3"]["secret_key"];
+  region: SettingsDto["backup"]["s3"]["region"];
+  prefix: SettingsDto["backup"]["s3"]["prefix"];
 }
 
 export interface ApiSettings {
   ai: {
     provider: ApiAiProvider;
-    openai: { api_key: string; model: string };
-    ollama: { base_url: string; model: string };
-    embeddings: { provider: ApiEmbeddingProvider; model: string };
+    openai: {
+      api_key: SettingsDto["ai"]["openai"]["api_key"];
+      model: SettingsDto["ai"]["openai"]["model"];
+    };
+    ollama: {
+      base_url: SettingsDto["ai"]["ollama"]["base_url"];
+      model: SettingsDto["ai"]["ollama"]["model"];
+    };
+    embeddings: {
+      provider: ApiEmbeddingProvider;
+      model: SettingsDto["ai"]["embeddings"]["model"];
+    };
   };
   app: {
-    autostart: boolean;
-    theme: "light" | "dark" | "system";
-    lock: { enabled: boolean; pin_hash: string };
+    autostart: SettingsDto["app"]["autostart"];
+    theme: SettingsDto["app"]["theme"];
+    lock: {
+      enabled: SettingsDto["app"]["lock"]["enabled"];
+      pin_hash: SettingsDto["app"]["lock"]["pin_hash"];
+    };
   };
   backup: {
-    local: { destination_path: string };
-    schedule: { enabled: boolean; cron: string; retention_count: number };
+    local: {
+      destination_path: SettingsDto["backup"]["local"]["destination_path"];
+    };
+    schedule: {
+      enabled: SettingsDto["backup"]["schedule"]["enabled"];
+      cron: SettingsDto["backup"]["schedule"]["cron"];
+      retention_count: SettingsDto["backup"]["schedule"]["retention_count"];
+    };
     s3: ApiS3Config;
   };
   runtime: ApiRuntimeCapabilities;
 }
-
-type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
-};
-
-export type ApiSettingsPatch = DeepPartial<Omit<ApiSettings, "runtime">>;
 
 // ─── Error class ──────────────────────────────────────────────────────────────
 
@@ -173,7 +203,9 @@ async function apiFetch<T>(
       if (body.title) title = body.title;
       if (body.detail) detail = body.detail;
       else if (body.error) detail = body.error;
-    } catch {}
+    } catch {
+      // Keep the HTTP status fallback when the error body is not JSON.
+    }
     throw new ApiError(res.status, title, detail);
   }
 
@@ -207,7 +239,7 @@ export interface ListBookmarksParams {
   archived?: boolean;
 }
 
-export async function listBookmarks(params: ListBookmarksParams = {}): Promise<ListResult<ApiBookmark>> {
+export async function listBookmarks(params: ListBookmarksParams = {}): Promise<BookmarkListResponseDto> {
   const q = new URLSearchParams();
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
@@ -218,33 +250,25 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<L
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.archived) q.set("archived", "true");
   const qs = q.toString();
-  return apiFetch<ListResult<ApiBookmark>>(`/bookmarks${qs ? `?${qs}` : ""}`);
+  return apiFetch<BookmarkListResponseDto>(`/bookmarks${qs ? `?${qs}` : ""}`);
 }
 
-export async function getBookmark(id: string): Promise<{ data: ApiBookmarkWithContent }> {
-  return apiFetch<{ data: ApiBookmarkWithContent }>(`/bookmarks/${id}`);
+export async function getBookmark(id: string): Promise<BookmarkDetailResponseDto> {
+  return apiFetch<BookmarkDetailResponseDto>(`/bookmarks/${id}`);
 }
 
-export async function createBookmark(url: string, title?: string): Promise<{ data: ApiBookmark }> {
-  return apiFetch<{ data: ApiBookmark }>("/bookmarks", {
+export async function createBookmark(url: string, title?: string): Promise<BookmarkResponseDto> {
+  return apiFetch<BookmarkResponseDto>("/bookmarks", {
     method: "POST",
-    body: JSON.stringify({ url, title }),
+    body: JSON.stringify({ url, title } satisfies BookmarkCreateRequestDto),
   });
 }
 
 export async function updateBookmark(
   id: string,
-  patch: {
-    title?: string | null;
-    category_id?: string | null;
-    tags?: string[];
-    is_pinned?: 0 | 1;
-    is_archived?: 0 | 1;
-    read_at?: string | null;
-    notes?: string | null;
-  }
-): Promise<{ data: ApiBookmark }> {
-  return apiFetch<{ data: ApiBookmark }>(`/bookmarks/${id}`, {
+  patch: BookmarkUpdateRequestDto
+): Promise<BookmarkResponseDto> {
+  return apiFetch<BookmarkResponseDto>(`/bookmarks/${id}`, {
     method: "PUT",
     body: JSON.stringify(patch),
   });
@@ -254,31 +278,31 @@ export async function deleteBookmark(id: string): Promise<void> {
   await apiFetch<void>(`/bookmarks/${id}`, { method: "DELETE" });
 }
 
-export async function restoreBookmark(id: string): Promise<{ data: ApiBookmark }> {
-  return apiFetch<{ data: ApiBookmark }>(`/bookmarks/${id}/restore`, { method: "POST" });
+export async function restoreBookmark(id: string): Promise<BookmarkResponseDto> {
+  return apiFetch<BookmarkResponseDto>(`/bookmarks/${id}/restore`, { method: "POST" });
 }
 
 export async function permanentDeleteBookmark(id: string): Promise<void> {
   await apiFetch<void>(`/bookmarks/${id}/permanent`, { method: "DELETE" });
 }
 
-export async function listTrashedBookmarks(): Promise<{ data: ApiBookmark[] }> {
-  return apiFetch<{ data: ApiBookmark[] }>("/trash");
+export async function listTrashedBookmarks(): Promise<BookmarkArrayResponseDto> {
+  return apiFetch<BookmarkArrayResponseDto>("/trash");
 }
 
-export async function getBookmarkStatus(id: string): Promise<{ data: PipelineStatus }> {
-  return apiFetch<{ data: PipelineStatus }>(`/bookmarks/${id}/status`);
+export async function getBookmarkStatus(id: string): Promise<BookmarkPipelineStatusResponseDto> {
+  return apiFetch<BookmarkPipelineStatusResponseDto>(`/bookmarks/${id}/status`);
 }
 
-export async function getRelatedBookmarks(id: string, limit = 5): Promise<{ data: ApiBookmark[] }> {
-  return apiFetch<{ data: ApiBookmark[] }>(`/bookmarks/${id}/related?limit=${limit}`);
+export async function getRelatedBookmarks(id: string, limit = 5): Promise<RelatedBookmarksResponseDto> {
+  return apiFetch<RelatedBookmarksResponseDto>(`/bookmarks/${id}/related?limit=${limit}`);
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 export interface SearchParams {
   q: string;
-  mode?: "keyword" | "semantic" | "hybrid";
+  mode?: SearchResponseDto["meta"]["mode"];
   tag?: string;
   domain?: string;
   category?: string;
@@ -288,7 +312,7 @@ export interface SearchParams {
   offset?: number;
 }
 
-export async function searchBookmarks(params: SearchParams): Promise<ListResult<ApiBookmark> & { meta: { mode: string } }> {
+export async function searchBookmarks(params: SearchParams): Promise<SearchResponseDto> {
   const q = new URLSearchParams({ q: params.q });
   if (params.mode) q.set("mode", params.mode);
   if (params.tag) q.set("tag", params.tag);
@@ -298,24 +322,27 @@ export async function searchBookmarks(params: SearchParams): Promise<ListResult<
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
-  return apiFetch<ListResult<ApiBookmark> & { meta: { mode: string } }>(`/search?${q.toString()}`);
+  return apiFetch<SearchResponseDto>(`/search?${q.toString()}`);
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
-export async function listCategories(): Promise<{ data: ApiCategory[] }> {
-  return apiFetch<{ data: ApiCategory[] }>("/categories");
+export async function listCategories(): Promise<CategoryTreeResponseDto> {
+  return apiFetch<CategoryTreeResponseDto>("/categories");
 }
 
-export async function createCategory(name: string, parent_id?: string | null): Promise<{ data: ApiCategory }> {
-  return apiFetch<{ data: ApiCategory }>("/categories", {
+export async function createCategory(name: string, parent_id?: string | null): Promise<CategoryResponseDto> {
+  return apiFetch<CategoryResponseDto>("/categories", {
     method: "POST",
     body: JSON.stringify({ name, parent_id: parent_id ?? null }),
   });
 }
 
-export async function updateCategory(id: string, patch: { name?: string; parent_id?: string | null }): Promise<{ data: ApiCategory }> {
-  return apiFetch<{ data: ApiCategory }>(`/categories/${id}`, {
+export async function updateCategory(
+  id: string,
+  patch: { name?: string; parent_id?: string | null }
+): Promise<CategoryResponseDto> {
+  return apiFetch<CategoryResponseDto>(`/categories/${id}`, {
     method: "PUT",
     body: JSON.stringify(patch),
   });
@@ -327,20 +354,15 @@ export async function deleteCategory(id: string): Promise<void> {
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
-export async function listTags(): Promise<{ data: ApiTag[] }> {
-  return apiFetch<{ data: ApiTag[] }>("/tags");
+export async function listTags(): Promise<TagListResponseDto> {
+  return apiFetch<TagListResponseDto>("/tags");
 }
 
 // ─── Import ───────────────────────────────────────────────────────────────────
 
-export interface ImportResult {
-  importId: string;
-  total: number;
-  warnings: number;
-  progressUrl: string;
-}
+export type ImportResult = ImportSummaryResponseDto["data"];
 
-export async function importBookmarksFile(file: File): Promise<{ data: ImportResult }> {
+export async function importBookmarksFile(file: File): Promise<ImportSummaryResponseDto> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${DAEMON_URL}/import`, {
@@ -355,22 +377,26 @@ export async function importBookmarksFile(file: File): Promise<{ data: ImportRes
       if (body.title) title = body.title;
       if (body.detail) detail = body.detail;
       else if (body.error) detail = body.error;
-    } catch {}
+    } catch {
+      // Keep the HTTP status fallback when the error body is not JSON.
+    }
     throw new ApiError(res.status, title, detail);
   }
-  return res.json() as Promise<{ data: ImportResult }>;
+  return res.json() as Promise<ImportSummaryResponseDto>;
 }
 
 /** Subscribe to import progress via SSE. Returns a cleanup function. */
 export function subscribeToImportProgress(
   importId: string,
-  onProgress: (state: { queued: number; skipped: number; total: number; done: boolean; error?: string | null }) => void
+  onProgress: (state: ImportProgressEventDto) => void
 ): () => void {
   const es = new EventSource(`${DAEMON_URL}/import/${importId}/progress`);
   es.addEventListener("progress", (e) => {
     try {
       onProgress(JSON.parse((e as MessageEvent).data));
-    } catch {}
+    } catch {
+      // Ignore malformed progress events; the stream can continue.
+    }
   });
   es.onerror = () => es.close();
   return () => es.close();
@@ -378,83 +404,60 @@ export function subscribeToImportProgress(
 
 // ─── Domains ──────────────────────────────────────────────────────────────────
 
-export interface ApiDomain {
-  domain: string;
-  count: number;
-}
+export type ApiDomain = Simplify<DomainDto>;
 
-export async function listDomains(): Promise<{ data: ApiDomain[] }> {
-  return apiFetch<{ data: ApiDomain[] }>("/domains");
+export async function listDomains(): Promise<DomainListResponseDto> {
+  return apiFetch<DomainListResponseDto>("/domains");
 }
 
 // ─── Timeline ─────────────────────────────────────────────────────────────────
 
-export type TimelineEventType =
-  | "category_created"
-  | "category_merged"
-  | "category_merge_suggested"
-  | "category_renamed"
-  | "duplicate_removed"
-  | "duplicate_flagged"
-  | "cluster_labeled"
-  | "suggestion_accepted"
-  | "suggestion_rejected";
-
 export interface ApiTimelineEvent {
-  id: string;
-  type: TimelineEventType;
-  description: string;
-  metadata: Record<string, unknown>;
-  source: "agent" | "user";
-  created_at: string;
+  id: TimelinePageDto["data"][number]["id"];
+  type: TimelinePageDto["data"][number]["type"];
+  description: TimelinePageDto["data"][number]["description"];
+  metadata: TimelinePageDto["data"][number]["metadata"];
+  source: TimelinePageDto["data"][number]["source"];
+  created_at: TimelinePageDto["data"][number]["created_at"];
 }
+export type TimelineEventType = ApiTimelineEvent["type"];
 
 export async function listTimeline(
   params: { limit?: number; offset?: number } = {}
-): Promise<{ data: ApiTimelineEvent[]; pagination: Pagination }> {
+): Promise<TimelinePageDto> {
   const q = new URLSearchParams();
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   const qs = q.toString();
-  return apiFetch<{ data: ApiTimelineEvent[]; pagination: Pagination }>(
-    `/timeline${qs ? `?${qs}` : ""}`
-  );
+  return apiFetch<TimelinePageDto>(`/timeline${qs ? `?${qs}` : ""}`);
 }
 
 // ─── Suggestions ──────────────────────────────────────────────────────────────
 
-export type SuggestionType =
-  | "new_subcategory"
-  | "merge_categories"
-  | "duplicate_bookmark";
-
-export type SuggestionStatus = "pending" | "accepted" | "rejected";
-
 export interface ApiSuggestion {
-  id: string;
-  bookmarkId: string | null;
-  type: SuggestionType;
-  value: string;
-  metadata: Record<string, unknown>;
-  confidence: number | null;
-  status: SuggestionStatus;
-  created_at: string;
-  resolved_at: string | null;
+  id: SuggestionDto["id"];
+  bookmarkId: SuggestionDto["bookmarkId"];
+  type: SuggestionDto["type"];
+  value: SuggestionDto["value"];
+  metadata: SuggestionDto["metadata"];
+  confidence: SuggestionDto["confidence"];
+  status: SuggestionDto["status"];
+  created_at: SuggestionDto["created_at"];
+  resolved_at: SuggestionDto["resolved_at"];
+}
+export type SuggestionType = ApiSuggestion["type"];
+export type SuggestionStatus = ApiSuggestion["status"];
+
+export async function listSuggestions(): Promise<SuggestionsResponseDto> {
+  return apiFetch<SuggestionsResponseDto>("/suggestions");
 }
 
-export async function listSuggestions(): Promise<{
-  data: ApiSuggestion[];
-  meta: { pending: number };
-}> {
-  return apiFetch<{ data: ApiSuggestion[]; meta: { pending: number } }>("/suggestions");
+export async function acceptSuggestion(id: string): Promise<{ data: SuggestionDto }> {
+  return apiFetch<{ data: SuggestionDto }>(`/suggestions/${id}/accept`, { method: "POST" });
 }
 
-export async function acceptSuggestion(id: string): Promise<{ data: ApiSuggestion }> {
-  return apiFetch<{ data: ApiSuggestion }>(`/suggestions/${id}/accept`, { method: "POST" });
-}
-
-export async function rejectSuggestion(id: string): Promise<{ data: ApiSuggestion }> {
-  return apiFetch<{ data: ApiSuggestion }>(`/suggestions/${id}/reject`, { method: "POST" });
+export async function rejectSuggestion(id: string): Promise<{ data: SuggestionDto }> {
+  return apiFetch<{ data: SuggestionDto }>(`/suggestions/${id}/reject`, { method: "POST" });
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -473,86 +476,77 @@ export async function updateSettings(patch: ApiSettingsPatch): Promise<{ data: A
 // ─── Backup & Restore ─────────────────────────────────────────────────────────
 
 export interface ApiBackupEntry {
-  name: string;
-  path: string;
-  size_bytes: number;
-  bookmark_count: number;
-  created_at: string;
-  source: "local" | "remote";
+  name: BackupEntryDto["name"];
+  path: BackupEntryDto["path"];
+  size_bytes: BackupEntryDto["size_bytes"];
+  bookmark_count: BackupEntryDto["bookmark_count"];
+  created_at: BackupEntryDto["created_at"];
+  source: BackupEntryDto["source"];
 }
 
 export interface ApiBackupResult {
-  path: string;
-  size_bytes: number;
-  bookmark_count: number;
-  created_at: string;
-  remote_url?: string;
+  path: BackupResultDto["path"];
+  size_bytes: BackupResultDto["size_bytes"];
+  bookmark_count: BackupResultDto["bookmark_count"];
+  created_at: BackupResultDto["created_at"];
+  remote_url?: BackupResultDto["remote_url"];
 }
 
 export interface ApiRestoreResult {
-  restored_at: string;
-  bookmark_count: number;
-  checksum_verified: boolean;
-  rollback_path: string;
-  restart_required: boolean;
+  restored_at: RestoreResultDto["restored_at"];
+  bookmark_count: RestoreResultDto["bookmark_count"];
+  checksum_verified: RestoreResultDto["checksum_verified"];
+  rollback_path: RestoreResultDto["rollback_path"];
+  restart_required: RestoreResultDto["restart_required"];
 }
 
-export interface ApiS3Config {
-  endpoint: string;
-  bucket: string;
-  access_key: string;
-  secret_key: string;
-  region: string;
-  prefix: string;
+export async function createBackup(): Promise<BackupResultDto> {
+  return apiFetch<BackupResultDto>("/backup", { method: "POST" });
 }
 
-export async function createBackup(): Promise<ApiBackupResult> {
-  return apiFetch<ApiBackupResult>("/backup", { method: "POST" });
-}
-
-export async function listBackups(includeRemote = false): Promise<{ data: ApiBackupEntry[] }> {
+export async function listBackups(includeRemote = false): Promise<BackupListResponseDto> {
   const url = includeRemote ? "/backup/list?include_remote=true" : "/backup/list";
-  return apiFetch<{ data: ApiBackupEntry[] }>(url);
+  return apiFetch<BackupListResponseDto>(url);
 }
 
 /** Restore from a local backup by its directory name (basename only — no path traversal). */
-export async function restoreBackup(name: string): Promise<ApiRestoreResult> {
-  return apiFetch<ApiRestoreResult>("/restore", {
+export async function restoreBackup(name: string): Promise<RestoreResultDto> {
+  return apiFetch<RestoreResultDto>("/restore", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name } satisfies RestoreRequestDto),
   });
 }
 
 /** Restore from a remote S3 backup by its object key. */
-export async function restoreRemoteBackup(key: string): Promise<ApiRestoreResult> {
-  return apiFetch<ApiRestoreResult>("/restore", {
+export async function restoreRemoteBackup(key: string): Promise<RestoreResultDto> {
+  return apiFetch<RestoreResultDto>("/restore", {
     method: "POST",
-    body: JSON.stringify({ source: "remote", key }),
+    body: JSON.stringify({ source: "remote", key } satisfies RestoreRequestDto),
   });
 }
 
 /** Test the S3 connection using current backup.s3 settings. */
-export async function testS3Connection(): Promise<{ ok: boolean; message: string }> {
-  return apiFetch<{ ok: boolean; message: string }>("/settings/test-s3", { method: "POST" });
+export async function testS3Connection(): Promise<ConnectivityTestResponseDto> {
+  return apiFetch<ConnectivityTestResponseDto>("/settings/test-s3", { method: "POST" });
 }
 
 // ─── Backup schedule ──────────────────────────────────────────────────────────
 
 export interface ApiBackupSchedule {
-  enabled: boolean;
-  cron: string;
-  retention_count: number;
-  next_run_at: string | null;
+  enabled: BackupScheduleDto["enabled"];
+  cron: BackupScheduleDto["cron"];
+  retention_count: BackupScheduleDto["retention_count"];
+  next_run_at: BackupScheduleDto["next_run_at"];
 }
 
-export async function getBackupSchedule(): Promise<{ data: ApiBackupSchedule }> {
-  return apiFetch<{ data: ApiBackupSchedule }>("/backup/schedule");
+export async function getBackupSchedule(): Promise<BackupScheduleResponseDto> {
+  return apiFetch<BackupScheduleResponseDto>("/backup/schedule");
 }
 
 export async function updateBackupSchedule(
-  patch: Partial<Pick<ApiBackupSchedule, "enabled" | "cron" | "retention_count">>
-): Promise<{ data: ApiBackupSchedule }> {
-  return apiFetch<{ data: ApiBackupSchedule }>("/backup/schedule", {
+  patch: BackupSchedulePatchDto
+): Promise<BackupScheduleResponseDto> {
+  return apiFetch<BackupScheduleResponseDto>("/backup/schedule", {
     method: "PUT",
     body: JSON.stringify(patch),
   });
@@ -561,21 +555,19 @@ export async function updateBackupSchedule(
 // ─── Backup destination ───────────────────────────────────────────────────────
 
 export interface ApiBackupDestination {
-  /** Resolved absolute path of the current backup folder. */
-  path: string;
-  /** True when the user has set a custom path (not the default DATA_DIR/backups/). */
-  is_custom: boolean;
-  /** True when the daemon can write to the backup folder. */
-  writable: boolean;
+  path: BackupDestinationDto["path"];
+  is_custom: BackupDestinationDto["is_custom"];
+  writable: BackupDestinationDto["writable"];
 }
 
-export async function getBackupDestination(): Promise<{ data: ApiBackupDestination }> {
-  return apiFetch<{ data: ApiBackupDestination }>("/backup/destination");
+export async function getBackupDestination(): Promise<BackupDestinationResponseDto> {
+  return apiFetch<BackupDestinationResponseDto>("/backup/destination");
 }
 
-export async function updateBackupDestination(path: string): Promise<{ data: ApiBackupDestination }> {
-  return apiFetch<{ data: ApiBackupDestination }>("/backup/destination", {
+export async function updateBackupDestination(path: string): Promise<BackupDestinationResponseDto> {
+  const patch: BackupDestinationPatchDto = { path };
+  return apiFetch<BackupDestinationResponseDto>("/backup/destination", {
     method: "PUT",
-    body: JSON.stringify({ path }),
+    body: JSON.stringify(patch),
   });
 }

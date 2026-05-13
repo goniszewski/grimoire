@@ -55,10 +55,10 @@ vi.mock("@/lib/api", () => ({
 
 import * as api from "@/lib/api";
 
-const mockedListBookmarks = vi.mocked(api.listBookmarks);
-const mockedListCategories = vi.mocked(api.listCategories);
-const mockedListDomains = vi.mocked(api.listDomains);
-const mockedSearchBookmarks = vi.mocked(api.searchBookmarks);
+const mockedListBookmarks = api.listBookmarks as unknown as ReturnType<typeof vi.fn>;
+const mockedListCategories = api.listCategories as unknown as ReturnType<typeof vi.fn>;
+const mockedListDomains = api.listDomains as unknown as ReturnType<typeof vi.fn>;
+const mockedSearchBookmarks = api.searchBookmarks as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();

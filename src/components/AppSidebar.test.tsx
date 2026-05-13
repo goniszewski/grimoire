@@ -82,6 +82,10 @@ import type { TagCount, DomainCount } from "@/types/bookmark";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function mockResolved(fn: unknown, value: unknown) {
+  (fn as { mockResolvedValue: (value: unknown) => void }).mockResolvedValue(value);
+}
+
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return ({ children }: { children: React.ReactNode }) => (
@@ -120,8 +124,8 @@ const defaultProps = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(api.listCategories).mockResolvedValue({ data: [] } as any);
-  vi.mocked(api.listSuggestions).mockResolvedValue({ data: [], meta: { pending: 0, total: 0 } } as any);
+  mockResolved(api.listCategories, { data: [] });
+  mockResolved(api.listSuggestions, { data: [], meta: { pending: 0, total: 0 } });
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -175,10 +179,10 @@ describe("AppSidebar — renders category tree", () => {
 
 describe("AppSidebar — delete category", () => {
   it("calls deleteCategory mutation on confirmation", async () => {
-    vi.mocked(api.deleteCategory).mockResolvedValue({ data: null } as any);
-    vi.mocked(api.listCategories).mockResolvedValue({
+    mockResolved(api.deleteCategory, { data: null });
+    mockResolved(api.listCategories, {
       data: [{ id: "cat-1", name: "Technology", parent_id: null, created_at: "", updated_at: "" }],
-    } as any);
+    });
 
     render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapper() });
 
@@ -213,10 +217,10 @@ describe("AppSidebar — rename category", () => {
   });
 
   it("calls updateCategory with new name on Enter", async () => {
-    vi.mocked(api.updateCategory).mockResolvedValue({ data: { id: "cat-1", name: "New Name", parent_id: null, created_at: "", updated_at: "" } } as any);
-    vi.mocked(api.listCategories).mockResolvedValue({
+    mockResolved(api.updateCategory, { data: { id: "cat-1", name: "New Name", parent_id: null, created_at: "", updated_at: "" } });
+    mockResolved(api.listCategories, {
       data: [{ id: "cat-1", name: "Technology", parent_id: null, created_at: "", updated_at: "" }],
-    } as any);
+    });
 
     render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapper() });
 

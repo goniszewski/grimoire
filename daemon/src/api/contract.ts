@@ -8,19 +8,21 @@ import type {
   ApiStringSchema,
 } from "./schema.js";
 
-const stringSchema = (
+type EmptySchemaOptions = Record<never, never>;
+
+const stringSchema = <const Options extends Omit<ApiStringSchema, "type" | "description"> = EmptySchemaOptions>(
   description: string,
-  options: Omit<ApiStringSchema, "type" | "description"> = {}
+  options = {} as Options
 ) => ({ type: "string", description, ...options }) as const;
 
-const integerSchema = (
+const integerSchema = <const Options extends Omit<ApiNumberSchema, "type" | "description"> = EmptySchemaOptions>(
   description: string,
-  options: Omit<ApiNumberSchema, "type" | "description"> = {}
+  options = {} as Options
 ) => ({ type: "integer", description, ...options }) as const;
 
-const numberSchema = (
+const numberSchema = <const Options extends Omit<ApiNumberSchema, "type" | "description"> = EmptySchemaOptions>(
   description: string,
-  options: Omit<ApiNumberSchema, "type" | "description"> = {}
+  options = {} as Options
 ) => ({ type: "number", description, ...options }) as const;
 
 const booleanSchema = (description: string) => ({ type: "boolean", description }) as const;
@@ -28,19 +30,45 @@ const ref = <const Name extends string>(name: Name) => ({ ref: name }) as const;
 const arrayOf = <const Item extends ApiSchema>(items: Item, description: string) =>
   ({ type: "array", description, items }) as const;
 
-const objectSchema = <const Properties extends Record<string, ApiSchema>>(
+type ContractObjectSchema<
+  Properties extends Record<string, ApiSchema>,
+  Required extends readonly (keyof Properties & string)[],
+  AdditionalProperties extends boolean | ApiSchema = false,
+> = {
+  readonly type: "object";
+  readonly properties: Properties;
+  readonly required: Required;
+  readonly additionalProperties: AdditionalProperties;
+  readonly description?: string;
+};
+
+function objectSchema<const Properties extends Record<string, ApiSchema>>(
+  properties: Properties
+): ContractObjectSchema<Properties, [], false>;
+function objectSchema<
+  const Properties extends Record<string, ApiSchema>,
+  const Required extends readonly (keyof Properties & string)[],
+  const AdditionalProperties extends boolean | ApiSchema = false,
+>(
   properties: Properties,
-  required: readonly (keyof Properties & string)[] = [],
+  required: Required,
+  description?: string,
+  additionalProperties?: AdditionalProperties
+): ContractObjectSchema<Properties, Required, AdditionalProperties>;
+function objectSchema(
+  properties: Record<string, ApiSchema>,
+  required: readonly string[] = [],
   description?: string,
   additionalProperties: boolean | ApiSchema = false
-) =>
-  ({
+) {
+  return {
     type: "object",
     properties,
-    ...(required.length > 0 ? { required } : {}),
+    required,
     additionalProperties,
     ...(description ? { description } : {}),
-  }) as const;
+  } as const;
+}
 
 const nullable = <const Schema extends ApiSchema>(schema: Schema) =>
   ({ ...schema, nullable: true }) as const;
@@ -226,7 +254,9 @@ const schemas = {
   BookmarkPipelineStatus: objectSchema(
     {
       bookmarkId: stringSchema("Bookmark ID"),
-      bookmarkStatus: stringSchema("Current bookmark pipeline status"),
+      bookmarkStatus: stringSchema("Current bookmark pipeline status", {
+        enum: ["saved", "fetched", "extracted", "ai_enriched", "indexed"],
+      }),
       job: nullable(
         objectSchema(
           {
@@ -387,6 +417,14 @@ const schemas = {
     },
     ["llm", "embeddings", "capabilities"]
   ),
+  SettingsBackupSchedule: objectSchema(
+    {
+      enabled: booleanSchema("Enable scheduled snapshots"),
+      cron: stringSchema("Five-part cron expression"),
+      retention_count: integerSchema("Number of local snapshots to retain", { minimum: 1 }),
+    },
+    ["enabled", "cron", "retention_count"]
+  ),
   Settings: objectSchema(
     {
       ai: objectSchema(
@@ -438,7 +476,7 @@ const schemas = {
             },
             ["destination_path"]
           ),
-          schedule: ref("BackupSchedule"),
+          schedule: ref("SettingsBackupSchedule"),
           s3: objectSchema(
             {
               endpoint: stringSchema("S3-compatible endpoint URL, or empty string for AWS", { format: "uri" }),
@@ -580,9 +618,21 @@ const schemas = {
   TimelineEvent: objectSchema(
     {
       id: stringSchema("Timeline event ID"),
-      type: stringSchema("Timeline event type"),
+      type: stringSchema("Timeline event type", {
+        enum: [
+          "category_created",
+          "category_merged",
+          "category_merge_suggested",
+          "category_renamed",
+          "duplicate_removed",
+          "duplicate_flagged",
+          "cluster_labeled",
+          "suggestion_accepted",
+          "suggestion_rejected",
+        ],
+      }),
       description: stringSchema("Human-readable event description"),
-      metadata: objectSchema({}, [], "Event metadata", true),
+      metadata: objectSchema({}, [] as const, "Event metadata", true),
       source: stringSchema("Event source", { enum: ["agent", "user"] }),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
     },
@@ -601,7 +651,7 @@ const schemas = {
       bookmarkId: nullable(stringSchema("Related bookmark ID")),
       type: stringSchema("Suggestion type", { enum: ["new_subcategory", "merge_categories", "duplicate_bookmark"] }),
       value: stringSchema("Human-readable suggestion value"),
-      metadata: objectSchema({}, [], "Suggestion metadata", true),
+      metadata: objectSchema({}, [] as const, "Suggestion metadata", true),
       confidence: nullable(numberSchema("Confidence score")),
       status: stringSchema("Suggestion status", { enum: ["pending", "accepted", "rejected"] }),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),

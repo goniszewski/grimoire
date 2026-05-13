@@ -1099,7 +1099,7 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `bookmarkId` | string | yes | Bookmark ID |
-| `bookmarkStatus` | string | yes | Current bookmark pipeline status |
+| `bookmarkStatus` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Current bookmark pipeline status |
 | `job` | object \| null | yes |  |
 | `job.id` | string | yes | Job ID |
 | `job.type` | string | yes | Job type |
@@ -1117,7 +1117,7 @@ Response data
 |---|---|---:|---|
 | `data` | BookmarkPipelineStatus | yes |  |
 | `data.bookmarkId` | string | yes | Bookmark ID |
-| `data.bookmarkStatus` | string | yes | Current bookmark pipeline status |
+| `data.bookmarkStatus` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Current bookmark pipeline status |
 | `data.job` | object \| null | yes |  |
 | `data.job.id` | string | yes | Job ID |
 | `data.job.type` | string | yes | Job type |
@@ -1360,6 +1360,14 @@ Response data
 | `capabilities.related_bookmarks` | boolean | yes | Related bookmarks available |
 | `capabilities.organization_agent` | boolean | yes | Organization agent available |
 
+### SettingsBackupSchedule
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | yes | Enable scheduled snapshots |
+| `cron` | string | yes | Five-part cron expression |
+| `retention_count` | integer | yes | Number of local snapshots to retain |
+
 ### Settings
 
 | Field | Type | Required | Description |
@@ -1384,11 +1392,10 @@ Response data
 | `backup` | object | yes |  |
 | `backup.local` | object | yes |  |
 | `backup.local.destination_path` | string | yes | Absolute custom backup destination, or empty string for default |
-| `backup.schedule` | BackupSchedule | yes |  |
+| `backup.schedule` | SettingsBackupSchedule | yes |  |
 | `backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
 | `backup.schedule.cron` | string | yes | Five-part cron expression |
 | `backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
-| `backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
 | `backup.s3` | object | yes |  |
 | `backup.s3.endpoint` | string | yes | S3-compatible endpoint URL, or empty string for AWS |
 | `backup.s3.bucket` | string | yes | S3 bucket |
@@ -1476,11 +1483,10 @@ Response data
 | `data.backup` | object | yes |  |
 | `data.backup.local` | object | yes |  |
 | `data.backup.local.destination_path` | string | yes | Absolute custom backup destination, or empty string for default |
-| `data.backup.schedule` | BackupSchedule | yes |  |
+| `data.backup.schedule` | SettingsBackupSchedule | yes |  |
 | `data.backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
 | `data.backup.schedule.cron` | string | yes | Five-part cron expression |
 | `data.backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
-| `data.backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
 | `data.backup.s3` | object | yes |  |
 | `data.backup.s3.endpoint` | string | yes | S3-compatible endpoint URL, or empty string for AWS |
 | `data.backup.s3.bucket` | string | yes | S3 bucket |
@@ -1620,7 +1626,7 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `id` | string | yes | Timeline event ID |
-| `type` | string | yes | Timeline event type |
+| `type` | "category_created" \| "category_merged" \| "category_merge_suggested" \| "category_renamed" \| "duplicate_removed" \| "duplicate_flagged" \| "cluster_labeled" \| "suggestion_accepted" \| "suggestion_rejected" | yes | Timeline event type |
 | `description` | string | yes | Human-readable event description |
 | `metadata` | object | yes | Event metadata |
 | `source` | "agent" \| "user" | yes | Event source |

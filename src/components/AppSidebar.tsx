@@ -248,7 +248,7 @@ export function AppSidebar({
     queryKey: bookmarkKeys.categories,
     queryFn: async () => {
       const res = await listCategories();
-      return res.data;
+      return res.data as unknown as ApiCategory[];
     },
     staleTime: 30_000,
   });

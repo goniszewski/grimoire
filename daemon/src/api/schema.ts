@@ -112,6 +112,10 @@ type ObjectProperties<S> = S extends { properties: infer P extends Record<string
   ? P
   : Record<string, never>;
 
+type InferAdditionalProperties<S> = S extends { additionalProperties: true }
+  ? Record<string, unknown>
+  : Record<never, never>;
+
 type InferObject<S, Schemas extends ApiSchemaMap> = {
   [K in keyof ObjectProperties<S> as K extends RequiredKeys<S> ? K : never]: InferSchema<
     ObjectProperties<S>[K],
@@ -122,7 +126,7 @@ type InferObject<S, Schemas extends ApiSchemaMap> = {
     ObjectProperties<S>[K],
     Schemas
   >;
-};
+} & InferAdditionalProperties<S>;
 
 type InferOneOf<S, Schemas extends ApiSchemaMap> = S extends { oneOf: readonly (infer Item extends ApiSchema)[] }
   ? InferSchema<Item, Schemas>
@@ -135,19 +139,21 @@ type InferNonNullableSchema<S, Schemas extends ApiSchemaMap> =
       ? InferOneOf<S, Schemas>
       : S extends { type: "string"; enum: readonly (infer E)[] }
         ? E
-        : S extends { type: "string" }
-          ? string
-          : S extends { type: "integer" | "number" }
-            ? number
-            : S extends { type: "boolean" }
-              ? boolean
-              : S extends { type: "null" }
-                ? null
-                : S extends { type: "array"; items: infer Item extends ApiSchema }
-                  ? InferSchema<Item, Schemas>[]
-                  : S extends { type: "object" }
-                    ? InferObject<S, Schemas>
-                    : unknown;
+        : S extends { type: "integer" | "number"; enum: readonly (infer E)[] }
+          ? E
+          : S extends { type: "string" }
+            ? string
+            : S extends { type: "integer" | "number" }
+              ? number
+              : S extends { type: "boolean" }
+                ? boolean
+                : S extends { type: "null" }
+                  ? null
+                  : S extends { type: "array"; items: infer Item extends ApiSchema }
+                    ? InferSchema<Item, Schemas>[]
+                    : S extends { type: "object" }
+                      ? InferObject<S, Schemas>
+                      : unknown;
 
 export type InferSchema<S, Schemas extends ApiSchemaMap> = NullableValue<
   S,

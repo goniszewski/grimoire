@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { listBookmarks, updateBookmark } from "@/lib/api";
+import type { ApiBookmark } from "@/lib/api";
 import { UIBookmark, bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +24,9 @@ const Archive = () => {
     queryFn: () => listBookmarks({ archived: true, limit: 500 }),
   });
 
+  const archivedRows = data?.data as unknown as ApiBookmark[] | undefined;
   const bookmarks = useMemo<UIBookmark[]>(() => {
-    return (data?.data ?? []).map((bm) => ({
+    return (archivedRows ?? []).map((bm) => ({
       id: bm.id,
       url: bm.url,
       title: bm.title ?? bm.url,
@@ -43,7 +45,7 @@ const Archive = () => {
       read_at: bm.read_at,
       notes: bm.notes,
     }));
-  }, [data]);
+  }, [archivedRows]);
 
   const unarchiveMutation = useMutation({
     mutationFn: (id: string) => updateBookmark(id, { is_archived: 0 }),

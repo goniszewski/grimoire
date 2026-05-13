@@ -32,7 +32,7 @@ export function AIPalette({ open, onOpenChange, onSelectBookmark, onAddBookmark 
     setLoading(true);
     try {
       const res = await searchBookmarks({ q, limit: 8 });
-      setResults(res.data);
+      setResults(res.data as unknown as ApiBookmark[]);
     } catch {
       setResults([]);
     } finally {

@@ -13,9 +13,9 @@ vi.mock("@/lib/api", () => ({
 
 import * as api from "@/lib/api";
 
-const mockedListSuggestions = vi.mocked(api.listSuggestions);
-const mockedAcceptSuggestion = vi.mocked(api.acceptSuggestion);
-const mockedRejectSuggestion = vi.mocked(api.rejectSuggestion);
+const mockedListSuggestions = api.listSuggestions as unknown as ReturnType<typeof vi.fn>;
+const mockedAcceptSuggestion = api.acceptSuggestion as unknown as ReturnType<typeof vi.fn>;
+const mockedRejectSuggestion = api.rejectSuggestion as unknown as ReturnType<typeof vi.fn>;
 
 function makeSuggestion(overrides: Partial<ApiSuggestion> = {}): ApiSuggestion {
   return {

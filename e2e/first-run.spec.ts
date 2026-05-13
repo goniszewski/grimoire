@@ -1,31 +1,6 @@
 // e2e/first-run.spec.ts
 import { test, expect, type Page } from "@playwright/test";
-
-const BASE = "http://127.0.0.1:3210";
-
-function makeBookmark(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "bm-first-1",
-    url: "https://example.com/article",
-    domain: "example.com",
-    title: "Example Article",
-    description: null,
-    status: "saved",
-    category_id: null,
-    favicon_url: null,
-    screenshot_url: null,
-    is_pinned: 0,
-    is_archived: 0,
-    is_trashed: 0,
-    trashed_at: null,
-    read_at: null,
-    notes: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    tags: [],
-    ...overrides,
-  };
-}
+import { BASE, makeApiBookmark, makeHealthResponse, makeSettingsResponse } from "./api-fixtures";
 
 async function setupBaseMocks(
   page: Page,
@@ -33,7 +8,7 @@ async function setupBaseMocks(
   aiProvider: "openai" | "ollama" | "none" = "none"
 ) {
   await page.route(`${BASE}/health`, (route) =>
-    route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 1, queueSize: 0 } })
+    route.fulfill({ json: makeHealthResponse() })
   );
   await page.route(`${BASE}/categories`, (route) =>
     route.fulfill({ json: { data: [] } })
@@ -49,12 +24,7 @@ async function setupBaseMocks(
   );
   await page.route(`${BASE}/settings`, (route) =>
     route.fulfill({
-      json: {
-        data: {
-          ai: { provider: aiProvider, openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-          embedding: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-        },
-      },
+      json: makeSettingsResponse(aiProvider),
     })
   );
   await page.route(`${BASE}/bookmarks**`, async (route) => {
@@ -66,7 +36,15 @@ async function setupBaseMocks(
     }
     if (method === "POST") {
       const body = route.request().postDataJSON();
-      const bm = makeBookmark({ url: body.url, domain: new URL(body.url).hostname, title: "Example Article" });
+      const bm = makeApiBookmark({
+        id: "bm-first-1",
+        url: body.url,
+        domain: new URL(body.url).hostname,
+        title: "Example Article",
+        description: null,
+        status: "saved",
+        tags: [],
+      });
       bookmarks.push(bm);
       return route.fulfill({ status: 201, json: { data: bm } });
     }
@@ -142,7 +120,7 @@ test.describe("First-run experience", () => {
 test.describe("Review Queue cold-start guard", () => {
   async function setupReviewMocks(page: Page, bookmarkTotal: number) {
     await page.route(`${BASE}/health`, (route) =>
-      route.fulfill({ json: { status: "ok", version: "0.0.0", uptime: 1, queueSize: 0 } })
+      route.fulfill({ json: makeHealthResponse() })
     );
     await page.route(`${BASE}/categories`, (route) =>
       route.fulfill({ json: { data: [] } })
@@ -155,12 +133,7 @@ test.describe("Review Queue cold-start guard", () => {
     );
     await page.route(`${BASE}/settings`, (route) =>
       route.fulfill({
-        json: {
-          data: {
-            ai: { provider: "openai", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-            embedding: { provider: "none", openai: { api_key: "", model: "" }, ollama: { base_url: "", model: "" } },
-          },
-        },
+        json: makeSettingsResponse("openai"),
       })
     );
     await page.route(`${BASE}/suggestions**`, (route) =>

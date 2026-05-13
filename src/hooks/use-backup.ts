@@ -10,7 +10,7 @@ import {
   updateBackupDestination,
   testS3Connection,
 } from "@/lib/api";
-import type { ApiBackupSchedule } from "@/lib/api";
+import type { ApiBackupDestination, ApiBackupEntry, ApiBackupSchedule } from "@/lib/api";
 
 export const backupKeys = {
   all: ["backup"] as const,
@@ -20,10 +20,25 @@ export const backupKeys = {
   destination: () => [...backupKeys.all, "destination"] as const,
 };
 
+async function fetchBackupEntries(includeRemote: boolean): Promise<ApiBackupEntry[]> {
+  const response = await listBackups(includeRemote) as unknown as { data: ApiBackupEntry[] };
+  return response.data;
+}
+
+async function fetchBackupSchedule(): Promise<ApiBackupSchedule> {
+  const response = await getBackupSchedule() as unknown as { data: ApiBackupSchedule };
+  return response.data;
+}
+
+async function fetchBackupDestination(): Promise<ApiBackupDestination> {
+  const response = await getBackupDestination() as unknown as { data: ApiBackupDestination };
+  return response.data;
+}
+
 export function useBackupList() {
   return useQuery({
     queryKey: backupKeys.list(),
-    queryFn: () => listBackups(false).then((r) => r.data),
+    queryFn: () => fetchBackupEntries(false),
     staleTime: 30_000,
   });
 }
@@ -32,7 +47,7 @@ export function useBackupList() {
 export function useBackupListWithRemote(enabled: boolean) {
   return useQuery({
     queryKey: backupKeys.listRemote(),
-    queryFn: () => listBackups(true).then((r) => r.data),
+    queryFn: () => fetchBackupEntries(true),
     staleTime: 30_000,
     enabled,
   });
@@ -78,7 +93,7 @@ export function useTestS3Connection() {
 export function useBackupSchedule() {
   return useQuery({
     queryKey: backupKeys.schedule(),
-    queryFn: () => getBackupSchedule().then((r) => r.data),
+    queryFn: fetchBackupSchedule,
     staleTime: 60_000,
   });
 }
@@ -97,7 +112,7 @@ export function useUpdateBackupSchedule() {
 export function useBackupDestination() {
   return useQuery({
     queryKey: backupKeys.destination(),
-    queryFn: () => getBackupDestination().then((r) => r.data),
+    queryFn: fetchBackupDestination,
     staleTime: 60_000,
   });
 }

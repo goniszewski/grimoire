@@ -551,6 +551,7 @@
           "nullable": true
         }
       },
+      "required": [],
       "additionalProperties": false
     },
     "RelatedBookmarksResponse": {
@@ -579,7 +580,14 @@
         },
         "bookmarkStatus": {
           "type": "string",
-          "description": "Current bookmark pipeline status"
+          "description": "Current bookmark pipeline status",
+          "enum": [
+            "saved",
+            "fetched",
+            "extracted",
+            "ai_enriched",
+            "indexed"
+          ]
         },
         "job": {
           "type": "object",
@@ -1009,6 +1017,7 @@
           "nullable": true
         }
       },
+      "required": [],
       "additionalProperties": false
     },
     "CategoryTreeResponse": {
@@ -1338,6 +1347,30 @@
       ],
       "additionalProperties": false
     },
+    "SettingsBackupSchedule": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable scheduled snapshots"
+        },
+        "cron": {
+          "type": "string",
+          "description": "Five-part cron expression"
+        },
+        "retention_count": {
+          "type": "integer",
+          "description": "Number of local snapshots to retain",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "enabled",
+        "cron",
+        "retention_count"
+      ],
+      "additionalProperties": false
+    },
     "Settings": {
       "type": "object",
       "properties": {
@@ -1480,7 +1513,7 @@
               "additionalProperties": false
             },
             "schedule": {
-              "ref": "BackupSchedule"
+              "ref": "SettingsBackupSchedule"
             },
             "s3": {
               "type": "object",
@@ -1568,6 +1601,7 @@
                   "description": "OpenAI chat model"
                 }
               },
+              "required": [],
               "additionalProperties": false
             },
             "ollama": {
@@ -1583,6 +1617,7 @@
                   "description": "Ollama model"
                 }
               },
+              "required": [],
               "additionalProperties": false
             },
             "embeddings": {
@@ -1601,9 +1636,11 @@
                   "description": "Embedding model"
                 }
               },
+              "required": [],
               "additionalProperties": false
             }
           },
+          "required": [],
           "additionalProperties": false
         },
         "app": {
@@ -1634,9 +1671,11 @@
                   "description": "PIN hash, empty string clears it"
                 }
               },
+              "required": [],
               "additionalProperties": false
             }
           },
+          "required": [],
           "additionalProperties": false
         },
         "backup": {
@@ -1650,6 +1689,7 @@
                   "description": "Absolute custom backup destination, or empty string for default"
                 }
               },
+              "required": [],
               "additionalProperties": false
             },
             "schedule": {
@@ -1669,6 +1709,7 @@
                   "minimum": 1
                 }
               },
+              "required": [],
               "additionalProperties": false
             },
             "s3": {
@@ -1700,12 +1741,15 @@
                   "description": "Object key prefix"
                 }
               },
+              "required": [],
               "additionalProperties": false
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
+      "required": [],
       "additionalProperties": false
     },
     "SettingsResponse": {
@@ -1790,6 +1834,7 @@
           "minimum": 1
         }
       },
+      "required": [],
       "additionalProperties": false
     },
     "BackupScheduleResponse": {
@@ -1974,6 +2019,7 @@
           "description": "Allow restoring a backup with no checksum file"
         }
       },
+      "required": [],
       "additionalProperties": false
     },
     "RestoreResult": {
@@ -2020,7 +2066,18 @@
         },
         "type": {
           "type": "string",
-          "description": "Timeline event type"
+          "description": "Timeline event type",
+          "enum": [
+            "category_created",
+            "category_merged",
+            "category_merge_suggested",
+            "category_renamed",
+            "duplicate_removed",
+            "duplicate_flagged",
+            "cluster_labeled",
+            "suggestion_accepted",
+            "suggestion_rejected"
+          ]
         },
         "description": {
           "type": "string",
@@ -2029,6 +2086,7 @@
         "metadata": {
           "type": "object",
           "properties": {},
+          "required": [],
           "additionalProperties": true,
           "description": "Event metadata"
         },
@@ -2104,6 +2162,7 @@
         "metadata": {
           "type": "object",
           "properties": {},
+          "required": [],
           "additionalProperties": true,
           "description": "Suggestion metadata"
         },
@@ -2396,6 +2455,7 @@
               ]
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
@@ -2657,6 +2717,7 @@
               "maximum": 50
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
@@ -2780,6 +2841,7 @@
               "minimum": 0
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
@@ -3392,6 +3454,7 @@
               ]
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
@@ -3658,6 +3721,7 @@
               "minimum": 0
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },
@@ -3853,6 +3917,7 @@
               "description": "Inclusive ISO date or date-time upper bound"
             }
           },
+          "required": [],
           "additionalProperties": false
         }
       },

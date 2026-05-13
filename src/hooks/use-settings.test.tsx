@@ -10,7 +10,7 @@ vi.mock("@/lib/api", () => ({
 
 import * as api from "@/lib/api";
 
-const mockedGetSettings = vi.mocked(api.getSettings);
+const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 
 function makeWrapper() {
   const qc = new QueryClient({

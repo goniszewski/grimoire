@@ -6,6 +6,7 @@ import {
   restoreBookmark,
   permanentDeleteBookmark,
 } from "@/lib/api";
+import type { ApiBookmark } from "@/lib/api";
 import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,13 +57,13 @@ const Trash = () => {
     queryFn: listTrashedBookmarks,
   });
 
-  const bookmarks = useMemo(() => data?.data ?? [], [data]);
+  const bookmarks = useMemo(() => (data?.data ?? []) as unknown as ApiBookmark[], [data]);
 
   const restoreMutation = useMutation({
     mutationFn: (id: string) => restoreBookmark(id),
     onSuccess: (_data, id) => {
-      const bm = qc.getQueryData<Awaited<ReturnType<typeof listTrashedBookmarks>>>(trashQueryKey)
-        ?.data.find((b) => b.id === id);
+      const cached = qc.getQueryData<{ data: ApiBookmark[] }>(trashQueryKey);
+      const bm = cached?.data.find((b) => b.id === id);
       qc.invalidateQueries({ queryKey: trashQueryKey });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       toast({ title: "Restored", description: bm?.title ?? undefined });
@@ -82,7 +83,7 @@ const Trash = () => {
     mutationFn: async () => {
       // Fetch fresh list so we don't operate on a stale cache snapshot.
       const fresh = await listTrashedBookmarks();
-      const ids = fresh.data.map((b) => b.id);
+      const ids = (fresh.data as unknown as ApiBookmark[]).map((b) => b.id);
       // allSettled: individual 404s (already-purged) don't abort the rest.
       await Promise.allSettled(ids.map((id) => permanentDeleteBookmark(id)));
     },
