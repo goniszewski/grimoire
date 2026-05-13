@@ -58,18 +58,17 @@ tasks/
 | TASK-042 | [Fix Docker Distribution and Network Safety](done/TASK-042-fix-docker-distribution-network-safety.md) | v0-beta hardening | high | done |
 | TASK-043 | [Restore Quality Gates and Add CI](todo/TASK-043-restore-quality-gates-and-ci.md) | v0-beta hardening | high | todo |
 | TASK-044 | [Make Backup and Restore Safe and Match the Design](done/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | done |
-| TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](todo/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | todo |
+| TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](done/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | done |
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](todo/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | todo |
 | TASK-047 | [Align Roadmap, Release, and Product Documentation](todo/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | todo |
 
 ## Current Status
 
-Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041, TASK-042, and TASK-044 are complete. The remaining recommended implementation order is based on dependency and release risk:
+Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041, TASK-042, TASK-044, and TASK-045 are complete. The remaining recommended implementation order is based on dependency and release risk:
 
-1. TASK-045 - Create a source-of-truth API contract and regenerated docs
-2. TASK-046 - Adopt the shared API contract in the frontend
-3. TASK-043 - Restore quality gates and add CI
-4. TASK-047 - Align roadmap, release, and product documentation
+1. TASK-046 - Adopt the shared API contract in the frontend
+2. TASK-043 - Restore quality gates and add CI
+3. TASK-047 - Align roadmap, release, and product documentation
 
 Notes:
 

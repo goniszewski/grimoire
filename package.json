@@ -15,6 +15,7 @@
     "daemon:dev": "cd daemon && bun run dev",
     "daemon:start": "cd daemon && bun run start",
     "docs:api": "bun run scripts/generate-api-docs.ts",
+    "docs:api:check": "bun run scripts/generate-api-docs.ts --check",
     "docker:build": "docker build -t little-imp .",
     "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp",
     "docker:up": "docker compose up -d",

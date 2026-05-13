@@ -152,6 +152,8 @@ ALTER TABLE bookmarks ADD COLUMN new_column TEXT;
 ### Route Structure
 
 - Place new routes in appropriate files under `daemon/src/routes/`
+- Update `daemon/src/api/contract.ts` for every route, request body, query parameter, response, and error shape change
+- Regenerate API docs with `npm run docs:api` and verify drift with `npm run docs:api:check`
 - Follow RESTful conventions
 - Use proper HTTP status codes
 - Include error handling and validation

@@ -1,6 +1,6 @@
 # TASK-045: Create a Source-of-Truth API Contract and Regenerated Docs
 
-**Status:** todo
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta hardening
 **Area:** API, documentation, tooling
@@ -35,9 +35,9 @@ This task establishes the daemon-owned API contract and regenerates API document
 
 ## Acceptance Criteria
 
-- [ ] `API.md` matches all implemented route paths in `daemon/src/routes`.
-- [ ] Documented request bodies match daemon validation.
-- [ ] Documented error shapes match the actual error responses.
-- [ ] The docs generator is schema-based or contract-based.
-- [ ] A local command fails when generated API docs are stale.
-- [ ] README links point to the regenerated API docs.
+- [x] `API.md` matches all implemented route paths in `daemon/src/routes`.
+- [x] Documented request bodies match daemon validation.
+- [x] Documented error shapes match the actual error responses.
+- [x] The docs generator is schema-based or contract-based.
+- [x] A local command fails when generated API docs are stale.
+- [x] README links point to the regenerated API docs.

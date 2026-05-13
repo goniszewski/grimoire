@@ -1,596 +1,1688 @@
 # Little Imp API Documentation
 
-> API reference for the Little Imp daemon (`littleimpd`)
+> Auto-generated from `daemon/src/api/contract.ts`. Do not edit by hand.
 
-## Base URL
+## Contract
 
-All API endpoints are relative to: `http://127.0.0.1:3210`
+- Base URL: `http://127.0.0.1:3210`
+- Machine-readable contract: [`docs/api-contract.json`](./docs/api-contract.json)
+- Regenerate: `npm run docs:api`
+- Drift check: `npm run docs:api:check`
 
 ## Authentication
 
-Currently, no authentication is required as the daemon runs locally on the user's machine.
+The daemon is intended to bind to localhost and currently requires no authentication.
 
-## Response Format
+## Response Conventions
 
-All API responses follow this structure:
+- Most JSON endpoints return `{ "data": ... }` envelopes.
+- Paginated endpoints include a `pagination` object with `total`, `limit`, `offset`, and `has_more`.
+- Newer route validation errors use `application/problem+json`; some backup/export routes still return `{ "error": string }`.
 
-```json
-{
-  "data": "response data or array",
-  "pagination": {
-    "total": 100,
-    "limit": 20,
-    "offset": 0,
-    "has_more": true
-  },
-  "meta": {
-    "mode": "keyword",
-    "version": "0.1.0-beta"
-  }
-}
-```
+## Endpoints
 
-## Error Responses
+### System
 
-Errors are returned with appropriate HTTP status codes:
+#### GET /health
 
-```json
-{
-  "error": "Error message",
-  "details": "Additional error details (optional)"
-}
-```
+Return daemon health, version, uptime, and queue size.
 
-## Core Endpoints
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `HealthResponse` | Daemon health |
 
 ### Bookmarks
 
-#### List Bookmarks
+#### POST /bookmarks
 
-```http
-GET /bookmarks
-```
-
-Query parameters:
-
-- `limit` (optional): Number of results to return (default: 20)
-- `offset` (optional): Number of results to skip (default: 0)
-- `category_id` (optional): Filter by category ID
-- `is_pinned` (optional): Filter by pinned status (0 or 1)
-- `is_archived` (optional): Filter by archived status (0 or 1)
-- `is_trashed` (optional): Filter by trash status (0 or 1)
-- `domain` (optional): Filter by domain
-- `tag` (optional): Filter by tag
-
-Response: Array of bookmark objects
-
-#### Get Bookmark by ID
-
-```http
-GET /bookmarks/:id
-```
-
-Response: Single bookmark object
-
-#### Create Bookmark
-
-```http
-POST /bookmarks
-```
+Save a URL and enqueue the ingestion pipeline.
 
 Request body:
 
-```json
-{
-  "url": "https://example.com",
-  "title": "Example Site",
-  "category_id": "optional-category-id",
-  "notes": "Optional notes"
-}
+- Content type: `application/json`
+- Schema: `BookmarkCreateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `url` | string | yes | HTTP or HTTPS URL to save |
+| `title` | string | no | Optional title override |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkResponse` | Existing active bookmark returned idempotently |
+| `201` | application/json | `BookmarkResponse` | Bookmark created |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `409` | application/problem+json | `ProblemDetails` | URL already exists in trash or archive |
+| `422` | application/problem+json | `ProblemDetails` | Invalid URL or missing url field |
+
+#### GET /bookmarks
+
+List active or archived bookmarks with filters and pagination.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `tag` | string | no | Filter by tag name |
+| `domain` | string | no | Filter by exact domain |
+| `category` | string | no | Filter by category name |
+| `date_from` | string | no | Inclusive ISO date or date-time lower bound |
+| `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `limit` | integer | no | Maximum number of results to return |
+| `offset` | integer | no | Number of results to skip |
+| `archived` | "true" \| "false" | no | When true, return archived bookmarks |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkListResponse` | Bookmark page |
+
+#### GET /bookmarks/:id
+
+Get one bookmark with extracted content.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkDetailResponse` | Bookmark detail |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+
+#### PUT /bookmarks/:id
+
+Patch bookmark fields, tags, archive state, read state, and notes.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `BookmarkUpdateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `title` | string \| null | no | New title, or null to clear |
+| `category_id` | string \| null | no | Category ID, or null to clear |
+| `tags` | array<string> | no | Replacement tag names |
+| `is_pinned` | integer | no | Pinned flag, 0 or 1 |
+| `is_archived` | integer | no | Archived flag, 0 or 1 |
+| `read_at` | string \| null | no | ISO 8601 date-time, or null to mark unread |
+| `notes` | string \| null | no | Personal notes, or null to clear |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkResponse` | Updated bookmark |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+| `422` | application/problem+json | `ProblemDetails` | Invalid patch field |
+
+#### DELETE /bookmarks/:id
+
+Soft-delete a bookmark by moving it to trash.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Bookmark moved to trash |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+
+#### POST /bookmarks/:id/restore
+
+Restore a trashed bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkResponse` | Restored bookmark |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found or not in trash |
+| `500` | application/problem+json | `ProblemDetails` | Restore succeeded but bookmark could not be fetched |
+
+#### DELETE /bookmarks/:id/permanent
+
+Permanently delete a trashed bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Bookmark permanently deleted |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found or not in trash |
+
+#### GET /trash
+
+List trashed bookmarks.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkArrayResponse` | Trashed bookmarks |
+
+#### GET /bookmarks/:id/related
+
+List semantically related bookmarks.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `limit` | integer | no | Maximum related bookmarks |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RelatedBookmarksResponse` | Related bookmarks |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+| `422` | application/problem+json | `ProblemDetails` | Embedding provider is not configured |
+
+Examples:
+
+**List related bookmarks**
+
+```bash
+curl "http://127.0.0.1:3210/bookmarks/bm_123/related?limit=5"
 ```
 
-Response: Created bookmark object
+#### GET /bookmarks/:id/status
 
-#### Update Bookmark
+Get latest pipeline job status for a bookmark.
 
-```http
-PUT /bookmarks/:id
-```
+Path parameters:
 
-Request body (all fields optional):
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
 
-```json
-{
-  "title": "Updated Title",
-  "category_id": "new-category-id",
-  "is_pinned": 1,
-  "is_archived": 0,
-  "notes": "Updated notes"
-}
-```
+Responses:
 
-#### Delete Bookmark (Soft Delete)
-
-```http
-DELETE /bookmarks/:id
-```
-
-Moves bookmark to trash (soft delete).
-
-#### Bookmark Actions
-
-**Pin/Unpin:**
-
-```http
-POST /bookmarks/:id/pin
-POST /bookmarks/:id/unpin
-```
-
-**Archive/Unarchive:**
-
-```http
-POST /bookmarks/:id/archive
-POST /bookmarks/:id/unarchive
-```
-
-**Mark as Read/Unread:**
-
-```http
-POST /bookmarks/:id/mark-read
-POST /bookmarks/:id/mark-unread
-```
-
-**Add/Remove Tags:**
-
-```http
-POST /bookmarks/:id/tags
-DELETE /bookmarks/:id/tags/:tag
-```
-
-Request body for adding tags:
-
-```json
-{
-  "tags": ["tag1", "tag2"]
-}
-```
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkPipelineStatusResponse` | Bookmark pipeline status |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 
 ### Search
 
-#### Search Bookmarks
+#### GET /search
 
-```http
-GET /search
-```
+Search bookmarks by keyword, semantic, or hybrid mode.
 
 Query parameters:
 
-- `q` (optional): Search query
-- `mode` (optional): Search mode - `keyword`, `semantic`, or `hybrid` (default: `keyword`)
-- `limit` (optional): Number of results (default: 20)
-- `offset` (optional): Results offset (default: 0)
-- `domain` (optional): Filter by domain
-- `tag` (optional): Filter by tag
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `q` | string | no | Search query |
+| `mode` | "keyword" \| "semantic" \| "hybrid" | no | Search mode |
+| `tag` | string | no | Filter by tag name |
+| `domain` | string | no | Filter by exact domain |
+| `category` | string | no | Filter by category name |
+| `date_from` | string | no | Inclusive ISO date or date-time lower bound |
+| `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `limit` | integer | no | Maximum number of results to return |
+| `offset` | integer | no | Number of results to skip |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `SearchResponse` | Search page |
+| `400` | application/problem+json | `ProblemDetails` | Invalid FTS query syntax |
+| `422` | application/problem+json | `ProblemDetails` | Invalid mode or missing embedding configuration |
 
 ### Categories
 
-#### List Categories
+#### GET /categories
 
-```http
-GET /categories
-```
+List categories as a tree with bookmark counts.
 
-Response: Hierarchical category tree
+Responses:
 
-#### Create Category
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `CategoryTreeResponse` | Category tree |
 
-```http
-POST /categories
-```
+#### POST /categories
 
-Request body:
-
-```json
-{
-  "name": "Development",
-  "parent_id": "optional-parent-id"
-}
-```
-
-#### Update Category
-
-```http
-PUT /categories/:id
-```
+Create a category.
 
 Request body:
 
-```json
-{
-  "name": "Updated Name",
-  "parent_id": "new-parent-id"
-}
-```
+- Content type: `application/json`
+- Schema: `CategoryRequest`
 
-#### Delete Category
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Category name |
+| `parent_id` | string \| null | no | Parent category ID |
 
-```http
-DELETE /categories/:id
-```
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `201` | application/json | `CategoryResponse` | Created category |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `409` | application/problem+json | `ProblemDetails` | Duplicate category under parent |
+| `422` | application/problem+json | `ProblemDetails` | Invalid name or parent |
+
+#### PUT /categories/:id
+
+Rename or reparent a category.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `CategoryPatchRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | Category name |
+| `parent_id` | string \| null | no | Parent category ID |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `CategoryResponse` | Updated category |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `404` | application/problem+json | `ProblemDetails` | Category not found |
+| `409` | application/problem+json | `ProblemDetails` | Duplicate category under parent |
+| `422` | application/problem+json | `ProblemDetails` | Invalid patch or parent |
+
+#### DELETE /categories/:id
+
+Delete a category.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Category deleted |
+| `404` | application/problem+json | `ProblemDetails` | Category not found |
 
 ### Tags
 
-#### List Tags
+#### GET /tags
 
-```http
-GET /tags
-```
+List tags with bookmark counts.
 
-Response: Array of tag objects with usage counts
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `TagListResponse` | Tags |
+
+#### POST /tags
+
+Create a tag, idempotently returning an existing tag when present.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `TagRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Lowercase tag name |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `TagResponse` | Existing tag |
+| `201` | application/json | `TagResponse` | Created tag |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+
+#### DELETE /tags/:id
+
+Delete a tag and detach it from bookmarks.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Tag deleted |
+| `404` | application/problem+json | `ProblemDetails` | Tag not found |
+
+#### POST /bookmarks/:id/tags
+
+Attach a tag to a bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `TagRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Lowercase tag name |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `201` | application/json | `BookmarkResponse` | Bookmark with attached tag |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+| `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+
+#### DELETE /bookmarks/:id/tags/:tagId
+
+Detach a tag from a bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `tagId` | string | yes | Tag ID |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Tag detached |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark, tag, or attachment not found |
 
 ### Domains
 
-#### List Domains
+#### GET /domains
 
-```http
-GET /domains
-```
+List domains with active bookmark counts.
 
-Response: Array of domain objects with bookmark counts
+Responses:
 
-### Timeline
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `DomainListResponse` | Domains |
+| `500` | application/problem+json | `ProblemDetails` | Query failed |
 
-#### Get Timeline
+### Import
 
-```http
-GET /timeline
-```
+#### POST /import
 
-Query parameters:
+Import a Netscape HTML bookmark export.
 
-- `limit` (optional): Number of events (default: 50)
-- `offset` (optional): Events offset (default: 0)
+Request body:
 
-Response: Array of timeline events
+- Content type: `multipart/form-data`
+- Multipart body with a file field containing a .html bookmark export.
+- Schema: `object`
 
-### Suggestions
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `file` | string | yes | HTML bookmark export file |
 
-#### Get AI Suggestions
+Responses:
 
-```http
-GET /suggestions
-```
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `ImportSummaryResponse` | Import accepted |
+| `400` | application/problem+json | `ProblemDetails` | Multipart parsing failed |
+| `413` | application/problem+json | `ProblemDetails` | File exceeds 10 MB |
+| `415` | application/problem+json | `ProblemDetails` | Request is not multipart/form-data |
+| `422` | application/problem+json | `ProblemDetails` | Missing file or invalid bookmark export |
 
-Response: Array of AI-generated suggestions for organization
+#### GET /import/:importId/progress
 
-#### Accept/Reject Suggestion
+Stream import progress over Server-Sent Events.
 
-```http
-POST /suggestions/:id/accept
-POST /suggestions/:id/reject
-```
+Path parameters:
 
-### Import/Export
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `importId` | string | yes | importId path parameter |
 
-#### Import Bookmarks
+Responses:
 
-```http
-POST /import
-```
-
-Content-Type: `multipart/form-data`
-
-Form data:
-
-- `file`: Netscape HTML bookmark file
-
-Response:
-
-```json
-{
-  "importId": "unique-import-id",
-  "total": 42,
-  "warnings": 2,
-  "progressUrl": "/import/progress/:importId"
-}
-```
-
-#### Check Import Progress
-
-```http
-GET /import/progress/:importId
-```
-
-#### Export Bookmarks
-
-```http
-GET /export
-```
-
-Query parameters:
-
-- `format` (optional): Export format - `json` or `csv` (default: `json`)
-- `q` (optional): Search query to filter exported bookmarks
-- `category_id` (optional): Filter by category
-- `tag` (optional): Filter by tag
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | text/event-stream | `ImportProgressEvent` | SSE stream of progress events |
+| `404` | application/problem+json | `ProblemDetails` | Import ID not found |
 
 ### Settings
 
-#### Get Settings
+#### GET /settings
 
-```http
-GET /settings
-```
+Read current settings with secrets redacted and runtime capabilities.
 
-Response: Current settings object
+Responses:
 
-Secrets are redacted as `"***"`. The `runtime` block reports effective
-capabilities without exposing API keys.
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `SettingsResponse` | Settings |
 
-```json
-{
-  "data": {
-    "ai": {
-      "provider": "openai",
-      "openai": {
-        "api_key": "***",
-        "model": "gpt-4o-mini"
-      },
-      "ollama": {
-        "base_url": "http://localhost:11434",
-        "model": "llama3"
-      },
-      "embeddings": {
-        "provider": "openai",
-        "model": "text-embedding-3-small"
-      }
-    },
-    "runtime": {
-      "llm": {
-        "enabled": true,
-        "provider": "openai",
-        "model": "gpt-4o-mini",
-        "base_url": "https://api.openai.com/v1"
-      },
-      "embeddings": {
-        "enabled": true,
-        "provider": "openai",
-        "model": "text-embedding-3-small",
-        "base_url": "https://api.openai.com/v1"
-      },
-      "capabilities": {
-        "enrichment": true,
-        "semantic_search": true,
-        "related_bookmarks": true,
-        "organization_agent": true
-      }
-    }
-  }
-}
-```
+#### PUT /settings
 
-#### Update Settings
-
-```http
-PUT /settings
-```
+Deep-merge a settings patch into persisted settings.
 
 Request body:
 
-```json
-{
-  "ai": {
-    "provider": "ollama",
-    "ollama": {
-      "base_url": "http://localhost:11434",
-      "model": "llama3"
-    },
-    "embeddings": {
-      "provider": "ollama",
-      "model": "nomic-embed-text"
-    }
-  }
-}
-```
+- Content type: `application/json`
+- Schema: `SettingsPatch`
 
-`PUT /settings` accepts partial nested patches. Persisted settings are the
-runtime source of truth for ingestion, semantic search, related bookmarks, MCP
-search, and organization suggestions. Environment variables are fallback
-defaults when a value has not been persisted. Redacted secret placeholders from
-`GET /settings` are ignored on save so clients can round-trip settings safely.
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ai` | object | no |  |
+| `ai.provider` | "openai" \| "ollama" \| "none" | no | LLM provider |
+| `ai.openai` | object | no |  |
+| `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
+| `ai.openai.model` | string | no | OpenAI chat model |
+| `ai.ollama` | object | no |  |
+| `ai.ollama.base_url` | string | no | Ollama base URL |
+| `ai.ollama.model` | string | no | Ollama model |
+| `ai.embeddings` | object | no |  |
+| `ai.embeddings.provider` | "openai" \| "ollama" | no | Embedding provider |
+| `ai.embeddings.model` | string | no | Embedding model |
+| `app` | object | no |  |
+| `app.autostart` | boolean | no | Start daemon automatically |
+| `app.theme` | "light" \| "dark" \| "system" | no | UI theme |
+| `app.lock` | object | no |  |
+| `app.lock.enabled` | boolean | no | Whether app lock is enabled |
+| `app.lock.pin_hash` | string | no | PIN hash, empty string clears it |
+| `backup` | object | no |  |
+| `backup.local` | object | no |  |
+| `backup.local.destination_path` | string | no | Absolute custom backup destination, or empty string for default |
+| `backup.schedule` | object | no |  |
+| `backup.schedule.enabled` | boolean | no | Enable scheduled snapshots |
+| `backup.schedule.cron` | string | no | Five-part cron expression |
+| `backup.schedule.retention_count` | integer | no | Number of local snapshots to retain |
+| `backup.s3` | object | no |  |
+| `backup.s3.endpoint` | string | no | S3-compatible endpoint URL, or empty string for AWS |
+| `backup.s3.bucket` | string | no | S3 bucket |
+| `backup.s3.access_key` | string | no | S3 access key |
+| `backup.s3.secret_key` | string | no | S3 secret key |
+| `backup.s3.region` | string | no | S3 region |
+| `backup.s3.prefix` | string | no | Object key prefix |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `SettingsResponse` | Updated settings |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `422` | application/problem+json | `ProblemDetails` | Invalid settings patch |
+| `500` | application/problem+json | `ProblemDetails` | Settings could not be persisted |
+
+#### POST /settings/test-ai
+
+Test connectivity to the configured LLM provider.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `ConnectivityTestResponse` | Connectivity result |
 
 ### Backup
 
-#### Create Backup
+#### POST /backup
 
-```http
-POST /backup
-```
+Create a local backup snapshot and optionally upload it to S3.
 
-Creates a new backup snapshot.
+Responses:
 
-Response:
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `201` | application/json | `BackupResult` | Backup created |
+| `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `500` | application/json | `LegacyError` | Backup creation failed |
 
-```json
-{
-  "path": "/path/to/backup/directory",
-  "size_bytes": 1048576,
-  "bookmark_count": 150,
-  "created_at": "2026-03-28T12:00:00Z"
-}
-```
+#### GET /backup/list
 
-#### List Backups
+List local backups and optionally merge remote S3 backups.
 
-```http
-GET /backup/list
-```
+Query parameters:
 
-Response: Array of backup metadata
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `include_remote` | "true" \| "false" | no | When true, include S3 backups |
 
-#### Restore from Backup
+Responses:
 
-```http
-POST /restore
-```
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupListResponse` | Backups |
+| `422` | application/json | `LegacyError` | S3 is not configured |
+| `500` | application/json | `LegacyError` | Remote backup listing failed |
+
+#### GET /backup/schedule
+
+Read backup schedule settings and the computed next run time.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupScheduleResponse` | Backup schedule |
+
+#### PUT /backup/schedule
+
+Patch backup schedule settings.
 
 Request body:
 
-```json
-{
-  "name": "backup-directory-name"
-}
-```
+- Content type: `application/json`
+- Schema: `BackupSchedulePatch`
 
-### Health
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | no | Enable scheduled snapshots |
+| `cron` | string | no | Five-part cron expression |
+| `retention_count` | integer | no | Number of local snapshots to retain |
 
-#### Health Check
+Responses:
 
-```http
-GET /health
-```
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupScheduleResponse` | Updated backup schedule |
+| `400` | application/json | `LegacyError` | Malformed or non-object JSON body |
+| `422` | application/json | `LegacyError` | Invalid schedule patch |
+| `500` | application/json | `LegacyError` | Schedule settings could not be saved |
 
-Response:
+Examples:
 
-```json
-{
-  "status": "ok",
-  "version": "0.1.0-beta",
-  "uptime": 3600,
-  "queueSize": 0
-}
-```
-
-## Data Types
-
-### Bookmark Object
-
-```json
-{
-  "id": "bookmark-uuid",
-  "url": "https://example.com",
-  "domain": "example.com",
-  "title": "Example Site",
-  "description": "Site description",
-  "status": "indexed",
-  "category_id": "category-uuid",
-  "category": {
-    "id": "category-uuid",
-    "name": "Development"
-  },
-  "favicon_url": "https://example.com/favicon.ico",
-  "screenshot_url": null,
-  "is_pinned": 0,
-  "is_archived": 0,
-  "is_trashed": 0,
-  "trashed_at": null,
-  "read_at": null,
-  "notes": "Personal notes",
-  "tags": ["tag1", "tag2"],
-  "word_count": 500,
-  "reading_time": 2,
-  "created_at": "2026-03-28T12:00:00Z",
-  "updated_at": "2026-03-28T12:00:00Z"
-}
-```
-
-### Category Object
-
-```json
-{
-  "id": "category-uuid",
-  "name": "Development",
-  "parent_id": "parent-category-uuid",
-  "bookmark_count": 25,
-  "created_at": "2026-03-28T12:00:00Z",
-  "updated_at": "2026-03-28T12:00:00Z"
-}
-```
-
-### Search Result Object
-
-```json
-{
-  "id": "bookmark-uuid",
-  "url": "https://example.com",
-  "title": "Example Site",
-  "description": "Site description",
-  "domain": "example.com",
-  "tags": ["tag1", "tag2"],
-  "category": "Development",
-  "is_pinned": 0,
-  "is_archived": 0,
-  "status": "indexed",
-  "created_at": "2026-03-28T12:00:00Z"
-}
-```
-
-## Error Codes
-
-| HTTP Status | Description |
-|-------------|-------------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content |
-| 400 | Bad Request |
-| 404 | Not Found |
-| 409 | Conflict |
-| 422 | Unprocessable Entity |
-| 500 | Internal Server Error |
-
-## Rate Limiting
-
-Currently, no rate limiting is implemented as the daemon runs locally.
-
-## Version History
-
-- **v0.1.0-beta**: Initial API documentation
-
-## Examples
-
-### Complete Workflow: Add and Search
+**Update backup schedule**
 
 ```bash
-# Add a bookmark
-curl -X POST http://127.0.0.1:3210/bookmarks \
+curl -X PUT http://127.0.0.1:3210/backup/schedule \
   -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://github.com/goniszewski/little-imp",
-    "title": "Little Imp - Local-first bookmark manager"
-  }'
-
-# Wait for processing (status will change from "saved" to "indexed")
-# Then search for it
-curl "http://127.0.0.1:3210/search?q=little+imp&mode=keyword"
+  -d '{"enabled":true,"cron":"0 3 * * *","retention_count":10}'
 ```
 
-### Category Management
+#### GET /backup/destination
+
+Read the effective backup directory and writability.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupDestinationResponse` | Backup destination |
+
+#### PUT /backup/destination
+
+Set or clear the custom local backup directory.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `BackupDestinationPatch`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Absolute custom backup path, or empty string to reset |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupDestinationResponse` | Updated backup destination |
+| `400` | application/json | `LegacyError` | Malformed or non-object JSON body |
+| `422` | application/json | `LegacyError` | Invalid or unwritable path |
+| `500` | application/json | `LegacyError` | Destination settings could not be saved |
+
+Examples:
+
+**Set a custom backup destination**
 
 ```bash
-# Create a category
-curl -X POST http://127.0.0.1:3210/categories \
+curl -X PUT http://127.0.0.1:3210/backup/destination \
   -H "Content-Type: application/json" \
-  -d '{"name": "Open Source Projects"}'
-
-# List categories
-curl http://127.0.0.1:3210/categories
+  -d '{"path":"/Users/me/Backups/Little Imp"}'
 ```
 
-### Backup Operations
+#### POST /restore
+
+Restore from a local backup directory or remote S3 snapshot.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `RestoreRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | Local backup directory name |
+| `source` | "remote" | no | Restore source |
+| `key` | string | no | Remote S3 snapshot.db key |
+| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RestoreResult` | Restore completed |
+| `400` | application/json | `LegacyError` | Malformed JSON |
+| `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `422` | application/json | `LegacyError` | Invalid restore request or backup validation failed |
+| `500` | application/json | `LegacyError` | Restore failed |
+
+Examples:
+
+**Restore a local backup**
 
 ```bash
-# Create a backup
-curl -X POST http://127.0.0.1:3210/backup
-
-# List available backups
-curl http://127.0.0.1:3210/backup/list
-
-# Restore from a backup (replace with actual backup name)
 curl -X POST http://127.0.0.1:3210/restore \
   -H "Content-Type: application/json" \
-  -d '{"name": "backup-2026-03-28-120000"}'
+  -d '{"name":"2026-05-13T09-30-00-000Z"}'
 ```
 
----
+**Restore a remote backup**
 
-*This API documentation is auto-generated from the codebase. For the most up-to-date information, refer to the source code in `daemon/src/routes/`.*
+```bash
+curl -X POST http://127.0.0.1:3210/restore \
+  -H "Content-Type: application/json" \
+  -d '{"source":"remote","key":"little-imp/2026-05-13T09-30-00-000Z/snapshot.db"}'
+```
+
+#### POST /settings/test-s3
+
+Test connectivity to the configured S3 backup destination.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `ConnectivityTestResponse` | S3 connectivity succeeded |
+| `422` | application/json | `LegacyError` | S3 is not configured or connection failed |
+
+Examples:
+
+**Test S3 connectivity**
+
+```bash
+curl -X POST http://127.0.0.1:3210/settings/test-s3
+```
+
+### Timeline
+
+#### GET /timeline
+
+List timeline events with pagination.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `limit` | integer | no | Maximum number of results to return |
+| `offset` | integer | no | Number of results to skip |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `TimelinePage` | Timeline page |
+| `400` | application/problem+json | `ProblemDetails` | Invalid limit or offset |
+
+### Suggestions
+
+#### GET /suggestions
+
+List pending organization-agent suggestions.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `SuggestionsResponse` | Pending suggestions |
+
+#### POST /suggestions/:id/accept
+
+Accept a suggestion and apply its action.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `object` | Accepted suggestion |
+| `404` | application/problem+json | `ProblemDetails` | Suggestion not found |
+| `422` | application/problem+json | `ProblemDetails` | Suggestion is no longer pending or action is invalid |
+| `500` | application/problem+json | `ProblemDetails` | Suggestion action failed |
+
+#### POST /suggestions/:id/reject
+
+Reject a pending suggestion.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `object` | Rejected suggestion |
+| `404` | application/problem+json | `ProblemDetails` | Suggestion not found |
+| `422` | application/problem+json | `ProblemDetails` | Suggestion is no longer pending |
+| `500` | application/problem+json | `ProblemDetails` | Suggestion could not be resolved |
+
+### Export
+
+#### GET /export
+
+Export active bookmarks as JSON or CSV.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `format` | "json" \| "csv" | no | Export format |
+| `tag` | string | no | Filter by tag name |
+| `domain` | string | no | Filter by exact domain |
+| `category` | string | no | Filter by category name |
+| `date_from` | string | no | Inclusive ISO date or date-time lower bound |
+| `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json or text/csv | `array<ExportBookmark>` | Downloadable JSON or CSV export |
+| `400` | application/json | `LegacyError` | Invalid format |
+
+### MCP
+
+#### ALL /mcp
+
+Handle MCP Streamable HTTP transport requests.
+
+The daemon creates a fresh MCP server and transport for each request.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json or text/event-stream | - | MCP transport response |
+| `500` | application/json | `McpErrorResponse` | MCP request failed |
+
+Examples:
+
+**Call the MCP endpoint**
+
+```bash
+curl -X POST http://127.0.0.1:3210/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}'
+```
+
+## Schemas
+
+### ProblemDetails
+
+RFC 7807-style problem response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `type` | string | yes | Stable problem type URI |
+| `title` | string | yes | Short human-readable error title |
+| `status` | integer | yes | HTTP status code |
+| `detail` | string \| null | no | Human-readable explanation |
+
+### LegacyError
+
+Legacy JSON error response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `error` | string | yes | Human-readable error message |
+| `details` | string \| null | no | Optional additional details |
+
+### Pagination
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `total` | integer | yes | Total matching records |
+| `limit` | integer | yes | Applied page size |
+| `offset` | integer | yes | Applied offset |
+| `has_more` | boolean | yes | Whether another page exists |
+
+### Bookmark
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `url` | string | yes | Original bookmark URL |
+| `domain` | string | yes | URL hostname |
+| `title` | string \| null | yes | Page title |
+| `description` | string \| null | yes | Page description |
+| `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `category_id` | string \| null | yes | Assigned category ID |
+| `favicon_url` | string \| null | yes | Favicon URL |
+| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_at` | string \| null | yes | Read timestamp |
+| `notes` | string \| null | yes | Personal notes |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+| `tags` | array<string> | yes | Tag names attached to the bookmark |
+
+### BookmarkContent
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmark_id` | string | yes | Bookmark ID |
+| `raw_html` | string \| null | yes | Raw HTML |
+| `markdown` | string \| null | yes | Extracted Markdown |
+| `summary` | string \| null | yes | Extracted summary |
+| `author` | string \| null | yes | Author |
+| `published_at` | string \| null | yes | Published timestamp |
+| `word_count` | integer \| null | yes | Estimated word count |
+| `language` | string \| null | yes | Detected language |
+| `extracted_at` | string | yes | Extraction timestamp |
+
+### BookmarkDetail
+
+Bookmark with extracted content
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `url` | string | yes | Original bookmark URL |
+| `domain` | string | yes | URL hostname |
+| `title` | string \| null | yes | Page title |
+| `description` | string \| null | yes | Page description |
+| `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `category_id` | string \| null | yes | Assigned category ID |
+| `favicon_url` | string \| null | yes | Favicon URL |
+| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_at` | string \| null | yes | Read timestamp |
+| `notes` | string \| null | yes | Personal notes |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+| `tags` | array<string> | yes | Tag names attached to the bookmark |
+| `content` | BookmarkContent \| null | yes |  |
+| `content.bookmark_id` | string | yes | Bookmark ID |
+| `content.raw_html` | string \| null | yes | Raw HTML |
+| `content.markdown` | string \| null | yes | Extracted Markdown |
+| `content.summary` | string \| null | yes | Extracted summary |
+| `content.author` | string \| null | yes | Author |
+| `content.published_at` | string \| null | yes | Published timestamp |
+| `content.word_count` | integer \| null | yes | Estimated word count |
+| `content.language` | string \| null | yes | Detected language |
+| `content.extracted_at` | string | yes | Extraction timestamp |
+
+### BookmarkDetailResponse
+
+Single bookmark response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BookmarkDetail | yes |  |
+| `data.id` | string | yes | Bookmark ID |
+| `data.url` | string | yes | Original bookmark URL |
+| `data.domain` | string | yes | URL hostname |
+| `data.title` | string \| null | yes | Page title |
+| `data.description` | string \| null | yes | Page description |
+| `data.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `data.category_id` | string \| null | yes | Assigned category ID |
+| `data.favicon_url` | string \| null | yes | Favicon URL |
+| `data.screenshot_url` | string \| null | yes | Screenshot URL |
+| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `data.trashed_at` | string \| null | yes | Trash timestamp |
+| `data.read_at` | string \| null | yes | Read timestamp |
+| `data.notes` | string \| null | yes | Personal notes |
+| `data.created_at` | string | yes | Creation timestamp |
+| `data.updated_at` | string | yes | Update timestamp |
+| `data.tags` | array<string> | yes | Tag names attached to the bookmark |
+| `data.content` | BookmarkContent \| null | yes |  |
+| `data.content.bookmark_id` | string | yes | Bookmark ID |
+| `data.content.raw_html` | string \| null | yes | Raw HTML |
+| `data.content.markdown` | string \| null | yes | Extracted Markdown |
+| `data.content.summary` | string \| null | yes | Extracted summary |
+| `data.content.author` | string \| null | yes | Author |
+| `data.content.published_at` | string \| null | yes | Published timestamp |
+| `data.content.word_count` | integer \| null | yes | Estimated word count |
+| `data.content.language` | string \| null | yes | Detected language |
+| `data.content.extracted_at` | string | yes | Extraction timestamp |
+
+### BookmarkResponse
+
+Single bookmark response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | Bookmark | yes |  |
+| `data.id` | string | yes | Bookmark ID |
+| `data.url` | string | yes | Original bookmark URL |
+| `data.domain` | string | yes | URL hostname |
+| `data.title` | string \| null | yes | Page title |
+| `data.description` | string \| null | yes | Page description |
+| `data.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `data.category_id` | string \| null | yes | Assigned category ID |
+| `data.favicon_url` | string \| null | yes | Favicon URL |
+| `data.screenshot_url` | string \| null | yes | Screenshot URL |
+| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `data.trashed_at` | string \| null | yes | Trash timestamp |
+| `data.read_at` | string \| null | yes | Read timestamp |
+| `data.notes` | string \| null | yes | Personal notes |
+| `data.created_at` | string | yes | Creation timestamp |
+| `data.updated_at` | string | yes | Update timestamp |
+| `data.tags` | array<string> | yes | Tag names attached to the bookmark |
+
+### BookmarkListResponse
+
+Paginated bookmark list
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<Bookmark> | yes | Page items |
+| `pagination` | Pagination | yes |  |
+| `pagination.total` | integer | yes | Total matching records |
+| `pagination.limit` | integer | yes | Applied page size |
+| `pagination.offset` | integer | yes | Applied offset |
+| `pagination.has_more` | boolean | yes | Whether another page exists |
+
+### BookmarkArrayResponse
+
+Bookmark array response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<Bookmark> | yes | Bookmarks |
+
+### BookmarkCreateRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `url` | string | yes | HTTP or HTTPS URL to save |
+| `title` | string | no | Optional title override |
+
+### BookmarkUpdateRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `title` | string \| null | no | New title, or null to clear |
+| `category_id` | string \| null | no | Category ID, or null to clear |
+| `tags` | array<string> | no | Replacement tag names |
+| `is_pinned` | integer | no | Pinned flag, 0 or 1 |
+| `is_archived` | integer | no | Archived flag, 0 or 1 |
+| `read_at` | string \| null | no | ISO 8601 date-time, or null to mark unread |
+| `notes` | string \| null | no | Personal notes, or null to clear |
+
+### RelatedBookmarksResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<Bookmark> | yes | Related bookmarks |
+
+### BookmarkPipelineStatus
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmarkId` | string | yes | Bookmark ID |
+| `bookmarkStatus` | string | yes | Current bookmark pipeline status |
+| `job` | object \| null | yes |  |
+| `job.id` | string | yes | Job ID |
+| `job.type` | string | yes | Job type |
+| `job.status` | "pending" \| "running" \| "done" \| "failed" | yes | Job status |
+| `job.error` | string \| null | yes | Job error |
+| `job.created_at` | string | yes | Job creation timestamp |
+| `job.started_at` | string \| null | yes | Job start timestamp |
+| `job.finished_at` | string \| null | yes | Job finish timestamp |
+
+### BookmarkPipelineStatusResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BookmarkPipelineStatus | yes |  |
+| `data.bookmarkId` | string | yes | Bookmark ID |
+| `data.bookmarkStatus` | string | yes | Current bookmark pipeline status |
+| `data.job` | object \| null | yes |  |
+| `data.job.id` | string | yes | Job ID |
+| `data.job.type` | string | yes | Job type |
+| `data.job.status` | "pending" \| "running" \| "done" \| "failed" | yes | Job status |
+| `data.job.error` | string \| null | yes | Job error |
+| `data.job.created_at` | string | yes | Job creation timestamp |
+| `data.job.started_at` | string \| null | yes | Job start timestamp |
+| `data.job.finished_at` | string \| null | yes | Job finish timestamp |
+
+### SearchResultItem
+
+Bookmark search hit
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `url` | string | yes | Original bookmark URL |
+| `domain` | string | yes | URL hostname |
+| `title` | string \| null | yes | Page title |
+| `description` | string \| null | yes | Page description |
+| `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `category_id` | string \| null | yes | Assigned category ID |
+| `favicon_url` | string \| null | yes | Favicon URL |
+| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_at` | string \| null | yes | Read timestamp |
+| `notes` | string \| null | yes | Personal notes |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+| `tags` | array<string> | yes | Tag names attached to the bookmark |
+| `snippet` | string \| null | yes | Highlighted search excerpt |
+| `rank` | number \| null | yes | Search rank or hybrid score |
+
+### SearchResponse
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<SearchResultItem> | yes | Search hits |
+| `pagination` | Pagination | yes |  |
+| `pagination.total` | integer | yes | Total matching records |
+| `pagination.limit` | integer | yes | Applied page size |
+| `pagination.offset` | integer | yes | Applied offset |
+| `pagination.has_more` | boolean | yes | Whether another page exists |
+| `meta` | object | yes |  |
+| `meta.mode` | "keyword" \| "semantic" \| "hybrid" | yes | Applied search mode |
+
+### CategoryRecord
+
+Category row returned by create and update endpoints
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Category ID |
+| `name` | string | yes | Category name |
+| `parent_id` | string \| null | yes | Parent category ID |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+
+### CategoryWithCount
+
+Category row with active bookmark count returned by category listings
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Category ID |
+| `name` | string | yes | Category name |
+| `parent_id` | string \| null | yes | Parent category ID |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+| `bookmark_count` | integer | yes | Active bookmark count |
+
+### CategoryNode
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Category ID |
+| `name` | string | yes | Category name |
+| `parent_id` | string \| null | yes | Parent category ID |
+| `created_at` | string | yes | Creation timestamp |
+| `updated_at` | string | yes | Update timestamp |
+| `bookmark_count` | integer | yes | Active bookmark count |
+| `children` | array<CategoryNode> | yes | Child categories |
+
+### CategoryRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Category name |
+| `parent_id` | string \| null | no | Parent category ID |
+
+### CategoryPatchRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | Category name |
+| `parent_id` | string \| null | no | Parent category ID |
+
+### CategoryTreeResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<CategoryNode> | yes | Category tree |
+
+### CategoryResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | CategoryRecord | yes |  |
+| `data.id` | string | yes | Category ID |
+| `data.name` | string | yes | Category name |
+| `data.parent_id` | string \| null | yes | Parent category ID |
+| `data.created_at` | string | yes | Creation timestamp |
+| `data.updated_at` | string | yes | Update timestamp |
+
+### TagRecord
+
+Tag row returned by create and attach endpoints
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Tag ID |
+| `name` | string | yes | Tag name |
+| `created_at` | string | yes | Creation timestamp |
+
+### TagWithCount
+
+Tag row with active bookmark count returned by tag listings
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Tag ID |
+| `name` | string | yes | Tag name |
+| `created_at` | string | yes | Creation timestamp |
+| `bookmark_count` | integer | yes | Active bookmark count |
+
+### TagRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Lowercase tag name |
+
+### TagListResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<TagWithCount> | yes | Tags |
+
+### TagResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | TagRecord | yes |  |
+| `data.id` | string | yes | Tag ID |
+| `data.name` | string | yes | Tag name |
+| `data.created_at` | string | yes | Creation timestamp |
+
+### Domain
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `domain` | string | yes | Domain |
+| `count` | integer | yes | Active bookmark count |
+
+### DomainListResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<Domain> | yes | Domains |
+
+### ImportSummary
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `importId` | string | yes | Import ID for progress stream |
+| `total` | integer | yes | Parsed bookmark count |
+| `warnings` | integer | yes | Parser warning count |
+| `progressUrl` | string | yes | SSE progress URL |
+
+### ImportSummaryResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | ImportSummary | yes |  |
+| `data.importId` | string | yes | Import ID for progress stream |
+| `data.total` | integer | yes | Parsed bookmark count |
+| `data.warnings` | integer | yes | Parser warning count |
+| `data.progressUrl` | string | yes | SSE progress URL |
+
+### ImportProgressEvent
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `queued` | integer | yes | Queued bookmarks |
+| `skipped` | integer | yes | Skipped bookmarks |
+| `total` | integer | yes | Total parsed bookmarks |
+| `done` | boolean | yes | Whether import processing is complete |
+| `error` | string \| null | yes | Background import error |
+
+### RuntimeCapability
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | yes | Whether this runtime feature is usable |
+| `provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `model` | string \| null | yes | Resolved model |
+| `base_url` | string \| null | yes | Resolved base URL |
+
+### RuntimeCapabilities
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `llm` | RuntimeCapability | yes |  |
+| `llm.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `llm.model` | string \| null | yes | Resolved model |
+| `llm.base_url` | string \| null | yes | Resolved base URL |
+| `embeddings` | RuntimeCapability | yes |  |
+| `embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `embeddings.model` | string \| null | yes | Resolved model |
+| `embeddings.base_url` | string \| null | yes | Resolved base URL |
+| `capabilities` | object | yes |  |
+| `capabilities.enrichment` | boolean | yes | LLM enrichment available |
+| `capabilities.semantic_search` | boolean | yes | Semantic search available |
+| `capabilities.related_bookmarks` | boolean | yes | Related bookmarks available |
+| `capabilities.organization_agent` | boolean | yes | Organization agent available |
+
+### Settings
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ai` | object | yes |  |
+| `ai.provider` | "openai" \| "ollama" \| "none" | yes | LLM provider |
+| `ai.openai` | object | yes |  |
+| `ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
+| `ai.openai.model` | string | yes | OpenAI chat model |
+| `ai.ollama` | object | yes |  |
+| `ai.ollama.base_url` | string | yes | Ollama base URL |
+| `ai.ollama.model` | string | yes | Ollama model |
+| `ai.embeddings` | object | yes |  |
+| `ai.embeddings.provider` | "openai" \| "ollama" | yes | Embedding provider |
+| `ai.embeddings.model` | string | yes | Embedding model |
+| `app` | object | yes |  |
+| `app.autostart` | boolean | yes | Start daemon automatically |
+| `app.theme` | "light" \| "dark" \| "system" | yes | UI theme |
+| `app.lock` | object | yes |  |
+| `app.lock.enabled` | boolean | yes | Whether app lock is enabled |
+| `app.lock.pin_hash` | string | yes | Redacted PIN hash. Empty string means unset |
+| `backup` | object | yes |  |
+| `backup.local` | object | yes |  |
+| `backup.local.destination_path` | string | yes | Absolute custom backup destination, or empty string for default |
+| `backup.schedule` | BackupSchedule | yes |  |
+| `backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
+| `backup.schedule.cron` | string | yes | Five-part cron expression |
+| `backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
+| `backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
+| `backup.s3` | object | yes |  |
+| `backup.s3.endpoint` | string | yes | S3-compatible endpoint URL, or empty string for AWS |
+| `backup.s3.bucket` | string | yes | S3 bucket |
+| `backup.s3.access_key` | string | yes | Redacted S3 access key. Empty string means unset |
+| `backup.s3.secret_key` | string | yes | Redacted S3 secret key. Empty string means unset |
+| `backup.s3.region` | string | yes | S3 region |
+| `backup.s3.prefix` | string | yes | Object key prefix |
+| `runtime` | RuntimeCapabilities | yes |  |
+| `runtime.llm` | RuntimeCapability | yes |  |
+| `runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `runtime.llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `runtime.llm.model` | string \| null | yes | Resolved model |
+| `runtime.llm.base_url` | string \| null | yes | Resolved base URL |
+| `runtime.embeddings` | RuntimeCapability | yes |  |
+| `runtime.embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `runtime.embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `runtime.embeddings.model` | string \| null | yes | Resolved model |
+| `runtime.embeddings.base_url` | string \| null | yes | Resolved base URL |
+| `runtime.capabilities` | object | yes |  |
+| `runtime.capabilities.enrichment` | boolean | yes | LLM enrichment available |
+| `runtime.capabilities.semantic_search` | boolean | yes | Semantic search available |
+| `runtime.capabilities.related_bookmarks` | boolean | yes | Related bookmarks available |
+| `runtime.capabilities.organization_agent` | boolean | yes | Organization agent available |
+
+### SettingsPatch
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ai` | object | no |  |
+| `ai.provider` | "openai" \| "ollama" \| "none" | no | LLM provider |
+| `ai.openai` | object | no |  |
+| `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
+| `ai.openai.model` | string | no | OpenAI chat model |
+| `ai.ollama` | object | no |  |
+| `ai.ollama.base_url` | string | no | Ollama base URL |
+| `ai.ollama.model` | string | no | Ollama model |
+| `ai.embeddings` | object | no |  |
+| `ai.embeddings.provider` | "openai" \| "ollama" | no | Embedding provider |
+| `ai.embeddings.model` | string | no | Embedding model |
+| `app` | object | no |  |
+| `app.autostart` | boolean | no | Start daemon automatically |
+| `app.theme` | "light" \| "dark" \| "system" | no | UI theme |
+| `app.lock` | object | no |  |
+| `app.lock.enabled` | boolean | no | Whether app lock is enabled |
+| `app.lock.pin_hash` | string | no | PIN hash, empty string clears it |
+| `backup` | object | no |  |
+| `backup.local` | object | no |  |
+| `backup.local.destination_path` | string | no | Absolute custom backup destination, or empty string for default |
+| `backup.schedule` | object | no |  |
+| `backup.schedule.enabled` | boolean | no | Enable scheduled snapshots |
+| `backup.schedule.cron` | string | no | Five-part cron expression |
+| `backup.schedule.retention_count` | integer | no | Number of local snapshots to retain |
+| `backup.s3` | object | no |  |
+| `backup.s3.endpoint` | string | no | S3-compatible endpoint URL, or empty string for AWS |
+| `backup.s3.bucket` | string | no | S3 bucket |
+| `backup.s3.access_key` | string | no | S3 access key |
+| `backup.s3.secret_key` | string | no | S3 secret key |
+| `backup.s3.region` | string | no | S3 region |
+| `backup.s3.prefix` | string | no | Object key prefix |
+
+### SettingsResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | Settings | yes |  |
+| `data.ai` | object | yes |  |
+| `data.ai.provider` | "openai" \| "ollama" \| "none" | yes | LLM provider |
+| `data.ai.openai` | object | yes |  |
+| `data.ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
+| `data.ai.openai.model` | string | yes | OpenAI chat model |
+| `data.ai.ollama` | object | yes |  |
+| `data.ai.ollama.base_url` | string | yes | Ollama base URL |
+| `data.ai.ollama.model` | string | yes | Ollama model |
+| `data.ai.embeddings` | object | yes |  |
+| `data.ai.embeddings.provider` | "openai" \| "ollama" | yes | Embedding provider |
+| `data.ai.embeddings.model` | string | yes | Embedding model |
+| `data.app` | object | yes |  |
+| `data.app.autostart` | boolean | yes | Start daemon automatically |
+| `data.app.theme` | "light" \| "dark" \| "system" | yes | UI theme |
+| `data.app.lock` | object | yes |  |
+| `data.app.lock.enabled` | boolean | yes | Whether app lock is enabled |
+| `data.app.lock.pin_hash` | string | yes | Redacted PIN hash. Empty string means unset |
+| `data.backup` | object | yes |  |
+| `data.backup.local` | object | yes |  |
+| `data.backup.local.destination_path` | string | yes | Absolute custom backup destination, or empty string for default |
+| `data.backup.schedule` | BackupSchedule | yes |  |
+| `data.backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
+| `data.backup.schedule.cron` | string | yes | Five-part cron expression |
+| `data.backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
+| `data.backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
+| `data.backup.s3` | object | yes |  |
+| `data.backup.s3.endpoint` | string | yes | S3-compatible endpoint URL, or empty string for AWS |
+| `data.backup.s3.bucket` | string | yes | S3 bucket |
+| `data.backup.s3.access_key` | string | yes | Redacted S3 access key. Empty string means unset |
+| `data.backup.s3.secret_key` | string | yes | Redacted S3 secret key. Empty string means unset |
+| `data.backup.s3.region` | string | yes | S3 region |
+| `data.backup.s3.prefix` | string | yes | Object key prefix |
+| `data.runtime` | RuntimeCapabilities | yes |  |
+| `data.runtime.llm` | RuntimeCapability | yes |  |
+| `data.runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `data.runtime.llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `data.runtime.llm.model` | string \| null | yes | Resolved model |
+| `data.runtime.llm.base_url` | string \| null | yes | Resolved base URL |
+| `data.runtime.embeddings` | RuntimeCapability | yes |  |
+| `data.runtime.embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
+| `data.runtime.embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `data.runtime.embeddings.model` | string \| null | yes | Resolved model |
+| `data.runtime.embeddings.base_url` | string \| null | yes | Resolved base URL |
+| `data.runtime.capabilities` | object | yes |  |
+| `data.runtime.capabilities.enrichment` | boolean | yes | LLM enrichment available |
+| `data.runtime.capabilities.semantic_search` | boolean | yes | Semantic search available |
+| `data.runtime.capabilities.related_bookmarks` | boolean | yes | Related bookmarks available |
+| `data.runtime.capabilities.organization_agent` | boolean | yes | Organization agent available |
+
+### ConnectivityTestResponse
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ok` | boolean | yes | Whether the connectivity check succeeded |
+| `error` | string | no | Failure reason |
+| `message` | string | no | Success message |
+
+### BackupSchedule
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | yes | Enable scheduled snapshots |
+| `cron` | string | yes | Five-part cron expression |
+| `retention_count` | integer | yes | Number of local snapshots to retain |
+| `next_run_at` | string \| null | yes | Next scheduled run timestamp |
+
+### BackupSchedulePatch
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | no | Enable scheduled snapshots |
+| `cron` | string | no | Five-part cron expression |
+| `retention_count` | integer | no | Number of local snapshots to retain |
+
+### BackupScheduleResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BackupSchedule | yes |  |
+| `data.enabled` | boolean | yes | Enable scheduled snapshots |
+| `data.cron` | string | yes | Five-part cron expression |
+| `data.retention_count` | integer | yes | Number of local snapshots to retain |
+| `data.next_run_at` | string \| null | yes | Next scheduled run timestamp |
+
+### BackupDestination
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Effective backup directory |
+| `is_custom` | boolean | yes | Whether a custom destination is active |
+| `writable` | boolean | yes | Whether the daemon can write to this directory |
+
+### BackupDestinationPatch
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Absolute custom backup path, or empty string to reset |
+
+### BackupDestinationResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BackupDestination | yes |  |
+| `data.path` | string | yes | Effective backup directory |
+| `data.is_custom` | boolean | yes | Whether a custom destination is active |
+| `data.writable` | boolean | yes | Whether the daemon can write to this directory |
+
+### BackupResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Local backup directory |
+| `size_bytes` | integer | yes | Snapshot database size |
+| `bookmark_count` | integer | yes | Bookmarks included |
+| `created_at` | string | yes | Creation timestamp |
+| `remote_url` | string | no | Remote S3 URL when uploaded |
+
+### BackupEntry
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Backup name or remote key |
+| `path` | string | yes | Local path or s3:// URI |
+| `size_bytes` | integer | yes | Snapshot database size |
+| `bookmark_count` | integer | yes | Bookmarks included |
+| `created_at` | string | yes | Creation timestamp |
+| `source` | "local" \| "remote" | yes | Backup source |
+
+### BackupListResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<BackupEntry> | yes | Backup entries |
+
+### RestoreRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | Local backup directory name |
+| `source` | "remote" | no | Restore source |
+| `key` | string | no | Remote S3 snapshot.db key |
+| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
+
+### RestoreResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `restored_at` | string | yes | Restore timestamp |
+| `bookmark_count` | integer | yes | Restored bookmark count |
+| `checksum_verified` | boolean | yes | Whether checksum verification succeeded |
+| `rollback_path` | string | yes | Rollback copy directory |
+| `restart_required` | boolean | yes | Whether daemon restart is required |
+
+### TimelineEvent
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Timeline event ID |
+| `type` | string | yes | Timeline event type |
+| `description` | string | yes | Human-readable event description |
+| `metadata` | object | yes | Event metadata |
+| `source` | "agent" \| "user" | yes | Event source |
+| `created_at` | string | yes | Creation timestamp |
+
+### TimelinePage
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<TimelineEvent> | yes | Timeline events |
+| `pagination` | Pagination | yes |  |
+| `pagination.total` | integer | yes | Total matching records |
+| `pagination.limit` | integer | yes | Applied page size |
+| `pagination.offset` | integer | yes | Applied offset |
+| `pagination.has_more` | boolean | yes | Whether another page exists |
+
+### Suggestion
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Suggestion ID |
+| `bookmarkId` | string \| null | yes | Related bookmark ID |
+| `type` | "new_subcategory" \| "merge_categories" \| "duplicate_bookmark" | yes | Suggestion type |
+| `value` | string | yes | Human-readable suggestion value |
+| `metadata` | object | yes | Suggestion metadata |
+| `confidence` | number \| null | yes | Confidence score |
+| `status` | "pending" \| "accepted" \| "rejected" | yes | Suggestion status |
+| `created_at` | string | yes | Creation timestamp |
+| `resolved_at` | string \| null | yes | Resolution timestamp |
+
+### SuggestionsResponse
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<Suggestion> | yes | Pending suggestions |
+| `meta` | object | yes |  |
+| `meta.pending` | integer | yes | Pending suggestion count |
+
+### HealthResponse
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `status` | "ok" | yes | Health status |
+| `version` | string | yes | Daemon package version |
+| `uptime` | integer | yes | Process uptime in milliseconds |
+| `queueSize` | integer | yes | Queued background jobs |
+
+### ExportBookmark
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `url` | string | yes | Bookmark URL |
+| `title` | string \| null | yes | Title |
+| `summary` | string \| null | yes | Summary |
+| `tags` | array<string> | yes | Tag names |
+| `category` | string \| null | yes | Category name |
+| `domain` | string | yes | Domain |
+| `created_at` | string | yes | Creation timestamp |
+
+### McpErrorResponse
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `error` | string | yes | MCP failure message |

@@ -1,0 +1,56 @@
+import type { apiContract } from "./contract.js";
+import type { InferSchema } from "./schema.js";
+
+type Schemas = typeof apiContract.schemas;
+
+export type ApiSchemaName = keyof Schemas;
+export type ApiDto<Name extends ApiSchemaName> = InferSchema<Schemas[Name], Schemas>;
+export type ApiRouteDefinition = (typeof apiContract.routes)[number];
+
+export type ProblemDetailsDto = ApiDto<"ProblemDetails">;
+export type LegacyErrorDto = ApiDto<"LegacyError">;
+export type PaginationDto = ApiDto<"Pagination">;
+
+export type BookmarkDto = ApiDto<"Bookmark">;
+export type BookmarkDetailDto = ApiDto<"BookmarkDetail">;
+export type BookmarkCreateRequestDto = ApiDto<"BookmarkCreateRequest">;
+export type BookmarkUpdateRequestDto = ApiDto<"BookmarkUpdateRequest">;
+export type BookmarkListResponseDto = ApiDto<"BookmarkListResponse">;
+export type BookmarkResponseDto = ApiDto<"BookmarkResponse">;
+export type BookmarkDetailResponseDto = ApiDto<"BookmarkDetailResponse">;
+export type BookmarkPipelineStatusResponseDto = ApiDto<"BookmarkPipelineStatusResponse">;
+
+export type SearchResponseDto = ApiDto<"SearchResponse">;
+export type CategoryRecordDto = ApiDto<"CategoryRecord">;
+export type CategoryWithCountDto = ApiDto<"CategoryWithCount">;
+export type CategoryDto = CategoryRecordDto;
+export type CategoryNodeDto = ApiDto<"CategoryNode">;
+export type CategoryRequestDto = ApiDto<"CategoryRequest">;
+export type CategoryPatchRequestDto = ApiDto<"CategoryPatchRequest">;
+export type TagRecordDto = ApiDto<"TagRecord">;
+export type TagWithCountDto = ApiDto<"TagWithCount">;
+export type TagDto = TagRecordDto;
+export type TagRequestDto = ApiDto<"TagRequest">;
+export type DomainDto = ApiDto<"Domain">;
+
+export type SettingsDto = ApiDto<"Settings">;
+export type SettingsPatchDto = ApiDto<"SettingsPatch">;
+export type SettingsResponseDto = ApiDto<"SettingsResponse">;
+export type ConnectivityTestResponseDto = ApiDto<"ConnectivityTestResponse">;
+
+export type BackupScheduleDto = ApiDto<"BackupSchedule">;
+export type BackupSchedulePatchDto = ApiDto<"BackupSchedulePatch">;
+export type BackupDestinationDto = ApiDto<"BackupDestination">;
+export type BackupDestinationPatchDto = ApiDto<"BackupDestinationPatch">;
+export type BackupResultDto = ApiDto<"BackupResult">;
+export type BackupEntryDto = ApiDto<"BackupEntry">;
+export type RestoreRequestDto = ApiDto<"RestoreRequest">;
+export type RestoreResultDto = ApiDto<"RestoreResult">;
+
+export type ImportSummaryDto = ApiDto<"ImportSummary">;
+export type ImportProgressEventDto = ApiDto<"ImportProgressEvent">;
+export type TimelinePageDto = ApiDto<"TimelinePage">;
+export type SuggestionDto = ApiDto<"Suggestion">;
+export type SuggestionsResponseDto = ApiDto<"SuggestionsResponse">;
+export type HealthResponseDto = ApiDto<"HealthResponse">;
+export type ExportBookmarkDto = ApiDto<"ExportBookmark">;

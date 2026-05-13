@@ -1,0 +1,3907 @@
+{
+  "schemaVersion": 1,
+  "name": "Little Imp daemon API",
+  "version": "1",
+  "baseUrl": "http://127.0.0.1:3210",
+  "description": "Local-only REST and MCP API exposed by littleimpd.",
+  "schemas": {
+    "ProblemDetails": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Stable problem type URI"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short human-readable error title"
+        },
+        "status": {
+          "type": "integer",
+          "description": "HTTP status code"
+        },
+        "detail": {
+          "type": "string",
+          "description": "Human-readable explanation",
+          "nullable": true
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "status"
+      ],
+      "additionalProperties": false,
+      "description": "RFC 7807-style problem response"
+    },
+    "LegacyError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional additional details",
+          "nullable": true
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": false,
+      "description": "Legacy JSON error response"
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total matching records",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Applied page size",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Applied offset",
+          "minimum": 0
+        },
+        "has_more": {
+          "type": "boolean",
+          "description": "Whether another page exists"
+        }
+      },
+      "required": [
+        "total",
+        "limit",
+        "offset",
+        "has_more"
+      ],
+      "additionalProperties": false
+    },
+    "Bookmark": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "url": {
+          "type": "string",
+          "description": "Original bookmark URL",
+          "format": "uri"
+        },
+        "domain": {
+          "type": "string",
+          "description": "URL hostname"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description",
+          "nullable": true
+        },
+        "status": {
+          "type": "string",
+          "description": "Pipeline status",
+          "enum": [
+            "saved",
+            "fetched",
+            "extracted",
+            "ai_enriched",
+            "indexed"
+          ]
+        },
+        "category_id": {
+          "type": "string",
+          "description": "Assigned category ID",
+          "nullable": true
+        },
+        "favicon_url": {
+          "type": "string",
+          "description": "Favicon URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "screenshot_url": {
+          "type": "string",
+          "description": "Screenshot URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "is_pinned": {
+          "type": "integer",
+          "description": "Pinned flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_trashed": {
+          "type": "integer",
+          "description": "Trash flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "trashed_at": {
+          "type": "string",
+          "description": "Trash timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "read_at": {
+          "type": "string",
+          "description": "Read timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag names attached to the bookmark",
+          "items": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "domain",
+        "title",
+        "description",
+        "status",
+        "category_id",
+        "favicon_url",
+        "screenshot_url",
+        "is_pinned",
+        "is_archived",
+        "is_trashed",
+        "trashed_at",
+        "read_at",
+        "notes",
+        "created_at",
+        "updated_at",
+        "tags"
+      ],
+      "additionalProperties": false
+    },
+    "BookmarkContent": {
+      "type": "object",
+      "properties": {
+        "bookmark_id": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "raw_html": {
+          "type": "string",
+          "description": "Raw HTML",
+          "nullable": true
+        },
+        "markdown": {
+          "type": "string",
+          "description": "Extracted Markdown",
+          "nullable": true
+        },
+        "summary": {
+          "type": "string",
+          "description": "Extracted summary",
+          "nullable": true
+        },
+        "author": {
+          "type": "string",
+          "description": "Author",
+          "nullable": true
+        },
+        "published_at": {
+          "type": "string",
+          "description": "Published timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "word_count": {
+          "type": "integer",
+          "description": "Estimated word count",
+          "minimum": 0,
+          "nullable": true
+        },
+        "language": {
+          "type": "string",
+          "description": "Detected language",
+          "nullable": true
+        },
+        "extracted_at": {
+          "type": "string",
+          "description": "Extraction timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "bookmark_id",
+        "raw_html",
+        "markdown",
+        "summary",
+        "author",
+        "published_at",
+        "word_count",
+        "language",
+        "extracted_at"
+      ],
+      "additionalProperties": false
+    },
+    "BookmarkDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "url": {
+          "type": "string",
+          "description": "Original bookmark URL",
+          "format": "uri"
+        },
+        "domain": {
+          "type": "string",
+          "description": "URL hostname"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description",
+          "nullable": true
+        },
+        "status": {
+          "type": "string",
+          "description": "Pipeline status",
+          "enum": [
+            "saved",
+            "fetched",
+            "extracted",
+            "ai_enriched",
+            "indexed"
+          ]
+        },
+        "category_id": {
+          "type": "string",
+          "description": "Assigned category ID",
+          "nullable": true
+        },
+        "favicon_url": {
+          "type": "string",
+          "description": "Favicon URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "screenshot_url": {
+          "type": "string",
+          "description": "Screenshot URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "is_pinned": {
+          "type": "integer",
+          "description": "Pinned flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_trashed": {
+          "type": "integer",
+          "description": "Trash flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "trashed_at": {
+          "type": "string",
+          "description": "Trash timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "read_at": {
+          "type": "string",
+          "description": "Read timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag names attached to the bookmark",
+          "items": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        },
+        "content": {
+          "ref": "BookmarkContent",
+          "nullable": true
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "domain",
+        "title",
+        "description",
+        "status",
+        "category_id",
+        "favicon_url",
+        "screenshot_url",
+        "is_pinned",
+        "is_archived",
+        "is_trashed",
+        "trashed_at",
+        "read_at",
+        "notes",
+        "created_at",
+        "updated_at",
+        "tags",
+        "content"
+      ],
+      "additionalProperties": false,
+      "description": "Bookmark with extracted content"
+    },
+    "BookmarkDetailResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BookmarkDetail"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Single bookmark response"
+    },
+    "BookmarkResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "Bookmark"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Single bookmark response"
+    },
+    "BookmarkListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Page items",
+          "items": {
+            "ref": "Bookmark"
+          }
+        },
+        "pagination": {
+          "ref": "Pagination"
+        }
+      },
+      "required": [
+        "data",
+        "pagination"
+      ],
+      "additionalProperties": false,
+      "description": "Paginated bookmark list"
+    },
+    "BookmarkArrayResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Bookmarks",
+          "items": {
+            "ref": "Bookmark"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Bookmark array response"
+    },
+    "BookmarkCreateRequest": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "HTTP or HTTPS URL to save",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional title override"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "BookmarkUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "New title, or null to clear",
+          "maxLength": 2000,
+          "nullable": true
+        },
+        "category_id": {
+          "type": "string",
+          "description": "Category ID, or null to clear",
+          "nullable": true
+        },
+        "tags": {
+          "type": "array",
+          "description": "Replacement tag names",
+          "items": {
+            "type": "string",
+            "description": "Tag name",
+            "maxLength": 100
+          }
+        },
+        "is_pinned": {
+          "type": "integer",
+          "description": "Pinned flag, 0 or 1"
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived flag, 0 or 1"
+        },
+        "read_at": {
+          "type": "string",
+          "description": "ISO 8601 date-time, or null to mark unread",
+          "format": "date-time",
+          "nullable": true
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes, or null to clear",
+          "maxLength": 100000,
+          "nullable": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "RelatedBookmarksResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Related bookmarks",
+          "items": {
+            "ref": "Bookmark"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "BookmarkPipelineStatus": {
+      "type": "object",
+      "properties": {
+        "bookmarkId": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "bookmarkStatus": {
+          "type": "string",
+          "description": "Current bookmark pipeline status"
+        },
+        "job": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Job ID"
+            },
+            "type": {
+              "type": "string",
+              "description": "Job type"
+            },
+            "status": {
+              "type": "string",
+              "description": "Job status",
+              "enum": [
+                "pending",
+                "running",
+                "done",
+                "failed"
+              ]
+            },
+            "error": {
+              "type": "string",
+              "description": "Job error",
+              "nullable": true
+            },
+            "created_at": {
+              "type": "string",
+              "description": "Job creation timestamp",
+              "format": "date-time"
+            },
+            "started_at": {
+              "type": "string",
+              "description": "Job start timestamp",
+              "format": "date-time",
+              "nullable": true
+            },
+            "finished_at": {
+              "type": "string",
+              "description": "Job finish timestamp",
+              "format": "date-time",
+              "nullable": true
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "status",
+            "error",
+            "created_at",
+            "started_at",
+            "finished_at"
+          ],
+          "additionalProperties": false,
+          "nullable": true
+        }
+      },
+      "required": [
+        "bookmarkId",
+        "bookmarkStatus",
+        "job"
+      ],
+      "additionalProperties": false
+    },
+    "BookmarkPipelineStatusResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BookmarkPipelineStatus"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "SearchResultItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "url": {
+          "type": "string",
+          "description": "Original bookmark URL",
+          "format": "uri"
+        },
+        "domain": {
+          "type": "string",
+          "description": "URL hostname"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description",
+          "nullable": true
+        },
+        "status": {
+          "type": "string",
+          "description": "Pipeline status",
+          "enum": [
+            "saved",
+            "fetched",
+            "extracted",
+            "ai_enriched",
+            "indexed"
+          ]
+        },
+        "category_id": {
+          "type": "string",
+          "description": "Assigned category ID",
+          "nullable": true
+        },
+        "favicon_url": {
+          "type": "string",
+          "description": "Favicon URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "screenshot_url": {
+          "type": "string",
+          "description": "Screenshot URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "is_pinned": {
+          "type": "integer",
+          "description": "Pinned flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_trashed": {
+          "type": "integer",
+          "description": "Trash flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "trashed_at": {
+          "type": "string",
+          "description": "Trash timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "read_at": {
+          "type": "string",
+          "description": "Read timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag names attached to the bookmark",
+          "items": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Highlighted search excerpt",
+          "nullable": true
+        },
+        "rank": {
+          "type": "number",
+          "description": "Search rank or hybrid score",
+          "nullable": true
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "domain",
+        "title",
+        "description",
+        "status",
+        "category_id",
+        "favicon_url",
+        "screenshot_url",
+        "is_pinned",
+        "is_archived",
+        "is_trashed",
+        "trashed_at",
+        "read_at",
+        "notes",
+        "created_at",
+        "updated_at",
+        "tags",
+        "snippet",
+        "rank"
+      ],
+      "additionalProperties": false,
+      "description": "Bookmark search hit"
+    },
+    "SearchResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Search hits",
+          "items": {
+            "ref": "SearchResultItem"
+          }
+        },
+        "pagination": {
+          "ref": "Pagination"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "description": "Applied search mode",
+              "enum": [
+                "keyword",
+                "semantic",
+                "hybrid"
+              ]
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "data",
+        "pagination",
+        "meta"
+      ],
+      "additionalProperties": false
+    },
+    "CategoryRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Category ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "Parent category ID",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "parent_id",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "description": "Category row returned by create and update endpoints"
+    },
+    "CategoryWithCount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Category ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "Parent category ID",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "parent_id",
+        "created_at",
+        "updated_at",
+        "bookmark_count"
+      ],
+      "additionalProperties": false,
+      "description": "Category row with active bookmark count returned by category listings"
+    },
+    "CategoryNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Category ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "Parent category ID",
+          "nullable": true
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Update timestamp",
+          "format": "date-time"
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Active bookmark count",
+          "minimum": 0
+        },
+        "children": {
+          "type": "array",
+          "description": "Child categories",
+          "items": {
+            "ref": "CategoryNode"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "parent_id",
+        "created_at",
+        "updated_at",
+        "bookmark_count",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "CategoryRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Category name",
+          "maxLength": 100
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "Parent category ID",
+          "nullable": true
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "CategoryPatchRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Category name",
+          "maxLength": 100
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "Parent category ID",
+          "nullable": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "CategoryTreeResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Category tree",
+          "items": {
+            "ref": "CategoryNode"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "CategoryResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "CategoryRecord"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "TagRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Tag ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tag name"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "description": "Tag row returned by create and attach endpoints"
+    },
+    "TagWithCount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Tag ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Tag name"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "created_at",
+        "bookmark_count"
+      ],
+      "additionalProperties": false,
+      "description": "Tag row with active bookmark count returned by tag listings"
+    },
+    "TagRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Lowercase tag name",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "TagListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Tags",
+          "items": {
+            "ref": "TagWithCount"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "TagResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "TagRecord"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "Domain": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Domain"
+        },
+        "count": {
+          "type": "integer",
+          "description": "Active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "domain",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "DomainListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Domains",
+          "items": {
+            "ref": "Domain"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "ImportSummary": {
+      "type": "object",
+      "properties": {
+        "importId": {
+          "type": "string",
+          "description": "Import ID for progress stream"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Parsed bookmark count",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "description": "Parser warning count",
+          "minimum": 0
+        },
+        "progressUrl": {
+          "type": "string",
+          "description": "SSE progress URL"
+        }
+      },
+      "required": [
+        "importId",
+        "total",
+        "warnings",
+        "progressUrl"
+      ],
+      "additionalProperties": false
+    },
+    "ImportSummaryResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "ImportSummary"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "ImportProgressEvent": {
+      "type": "object",
+      "properties": {
+        "queued": {
+          "type": "integer",
+          "description": "Queued bookmarks",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "description": "Skipped bookmarks",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total parsed bookmarks",
+          "minimum": 0
+        },
+        "done": {
+          "type": "boolean",
+          "description": "Whether import processing is complete"
+        },
+        "error": {
+          "type": "string",
+          "description": "Background import error",
+          "nullable": true
+        }
+      },
+      "required": [
+        "queued",
+        "skipped",
+        "total",
+        "done",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeCapability": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this runtime feature is usable"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Resolved provider",
+          "enum": [
+            "openai",
+            "ollama",
+            "none"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "description": "Resolved model",
+          "nullable": true
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Resolved base URL",
+          "format": "uri",
+          "nullable": true
+        }
+      },
+      "required": [
+        "enabled",
+        "provider",
+        "model",
+        "base_url"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeCapabilities": {
+      "type": "object",
+      "properties": {
+        "llm": {
+          "ref": "RuntimeCapability"
+        },
+        "embeddings": {
+          "ref": "RuntimeCapability"
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "enrichment": {
+              "type": "boolean",
+              "description": "LLM enrichment available"
+            },
+            "semantic_search": {
+              "type": "boolean",
+              "description": "Semantic search available"
+            },
+            "related_bookmarks": {
+              "type": "boolean",
+              "description": "Related bookmarks available"
+            },
+            "organization_agent": {
+              "type": "boolean",
+              "description": "Organization agent available"
+            }
+          },
+          "required": [
+            "enrichment",
+            "semantic_search",
+            "related_bookmarks",
+            "organization_agent"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "llm",
+        "embeddings",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "ai": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "LLM provider",
+              "enum": [
+                "openai",
+                "ollama",
+                "none"
+              ]
+            },
+            "openai": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Redacted OpenAI API key. Empty string means unset"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "OpenAI chat model"
+                }
+              },
+              "required": [
+                "api_key",
+                "model"
+              ],
+              "additionalProperties": false
+            },
+            "ollama": {
+              "type": "object",
+              "properties": {
+                "base_url": {
+                  "type": "string",
+                  "description": "Ollama base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Ollama model"
+                }
+              },
+              "required": [
+                "base_url",
+                "model"
+              ],
+              "additionalProperties": false
+            },
+            "embeddings": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Embedding provider",
+                  "enum": [
+                    "openai",
+                    "ollama"
+                  ]
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Embedding model"
+                }
+              },
+              "required": [
+                "provider",
+                "model"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "provider",
+            "openai",
+            "ollama",
+            "embeddings"
+          ],
+          "additionalProperties": false
+        },
+        "app": {
+          "type": "object",
+          "properties": {
+            "autostart": {
+              "type": "boolean",
+              "description": "Start daemon automatically"
+            },
+            "theme": {
+              "type": "string",
+              "description": "UI theme",
+              "enum": [
+                "light",
+                "dark",
+                "system"
+              ]
+            },
+            "lock": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether app lock is enabled"
+                },
+                "pin_hash": {
+                  "type": "string",
+                  "description": "Redacted PIN hash. Empty string means unset"
+                }
+              },
+              "required": [
+                "enabled",
+                "pin_hash"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "autostart",
+            "theme",
+            "lock"
+          ],
+          "additionalProperties": false
+        },
+        "backup": {
+          "type": "object",
+          "properties": {
+            "local": {
+              "type": "object",
+              "properties": {
+                "destination_path": {
+                  "type": "string",
+                  "description": "Absolute custom backup destination, or empty string for default"
+                }
+              },
+              "required": [
+                "destination_path"
+              ],
+              "additionalProperties": false
+            },
+            "schedule": {
+              "ref": "BackupSchedule"
+            },
+            "s3": {
+              "type": "object",
+              "properties": {
+                "endpoint": {
+                  "type": "string",
+                  "description": "S3-compatible endpoint URL, or empty string for AWS",
+                  "format": "uri"
+                },
+                "bucket": {
+                  "type": "string",
+                  "description": "S3 bucket"
+                },
+                "access_key": {
+                  "type": "string",
+                  "description": "Redacted S3 access key. Empty string means unset"
+                },
+                "secret_key": {
+                  "type": "string",
+                  "description": "Redacted S3 secret key. Empty string means unset"
+                },
+                "region": {
+                  "type": "string",
+                  "description": "S3 region"
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "Object key prefix"
+                }
+              },
+              "required": [
+                "endpoint",
+                "bucket",
+                "access_key",
+                "secret_key",
+                "region",
+                "prefix"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "local",
+            "schedule",
+            "s3"
+          ],
+          "additionalProperties": false
+        },
+        "runtime": {
+          "ref": "RuntimeCapabilities"
+        }
+      },
+      "required": [
+        "ai",
+        "app",
+        "backup",
+        "runtime"
+      ],
+      "additionalProperties": false
+    },
+    "SettingsPatch": {
+      "type": "object",
+      "properties": {
+        "ai": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "LLM provider",
+              "enum": [
+                "openai",
+                "ollama",
+                "none"
+              ]
+            },
+            "openai": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "OpenAI API key, empty string clears it"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "OpenAI chat model"
+                }
+              },
+              "additionalProperties": false
+            },
+            "ollama": {
+              "type": "object",
+              "properties": {
+                "base_url": {
+                  "type": "string",
+                  "description": "Ollama base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Ollama model"
+                }
+              },
+              "additionalProperties": false
+            },
+            "embeddings": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Embedding provider",
+                  "enum": [
+                    "openai",
+                    "ollama"
+                  ]
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Embedding model"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "app": {
+          "type": "object",
+          "properties": {
+            "autostart": {
+              "type": "boolean",
+              "description": "Start daemon automatically"
+            },
+            "theme": {
+              "type": "string",
+              "description": "UI theme",
+              "enum": [
+                "light",
+                "dark",
+                "system"
+              ]
+            },
+            "lock": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether app lock is enabled"
+                },
+                "pin_hash": {
+                  "type": "string",
+                  "description": "PIN hash, empty string clears it"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "backup": {
+          "type": "object",
+          "properties": {
+            "local": {
+              "type": "object",
+              "properties": {
+                "destination_path": {
+                  "type": "string",
+                  "description": "Absolute custom backup destination, or empty string for default"
+                }
+              },
+              "additionalProperties": false
+            },
+            "schedule": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable scheduled snapshots"
+                },
+                "cron": {
+                  "type": "string",
+                  "description": "Five-part cron expression"
+                },
+                "retention_count": {
+                  "type": "integer",
+                  "description": "Number of local snapshots to retain",
+                  "minimum": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "s3": {
+              "type": "object",
+              "properties": {
+                "endpoint": {
+                  "type": "string",
+                  "description": "S3-compatible endpoint URL, or empty string for AWS",
+                  "format": "uri"
+                },
+                "bucket": {
+                  "type": "string",
+                  "description": "S3 bucket"
+                },
+                "access_key": {
+                  "type": "string",
+                  "description": "S3 access key"
+                },
+                "secret_key": {
+                  "type": "string",
+                  "description": "S3 secret key"
+                },
+                "region": {
+                  "type": "string",
+                  "description": "S3 region"
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "Object key prefix"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SettingsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "Settings"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "ConnectivityTestResponse": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Whether the connectivity check succeeded"
+        },
+        "error": {
+          "type": "string",
+          "description": "Failure reason"
+        },
+        "message": {
+          "type": "string",
+          "description": "Success message"
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "additionalProperties": false
+    },
+    "BackupSchedule": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable scheduled snapshots"
+        },
+        "cron": {
+          "type": "string",
+          "description": "Five-part cron expression"
+        },
+        "retention_count": {
+          "type": "integer",
+          "description": "Number of local snapshots to retain",
+          "minimum": 1
+        },
+        "next_run_at": {
+          "type": "string",
+          "description": "Next scheduled run timestamp",
+          "format": "date-time",
+          "nullable": true
+        }
+      },
+      "required": [
+        "enabled",
+        "cron",
+        "retention_count",
+        "next_run_at"
+      ],
+      "additionalProperties": false
+    },
+    "BackupSchedulePatch": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable scheduled snapshots"
+        },
+        "cron": {
+          "type": "string",
+          "description": "Five-part cron expression"
+        },
+        "retention_count": {
+          "type": "integer",
+          "description": "Number of local snapshots to retain",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackupScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BackupSchedule"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "BackupDestination": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Effective backup directory"
+        },
+        "is_custom": {
+          "type": "boolean",
+          "description": "Whether a custom destination is active"
+        },
+        "writable": {
+          "type": "boolean",
+          "description": "Whether the daemon can write to this directory"
+        }
+      },
+      "required": [
+        "path",
+        "is_custom",
+        "writable"
+      ],
+      "additionalProperties": false
+    },
+    "BackupDestinationPatch": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute custom backup path, or empty string to reset"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "BackupDestinationResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BackupDestination"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "BackupResult": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Local backup directory"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "description": "Snapshot database size",
+          "minimum": 0
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Bookmarks included",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "remote_url": {
+          "type": "string",
+          "description": "Remote S3 URL when uploaded"
+        }
+      },
+      "required": [
+        "path",
+        "size_bytes",
+        "bookmark_count",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "BackupEntry": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Backup name or remote key"
+        },
+        "path": {
+          "type": "string",
+          "description": "Local path or s3:// URI"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "description": "Snapshot database size",
+          "minimum": 0
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Bookmarks included",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "description": "Backup source",
+          "enum": [
+            "local",
+            "remote"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "size_bytes",
+        "bookmark_count",
+        "created_at",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "BackupListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Backup entries",
+          "items": {
+            "ref": "BackupEntry"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "RestoreRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Local backup directory name"
+        },
+        "source": {
+          "type": "string",
+          "description": "Restore source",
+          "enum": [
+            "remote"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "description": "Remote S3 snapshot.db key"
+        },
+        "allow_unsafe_no_checksum": {
+          "type": "boolean",
+          "description": "Allow restoring a backup with no checksum file"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RestoreResult": {
+      "type": "object",
+      "properties": {
+        "restored_at": {
+          "type": "string",
+          "description": "Restore timestamp",
+          "format": "date-time"
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Restored bookmark count",
+          "minimum": 0
+        },
+        "checksum_verified": {
+          "type": "boolean",
+          "description": "Whether checksum verification succeeded"
+        },
+        "rollback_path": {
+          "type": "string",
+          "description": "Rollback copy directory"
+        },
+        "restart_required": {
+          "type": "boolean",
+          "description": "Whether daemon restart is required"
+        }
+      },
+      "required": [
+        "restored_at",
+        "bookmark_count",
+        "checksum_verified",
+        "rollback_path",
+        "restart_required"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Timeline event ID"
+        },
+        "type": {
+          "type": "string",
+          "description": "Timeline event type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable event description"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": true,
+          "description": "Event metadata"
+        },
+        "source": {
+          "type": "string",
+          "description": "Event source",
+          "enum": [
+            "agent",
+            "user"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "description",
+        "metadata",
+        "source",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "TimelinePage": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Timeline events",
+          "items": {
+            "ref": "TimelineEvent"
+          }
+        },
+        "pagination": {
+          "ref": "Pagination"
+        }
+      },
+      "required": [
+        "data",
+        "pagination"
+      ],
+      "additionalProperties": false
+    },
+    "Suggestion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Suggestion ID"
+        },
+        "bookmarkId": {
+          "type": "string",
+          "description": "Related bookmark ID",
+          "nullable": true
+        },
+        "type": {
+          "type": "string",
+          "description": "Suggestion type",
+          "enum": [
+            "new_subcategory",
+            "merge_categories",
+            "duplicate_bookmark"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "description": "Human-readable suggestion value"
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": true,
+          "description": "Suggestion metadata"
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Confidence score",
+          "nullable": true
+        },
+        "status": {
+          "type": "string",
+          "description": "Suggestion status",
+          "enum": [
+            "pending",
+            "accepted",
+            "rejected"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        },
+        "resolved_at": {
+          "type": "string",
+          "description": "Resolution timestamp",
+          "format": "date-time",
+          "nullable": true
+        }
+      },
+      "required": [
+        "id",
+        "bookmarkId",
+        "type",
+        "value",
+        "metadata",
+        "confidence",
+        "status",
+        "created_at",
+        "resolved_at"
+      ],
+      "additionalProperties": false
+    },
+    "SuggestionsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Pending suggestions",
+          "items": {
+            "ref": "Suggestion"
+          }
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "pending": {
+              "type": "integer",
+              "description": "Pending suggestion count",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "pending"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "data",
+        "meta"
+      ],
+      "additionalProperties": false
+    },
+    "HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Health status",
+          "enum": [
+            "ok"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "description": "Daemon package version"
+        },
+        "uptime": {
+          "type": "integer",
+          "description": "Process uptime in milliseconds",
+          "minimum": 0
+        },
+        "queueSize": {
+          "type": "integer",
+          "description": "Queued background jobs",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "status",
+        "version",
+        "uptime",
+        "queueSize"
+      ],
+      "additionalProperties": false
+    },
+    "ExportBookmark": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bookmark ID"
+        },
+        "url": {
+          "type": "string",
+          "description": "Bookmark URL",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title",
+          "nullable": true
+        },
+        "summary": {
+          "type": "string",
+          "description": "Summary",
+          "nullable": true
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag names",
+          "items": {
+            "type": "string",
+            "description": "Tag name"
+          }
+        },
+        "category": {
+          "type": "string",
+          "description": "Category name",
+          "nullable": true
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "title",
+        "summary",
+        "tags",
+        "category",
+        "domain",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "McpErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "MCP failure message"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "tag": "System",
+      "summary": "Return daemon health, version, uptime, and queue size.",
+      "responses": {
+        "200": {
+          "description": "Daemon health",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "HealthResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks",
+      "tag": "Bookmarks",
+      "summary": "Save a URL and enqueue the ingestion pipeline.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkCreateRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Existing active bookmark returned idempotently",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "201": {
+          "description": "Bookmark created",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "URL already exists in trash or archive",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid URL or missing url field",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/bookmarks",
+      "tag": "Bookmarks",
+      "summary": "List active or archived bookmarks with filters and pagination.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string",
+              "description": "Filter by tag name"
+            },
+            "domain": {
+              "type": "string",
+              "description": "Filter by exact domain"
+            },
+            "category": {
+              "type": "string",
+              "description": "Filter by category name"
+            },
+            "date_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound"
+            },
+            "date_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of results to return",
+              "minimum": 1
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of results to skip",
+              "minimum": 0
+            },
+            "archived": {
+              "type": "string",
+              "description": "When true, return archived bookmarks",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Bookmark page",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkListResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/bookmarks/:id",
+      "tag": "Bookmarks",
+      "summary": "Get one bookmark with extracted content.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Bookmark detail",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkDetailResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/bookmarks/:id",
+      "tag": "Bookmarks",
+      "summary": "Patch bookmark fields, tags, archive state, read state, and notes.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkUpdateRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated bookmark",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid patch field",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/bookmarks/:id",
+      "tag": "Bookmarks",
+      "summary": "Soft-delete a bookmark by moving it to trash.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Bookmark moved to trash"
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/:id/restore",
+      "tag": "Bookmarks",
+      "summary": "Restore a trashed bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Restored bookmark",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found or not in trash",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "500": {
+          "description": "Restore succeeded but bookmark could not be fetched",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/bookmarks/:id/permanent",
+      "tag": "Bookmarks",
+      "summary": "Permanently delete a trashed bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Bookmark permanently deleted"
+        },
+        "404": {
+          "description": "Bookmark not found or not in trash",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/trash",
+      "tag": "Bookmarks",
+      "summary": "List trashed bookmarks.",
+      "responses": {
+        "200": {
+          "description": "Trashed bookmarks",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkArrayResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/bookmarks/:id/related",
+      "tag": "Bookmarks",
+      "summary": "List semantically related bookmarks.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum related bookmarks",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Related bookmarks",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "RelatedBookmarksResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Embedding provider is not configured",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "List related bookmarks",
+          "request": "curl \"http://127.0.0.1:3210/bookmarks/bm_123/related?limit=5\""
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/bookmarks/:id/status",
+      "tag": "Bookmarks",
+      "summary": "Get latest pipeline job status for a bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Bookmark pipeline status",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkPipelineStatusResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/search",
+      "tag": "Search",
+      "summary": "Search bookmarks by keyword, semantic, or hybrid mode.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "q": {
+              "type": "string",
+              "description": "Search query"
+            },
+            "mode": {
+              "type": "string",
+              "description": "Search mode",
+              "enum": [
+                "keyword",
+                "semantic",
+                "hybrid"
+              ]
+            },
+            "tag": {
+              "type": "string",
+              "description": "Filter by tag name"
+            },
+            "domain": {
+              "type": "string",
+              "description": "Filter by exact domain"
+            },
+            "category": {
+              "type": "string",
+              "description": "Filter by category name"
+            },
+            "date_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound"
+            },
+            "date_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of results to return",
+              "minimum": 1
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of results to skip",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Search page",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "SearchResponse"
+          }
+        },
+        "400": {
+          "description": "Invalid FTS query syntax",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid mode or missing embedding configuration",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/categories",
+      "tag": "Categories",
+      "summary": "List categories as a tree with bookmark counts.",
+      "responses": {
+        "200": {
+          "description": "Category tree",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CategoryTreeResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/categories",
+      "tag": "Categories",
+      "summary": "Create a category.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CategoryRequest"
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Created category",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CategoryResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "Duplicate category under parent",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid name or parent",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/categories/:id",
+      "tag": "Categories",
+      "summary": "Rename or reparent a category.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CategoryPatchRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated category",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CategoryResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "404": {
+          "description": "Category not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "Duplicate category under parent",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid patch or parent",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/categories/:id",
+      "tag": "Categories",
+      "summary": "Delete a category.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Category deleted"
+        },
+        "404": {
+          "description": "Category not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/tags",
+      "tag": "Tags",
+      "summary": "List tags with bookmark counts.",
+      "responses": {
+        "200": {
+          "description": "Tags",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagListResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/tags",
+      "tag": "Tags",
+      "summary": "Create a tag, idempotently returning an existing tag when present.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Existing tag",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagResponse"
+          }
+        },
+        "201": {
+          "description": "Created tag",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid tag name",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/tags/:id",
+      "tag": "Tags",
+      "summary": "Delete a tag and detach it from bookmarks.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Tag deleted"
+        },
+        "404": {
+          "description": "Tag not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/:id/tags",
+      "tag": "Tags",
+      "summary": "Attach a tag to a bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagRequest"
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Bookmark with attached tag",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid tag name",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/bookmarks/:id/tags/:tagId",
+      "tag": "Tags",
+      "summary": "Detach a tag from a bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Bookmark ID"
+            },
+            "tagId": {
+              "type": "string",
+              "description": "Tag ID"
+            }
+          },
+          "required": [
+            "id",
+            "tagId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Tag detached"
+        },
+        "404": {
+          "description": "Bookmark, tag, or attachment not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/domains",
+      "tag": "Domains",
+      "summary": "List domains with active bookmark counts.",
+      "responses": {
+        "200": {
+          "description": "Domains",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "DomainListResponse"
+          }
+        },
+        "500": {
+          "description": "Query failed",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/import",
+      "tag": "Import",
+      "summary": "Import a Netscape HTML bookmark export.",
+      "request": {
+        "body": {
+          "contentType": "multipart/form-data",
+          "description": "Multipart body with a file field containing a .html bookmark export.",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "HTML bookmark export file"
+              }
+            },
+            "required": [
+              "file"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Import accepted",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ImportSummaryResponse"
+          }
+        },
+        "400": {
+          "description": "Multipart parsing failed",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "413": {
+          "description": "File exceeds 10 MB",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "415": {
+          "description": "Request is not multipart/form-data",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Missing file or invalid bookmark export",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/import/:importId/progress",
+      "tag": "Import",
+      "summary": "Stream import progress over Server-Sent Events.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "importId": {
+              "type": "string",
+              "description": "importId path parameter"
+            }
+          },
+          "required": [
+            "importId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "SSE stream of progress events",
+          "contentType": "text/event-stream",
+          "schema": {
+            "ref": "ImportProgressEvent"
+          }
+        },
+        "404": {
+          "description": "Import ID not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "tag": "Settings",
+      "summary": "Read current settings with secrets redacted and runtime capabilities.",
+      "responses": {
+        "200": {
+          "description": "Settings",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "SettingsResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/settings",
+      "tag": "Settings",
+      "summary": "Deep-merge a settings patch into persisted settings.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "SettingsPatch"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated settings",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "SettingsResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid settings patch",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "500": {
+          "description": "Settings could not be persisted",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/settings/test-ai",
+      "tag": "Settings",
+      "summary": "Test connectivity to the configured LLM provider.",
+      "responses": {
+        "200": {
+          "description": "Connectivity result",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ConnectivityTestResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/backup",
+      "tag": "Backup",
+      "summary": "Create a local backup snapshot and optionally upload it to S3.",
+      "responses": {
+        "201": {
+          "description": "Backup created",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupResult"
+          }
+        },
+        "409": {
+          "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Backup creation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/backup/list",
+      "tag": "Backup",
+      "summary": "List local backups and optionally merge remote S3 backups.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "include_remote": {
+              "type": "string",
+              "description": "When true, include S3 backups",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Backups",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupListResponse"
+          }
+        },
+        "422": {
+          "description": "S3 is not configured",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Remote backup listing failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/backup/schedule",
+      "tag": "Backup",
+      "summary": "Read backup schedule settings and the computed next run time.",
+      "responses": {
+        "200": {
+          "description": "Backup schedule",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupScheduleResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/backup/schedule",
+      "tag": "Backup",
+      "summary": "Patch backup schedule settings.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupSchedulePatch"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated backup schedule",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupScheduleResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed or non-object JSON body",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid schedule patch",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Schedule settings could not be saved",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Update backup schedule",
+          "request": "curl -X PUT http://127.0.0.1:3210/backup/schedule \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"enabled\":true,\"cron\":\"0 3 * * *\",\"retention_count\":10}'"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/backup/destination",
+      "tag": "Backup",
+      "summary": "Read the effective backup directory and writability.",
+      "responses": {
+        "200": {
+          "description": "Backup destination",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupDestinationResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/backup/destination",
+      "tag": "Backup",
+      "summary": "Set or clear the custom local backup directory.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupDestinationPatch"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated backup destination",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupDestinationResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed or non-object JSON body",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid or unwritable path",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Destination settings could not be saved",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Set a custom backup destination",
+          "request": "curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"path\":\"/Users/me/Backups/Little Imp\"}'"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/restore",
+      "tag": "Backup",
+      "summary": "Restore from a local backup directory or remote S3 snapshot.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "RestoreRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Restore completed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "RestoreResult"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "409": {
+          "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid restore request or backup validation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Restore failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Restore a local backup",
+          "request": "curl -X POST http://127.0.0.1:3210/restore \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"2026-05-13T09-30-00-000Z\"}'"
+        },
+        {
+          "title": "Restore a remote backup",
+          "request": "curl -X POST http://127.0.0.1:3210/restore \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"source\":\"remote\",\"key\":\"little-imp/2026-05-13T09-30-00-000Z/snapshot.db\"}'"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/settings/test-s3",
+      "tag": "Backup",
+      "summary": "Test connectivity to the configured S3 backup destination.",
+      "responses": {
+        "200": {
+          "description": "S3 connectivity succeeded",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ConnectivityTestResponse"
+          }
+        },
+        "422": {
+          "description": "S3 is not configured or connection failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Test S3 connectivity",
+          "request": "curl -X POST http://127.0.0.1:3210/settings/test-s3"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/timeline",
+      "tag": "Timeline",
+      "summary": "List timeline events with pagination.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of results to return",
+              "minimum": 1
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of results to skip",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Timeline page",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TimelinePage"
+          }
+        },
+        "400": {
+          "description": "Invalid limit or offset",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/suggestions",
+      "tag": "Suggestions",
+      "summary": "List pending organization-agent suggestions.",
+      "responses": {
+        "200": {
+          "description": "Pending suggestions",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "SuggestionsResponse"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/suggestions/:id/accept",
+      "tag": "Suggestions",
+      "summary": "Accept a suggestion and apply its action.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Accepted suggestion",
+          "contentType": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "ref": "Suggestion"
+              }
+            },
+            "required": [
+              "data"
+            ],
+            "additionalProperties": false,
+            "description": "Response data"
+          }
+        },
+        "404": {
+          "description": "Suggestion not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Suggestion is no longer pending or action is invalid",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "500": {
+          "description": "Suggestion action failed",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/suggestions/:id/reject",
+      "tag": "Suggestions",
+      "summary": "Reject a pending suggestion.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Rejected suggestion",
+          "contentType": "application/json",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "ref": "Suggestion"
+              }
+            },
+            "required": [
+              "data"
+            ],
+            "additionalProperties": false,
+            "description": "Response data"
+          }
+        },
+        "404": {
+          "description": "Suggestion not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Suggestion is no longer pending",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "500": {
+          "description": "Suggestion could not be resolved",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/export",
+      "tag": "Export",
+      "summary": "Export active bookmarks as JSON or CSV.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "description": "Export format",
+              "enum": [
+                "json",
+                "csv"
+              ]
+            },
+            "tag": {
+              "type": "string",
+              "description": "Filter by tag name"
+            },
+            "domain": {
+              "type": "string",
+              "description": "Filter by exact domain"
+            },
+            "category": {
+              "type": "string",
+              "description": "Filter by category name"
+            },
+            "date_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound"
+            },
+            "date_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Downloadable JSON or CSV export",
+          "contentType": "application/json or text/csv",
+          "schema": {
+            "type": "array",
+            "description": "Export rows",
+            "items": {
+              "ref": "ExportBookmark"
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid format",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      }
+    },
+    {
+      "method": "ALL",
+      "path": "/mcp",
+      "tag": "MCP",
+      "summary": "Handle MCP Streamable HTTP transport requests.",
+      "description": "The daemon creates a fresh MCP server and transport for each request.",
+      "responses": {
+        "200": {
+          "description": "MCP transport response",
+          "contentType": "application/json or text/event-stream"
+        },
+        "500": {
+          "description": "MCP request failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "McpErrorResponse"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Call the MCP endpoint",
+          "request": "curl -X POST http://127.0.0.1:3210/mcp \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"curl\",\"version\":\"1.0.0\"}}}'"
+        }
+      ]
+    }
+  ]
+}

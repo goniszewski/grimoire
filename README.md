@@ -244,7 +244,8 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## Documentation
 
-- [API Reference](./API.md) - Complete API documentation for the daemon
+- [API Reference](./API.md) - Generated daemon API documentation
+- [API Contract](./docs/api-contract.json) - Machine-readable source generated from the daemon contract
 - [Contributing Guide](./CONTRIBUTING.md) - Development setup and contribution guidelines
 - [Product Requirements](./docs/prd.md) - Detailed product specifications
 - [Development Roadmap](./docs/roadmap.md) - Future development plans
