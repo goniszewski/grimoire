@@ -27,7 +27,14 @@ function textContent(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
 
-function renderCategoryTree(nodes: { name: string; id: string; bookmark_count: number; children: any[] }[], indent = ""): string {
+interface CategoryTreeNode {
+  name: string;
+  id: string;
+  bookmark_count: number;
+  children: CategoryTreeNode[];
+}
+
+function renderCategoryTree(nodes: CategoryTreeNode[], indent = ""): string {
   return nodes
     .map((n) => {
       const line = `${indent}- **${n.name}** (id:${n.id}, ${n.bookmark_count} bookmark${n.bookmark_count !== 1 ? "s" : ""})`;

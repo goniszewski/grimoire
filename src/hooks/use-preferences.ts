@@ -18,7 +18,9 @@ function loadPrefs(): Preferences {
   try {
     const stored = localStorage.getItem(PREFS_KEY);
     if (stored) return { ...defaults, ...JSON.parse(stored) };
-  } catch {}
+  } catch {
+    // Use defaults when persisted preferences cannot be read.
+  }
   return defaults;
 }
 

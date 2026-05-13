@@ -16,6 +16,7 @@ import { Database } from "bun:sqlite";
 import { runPipeline } from "../../pipeline/pipeline.js";
 import { SearchRepository } from "../../db/search-repository.js";
 import { makeTestDb } from "../helpers/db.js";
+import { mockFetch } from "../helpers/fetch.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ describe("pipeline index stage", () => {
 
     insertBookmark(db, bookmarkId, url, "TypeScript Complete Guide");
 
-    globalThis.fetch = async () => makeHtmlResponse(html, url);
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
 
     await runPipeline(db, { bookmarkId, url });
 
@@ -123,7 +124,7 @@ describe("pipeline index stage", () => {
     const before = searchRepo.keywordSearch({ q: "interoperability", limit: 10, offset: 0 });
     expect(before.items.map((i) => i.id)).not.toContain(bookmarkId);
 
-    globalThis.fetch = async () => makeHtmlResponse(html, url);
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
     await runPipeline(db, { bookmarkId, url });
 
     // After pipeline: body text is indexed and the bookmark is found
@@ -146,7 +147,7 @@ describe("pipeline index stage", () => {
     `;
 
     insertBookmark(db, bookmarkId, url, "Rust Memory Management");
-    globalThis.fetch = async () => makeHtmlResponse(html, url);
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
 
     await runPipeline(db, { bookmarkId, url });
 
@@ -167,7 +168,7 @@ describe("pipeline index stage", () => {
     `;
 
     insertBookmark(db, bookmarkId, url, "GraphQL Introduction");
-    globalThis.fetch = async () => makeHtmlResponse(html, url);
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
     await runPipeline(db, { bookmarkId, url });
 
     // Trash the bookmark
@@ -187,7 +188,7 @@ describe("pipeline index stage", () => {
     const html = `<html><head><title>Minimal Page</title></head><body></body></html>`;
 
     insertBookmark(db, bookmarkId, url, "Minimal Page");
-    globalThis.fetch = async () => makeHtmlResponse(html, url);
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
 
     // Should not throw
     await runPipeline(db, { bookmarkId, url });
@@ -196,7 +197,8 @@ describe("pipeline index stage", () => {
       "SELECT status FROM bookmarks WHERE id = ?"
     ).get(bookmarkId);
     // Should reach at least "extracted" or "indexed"
-    expect(["extracted", "indexed"]).toContain(bm?.status);
+    expect(bm).not.toBeNull();
+    expect(["extracted", "indexed"]).toContain(bm!.status);
   });
 
   it("pipeline throws when fetch fails (HTTP 404)", async () => {
@@ -204,11 +206,12 @@ describe("pipeline index stage", () => {
     const url = "https://example.com/missing";
 
     insertBookmark(db, bookmarkId, url, "Missing Page");
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       withUrl(
         new Response("Not Found", { status: 404, statusText: "Not Found" }),
         url
-      );
+      )
+    );
 
     await expect(runPipeline(db, { bookmarkId, url })).rejects.toThrow("HTTP 404");
 

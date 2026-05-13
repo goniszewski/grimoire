@@ -10,7 +10,9 @@ function loadBookmarks(): Bookmark[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
-  } catch {}
+  } catch {
+    // Fall back to bundled mock data when local storage is unreadable.
+  }
   return MOCK_BOOKMARKS;
 }
 
@@ -157,7 +159,9 @@ export function useBookmarkStore() {
             const domain = new URL(value).hostname.replace("www.", "");
             updates.domain = domain;
             updates.favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-          } catch {}
+          } catch {
+            // Keep the edited URL text even when it is not parseable yet.
+          }
         }
         return { ...b, ...updates };
       })

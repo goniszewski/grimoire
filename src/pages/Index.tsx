@@ -101,7 +101,9 @@ const Index = () => {
           store.addBookmark(text);
           toast({ title: "Bookmark added", description: text });
         }
-      } catch {}
+      } catch {
+        // Ignore pasted text that is not a URL.
+      }
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);

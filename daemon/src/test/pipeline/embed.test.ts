@@ -19,6 +19,7 @@ import {
 } from "../../ai/embeddings.js";
 import { EmbeddingRepository } from "../../db/embedding-repository.js";
 import { makeTestDb } from "../helpers/db.js";
+import { mockFetch } from "../helpers/fetch.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -135,35 +136,38 @@ describe("getEmbedding", () => {
 
   it("returns the embedding vector from a successful API response", async () => {
     const vector = [0.1, 0.2, 0.3];
-    globalThis.fetch = async () => makeEmbedResponse(vector);
+    globalThis.fetch = mockFetch(async () => makeEmbedResponse(vector));
 
     const result = await getEmbedding(EMBED_CONFIG, "some text");
     expect(result).toEqual(vector);
   });
 
   it("throws on empty embedding vector in response", async () => {
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       new Response(JSON.stringify({ data: [{ embedding: [] }] }), {
         status: 200,
         headers: { "content-type": "application/json" },
-      });
+      })
+    );
 
     await expect(getEmbedding(EMBED_CONFIG, "text")).rejects.toThrow(/no vector/i);
   });
 
   it("throws on missing data field in response", async () => {
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       new Response(JSON.stringify({}), {
         status: 200,
         headers: { "content-type": "application/json" },
-      });
+      })
+    );
 
     await expect(getEmbedding(EMBED_CONFIG, "text")).rejects.toThrow(/no vector/i);
   });
 
   it("throws on non-retryable HTTP 401", async () => {
-    globalThis.fetch = async () =>
-      new Response("Unauthorized", { status: 401 });
+    globalThis.fetch = mockFetch(async () =>
+      new Response("Unauthorized", { status: 401 })
+    );
 
     await expect(getEmbedding(EMBED_CONFIG, "text")).rejects.toThrow(/401/);
   });

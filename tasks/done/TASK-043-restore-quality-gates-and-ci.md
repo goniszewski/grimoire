@@ -1,6 +1,6 @@
 # TASK-043: Restore Quality Gates and Add CI
 
-**Status:** todo
+**Status:** done
 **Priority:** high
 **Phase:** v0-beta hardening
 **Area:** testing, CI, TypeScript, lint
@@ -40,12 +40,18 @@ This task restores confidence by making all quality gates pass and enforcing the
 
 ## Acceptance Criteria
 
-- [ ] `npm run lint` passes.
-- [ ] Frontend type-check passes through an npm script.
-- [ ] `cd daemon && bun run check` passes.
-- [ ] `npm run test` passes.
-- [ ] `cd daemon && bun test` passes.
-- [ ] `npm run build` passes.
-- [ ] `npm run test:e2e` runs after documented browser installation.
-- [ ] Generated docs/contract checks are enforced once TASK-045 lands.
-- [ ] GitHub Actions enforces the agreed checks on pull requests.
+- [x] `npm run lint` passes.
+- [x] Frontend type-check passes through an npm script.
+- [x] `cd daemon && bun run check` passes.
+- [x] `npm run test` passes.
+- [x] `cd daemon && bun test` passes.
+- [x] `npm run build` passes.
+- [x] `npm run test:e2e` runs after documented browser installation.
+- [x] Generated docs/contract checks are enforced once TASK-045 lands.
+- [x] GitHub Actions enforces the agreed checks on pull requests.
+
+## Completion Notes
+
+- Added root quality scripts, GitHub Actions checks, and a faster Husky pre-commit gate.
+- Fixed lint/type-check failures across frontend, daemon, and tests without broad test-only suppressions.
+- Verified with `npm run check`, `npm run test:e2e`, `npx tsc --noEmit`, `npm run type-check:daemon`, and `git diff --check`.

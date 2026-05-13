@@ -3,7 +3,13 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useBookmarks, bookmarkKeys } from "./use-bookmarks";
-import type { ApiBookmark } from "@/lib/api";
+import type {
+  ApiBookmark,
+  ApiCategory,
+  ApiDomain,
+  ListBookmarksParams,
+  SearchParams,
+} from "@/lib/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -27,6 +33,19 @@ function makeApiBookmark(overrides: Partial<ApiBookmark> = {}): ApiBookmark {
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
     tags: [],
+    ...overrides,
+  };
+}
+
+function makeApiCategory(overrides: Partial<ApiCategory> = {}): ApiCategory {
+  return {
+    id: "cat-1",
+    name: "Tech",
+    parent_id: null,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    bookmark_count: 0,
+    children: [],
     ...overrides,
   };
 }
@@ -55,17 +74,68 @@ vi.mock("@/lib/api", () => ({
 
 import * as api from "@/lib/api";
 
-const mockedListBookmarks = api.listBookmarks as unknown as ReturnType<typeof vi.fn>;
-const mockedListCategories = api.listCategories as unknown as ReturnType<typeof vi.fn>;
-const mockedListDomains = api.listDomains as unknown as ReturnType<typeof vi.fn>;
-const mockedSearchBookmarks = api.searchBookmarks as unknown as ReturnType<typeof vi.fn>;
+type Pagination = {
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+};
+type BookmarkListResponse = { data: ApiBookmark[]; pagination: Pagination };
+type CategoryTreeResponse = { data: ApiCategory[] };
+type DomainListResponse = { data: ApiDomain[] };
+type SearchHit = ApiBookmark & { snippet: string | null; rank: number | null };
+type SearchResponse = {
+  data: SearchHit[];
+  pagination: Pagination;
+  meta: { mode: "keyword" | "semantic" | "hybrid" };
+};
+type MockedAsyncFn<Args extends unknown[], Result> = ((...args: Args) => Promise<Result>) & {
+  mockResolvedValue(value: Result): void;
+};
+
+const mockedListBookmarks = api.listBookmarks as unknown as MockedAsyncFn<[ListBookmarksParams?], BookmarkListResponse>;
+const mockedListCategories = api.listCategories as unknown as MockedAsyncFn<[], CategoryTreeResponse>;
+const mockedListDomains = api.listDomains as unknown as MockedAsyncFn<[], DomainListResponse>;
+const mockedSearchBookmarks = api.searchBookmarks as unknown as MockedAsyncFn<[SearchParams], SearchResponse>;
+
+function pagination(total: number): Pagination {
+  return {
+    total,
+    limit: 200,
+    offset: 0,
+    has_more: false,
+  };
+}
+
+function bookmarkListResponse(data: ApiBookmark[]): BookmarkListResponse {
+  return {
+    data,
+    pagination: pagination(data.length),
+  };
+}
+
+function categoryTreeResponse(data: ApiCategory[]): CategoryTreeResponse {
+  return { data };
+}
+
+function domainListResponse(data: ApiDomain[] = []): DomainListResponse {
+  return { data };
+}
+
+function searchResponse(data: SearchResponse["data"] = []): SearchResponse {
+  return {
+    data,
+    pagination: pagination(data.length),
+    meta: { mode: "keyword" },
+  };
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedListCategories.mockResolvedValue({ data: [] } as any);
-  mockedListDomains.mockResolvedValue({ data: [] } as any);
-  mockedListBookmarks.mockResolvedValue({ data: [] } as any);
-  mockedSearchBookmarks.mockResolvedValue({ data: [] } as any);
+  mockedListCategories.mockResolvedValue(categoryTreeResponse([]));
+  mockedListDomains.mockResolvedValue(domainListResponse());
+  mockedListBookmarks.mockResolvedValue(bookmarkListResponse([]));
+  mockedSearchBookmarks.mockResolvedValue(searchResponse());
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -92,7 +162,7 @@ describe("useBookmarks — initial state", () => {
 describe("useBookmarks — data normalisation", () => {
   it("normalises API bookmarks to UIBookmark shape", async () => {
     const bm = makeApiBookmark({ id: "bm-42", title: "Hello", description: "Desc" });
-    mockedListBookmarks.mockResolvedValue({ data: [bm] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -107,7 +177,7 @@ describe("useBookmarks — data normalisation", () => {
 
   it("falls back to url when title is null", async () => {
     const bm = makeApiBookmark({ title: null });
-    mockedListBookmarks.mockResolvedValue({ data: [bm] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -118,10 +188,10 @@ describe("useBookmarks — data normalisation", () => {
 
   it("resolves category name via categoryMap", async () => {
     mockedListCategories.mockResolvedValue({
-      data: [{ id: "cat-1", name: "Tech", parent_id: null, created_at: "", updated_at: "" }],
-    } as any);
+      data: [makeApiCategory()],
+    });
     const bm = makeApiBookmark({ category_id: "cat-1" });
-    mockedListBookmarks.mockResolvedValue({ data: [bm] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.bookmarks[0].category).toBe("Tech"));
@@ -129,7 +199,7 @@ describe("useBookmarks — data normalisation", () => {
 
   it("uses fallback favicon when favicon_url is null", async () => {
     const bm = makeApiBookmark({ favicon_url: null, domain: "example.com" });
-    mockedListBookmarks.mockResolvedValue({ data: [bm] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -143,7 +213,7 @@ describe("useBookmarks — sorting", () => {
   const newer = makeApiBookmark({ id: "b", created_at: "2024-06-01T00:00:00Z", title: "Apple" });
 
   beforeEach(() => {
-    mockedListBookmarks.mockResolvedValue({ data: [older, newer] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([older, newer]));
   });
 
   it("sorts newest first by default", async () => {
@@ -204,7 +274,7 @@ describe("useBookmarks — recentBookmarks", () => {
     const bookmarks = Array.from({ length: 7 }, (_, i) =>
       makeApiBookmark({ id: `bm-${i}`, created_at: `2024-0${i + 1}-01T00:00:00Z` })
     );
-    mockedListBookmarks.mockResolvedValue({ data: bookmarks } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse(bookmarks));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
@@ -217,7 +287,7 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
   it("builds tag counts from loaded bookmarks", async () => {
     const bm1 = makeApiBookmark({ id: "a", tags: ["ts", "react"] });
     const bm2 = makeApiBookmark({ id: "b", tags: ["ts"] });
-    mockedListBookmarks.mockResolvedValue({ data: [bm1, bm2] } as any);
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm1, bm2]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });

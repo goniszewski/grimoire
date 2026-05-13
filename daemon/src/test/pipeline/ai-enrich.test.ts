@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { enrichBookmark } from "../../ai/enrichment.js";
 import { makeTestDb } from "../helpers/db.js";
+import { mockFetch } from "../helpers/fetch.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ describe("enrichBookmark", () => {
   it("parses valid LLM JSON and persists summary, tags, category", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       makeLlmResponse(
         JSON.stringify({
           summary: "A great article about TypeScript.",
@@ -64,7 +65,7 @@ describe("enrichBookmark", () => {
           category: "Article",
           confidence: 0.9,
         })
-      );
+      ));
 
     await enrichBookmark(db, LLM_CONFIG, {
       bookmarkId,
@@ -102,7 +103,7 @@ describe("enrichBookmark", () => {
   it("sanitises tags to lowercase hyphenated format", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       makeLlmResponse(
         JSON.stringify({
           summary: "Summary.",
@@ -110,7 +111,7 @@ describe("enrichBookmark", () => {
           category: "Tutorial",
           confidence: 0.8,
         })
-      );
+      ));
 
     await enrichBookmark(db, LLM_CONFIG, {
       bookmarkId,
@@ -131,7 +132,7 @@ describe("enrichBookmark", () => {
   it("uses 'Other' category for unknown category strings", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       makeLlmResponse(
         JSON.stringify({
           summary: "S.",
@@ -139,7 +140,7 @@ describe("enrichBookmark", () => {
           category: "CompletelyUnknownCategory",
           confidence: 0.1,
         })
-      );
+      ));
 
     await enrichBookmark(db, LLM_CONFIG, {
       bookmarkId,
@@ -158,7 +159,7 @@ describe("enrichBookmark", () => {
   it("throws when LLM returns invalid JSON", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () => makeLlmResponse("not json at all }{");
+    globalThis.fetch = mockFetch(async () => makeLlmResponse("not json at all }{"));
 
     await expect(
       enrichBookmark(db, LLM_CONFIG, {
@@ -172,8 +173,9 @@ describe("enrichBookmark", () => {
   it("throws when LLM returns markdown-fenced invalid JSON", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
-      makeLlmResponse("```json\nnot valid json\n```");
+    globalThis.fetch = mockFetch(async () =>
+      makeLlmResponse("```json\nnot valid json\n```")
+    );
 
     await expect(
       enrichBookmark(db, LLM_CONFIG, {
@@ -187,7 +189,7 @@ describe("enrichBookmark", () => {
   it("strips markdown code fences and parses valid JSON", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       makeLlmResponse(
         "```json\n" +
           JSON.stringify({
@@ -197,7 +199,7 @@ describe("enrichBookmark", () => {
             confidence: 0.7,
           }) +
           "\n```"
-      );
+      ));
 
     await expect(
       enrichBookmark(db, LLM_CONFIG, {
@@ -219,8 +221,9 @@ describe("enrichBookmark", () => {
     const bookmarkId = insertBookmark(db);
 
     // HTTP 400 is non-retryable in llm-client, so it fails fast.
-    globalThis.fetch = async () =>
-      new Response("Bad Request", { status: 400 });
+    globalThis.fetch = mockFetch(async () =>
+      new Response("Bad Request", { status: 400 })
+    );
 
     await expect(
       enrichBookmark(db, LLM_CONFIG, {
@@ -234,8 +237,9 @@ describe("enrichBookmark", () => {
   it("throws on LLM HTTP 401 auth error", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = async () =>
-      new Response("Unauthorized", { status: 401 });
+    globalThis.fetch = mockFetch(async () =>
+      new Response("Unauthorized", { status: 401 })
+    );
 
     await expect(
       enrichBookmark(db, LLM_CONFIG, {

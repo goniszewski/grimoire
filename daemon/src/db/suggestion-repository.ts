@@ -28,7 +28,9 @@ function toSuggestion(row: AgentSuggestionRow): Suggestion {
   let metadata: Record<string, unknown> = {};
   try {
     metadata = JSON.parse(row.metadata) as Record<string, unknown>;
-  } catch {}
+  } catch {
+    // Keep malformed metadata from breaking suggestion listing.
+  }
 
   return {
     id: row.id,

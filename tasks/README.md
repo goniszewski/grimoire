@@ -56,7 +56,7 @@ tasks/
 | TASK-040 | [MCP Server Integration](done/TASK-040-mcp-server.md) | v1.0 | medium | done |
 | TASK-041 | [Unify Runtime Settings with AI and Embedding Execution](done/TASK-041-unify-runtime-settings.md) | v0-beta hardening | high | done |
 | TASK-042 | [Fix Docker Distribution and Network Safety](done/TASK-042-fix-docker-distribution-network-safety.md) | v0-beta hardening | high | done |
-| TASK-043 | [Restore Quality Gates and Add CI](todo/TASK-043-restore-quality-gates-and-ci.md) | v0-beta hardening | high | todo |
+| TASK-043 | [Restore Quality Gates and Add CI](done/TASK-043-restore-quality-gates-and-ci.md) | v0-beta hardening | high | done |
 | TASK-044 | [Make Backup and Restore Safe and Match the Design](done/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | done |
 | TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](done/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | done |
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](done/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | done |
@@ -64,10 +64,9 @@ tasks/
 
 ## Current Status
 
-Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041, TASK-042, TASK-044, TASK-045, and TASK-046 are complete. The remaining recommended implementation order is based on dependency and release risk:
+Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, and TASK-046 are complete. The remaining recommended implementation order is based on dependency and release risk:
 
-1. TASK-043 - Restore quality gates and add CI
-2. TASK-047 - Align roadmap, release, and product documentation
+1. TASK-047 - Align roadmap, release, and product documentation
 
 Notes:
 

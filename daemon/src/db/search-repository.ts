@@ -61,8 +61,10 @@ export interface SearchResult {
  * explicit opt-in rather than being the default for arbitrary user text.
  */
 function sanitizeFtsQuery(raw: string): string {
-  // Remove ASCII control characters (NUL–US, DEL) which have no search value
-  const stripped = raw.replace(/[\x00-\x1f\x7f]/g, " ").trim();
+  const stripped = Array.from(raw, (char) => {
+    const code = char.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f ? " " : char;
+  }).join("").trim();
   if (!stripped) return '""';
   // Quote each whitespace-separated token individually so multi-word queries
   // match documents containing all tokens (AND semantics) rather than requiring

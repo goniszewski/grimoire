@@ -1,1 +1,1 @@
-cd daemon && bun test
+npm run check:fast

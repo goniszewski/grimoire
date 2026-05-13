@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { fetchPage } from "../../pipeline/fetcher.js";
+import { mockFetch } from "../helpers/fetch.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,6 @@ function makeResponse(
     status,
     statusText,
     headers,
-    // @ts-ignore — Response URL is read-only; we smuggle it via a Proxy below
   }) as Response & { readonly url: string };
 }
 
@@ -80,8 +80,9 @@ describe("fetchPage", () => {
 
   it("returns html body and finalUrl for a valid URL", async () => {
     const html = "<html><body>Hello World</body></html>";
-    globalThis.fetch = async () =>
-      withUrl(makeResponse({ body: html }), "https://example.com/page");
+    globalThis.fetch = mockFetch(async () =>
+      withUrl(makeResponse({ body: html }), "https://example.com/page")
+    );
 
     const result = await fetchPage("https://example.com/page");
 
@@ -93,15 +94,17 @@ describe("fetchPage", () => {
   // ── Non-200 response ────────────────────────────────────────────────────
 
   it("throws on HTTP 404 response", async () => {
-    globalThis.fetch = async () =>
-      withUrl(makeResponse({ status: 404, statusText: "Not Found" }), "https://example.com/missing");
+    globalThis.fetch = mockFetch(async () =>
+      withUrl(makeResponse({ status: 404, statusText: "Not Found" }), "https://example.com/missing")
+    );
 
     await expect(fetchPage("https://example.com/missing")).rejects.toThrow("HTTP 404");
   });
 
   it("throws on HTTP 500 response", async () => {
-    globalThis.fetch = async () =>
-      withUrl(makeResponse({ status: 500, statusText: "Internal Server Error" }), "https://example.com/err");
+    globalThis.fetch = mockFetch(async () =>
+      withUrl(makeResponse({ status: 500, statusText: "Internal Server Error" }), "https://example.com/err")
+    );
 
     await expect(fetchPage("https://example.com/err")).rejects.toThrow("HTTP 500");
   });
@@ -112,7 +115,7 @@ describe("fetchPage", () => {
     // Simulate a fetch that respects the AbortSignal and rejects when it fires.
     // fetchPage passes an AbortController signal tied to a 20 s timer; we
     // immediately abort via the signal to avoid waiting 20 s in tests.
-    globalThis.fetch = async (_url: RequestInfo | URL, opts?: RequestInit) => {
+    globalThis.fetch = mockFetch(async (_url, opts) => {
       const signal = opts?.signal as AbortSignal | undefined;
       return new Promise<Response>((_resolve, reject) => {
         const abort = () => reject(new DOMException("The operation was aborted.", "AbortError"));
@@ -124,7 +127,7 @@ describe("fetchPage", () => {
         // Trigger abort on next microtask to let fetchPage attach its listener first
         Promise.resolve().then(abort);
       });
-    };
+    });
 
     await expect(fetchPage("https://example.com/slow")).rejects.toThrow(/aborted/i);
   });
@@ -135,8 +138,9 @@ describe("fetchPage", () => {
     const html = "<html><body>Redirected</body></html>";
     // fetch follows redirects automatically; the finalUrl on the Response
     // reflects the ultimate destination.
-    globalThis.fetch = async () =>
-      withUrl(makeResponse({ body: html }), "https://example.com/final");
+    globalThis.fetch = mockFetch(async () =>
+      withUrl(makeResponse({ body: html }), "https://example.com/final")
+    );
 
     const result = await fetchPage("https://example.com/original");
 
@@ -148,10 +152,10 @@ describe("fetchPage", () => {
 
   it("throws for loopback URLs without making a network call", async () => {
     let called = false;
-    globalThis.fetch = async () => {
+    globalThis.fetch = mockFetch(async () => {
       called = true;
       return makeResponse();
-    };
+    });
 
     await expect(fetchPage("http://localhost/evil")).rejects.toThrow(/private host/i);
     expect(called).toBe(false);
@@ -165,11 +169,12 @@ describe("fetchPage", () => {
   // ── Oversized response ──────────────────────────────────────────────────
 
   it("throws when Content-Length exceeds 10 MB", async () => {
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       withUrl(
         makeResponse({ contentLength: String(11 * 1024 * 1024) }),
         "https://example.com/big"
-      );
+      )
+    );
 
     await expect(fetchPage("https://example.com/big")).rejects.toThrow(/too large/i);
   });
@@ -177,8 +182,9 @@ describe("fetchPage", () => {
   // ── Unexpected content-type ─────────────────────────────────────────────
 
   it("throws for non-HTML, non-PDF content types", async () => {
-    globalThis.fetch = async () =>
-      withUrl(makeResponse({ contentType: "application/json" }), "https://example.com/api");
+    globalThis.fetch = mockFetch(async () =>
+      withUrl(makeResponse({ contentType: "application/json" }), "https://example.com/api")
+    );
 
     await expect(fetchPage("https://example.com/api")).rejects.toThrow(/content-type/i);
   });
@@ -187,11 +193,12 @@ describe("fetchPage", () => {
 
   it("returns bytes for PDF content type", async () => {
     const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // %PDF
-    globalThis.fetch = async () =>
+    globalThis.fetch = mockFetch(async () =>
       withUrl(
         makeResponse({ contentType: "application/pdf", bytes: pdfBytes }),
         "https://example.com/doc.pdf"
-      );
+      )
+    );
 
     const result = await fetchPage("https://example.com/doc.pdf");
     expect(result.bytes).toBeDefined();

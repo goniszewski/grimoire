@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BookmarkDetailContent } from "./BookmarkDetailContent";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
+import type { ComponentProps } from "react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -46,8 +47,15 @@ function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
 }
 
 const noop = () => {};
+type BookmarkDetailContentProps = ComponentProps<typeof BookmarkDetailContent>;
+type DetailOverrides = Partial<Omit<BookmarkDetailContentProps, "bookmark">>;
+type StatusCallback = NonNullable<BookmarkDetailContentProps["onPin"]>;
+const noopStatus: StatusCallback = () => {};
 
-function defaultProps(bm: UIBookmark, overrides = {}) {
+function defaultProps(
+  bm: UIBookmark,
+  overrides: DetailOverrides = {}
+): BookmarkDetailContentProps {
   return {
     bookmark: bm,
     onUpdateTags: vi.fn(),
@@ -286,7 +294,7 @@ describe("BookmarkDetailContent — actions", () => {
     const onPin = vi.fn();
     render(
       <BookmarkDetailContent
-        {...defaultProps(makeBookmark({ is_pinned: 0 }), { onPin, onUnpin: noop as any })}
+        {...defaultProps(makeBookmark({ is_pinned: 0 }), { onPin, onUnpin: noopStatus })}
       />
     );
     fireEvent.click(screen.getByText("Pin"));
@@ -297,7 +305,7 @@ describe("BookmarkDetailContent — actions", () => {
     const onUnpin = vi.fn();
     render(
       <BookmarkDetailContent
-        {...defaultProps(makeBookmark({ is_pinned: 1 }), { onPin: noop as any, onUnpin })}
+        {...defaultProps(makeBookmark({ is_pinned: 1 }), { onPin: noopStatus, onUnpin })}
       />
     );
     fireEvent.click(screen.getByText("Unpin"));
@@ -328,7 +336,7 @@ describe("BookmarkDetailContent — actions", () => {
     const onMarkRead = vi.fn();
     render(
       <BookmarkDetailContent
-        {...defaultProps(makeBookmark({ read_at: null }), { onMarkRead, onMarkUnread: noop as any })}
+        {...defaultProps(makeBookmark({ read_at: null }), { onMarkRead, onMarkUnread: noopStatus })}
       />
     );
     fireEvent.click(screen.getByText("Mark read"));
@@ -340,7 +348,7 @@ describe("BookmarkDetailContent — actions", () => {
     render(
       <BookmarkDetailContent
         {...defaultProps(makeBookmark({ read_at: "2024-01-16T00:00:00Z" }), {
-          onMarkRead: noop as any,
+          onMarkRead: noopStatus,
           onMarkUnread,
         })}
       />

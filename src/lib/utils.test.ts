@@ -11,7 +11,8 @@ describe("cn", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("base", false && "skipped", "added")).toBe("base added");
+    const includeSkipped = false;
+    expect(cn("base", includeSkipped && "skipped", "added")).toBe("base added");
   });
 
   it("ignores undefined and null", () => {

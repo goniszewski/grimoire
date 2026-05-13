@@ -1,0 +1,84 @@
+name: Quality Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    name: Lint, types, unit tests, docs, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install daemon dependencies
+        working-directory: daemon
+        run: bun install --frozen-lockfile
+
+      - name: Run canonical quality gate
+        run: npm run check
+
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+  docker:
+    name: Docker build and health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t little-imp:ci .
+
+      - name: Start container
+        run: docker run -d --name little-imp-ci -p 127.0.0.1:3210:3210 little-imp:ci
+
+      - name: Wait for health endpoint
+        run: |
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:3210/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs little-imp-ci
+          exit 1
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f little-imp-ci || true

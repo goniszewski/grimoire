@@ -22,6 +22,7 @@ npm install
 
 # Install daemon dependencies
 cd daemon && bun install
+cd ..
 
 # Start development servers
 npm run dev          # Frontend (Vite)
@@ -62,6 +63,9 @@ npm run dev
 npm run test
 npm run test:watch
 
+# Type-check frontend code
+npm run type-check:frontend
+
 # Run linting
 npm run lint
 
@@ -72,27 +76,57 @@ npm run build
 ### Backend Development
 
 ```bash
-# Navigate to daemon directory
-cd daemon
-
 # Start daemon in development mode
-bun run dev
+npm run daemon:dev
 
 # Run backend tests
-bun test
+npm run test:daemon
 
 # Type checking
-bun run check
+npm run type-check:daemon
 ```
 
-### Full Stack Testing
+### Quality Gates
 
 ```bash
-# Run all tests
-npm run test        # Frontend tests
-npm run test:e2e    # End-to-end tests
-cd daemon && bun test  # Backend tests
+# Fast pre-commit gate: lint, frontend/daemon type-checks, frontend unit tests, daemon tests
+npm run check:fast
+
+# Canonical local quality gate: fast gate, API docs drift check, production build
+npm run check
+
+# Individual gates
+npm run lint
+npm run type-check
+npm run test
+npm run test:daemon
+npm run docs:api:check
+npm run build
 ```
+
+### End-to-End Testing
+
+Playwright requires browser binaries outside `npm install`.
+
+```bash
+# First run on a new machine or after Playwright updates
+npm run test:e2e:install
+
+# Run browser tests
+npm run test:e2e
+```
+
+CI installs Chromium with `npx playwright install --with-deps chromium` before running E2E.
+
+### Continuous Integration
+
+GitHub Actions runs the release quality gates on pull requests and `main` pushes:
+
+- `npm run check` for lint, type-checks, frontend unit tests, daemon tests, API docs drift, and build.
+- `npm run test:e2e` after Playwright browser installation.
+- Docker image build plus `/health` validation on the published container topology.
+
+The Husky pre-commit hook runs `npm run check:fast` so commits catch the high-signal checks without running the slower E2E and Docker jobs locally.
 
 ## Code Guidelines
 

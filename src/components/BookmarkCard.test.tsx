@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BookmarkCard } from "./BookmarkCard";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
+import type { ComponentProps } from "react";
 
 // ─── Minimal mocks for deps that hit the DOM ──────────────────────────────────
 
@@ -46,6 +47,9 @@ function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
 }
 
 const noop = () => {};
+type BookmarkCardProps = ComponentProps<typeof BookmarkCard>;
+type StatusCallback = NonNullable<BookmarkCardProps["onPin"]>;
+const noopStatus: StatusCallback = () => {};
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -85,8 +89,8 @@ describe("BookmarkCard — rendering", () => {
         bookmark={makeBookmark({ read_at: "2024-01-16T00:00:00Z" })}
         onDelete={noop}
         onClick={noop}
-        onMarkRead={noop as any}
-        onMarkUnread={noop as any}
+        onMarkRead={noopStatus}
+        onMarkUnread={noopStatus}
       />
     );
     // The "Mark unread" button appears when bookmark is already read
@@ -100,8 +104,8 @@ describe("BookmarkCard — rendering", () => {
         bookmark={makeBookmark({ read_at: null })}
         onDelete={noop}
         onClick={noop}
-        onMarkRead={noop as any}
-        onMarkUnread={noop as any}
+        onMarkRead={noopStatus}
+        onMarkUnread={noopStatus}
       />
     );
     expect(screen.getByTitle("Mark read")).toBeInTheDocument();
@@ -127,7 +131,7 @@ describe("BookmarkCard — actions", () => {
         onDelete={noop}
         onClick={noop}
         onPin={onPin}
-        onUnpin={noop as any}
+        onUnpin={noopStatus}
       />
     );
     const pinBtn = screen.getByTitle("Pin");
@@ -142,7 +146,7 @@ describe("BookmarkCard — actions", () => {
         bookmark={makeBookmark({ is_pinned: 1 })}
         onDelete={noop}
         onClick={noop}
-        onPin={noop as any}
+        onPin={noopStatus}
         onUnpin={onUnpin}
       />
     );
@@ -173,7 +177,7 @@ describe("BookmarkCard — actions", () => {
         onDelete={noop}
         onClick={noop}
         onMarkRead={onMarkRead}
-        onMarkUnread={noop as any}
+        onMarkUnread={noopStatus}
       />
     );
     fireEvent.click(screen.getByTitle("Mark read"));
@@ -187,7 +191,7 @@ describe("BookmarkCard — actions", () => {
         bookmark={makeBookmark({ read_at: "2024-01-16T00:00:00Z" })}
         onDelete={noop}
         onClick={noop}
-        onMarkRead={noop as any}
+        onMarkRead={noopStatus}
         onMarkUnread={onMarkUnread}
       />
     );
