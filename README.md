@@ -270,14 +270,15 @@ cd little-imp/daemon
 # Using Docker Compose (recommended)
 git clone https://github.com/goniszewski/little-imp.git
 cd little-imp
-docker-compose up -d
+docker compose up -d
 
 # Or using Docker directly
 docker build -t little-imp .
-docker run -d -p 3210:3210 -v little-imp-data:/data --name little-imp little-imp
+docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp
 ```
 
-Access the application at `http://localhost:3210`
+Access the application at `http://127.0.0.1:3210`. The Docker image serves
+the built frontend and daemon API from the same local-only port.
 
 ## Development
 

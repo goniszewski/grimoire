@@ -10,15 +10,15 @@ WORKDIR /app
 COPY package*.json bun.lock* ./
 COPY daemon/package*.json daemon/bun.lock* ./daemon/
 
-# Install dependencies
-RUN bun install --frozen-lockfile --production
+# Install root dependencies, including build tooling for the frontend bundle
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build frontend
 RUN cd daemon && bun install --frozen-lockfile
-RUN npm run build
+RUN bun run build
 
 # Production stage
 FROM oven/bun:1-slim AS runtime
@@ -50,6 +50,8 @@ USER littleimp
 ENV HOST=0.0.0.0
 ENV PORT=3210
 ENV DATA_DIR=/data
+ENV XDG_CONFIG_HOME=/data/config
+ENV HOME=/data
 ENV NODE_ENV=production
 ENV LOG_FORMAT=json
 

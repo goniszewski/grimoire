@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   little-imp:
     build:
@@ -7,22 +5,23 @@ services:
       dockerfile: Dockerfile
     container_name: little-imp
     ports:
-      - "3210:3210"
+      - "127.0.0.1:3210:3210"
     volumes:
       - little-imp-data:/data
     environment:
       - HOST=0.0.0.0
       - PORT=3210
       - DATA_DIR=/data
+      - XDG_CONFIG_HOME=/data/config
+      - HOME=/data
       - NODE_ENV=production
       - LOG_FORMAT=json
-      # Optional: Configure AI providers
-      # - LLM_PROVIDER=ollama
+      # Optional: seed OpenAI defaults for first start or unattended deployments.
+      # Runtime settings saved through the UI/API remain the source of truth.
       # - LLM_API_KEY=your-api-key
-      # - LLM_MODEL=llama2
-      # - EMBEDDING_PROVIDER=ollama
+      # - LLM_MODEL=gpt-4o-mini
       # - EMBEDDING_API_KEY=your-api-key
-      # - EMBEDDING_MODEL=nomic-embed-text
+      # - EMBEDDING_MODEL=text-embedding-3-small
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3210/health"]
@@ -37,7 +36,7 @@ services:
   #   image: ollama/ollama:latest
   #   container_name: ollama
   #   ports:
-  #     - "11434:11434"
+  #     - "127.0.0.1:11434:11434"
   #   volumes:
   #     - ollama-data:/root/.ollama
   #   restart: unless-stopped

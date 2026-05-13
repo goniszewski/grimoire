@@ -28,7 +28,10 @@ Little Imp is designed as a local-first application that runs entirely on the us
 
 - **No external dependencies**: All data processing happens locally
 - **No cloud storage**: Bookmarks and content are stored in a local SQLite database
-- **Network isolation**: The daemon only listens on `127.0.0.1:3210` (localhost)
+- **Network isolation**: The native daemon listens on `127.0.0.1:3210`
+  (localhost). Docker publishes the daemon as `127.0.0.1:3210:3210` by
+  default; the container-internal `HOST=0.0.0.0` is only used so Docker can
+  forward that loopback-bound host port into the container.
 
 ### Implemented Security Measures
 
@@ -42,7 +45,8 @@ Little Imp is designed as a local-first application that runs entirely on the us
 
 #### Network Security
 
-- Localhost-only binding (`127.0.0.1:3210`)
+- Localhost-only native binding (`127.0.0.1:3210`)
+- Loopback-only Docker port publishing (`127.0.0.1:3210:3210`)
 - Private network address blocking
 - Content size limits (10MB maximum)
 - Request timeout protection (20 seconds)
@@ -59,6 +63,13 @@ Little Imp is designed as a local-first application that runs entirely on the us
 #### Local Access
 
 Since Little Imp runs locally without authentication, any process on the user's machine can potentially access the API. This is by design for a local-first application but users should be aware of this limitation.
+
+#### Docker Networking
+
+The Docker image serves the frontend and API from one container. Keep Docker
+port publishing bound to `127.0.0.1`; do not use `3210:3210` or
+`0.0.0.0:3210:3210` unless an authenticated tunnel, VPN, or reverse proxy
+protects the service before requests reach Little Imp.
 
 #### Content Fetching
 
@@ -91,7 +102,8 @@ When contributing to Little Imp:
 
 #### Network Security
 
-- [x] Localhost-only binding
+- [x] Localhost-only native binding
+- [x] Loopback-only Docker port publishing
 - [x] Private IP blocking
 - [x] Request timeouts
 - [x] Content size limits

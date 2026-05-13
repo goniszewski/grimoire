@@ -1,6 +1,6 @@
 # TASK-042: Fix Docker Distribution and Network Safety
 
-**Status:** todo
+**Status:** done
 **Priority:** high
 **Phase:** v0-beta hardening
 **Area:** Docker, daemon, security, docs
@@ -39,10 +39,19 @@ This task makes Docker either a secure local-only single-container app or explic
 
 ## Acceptance Criteria
 
-- [ ] `docker compose up -d` starts a healthy Little Imp deployment.
-- [ ] `http://127.0.0.1:3210` loads the intended application or docs clearly state the correct frontend URL.
-- [ ] The default Compose file does not expose the unauthenticated daemon on non-loopback interfaces.
-- [ ] The root `docker:run` script does not expose the unauthenticated daemon on non-loopback interfaces.
-- [ ] Docker docs and SECURITY.md agree on the trust boundary.
-- [ ] `docker build -t little-imp .` completes in a clean environment.
-- [ ] The container health check passes after startup.
+- [x] `docker compose up -d` starts a healthy Little Imp deployment.
+- [x] `http://127.0.0.1:3210` loads the intended application or docs clearly state the correct frontend URL.
+- [x] The default Compose file does not expose the unauthenticated daemon on non-loopback interfaces.
+- [x] The root `docker:run` script does not expose the unauthenticated daemon on non-loopback interfaces.
+- [x] Docker docs and SECURITY.md agree on the trust boundary.
+- [x] `docker build -t little-imp .` completes in a clean environment.
+- [x] The container health check passes after startup.
+
+## Completion Notes
+
+- Chose the single-container topology: the daemon serves the built `dist` assets
+  and SPA fallback paths after API routes.
+- Docker Compose and `npm run docker:run` now publish only
+  `127.0.0.1:3210:3210`, while the container keeps `HOST=0.0.0.0` internally.
+- Docker docs now document the local-only trust boundary and gate remote access
+  behind external authentication, VPN, or equivalent controls.

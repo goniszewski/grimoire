@@ -16,9 +16,9 @@
     "daemon:start": "cd daemon && bun run start",
     "docs:api": "bun run scripts/generate-api-docs.ts",
     "docker:build": "docker build -t little-imp .",
-    "docker:run": "docker run -d -p 3210:3210 -v little-imp-data:/data --name little-imp little-imp",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
+    "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "prepare": "husky"
   },
   "dependencies": {
