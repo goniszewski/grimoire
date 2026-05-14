@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1.0 | :x:                |
+| 0.1.0-beta | :white_check_mark: |
+| Other pre-release or development builds | :x: |
 
 ## Reporting a Vulnerability
 
@@ -55,6 +55,7 @@ Little Imp is designed as a local-first application that runs entirely on the us
 
 - SQLite database with WAL mode for consistency
 - Backup checksum validation
+- Backup settings export omits secrets; restore preserves current local secrets
 - Safe file operations with proper error handling
 - No sensitive data in logs (API keys are masked)
 

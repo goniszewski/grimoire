@@ -44,6 +44,7 @@ interface BackupDeps {
 }
 
 const BACKUP_FORMAT_VERSION = 1;
+const MIN_RESTORE_APP_VERSION = "0.1.0-beta";
 const CHECKSUM_ALGORITHM = "sha256";
 const SETTINGS_SECRETS_POLICY = "secrets omitted; current local secrets are preserved on restore";
 const SNAPSHOT_FILE = "snapshot.db";
@@ -335,7 +336,7 @@ function readManifest(manifestPath: string, maxSchemaVersion: string): BackupMan
     checksum_algorithm: parsed.checksum_algorithm ?? CHECKSUM_ALGORITHM,
     included_files: parsed.included_files ?? [SNAPSHOT_FILE],
     compatibility: parsed.compatibility ?? {
-      min_app_version: "0.0.0",
+      min_app_version: MIN_RESTORE_APP_VERSION,
       restore_supported: true,
     },
   };
@@ -402,7 +403,7 @@ export async function createBackupSnapshot(
       checksum_algorithm: CHECKSUM_ALGORITHM,
       included_files: includedFiles,
       compatibility: {
-        min_app_version: "0.0.0",
+        min_app_version: MIN_RESTORE_APP_VERSION,
         restore_supported: true,
       },
     };

@@ -2,6 +2,8 @@
 
 A local-first bookmark manager. Save links, extract content, search semantically, and let an AI organise your library — all on your own machine.
 
+Current release target: `0.1.0-beta`.
+
 ## How it works
 
 Little Imp has two parts:
@@ -41,7 +43,7 @@ The installer will:
 
 ```sh
 curl http://127.0.0.1:3210/health
-# → {"status":"ok","version":"...","uptime":...,"queueSize":0}
+# → {"status":"ok","version":"0.1.0-beta","uptime":...,"queueSize":0}
 ```
 
 ---
@@ -129,13 +131,15 @@ install or unattended deployments. `GET /settings` redacts secrets as `"***"`;
 round-tripping that response through `PUT /settings` preserves the stored
 secret instead of writing the redacted placeholder.
 
-### Manual backup
+### Backup and restore
 
 The supported backup flow is the daemon backup API/UI, which creates a portable
 snapshot directory under `~/.local/share/littleimp/backups/` by default. Each
 snapshot contains `snapshot.db`, `manifest.json`, `checksums.sha256`, and
 `data/settings.json`. Settings backups omit secrets such as API keys and PIN
-hashes; restoring settings preserves the current local secrets.
+hashes; restoring settings preserves the current local secrets. The Settings
+page also supports custom local destinations, scheduled snapshots, and
+S3-compatible remote backup targets.
 
 ```sh
 # Create a backup through the daemon
@@ -245,11 +249,12 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ## Documentation
 
 - [API Reference](./API.md) - Generated daemon API documentation
-- [API Contract](./docs/api-contract.json) - Machine-readable source generated from the daemon contract
+- [API Contract](./docs/api-contract.json) - Machine-readable contract generated from `daemon/src/api/contract.ts`
 - [Contributing Guide](./CONTRIBUTING.md) - Development setup and contribution guidelines
 - [Product Requirements](./docs/prd.md) - Detailed product specifications
 - [Development Roadmap](./docs/roadmap.md) - Future development plans
 - [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
+- [Release Checklist](./docs/release-checklist.md) - Final beta validation checklist
 - [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
 - [Update System](./docs/update-system.md) - Update mechanism design and roadmap
 - [Docker Deployment](./docs/docker-deployment.md) - Container deployment guide

@@ -6,6 +6,7 @@ import { tmpdir } from "os";
 import { createBackupRoute } from "../../routes/backup.js";
 import { runMigrations } from "../../db/migrations.js";
 import { settingsManager } from "../../settings.js";
+import { version as DAEMON_VERSION } from "../../../package.json";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ const EMPTY_S3_CONFIG = {
   region: "us-east-1",
   prefix: "little-imp-backups/",
 };
+
+const MIN_RESTORE_APP_VERSION = "0.1.0-beta";
 
 /** Returns the SHA-256 hex digest of a file. */
 async function sha256File(path: string): Promise<string> {
@@ -126,10 +129,11 @@ describe("Backup API", () => {
       settings: { included: boolean; filename: string; secrets_policy: string };
       checksum_algorithm: string;
       included_files: string[];
+      compatibility: { min_app_version: string; restore_supported: boolean };
     };
     expect(manifest.version).toBe(1);
     expect(manifest.backup_format_version).toBe(1);
-    expect(manifest.app_version).toBeString();
+    expect(manifest.app_version).toBe(DAEMON_VERSION);
     expect(manifest.bookmark_count).toBe(0);
     expect(manifest.db_size_bytes).toBeGreaterThan(0);
     expect(manifest.database).toEqual({
@@ -144,6 +148,10 @@ describe("Backup API", () => {
     });
     expect(manifest.checksum_algorithm).toBe("sha256");
     expect(manifest.included_files).toEqual(["snapshot.db", "data/settings.json"]);
+    expect(manifest.compatibility).toEqual({
+      min_app_version: MIN_RESTORE_APP_VERSION,
+      restore_supported: true,
+    });
     expect(manifest.created_at).toBeString();
   });
 

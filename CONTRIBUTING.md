@@ -128,6 +128,8 @@ GitHub Actions runs the release quality gates on pull requests and `main` pushes
 
 The Husky pre-commit hook runs `npm run check:fast` so commits catch the high-signal checks without running the slower E2E and Docker jobs locally.
 
+Before tagging or publishing `0.1.0-beta`, run the [Release Checklist](./docs/release-checklist.md). It covers native install/upgrade, Docker, backup/restore, CI, and documentation validation.
+
 ## Code Guidelines
 
 ### TypeScript

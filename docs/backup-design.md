@@ -1,9 +1,9 @@
 # Little Imp Backup Design
 
-Version: v0.1
-Status: Draft
+Version: v0.2
+Status: Release baseline implemented; encryption and packaged CLI remain future work
 Author: Robert Goniszewski
-Date: March 2026
+Date: May 2026
 
 ---
 
@@ -131,7 +131,7 @@ Notes:
 {
   "version": 1,
   "backup_format_version": 1,
-  "app_version": "0.0.0",
+  "app_version": "0.1.0-beta",
   "created_at": "2026-05-13T13:15:46.497Z",
   "db_size_bytes": 155648,
   "bookmark_count": 42,
@@ -148,7 +148,7 @@ Notes:
   "checksum_algorithm": "sha256",
   "included_files": ["snapshot.db", "data/settings.json"],
   "compatibility": {
-    "min_app_version": "0.0.0",
+    "min_app_version": "0.1.0-beta",
     "restore_supported": true
   }
 }
@@ -258,6 +258,13 @@ snapshot first, creates the rollback directory, migrates a temporary copy,
 closes the live SQLite handle, replaces the SQLite file, and returns
 `restart_required: true`. Packaged UI/CLI restore should still stop the daemon
 or enter maintenance mode before invoking replacement.
+
+Release limitations:
+
+- restore is safe but not seamless; callers must restart the daemon after a successful restore
+- packaged CLI restore/verify commands are not included in `0.1.0-beta`
+- password-based backup encryption remains a future packaging layer
+- backup is snapshot export, not live multi-device sync
 
 ### 8.2 Compatibility rules
 
@@ -375,7 +382,7 @@ The first implementation must support:
 
 ### 10.2 Scheduled backup
 
-Later implementation should support:
+The release implementation supports:
 
 - daily schedule
 - weekly schedule
@@ -447,7 +454,7 @@ Rules:
 
 ## 13. UI Requirements
 
-Initial UI surface:
+Implemented UI/API surface:
 
 - backup section in Settings
 - "Create backup now"
@@ -475,7 +482,7 @@ Restore confirmation must communicate:
 
 ## 14. Phased Delivery
 
-### Phase 1
+### Phase 1 — Implemented
 
 - define backup snapshot-directory format
 - implement local snapshot creation
@@ -483,18 +490,18 @@ Restore confirmation must communicate:
 - expose manual backup and restore in the daemon API and Settings UI
 - document manual backup and restore
 
-### Phase 2
+### Phase 2 — Implemented
 
 - add scheduled local backups
 - add retention policy
 - add backup history UI
 
-### Phase 3
+### Phase 3 — Implemented
 
 - add S3-compatible destination
 - add remote backup listing and restore download
 
-### Phase 4
+### Phase 4 — Future
 
 - refine password-based encryption UX and verification tooling
 - consider provider-specific cloud APIs only if folder-based workflows are insufficient

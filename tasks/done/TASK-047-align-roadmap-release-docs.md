@@ -1,6 +1,6 @@
 # TASK-047: Align Roadmap, Release, and Product Documentation
 
-**Status:** todo
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta hardening
 **Area:** documentation, release management
@@ -37,9 +37,9 @@ This task makes README, roadmap, PRD, changelog, security docs, API docs, packag
 
 ## Acceptance Criteria
 
-- [ ] README, roadmap, PRD, changelog, API docs, and task board agree on shipped features.
-- [ ] Package versions and documented release version are consistent.
-- [ ] Roadmap clearly distinguishes release blockers from future ideas.
-- [ ] Task paths in `tasks/README.md` point to files that actually exist.
-- [ ] Security documentation matches runtime and Docker defaults.
-- [ ] Release checklist is documented and referenced from CONTRIBUTING.md or README.
+- [x] README, roadmap, PRD, changelog, API docs, and task board agree on shipped features.
+- [x] Package versions and documented release version are consistent.
+- [x] Roadmap clearly distinguishes release blockers from future ideas.
+- [x] Task paths in `tasks/README.md` point to files that actually exist.
+- [x] Security documentation matches runtime and Docker defaults.
+- [x] Release checklist is documented and referenced from CONTRIBUTING.md or README.

@@ -2,10 +2,10 @@
 
 Product Requirements Document (PRD)
 
-Version: v0.5  
-Status: Living document aligned to post-v0-alpha implementation  
-Author: Robert Goniszewski  
-Date: March 2026
+Version: v0.6
+Status: Living document aligned to the `0.1.0-beta` release target
+Author: Robert Goniszewski
+Date: May 2026
 
 ---
 
@@ -27,9 +27,10 @@ Users save URLs and the system:
 
 Current product state:
 
-- v0-alpha is complete
-- v0-beta is in progress
-- core save, extract, keyword search, semantic search, and review flows already exist
+- `0.1.0-beta` is the current release target
+- core save, extract, keyword search, semantic search, hybrid search, and review flows exist
+- local/S3-compatible backup and restore flows exist with checksum validation, rollback directory creation, and restart-required restore responses
+- Docker deployment and Streamable HTTP MCP integration are supported local-first entry points
 
 Core promise:
 
@@ -467,11 +468,15 @@ Export:
 - JSON
 - CSV
 
-Database location is documented for manual backups.
+Backup and restore:
 
-Future:
-
-- automated periodic backup
+- portable snapshot directories
+- manifest and checksum validation
+- non-secret settings export
+- custom local destinations, including cloud-synced folders
+- scheduled local snapshots with retention
+- S3-compatible remote backup targets
+- restore with rollback directory creation and daemon restart requirement
 
 ### Backup Strategy
 
@@ -484,20 +489,20 @@ Principles:
 - backup should be append-only snapshots, not live multi-writer replication
 - restore should always create a local copy first, never run directly from a remote mount
 
-Recommended backup model:
+Implemented backup model:
 
 1. create a consistent local snapshot
-2. compress and checksum it
+2. write checksums for restorable payload files
 3. store a small manifest with app version, schema version, created-at timestamp, and backup format version
 4. upload the snapshot to a configured target or copy it to a user-selected folder
 
-Suggested backup targets in priority order:
+Supported backup targets:
 
 - local folder / external disk
 - S3-compatible object storage
 - cloud-synced folder chosen by the user (for example iCloud Drive, Dropbox, Google Drive)
 
-Not recommended for the first implementation:
+Deferred backup targets:
 
 - direct multi-provider integrations for every consumer cloud drive
 - true multi-device sync of the live database
@@ -525,11 +530,9 @@ Principles:
 
 ## 18. Development Milestones
 
-### v0-alpha ✅
+### v0-alpha
 
-Goal: validate **save → search → retrieve** workflow.
-
-Features:
+Delivered the save, search, and retrieve loop:
 
 - bookmark ingestion
 - HTML bookmark import
@@ -538,40 +541,35 @@ Features:
 - minimal React UI
 - daemon installer
 
-Delivered.
+### 0.1.0-beta
 
----
+Current release target. Adds the complete local-first beta surface:
 
-### v0-beta (current target)
+- AI enrichment, embeddings, semantic search, hybrid search, and related bookmarks
+- category management, category drag-and-drop, notes, archive, Trash, and read status
+- review queue, timeline, organization agent, duplicate detection, and cold-start guard
+- Settings UI, first-run/degraded-mode UX, app lock, and runtime settings persistence
+- portable backup/restore, scheduled snapshots, custom destinations, and S3-compatible remote backups
+- Docker deployment, MCP integration, source-of-truth API docs, CI, and release checklist
 
-Adds AI enrichment:
+### Next release
 
-- summary generation
-- tag generation
-- embeddings
-- semantic search
-- category suggestion
+Focuses on release operations:
 
----
+- Homebrew or signed release archive
+- one-command installer entry point
+- packaged backup CLI and backup verification UX
+- optional encrypted backup artifact
+- update flow
 
-### v0.2 (later)
-
-Adds autonomous organization:
-
-- clustering
-- review queue
-- timeline
-- duplicate detection
-
----
-
-### v1
+### Future
 
 Advanced ecosystem features:
 
 - plugin system
 - browser extension
-- MCP integration
+- live multi-device sync
+- optional auth/rate limiting for non-local deployment modes
 - advanced AI workflows
 
 ---

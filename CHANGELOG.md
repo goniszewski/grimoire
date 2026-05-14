@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [0.1.0-beta] - 2026-03-13
+## [0.1.0-beta] - 2026-05-14
 
 ### Added
 - Local-first bookmark manager with a React SPA frontend (Vite + Tailwind + shadcn/ui)
@@ -27,4 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - First-run empty-state screen with prompts to add or import bookmarks
 - Timeline, Archive, Trash, Domains, and Review Queue views
 - App lock with optional PIN and configurable auto-lock timeout
-- Comprehensive test suite: 87 daemon unit tests, 36 integration tests, Vitest + Playwright frontend tests
+- Settings page for AI, embeddings, backup destination, scheduled snapshots, and S3-compatible backup targets
+- Portable backup/restore snapshots with manifest, checksums, non-secret settings export, rollback directory creation, and restart-required restore responses
+- Docker deployment path that serves the frontend and daemon API from one loopback-bound container port
+- Streamable HTTP MCP endpoint at `/mcp` with bookmark search, read, create, and category-list tools
+- Source-of-truth API contract in `daemon/src/api/contract.ts` with generated `API.md` and `docs/api-contract.json`
+- CI and local quality gates for linting, type-checks, frontend tests, daemon tests, API docs drift checks, production build, E2E tests, and Docker health validation

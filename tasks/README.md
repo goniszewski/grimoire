@@ -60,17 +60,19 @@ tasks/
 | TASK-044 | [Make Backup and Restore Safe and Match the Design](done/TASK-044-safe-backup-restore.md) | v0-beta hardening | high | done |
 | TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](done/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | done |
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](done/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | done |
-| TASK-047 | [Align Roadmap, Release, and Product Documentation](todo/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | todo |
+| TASK-047 | [Align Roadmap, Release, and Product Documentation](done/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | done |
 
 ## Current Status
 
-Core product tasks are mostly complete, but the latest project review identified v0-beta hardening work before release confidence. TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, and TASK-046 are complete. The remaining recommended implementation order is based on dependency and release risk:
+Core product tasks and v0-beta hardening tasks are complete through TASK-047. The remaining work before tagging `0.1.0-beta` is release validation, not new product implementation:
 
-1. TASK-047 - Align roadmap, release, and product documentation
+1. Run the [release checklist](../docs/release-checklist.md).
+2. Smoke-test native install/upgrade/uninstall on macOS and Linux where available.
+3. Confirm CI, E2E, Docker health validation, API docs drift checks, and docs links.
 
 Notes:
 
 - TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
-- TASK-047 should be the final consistency pass after the implementation-facing hardening tasks land.
+- TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.

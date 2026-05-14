@@ -1,243 +1,118 @@
-# Little Imp — Roadmap
+# Little Imp Roadmap
 
-Version: draft-v4
-Status: Draft (for iteration)
+Version: draft-v5
+Status: Release alignment for `0.1.0-beta`
 Author: Robert Goniszewski
-Date: March 2026
+Date: May 2026
 
----
+## Current State
 
-## Context
+Little Imp is in `0.1.0-beta` release hardening. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, and run locally through the native daemon or Docker.
 
-Little Imp is past the v0-alpha milestone (save → search → retrieve works). This roadmap focuses on reaching a stable, self-distributable v0-beta by closing the gap between the current implementation and a complete, usable product.
+Shipped product areas:
 
-Priority order: **UX completeness → AI features → distribution → testing infrastructure**.
+- Bookmark ingestion, content extraction, PDF extraction, YouTube transcript extraction, and asynchronous pipeline status.
+- SQLite storage with keyword search, semantic search, hybrid search, tags, category CRUD, and category drag-and-drop reparenting.
+- Bookmark status actions: pin, archive, mark read, soft delete to Trash, restore from Trash, permanent delete, and 30-day trash purge.
+- Personal notes, editable bookmark details, first-run empty state, daemon-offline banner, and degraded-mode messaging when AI or embeddings are not configured.
+- AI enrichment, embedding generation, related bookmarks, organization agent suggestions, atomic suggestion acceptance, timeline events, and cold-start guard below 20 bookmarks.
+- Settings page for AI, embeddings, runtime settings, app lock, backup destination, scheduled snapshots, and S3-compatible backup targets.
+- Portable backup/restore snapshots with `manifest.json`, `checksums.sha256`, `snapshot.db`, non-secret `data/settings.json`, rollback directory creation, and `restart_required: true` restore responses.
+- Native install/upgrade/uninstall script for macOS LaunchAgent and Linux systemd user units.
+- Docker deployment path with one loopback-bound container port (`127.0.0.1:3210:3210`) serving both frontend and daemon API.
+- Streamable HTTP MCP endpoint at `/mcp` for bookmark search, reading, creation, and category listing.
+- Source-of-truth API contract in `daemon/src/api/contract.ts`, generated `API.md`, generated `docs/api-contract.json`, and API docs drift checking.
+- Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
----
+## Release Blockers
 
-## Current State (March 2026)
+These are the remaining checks before tagging or publishing `0.1.0-beta`:
 
-**Works today:**
-- Bookmark ingestion, content extraction, AI enrichment pipeline
-- Embeddings pipeline (generate + store; skipped when `EMBEDDING_API_KEY` unset)
-- FTS5 keyword search, semantic search, hybrid search (BM25 + cosine) with mode toggle
-- Category tree with full CRUD (create, rename, delete, reparent) and tag management
-- Pin / unpin, archive / unarchive, mark as read / unread
-- Personal notes on bookmarks (Markdown, inline edit)
-- Trash system: soft-delete, restore, permanent delete, 30-day auto-purge
-- Archive page (`/archive`), Trash page (`/trash`)
-- Import (Netscape HTML) / Export (JSON, CSV)
-- Review queue (AI suggestions UI) — fully wired: acceptance executes actions atomically
-- Timeline view — all agent and user actions recorded
-- Organization agent: duplicate detection, category merge suggestions, auto-apply at confidence ≥ 0.9
-- `GET /bookmarks/:id/related` — nearest neighbours by embedding
-- Settings page (`/settings`): LLM provider, API key, model, embedding provider
-- Domains view
+- Run the [release checklist](./release-checklist.md) end to end.
+- Smoke-test native install, upgrade, health, and uninstall on macOS.
+- Smoke-test Linux systemd user install when a Linux host or VM is available.
+- Validate Docker Compose startup, loopback-only port publishing, and container health on a clean machine.
+- Validate backup create and restore against a throwaway library, including rollback directory creation, secret preservation, and required daemon restart.
+- Confirm `npm run check`, `npm run test:e2e`, API docs drift check, and Docker health validation are green in CI.
+- Confirm README, PRD, roadmap, changelog, API docs, security docs, and task board all describe the same shipped beta state.
 
-**Remaining gaps:**
-- Category move via drag-and-drop (only "Move to…" dropdown implemented)
-- Unit and integration tests
-- Distribution / installer validation
-- First-run onboarding / empty state polish
-- Backup / restore documentation
+## Next Release
 
----
+The next release should focus on reducing installation friction and improving confidence around backup and operations:
 
-## Milestones
+- Distribution polish: Homebrew formula or signed release archive.
+- One-command installer entry point after release artifact signing and checksum publication are settled.
+- Packaged backup CLI commands: `backup create`, `backup list`, `backup restore`, and `backup verify`.
+- Backup verification UX that can validate a snapshot without restoring it.
+- Optional encrypted backup package format built around the current portable snapshot directory.
+- Better update flow based on the design in [docs/update-system.md](./update-system.md).
+- More complete installer matrix coverage for supported macOS and Linux versions.
 
----
+## Future Ideas
 
-### M1 — Core User Journeys Complete ✅
+These are not part of `0.1.0-beta`:
 
-> Goal: Every basic action a user wants to take on a bookmark is possible and intuitive.
-
-**Bookmark status actions**
-- [x] Pin / unpin bookmark (UI + API)
-- [x] Archive / unarchive bookmark (UI + API) — hidden from main feed, no expiry, accessible via `/archive` page
-- [x] Mark as read / unread (UI + API)
-
-**Trash system**
-- [x] Add `is_trashed` + `trashed_at` columns via migrations (`0006`, `0007`)
-- [x] Trash icon moves bookmark to Trash (hidden from all views including archive)
-- [x] Archive page (`/archive`): archived bookmarks, excludes trashed items; unarchive action
-- [x] Trash page (`/trash`): soft-deleted bookmarks with restore and "Delete permanently" actions
-- [x] Background purge job: hard-delete rows where `trashed_at` older than 30 days
-
-**Personal notes**
-- [x] Add `notes TEXT` column via migration (`0008_bookmark_notes.sql`)
-- [x] Expose `notes` in `PUT /bookmarks/:id`
-- [x] Update `BookmarkRepository.update()` to accept `notes`
-- [x] Display notes in `BookmarkDetailContent` with Markdown rendering (read mode)
-- [x] Edit notes inline with a Markdown textarea (write mode)
-
-**Category management**
-- [x] Rename category (inline edit in sidebar)
-- [x] Delete category (with confirmation — bookmarks become uncategorized)
-- [x] Move / reparent category via drag-and-drop in sidebar (primary) — TASK-034
-- [x] Move / reparent category via "Move to…" dropdown (fallback / mobile-friendly)
-
-**Bookmark editing**
-- [x] All editable fields accessible from `BookmarkDetailContent`: title, URL, category, tags, notes
-- [x] Summary edit reviewed and polished
-
----
-
-### M2 — Settings UI ✅
-
-> Goal: Users can configure the daemon from the app, not by editing env files.
-
-- [x] Settings as a dedicated page (`/settings`) in frontend
-- [x] Display current AI provider and model
-- [x] Edit LLM provider (OpenAI / Ollama / none), API key, model name
-- [x] Edit Embedding provider and model
-- [x] "Test connection" button (`POST /settings/test-ai`)
-- [x] Show redacted API key in UI
-- [x] Persist settings via `PUT /settings`
-
----
-
-### M3 — AI Features Fully Wired ✅
-
-> Goal: Semantic search and the organization agent are functional end-to-end.
-
-**Embeddings**
-- [x] Embed pipeline stage runs after `ai_enriched` status
-- [x] Embeddings stored correctly in `embeddings` table
-- [x] Pipeline status surfaced in UI via `PipelineBadge` (`indexed` state)
-
-**Semantic search**
-- [x] `GET /search?mode=semantic` — embedding cosine similarity
-- [x] `GET /search?mode=hybrid` — FTS5 BM25 + cosine similarity combined
-- [x] `GET /bookmarks/:id/related` — nearest neighbours by embedding
-- [x] Search mode toggle in UI (keyword / semantic / hybrid)
-
-**Organization agent**
-- [x] Agent runs on scheduler (`AGENT_INTERVAL_MS`), writes to `agent_suggestions`
-- [x] Agent skips run when library has < 20 bookmarks (cold-start guard)
-- [x] Suggestion acceptance wired to real actions (category create/merge, bookmark trash) — atomic transaction
-- [x] Timeline events recorded for all agent and user actions
-- [x] Auto-apply threshold (confidence ≥ 0.9) executes actions directly; lower-confidence items queued for review
-- [x] `suggestion_accepted` / `suggestion_rejected` timeline event types added
-
----
-
-### M4 — Testing Infrastructure ✅
-
-> Goal: Confidence to ship without manual regression testing.
-
-**Unit tests — daemon (Bun test runner)**
-- [x] `JobQueue` — enqueue, dequeue, status transitions
-- [x] `BookmarkRepository` — CRUD, FTS sync, cascade delete
-- [x] `CategoryRepository` — tree queries, reparent, depth limits
-- [x] Extraction pipeline stages — fetch, extract, ai_enrich, embed, index
-- [x] Search — keyword results, FTS sanitisation, filter options
-- [x] Trash purge — soft-delete, restore, 30-day expiry
-
-**Integration tests — daemon (Bun test runner, in-memory SQLite)**
-- [x] Full ingestion flow: `POST /bookmarks` → pipeline → `GET /bookmarks/:id` (status: indexed)
-- [x] Import flow: upload Netscape HTML → all bookmarks ingested
-- [x] Search: bookmark ingested → FTS returns it
-- [x] Category and tag CRUD via API
-- [x] Archive: archive → hidden from main feed → appears in `/archive` → unarchive → back in feed
-- [x] Trash: delete → appears in `/trash` → restore → no longer in trash; purge after 30 days
-
-**Frontend tests (Vitest)**
-- [x] Unit tests for hooks (`use-bookmarks`, `use-daemon-status`, `use-suggestions`)
-- [x] Component tests for `BookmarkCard`, `BookmarkDetailContent`, `AppSidebar`
-- [x] E2E: add bookmark → appears in list → open detail → edit notes → save
-
----
-
-### M5 — Distribution Readiness ✅
-
-> Goal: Someone else can install and run Little Imp without assistance.
-
-**Installer**
-- [ ] Test `install.sh` end-to-end on macOS (fresh environment)
-- [ ] Test systemd unit on Linux
-- [ ] Verify macOS LaunchAgent `.plist` auto-starts daemon on login
-- [ ] Document manual start/stop/restart commands
-
-**First-run experience**
-- [x] Detect empty library state — show onboarding message or empty state UI
-- [x] Cold start: clustering disabled under 20 bookmarks — enforced; UI cold-start message shown on Review Queue page
-- [x] Explain degraded mode clearly when AI providers are unset: dismissible banner with link to Settings
-- [x] Graceful "daemon offline" banner confirmed — shows on first launch before daemon starts; Playwright test added
-
-**Packaging**
-- [ ] Single-command install: `curl | sh` or Homebrew formula (future)
-- [ ] Document `DATA_DIR` location and manual backup procedure
-- [ ] Document restore procedure from an existing data directory on a fresh install
-- [ ] Release notes / changelog format established
-
-**Backup and restore**
-- [x] Define portable backup bundle format: SQLite DB + manifest + checksums + optional attachments
-- [x] Add "Create backup now" action that writes to a local folder
-- [x] Add "Restore from backup" flow with compatibility checks and clear overwrite rules
-- [x] Add scheduled local snapshots with retention policy
-- [x] Add remote backup target abstraction with first-class S3-compatible support
-- [x] Support user-selected cloud-synced folders as normal local destinations (iCloud Drive, Dropbox, Google Drive, OneDrive)
-- [x] Defer provider-specific APIs unless folder-based backup proves insufficient
-
----
+- Browser extension for one-click saves.
+- Multi-device sync of live data.
+- Multi-user or public-network deployment mode.
+- Optional authentication/rate limiting for non-local deployments.
+- Plugin system.
+- GitHub Issues extractor.
+- Provider-specific consumer cloud APIs for Google Drive, Dropbox, OneDrive, or iCloud beyond normal synced folders.
+- sqlite-vec-backed vector index optimization if the current float32 BLOB approach becomes a bottleneck.
 
 ## User Journey Coverage
 
 | Journey | Status |
 |---|---|
-| Save a URL | ✅ Done |
-| Search saved content (keyword) | ✅ Done |
-| Search saved content (semantic / hybrid) | ✅ Done (M3) |
-| Add a personal note to a bookmark | ✅ Done (M1) |
-| Edit title / tags / category | ✅ Done (M1) |
-| Pin important bookmarks | ✅ Done (M1) |
-| Archive a bookmark (hide, no expiry) | ✅ Done (M1) |
-| Unarchive a bookmark | ✅ Done (M1) |
-| Move bookmark to Trash (30-day soft-delete) | ✅ Done (M1) |
-| Restore bookmark from Trash | ✅ Done (M1) |
-| Permanently delete a bookmark | ✅ Done (M1) |
-| Mark a bookmark as read | ✅ Done (M1) |
-| Create a category | ✅ Done |
-| Rename a category | ✅ Done (M1) |
-| Delete a category | ✅ Done (M1) |
-| Move a category under another | ✅ Done (M1, TASK-034) |
-| Configure AI provider | ✅ Done (M2) |
-| Import bookmarks from browser | ✅ Done |
-| Export bookmarks | ✅ Done |
-| Review AI suggestions (accept/reject wired) | ✅ Done (M3) |
-| Find related bookmarks | ✅ Done (M3) |
-| Semantic / hybrid search | ✅ Done (M3) |
-| Understand degraded mode when AI is not configured | ❌ Not yet explicit in UI/docs |
-| Back up and restore local data confidently | ⚠️ Partial (backup path planned; restore flow undocumented) |
+| Save a URL | Shipped |
+| Search saved content by keyword | Shipped |
+| Search saved content semantically or with hybrid ranking | Shipped |
+| Add and edit personal notes | Shipped |
+| Edit title, tags, category, and notes | Shipped |
+| Pin important bookmarks | Shipped |
+| Archive and unarchive bookmarks | Shipped |
+| Move bookmarks to Trash, restore, and permanently delete | Shipped |
+| Mark bookmarks as read or unread | Shipped |
+| Create, rename, delete, and reparent categories | Shipped |
+| Configure AI and embedding providers | Shipped |
+| Understand degraded mode when AI or embeddings are unset | Shipped |
+| Import browser bookmarks | Shipped |
+| Export bookmarks to JSON or CSV | Shipped |
+| Review and accept/reject AI suggestions | Shipped |
+| Find related bookmarks | Shipped |
+| Back up and restore local data | Shipped, with daemon restart required after restore |
+| Run through Docker on localhost | Shipped |
+| Connect through MCP on localhost | Shipped |
+| Install without cloning the repository | Future |
+| Sync live data across devices | Future |
 
----
+## Milestone Summary
+
+| Milestone | Status | Notes |
+|---|---|---|
+| M1 Core user journeys | Complete | Bookmark status actions, notes, Trash, archive, category CRUD, drag-and-drop reparenting. |
+| M2 Settings UI | Complete | AI, embeddings, runtime settings, app lock, and backup configuration. |
+| M3 AI features | Complete | Embeddings, semantic/hybrid search, related bookmarks, organization agent, review queue. |
+| M4 Testing infrastructure | Complete | Daemon/unit integration tests, frontend tests, Playwright E2E, API contract drift checks, CI. |
+| M5 Distribution readiness | In release validation | Native installer, Docker path, first-run/degraded states, backup/restore, and release checklist exist; final smoke tests remain. |
+| v0-beta hardening | Complete except final release validation | Runtime settings, Docker safety, CI, safe backup/restore, API docs source of truth, shared API types, and documentation alignment are represented by TASK-041 through TASK-047. |
 
 ## Decisions Log
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Archive vs. delete UX | Archive (`is_archived`) = hidden permanently, no expiry, own `/archive` page. Trash (`is_trashed` + `trashed_at`) = 30-day soft-delete, purged automatically, own `/trash` page. Both are separate states. |
-| 2 | Notes rendering | Markdown (rendered read mode, textarea write mode) |
-| 3 | Pinned bookmarks display | Pinned bookmarks sort first within the active view |
-| 4 | Settings page vs. dialog | Separate `/settings` page, distinct from Preferences dialog |
-| 5 | Category move UI | Both: drag-and-drop (primary, not yet built) + "Move to…" dropdown (implemented) |
-| 6 | Test framework | Bun test runner (daemon) + Vitest (frontend) |
-| 7 | Suggestion acceptance atomicity | `applyAction` + `repo.accept()` + timeline insert wrapped in single SQLite transaction |
-| 8 | Auto-apply behavior | Confidence ≥ 0.9: execute action immediately + record timeline. Lower: queue for human review. |
-| 9 | Cold-start search behavior | Under 20 bookmarks, clustering/organization automation is limited, but keyword search remains available and semantic search can still work for bookmarks that already have embeddings. |
-| 10 | Vector storage approach | Embeddings are currently stored as float32 BLOBs in SQLite; sqlite-vec remains a future optimization, not a current dependency. |
-| 11 | Backup model | Backup is snapshot-based, not live sync. Restore always recreates a local data directory from a portable backup bundle. |
-| 12 | Cloud backup scope | First remote target is S3-compatible object storage. iCloud Drive and similar services are supported initially via user-selected synced folders, not dedicated APIs. |
-
----
-
-## Out of Scope (for now)
-
-- Browser extension
-- MCP integration
-- Plugin system
-- Multi-device sync
-- PDF / YouTube / GitHub Issues extractors (schema-ready, not prioritized)
-- Docker packaging
-- Rate limiting / auth (local-only assumption holds)
-- Category drag-and-drop reparenting (deferred; "Move to…" dropdown covers the use case)
+| 1 | Archive vs delete UX | Archive is hidden permanently with no expiry and its own page. Trash is a separate 30-day soft-delete state with restore and permanent delete. |
+| 2 | Notes rendering | Markdown read mode with textarea edit mode. |
+| 3 | Pinned bookmark display | Pinned bookmarks sort first within the active view. |
+| 4 | Settings surface | Dedicated `/settings` page. |
+| 5 | Category move UI | Drag-and-drop reparenting is primary; "Move to..." remains the fallback/mobile path. |
+| 6 | Test framework | Bun test runner for daemon; Vitest and Playwright for frontend. |
+| 7 | Suggestion acceptance | Suggestion action, acceptance status, and timeline insert happen in one SQLite transaction. |
+| 8 | Auto-apply behavior | Confidence `>= 0.9` executes directly and records timeline; lower confidence queues for review. |
+| 9 | Cold-start behavior | Under 20 bookmarks, organization automation is limited; keyword search still works and semantic search works where embeddings exist. |
+| 10 | Vector storage | Embeddings are stored as float32 BLOBs in SQLite; sqlite-vec remains a future optimization. |
+| 11 | Backup model | Backup is snapshot-based, not live sync. Restore recreates local state from a portable snapshot and requires daemon restart. |
+| 12 | Cloud backup scope | S3-compatible storage is the first remote target. Cloud-synced folders are supported as local destinations. |
+| 13 | Docker network model | Docker binds the host port to `127.0.0.1`; container-internal `HOST=0.0.0.0` only enables Docker forwarding. |
+| 14 | API documentation | `daemon/src/api/contract.ts` is the source of truth; `API.md` and `docs/api-contract.json` are generated artifacts. |
