@@ -138,7 +138,7 @@ describe("Backup API", () => {
     expect(manifest.db_size_bytes).toBeGreaterThan(0);
     expect(manifest.database).toEqual({
       filename: "snapshot.db",
-      schema_version: "0008",
+      schema_version: "0009",
       size_bytes: manifest.db_size_bytes,
     });
     expect(manifest.settings).toEqual({

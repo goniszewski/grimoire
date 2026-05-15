@@ -38,9 +38,19 @@ Implement the multi-stage content extraction pipeline that runs after a bookmark
 
 - [x] Each stage updates bookmark status field
 - [x] Failures are logged and job worker handles retry (queue mechanism already in place)
-- [ ] Job worker picks up failed jobs for retry with exponential backoff (requires SQLite-backed queue)
+- [x] Job worker picks up failed jobs for retry with exponential backoff (requires SQLite-backed queue)
 - [x] Readability extraction works for general articles
 - [x] GitHub extractor fetches README via API (no scraping)
 - [x] StackOverflow extractor pulls question + top accepted answer
 - [x] All extractors strip navigation, ads, cookie banners
 - [x] Extracted content stored in `bookmark_content` table
+
+## Completion Note
+
+SQLite-backed queue persistence and exponential backoff retries were added after
+the original task was marked done. The daemon now constructs `JobQueue` with the
+application database, failed jobs are rescheduled until `max_attempts`, and
+`daemon/src/test/queue.test.ts` covers pending-job restoration, interrupted
+running-job recovery after daemon restart, and retry timing.
+
+Final status remains `done`; the task file is already in `tasks/done/`.

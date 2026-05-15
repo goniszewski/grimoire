@@ -63,7 +63,10 @@ export interface JobRow {
   status: JobStatus;
   payload: string; // JSON
   error: string | null;
+  attempts: number;
+  max_attempts: number;
   created_at: string;
+  next_run_at: string | null;
   started_at: string | null;
   finished_at: string | null;
 }

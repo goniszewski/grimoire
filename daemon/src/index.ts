@@ -19,7 +19,7 @@ const startTime = new Date();
 
 // --- Initialise components ---
 const db = getDatabase(); // opens DB, runs migrations
-const queue = new JobQueue();
+const queue = new JobQueue(db);
 const worker = new JobWorker(queue);
 const scheduler = new Scheduler();
 

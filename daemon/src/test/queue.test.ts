@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import type { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { JobStatus } from "../types/job.js";
+import { makeTestDb } from "./helpers/db.js";
 
 describe("JobQueue", () => {
   let q: JobQueue;
@@ -94,5 +96,109 @@ describe("JobQueue", () => {
   it("enqueuing multiple jobs increments size correctly", () => {
     for (let i = 0; i < 10; i++) q.enqueue("work", { i });
     expect(q.size()).toBe(10);
+  });
+});
+
+describe("JobQueue SQLite persistence", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = makeTestDb();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("persists enqueued jobs and restores pending work after process restart", () => {
+    const queue = new JobQueue(db);
+    const job = queue.enqueue("ingest", {
+      bookmarkId: "bookmark-1",
+      url: "https://example.com/article",
+    });
+
+    const row = db
+      .query<{ id: string; status: string; payload: string }, [string]>(
+        "SELECT id, status, payload FROM jobs WHERE id = ?"
+      )
+      .get(job.id);
+
+    expect(row?.id).toBe(job.id);
+    expect(row?.status).toBe(JobStatus.Pending);
+    expect(JSON.parse(row!.payload)).toEqual({
+      bookmarkId: "bookmark-1",
+      url: "https://example.com/article",
+    });
+
+    const restartedQueue = new JobQueue(db);
+    const dequeued = restartedQueue.dequeue();
+
+    expect(dequeued?.id).toBe(job.id);
+    expect(dequeued?.status).toBe(JobStatus.Running);
+    expect(dequeued?.payload).toEqual({
+      bookmarkId: "bookmark-1",
+      url: "https://example.com/article",
+    });
+  });
+
+  it("returns interrupted running jobs to pending when the queue restarts", () => {
+    const queue = new JobQueue(db);
+    const job = queue.enqueue("ingest", {
+      bookmarkId: "bookmark-interrupted",
+      url: "https://example.com/interrupted",
+    });
+
+    expect(queue.dequeue()?.id).toBe(job.id);
+
+    const restartedQueue = new JobQueue(db);
+    const recovered = restartedQueue.dequeue();
+
+    expect(recovered?.id).toBe(job.id);
+    expect(recovered?.status).toBe(JobStatus.Running);
+    expect(recovered?.attempts).toBe(0);
+  });
+
+  it("reschedules failed jobs with exponential backoff before marking them failed", () => {
+    let now = new Date("2026-01-01T00:00:00.000Z");
+    const queue = new JobQueue(db, {
+      maxAttempts: 3,
+      retryBaseDelayMs: 1_000,
+      now: () => now,
+    });
+
+    const job = queue.enqueue("ingest", {
+      bookmarkId: "bookmark-2",
+      url: "https://example.com/retry",
+    });
+
+    expect(queue.dequeue()?.id).toBe(job.id);
+    queue.complete(job.id, "network timeout");
+
+    const firstRetry = queue.getById(job.id);
+    expect(firstRetry?.status).toBe(JobStatus.Pending);
+    expect(firstRetry?.attempts).toBe(1);
+    expect(firstRetry?.error).toBe("network timeout");
+    expect(firstRetry?.nextRunAt?.toISOString()).toBe("2026-01-01T00:00:01.000Z");
+    expect(queue.size()).toBe(1);
+    expect(queue.dequeue()).toBeNull();
+
+    now = new Date("2026-01-01T00:00:01.000Z");
+    expect(queue.dequeue()?.id).toBe(job.id);
+    queue.complete(job.id, "still unavailable");
+
+    const secondRetry = queue.getById(job.id);
+    expect(secondRetry?.status).toBe(JobStatus.Pending);
+    expect(secondRetry?.attempts).toBe(2);
+    expect(secondRetry?.nextRunAt?.toISOString()).toBe("2026-01-01T00:00:03.000Z");
+
+    now = new Date("2026-01-01T00:00:03.000Z");
+    expect(queue.dequeue()?.id).toBe(job.id);
+    queue.complete(job.id, "permanent failure");
+
+    const failed = queue.getById(job.id);
+    expect(failed?.status).toBe(JobStatus.Failed);
+    expect(failed?.attempts).toBe(3);
+    expect(failed?.error).toBe("permanent failure");
+    expect(queue.dequeue()).toBeNull();
   });
 });

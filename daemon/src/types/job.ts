@@ -10,7 +10,10 @@ export interface Job<T = unknown> {
   type: string;
   status: JobStatus;
   payload: T;
+  attempts: number;
+  maxAttempts: number;
   createdAt: Date;
+  nextRunAt: Date;
   startedAt?: Date;
   finishedAt?: Date;
   error?: string;
