@@ -3,7 +3,11 @@
   "version": "0.1.0-beta",
   "private": true,
   "type": "module",
+  "bin": {
+    "littleimp": "./src/cli.ts"
+  },
   "scripts": {
+    "cli": "bun src/cli.ts",
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "check": "bun tsc --noEmit",

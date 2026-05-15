@@ -62,10 +62,11 @@ tasks/
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](done/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | done |
 | TASK-047 | [Align Roadmap, Release, and Product Documentation](done/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | done |
 | TASK-048 | [Release Validation and Docker Restore Hardening](done/TASK-048-release-validation.md) | v0-beta release validation | high | done |
+| TASK-049 | [Packaged Backup CLI Commands](done/TASK-049-packaged-backup-cli.md) | next release operations | medium | done |
 
 ## Current Status
 
-Core product tasks, v0-beta hardening tasks, and release validation work available from this macOS workspace are complete through TASK-048.
+Core product tasks, v0-beta hardening tasks, release validation work, and the first next-release operations task available from this macOS workspace are complete through TASK-049.
 
 Completed release validation evidence:
 

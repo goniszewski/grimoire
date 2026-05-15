@@ -8,6 +8,8 @@ SERVICE_LABEL="com.littleimp.daemon"
 INSTALL_DIR="${HOME}/.local/share/littleimp/daemon"
 DATA_DIR="${HOME}/.local/share/littleimp"
 LOG_DIR="${DATA_DIR}/logs"
+CLI_BIN_DIR="${HOME}/.local/bin"
+CLI_BIN="${CLI_BIN_DIR}/littleimp"
 HEALTH_URL="http://127.0.0.1:3210/health"
 HEALTH_TIMEOUT=15
 BUN_MIN_MAJOR=1
@@ -92,6 +94,22 @@ install_daemon_files() {
   info "Installing dependencies…"
   (cd "${INSTALL_DIR}" && bun install --production)
   info "Daemon files installed"
+}
+
+install_cli() {
+  info "Installing CLI command to ${CLI_BIN}…"
+  mkdir -p "${CLI_BIN_DIR}"
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'exec %q %q "$@"\n' "${BUN_PATH}" "${INSTALL_DIR}/src/cli.ts"
+  } > "${CLI_BIN}"
+  chmod +x "${CLI_BIN}"
+
+  case ":${PATH}:" in
+    *":${CLI_BIN_DIR}:"*) ;;
+    *) warn "${CLI_BIN_DIR} is not on PATH. Add it to your shell profile to run 'littleimp' directly." ;;
+  esac
+  info "CLI installed: ${CLI_BIN}"
 }
 
 create_config_dir() {
@@ -224,6 +242,10 @@ uninstall() {
     rm -rf "${INSTALL_DIR}"
     info "Daemon files removed from ${INSTALL_DIR}"
   fi
+  if [[ -f "${CLI_BIN}" ]] && grep -Fq "${INSTALL_DIR}/src/cli.ts" "${CLI_BIN}" 2>/dev/null; then
+    rm -f "${CLI_BIN}"
+    info "CLI command removed: ${CLI_BIN}"
+  fi
   if [[ "${purge}" == "--purge" ]]; then
     if [[ -d "${DATA_DIR}" ]]; then
       rm -rf "${DATA_DIR}"
@@ -253,6 +275,7 @@ main() {
       printf '  --upgrade          Stop daemon, update files, restart\n'
       printf '  --uninstall        Stop and remove daemon and files (data preserved)\n'
       printf '  --uninstall --purge  Also delete all data at %s\n' "${DATA_DIR}"
+      printf '\nInstalls the CLI command at %s\n' "${CLI_BIN}"
       exit 0
       ;;
     "")
@@ -276,6 +299,7 @@ main() {
   fi
 
   install_daemon_files
+  install_cli
   create_config_dir
 
   case "${os}" in

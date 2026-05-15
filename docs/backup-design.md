@@ -462,7 +462,7 @@ Implemented UI/API surface:
 - backup history list
 - "Restore from backup" entry point with warning dialog
 
-Future CLI surface:
+Implemented CLI surface:
 
 - `littleimp backup create`
 - `littleimp backup list`
@@ -532,13 +532,18 @@ Implemented daemon API surface:
 - `PUT /backup/schedule`
 - `POST /settings/test-s3`
 
-Recommended CLI surface:
+Implemented CLI surface:
+
+- `littleimp backup create`
+- `littleimp backup list`
+- `littleimp backup restore <name>`
+- `littleimp backup restore --remote-key <key>`
+- `littleimp backup verify --file <snapshot-directory>`
+
+Future CLI extensions:
 
 - `littleimp backup create --destination <target>`
 - `littleimp backup create --destination <target> --encrypt`
-- `littleimp backup list`
-- `littleimp backup restore --file <artifact>`
-- `littleimp backup verify --file <artifact>`
 
 The implementation keeps backup creation, listing, restore, destination, and schedule management as separate operations.
 
@@ -549,7 +554,7 @@ The implementation keeps backup creation, listing, restore, destination, and sch
 Resolved implementation decisions:
 
 1. `settings.json` is the correct durable settings source and must be included in every backup.
-2. Backup and restore are available through the daemon API and Settings UI; CLI support can wrap those operations later.
+2. Backup and restore are available through the daemon API, Settings UI, and packaged CLI. CLI create/list/restore wrap the daemon API, while CLI verify checks local snapshot directories without restoring them.
 3. Optional password-based encryption is future packaging work and must preserve the same internal manifest and snapshot layout.
 4. A short maintenance window during backup or restore is acceptable.
 

@@ -141,6 +141,34 @@ hashes; restoring settings preserves the current local secrets. The Settings
 page also supports custom local destinations, scheduled snapshots, and
 S3-compatible remote backup targets.
 
+Native installs also include a `littleimp` CLI command at
+`~/.local/bin/littleimp`. If that directory is on your `PATH`, you can manage
+backups from the shell:
+
+```sh
+# Create a backup through the running daemon
+littleimp backup create
+
+# List local backups
+littleimp backup list
+
+# Include S3-compatible remote backups when configured
+littleimp backup list --include-remote
+
+# Verify a local snapshot directory without restoring it
+littleimp backup verify --file ~/.local/share/littleimp/backups/BACKUP_DIRECTORY_NAME
+
+# Restore a local backup by directory name
+littleimp backup restore BACKUP_DIRECTORY_NAME --yes
+
+# Restore a remote S3 snapshot key
+littleimp backup restore --remote-key little-imp-backups/BACKUP_DIRECTORY_NAME/snapshot.db --yes
+```
+
+Add `--json` to any backup CLI command for machine-readable output. Set
+`LITTLEIMP_DAEMON_URL` or pass `--daemon-url` when the daemon is listening on a
+non-default localhost URL.
+
 ```sh
 # Create a backup through the daemon
 curl -X POST http://127.0.0.1:3210/backup

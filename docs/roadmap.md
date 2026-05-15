@@ -22,6 +22,7 @@ Shipped product areas:
 - Docker deployment path with one loopback-bound container port (`127.0.0.1:3210:3210`) serving both frontend and daemon API.
 - Streamable HTTP MCP endpoint at `/mcp` for bookmark search, reading, creation, and category listing.
 - Source-of-truth API contract in `daemon/src/api/contract.ts`, generated `API.md`, generated `docs/api-contract.json`, and API docs drift checking.
+- Packaged `littleimp` backup CLI commands for create, list, restore, and local snapshot verification.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
 ## Release Blockers
@@ -44,8 +45,7 @@ The next release should focus on reducing installation friction and improving co
 
 - Distribution polish: Homebrew formula or signed release archive.
 - One-command installer entry point after release artifact signing and checksum publication are settled.
-- Packaged backup CLI commands: `backup create`, `backup list`, `backup restore`, and `backup verify`.
-- Backup verification UX that can validate a snapshot without restoring it.
+- In-app backup verification UX that can validate a snapshot without restoring it.
 - Optional encrypted backup package format built around the current portable snapshot directory.
 - Better update flow based on the design in [docs/update-system.md](./update-system.md).
 - More complete installer matrix coverage for supported macOS and Linux versions on separate hosts or VMs.
