@@ -26,15 +26,18 @@ Shipped product areas:
 
 ## Release Blockers
 
-These are the remaining checks before tagging or publishing `0.1.0-beta`:
+These checks are complete for the release-validation commit:
 
-- Run the [release checklist](./release-checklist.md) end to end.
-- Smoke-test native install, upgrade, health, and uninstall on macOS.
+- `npm run check`, including lint, type-checks, unit tests, daemon tests, API docs drift check, and production build.
+- `npm run test:e2e`.
+- Docker Compose startup, loopback-only port publishing, container health, and named-volume preservation after shutdown.
+- macOS native installer install, upgrade, health, uninstall, and purge smoke in an isolated temporary home.
+- Documentation release-target and local markdown link audits.
+- GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
+
+The remaining check before tagging or publishing `0.1.0-beta` is:
+
 - Smoke-test Linux systemd user install when a Linux host or VM is available.
-- Validate Docker Compose startup, loopback-only port publishing, and container health on a clean machine.
-- Validate backup create and restore against a throwaway library, including rollback directory creation, secret preservation, and required daemon restart.
-- Confirm `npm run check`, `npm run test:e2e`, API docs drift check, and Docker health validation are green in CI.
-- Confirm README, PRD, roadmap, changelog, API docs, security docs, and task board all describe the same shipped beta state.
 
 ## Next Release
 

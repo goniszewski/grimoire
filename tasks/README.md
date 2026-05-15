@@ -65,15 +65,26 @@ tasks/
 
 ## Current Status
 
-Core product tasks, v0-beta hardening tasks, and local release validation are complete through TASK-048. Remaining work before tagging `0.1.0-beta` is environment-level release validation:
+Core product tasks, v0-beta hardening tasks, and release validation work available from this macOS workspace are complete through TASK-048.
 
-1. Smoke-test native install/upgrade/uninstall on macOS and Linux where available.
-2. Push the release-validation fixes and confirm CI, E2E, Docker health validation, API docs drift checks, and docs links remain green for the release commit.
+Completed release validation evidence:
+
+1. `npm run check` passed locally.
+2. `npm run test:e2e` passed locally.
+3. Docker Compose build/start/health validation passed with the host port bound to `127.0.0.1:3210:3210`.
+4. `docker compose down` preserved the named data volume.
+5. Native macOS install/health/upgrade/uninstall/purge smoke passed in an isolated temporary home.
+6. Release-target and local markdown link audits passed.
+7. GitHub Actions `Quality Gates` passed for the current release-validation commit, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
+
+Remaining environment validation before tagging `0.1.0-beta`:
+
+1. Smoke-test the Linux systemd user installer on a Linux host or VM.
 
 Notes:
 
 - TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
-- TASK-048 completed the local release checklist paths available in this workspace. Native installer matrix validation still requires clean OS environments.
+- TASK-048 completed the release checklist paths available in this workspace. Linux installer matrix validation still requires a Linux environment.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
