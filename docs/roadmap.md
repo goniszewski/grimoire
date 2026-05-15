@@ -26,18 +26,17 @@ Shipped product areas:
 
 ## Release Blockers
 
-These checks are complete for the release-validation commit:
+These checks are complete for the current beta validation state:
 
 - `npm run check`, including lint, type-checks, unit tests, daemon tests, API docs drift check, and production build.
 - `npm run test:e2e`.
 - Docker Compose startup, loopback-only port publishing, container health, and named-volume preservation after shutdown.
 - macOS native installer install, upgrade, health, uninstall, and purge smoke in an isolated temporary home.
+- Linux systemd-user installer install, upgrade, health, service enablement, user-manager restart autostart, uninstall, and purge smoke in an Ubuntu 24.04 Docker environment with systemd running as PID 1.
 - Documentation release-target and local markdown link audits.
 - GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
 
-The remaining check before tagging or publishing `0.1.0-beta` is:
-
-- Smoke-test Linux systemd user install when a Linux host or VM is available.
+No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. Broader Linux host/VM distro matrix coverage remains future release hardening.
 
 ## Next Release
 
@@ -49,7 +48,7 @@ The next release should focus on reducing installation friction and improving co
 - Backup verification UX that can validate a snapshot without restoring it.
 - Optional encrypted backup package format built around the current portable snapshot directory.
 - Better update flow based on the design in [docs/update-system.md](./update-system.md).
-- More complete installer matrix coverage for supported macOS and Linux versions.
+- More complete installer matrix coverage for supported macOS and Linux versions on separate hosts or VMs.
 
 ## Future Ideas
 
@@ -98,8 +97,8 @@ These are not part of `0.1.0-beta`:
 | M2 Settings UI | Complete | AI, embeddings, runtime settings, app lock, and backup configuration. |
 | M3 AI features | Complete | Embeddings, semantic/hybrid search, related bookmarks, organization agent, review queue. |
 | M4 Testing infrastructure | Complete | Daemon/unit integration tests, frontend tests, Playwright E2E, API contract drift checks, CI. |
-| M5 Distribution readiness | In release validation | Native installer, Docker path, first-run/degraded states, backup/restore, and release checklist exist; final smoke tests remain. |
-| v0-beta hardening | Complete except final release validation | Runtime settings, Docker safety, CI, safe backup/restore, API docs source of truth, shared API types, and documentation alignment are represented by TASK-041 through TASK-047. |
+| M5 Distribution readiness | Complete for beta | Native installer, Docker path, first-run/degraded states, backup/restore, and release checklist validation are complete for the beta release. |
+| v0-beta hardening | Complete for beta | Runtime settings, Docker safety, CI, safe backup/restore, API docs source of truth, shared API types, documentation alignment, and release validation are represented by TASK-041 through TASK-048. |
 
 ## Decisions Log
 

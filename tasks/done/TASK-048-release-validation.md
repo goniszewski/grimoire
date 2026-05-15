@@ -3,7 +3,7 @@
 **Status:** done
 **Priority:** high
 **Phase:** v0-beta release validation
-**Area:** release management, backup/restore, docker, ci
+**Area:** release management, backup/restore, docker, ci, installer
 
 ## Description
 
@@ -19,11 +19,12 @@ This task covers local quality gates, E2E tests, Docker health checks, backup/re
 - The shipped restore docs described the old rollback directory shape.
 - May 15, 2026 local release validation completed `npm run check`, `npm run test:e2e`, Docker Compose build/start/health, documentation release-target and link audits, and an isolated macOS installer install/upgrade/uninstall/purge smoke.
 - GitHub Actions `Quality Gates` passed for commit `a28bf9d62436fe12c7c19cfa6af5c5f72f8ad6aa`, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health jobs.
+- May 15, 2026 Linux installer validation passed in an Ubuntu 24.04 Docker container running systemd as PID 1. The smoke ran `daemon/install.sh` as a non-root `smoke` user with a real `systemctl --user` manager, verified install, health, service enablement, upgrade with data preservation, user-manager restart autostart, uninstall with data preservation, and purge.
 
 ## Dependencies / sequencing
 
 - Run after TASK-047, once release documentation and hardening tasks are complete.
-- Linux systemd user installer smoke still requires a Linux host or VM outside this macOS workspace.
+- Linux systemd user installer smoke uses a containerized Ubuntu systemd environment from this macOS workspace.
 
 ## Work
 
@@ -38,6 +39,7 @@ This task covers local quality gates, E2E tests, Docker health checks, backup/re
 9. Audit release target docs and local markdown links.
 10. Smoke-test macOS native install, health, upgrade, uninstall, and purge in an isolated temporary home.
 11. Confirm the latest GitHub Actions quality-gate run is green for the release commit.
+12. Smoke-test Linux systemd user install, health, upgrade, autostart, uninstall, and purge in a containerized Ubuntu systemd environment.
 
 ## Acceptance Criteria
 
@@ -50,10 +52,11 @@ This task covers local quality gates, E2E tests, Docker health checks, backup/re
 - [x] Docker restore returns `restart_required: true` and creates rollback data under `DATA_DIR/restore-rollbacks/`.
 - [x] Restored Docker data is readable after daemon restart.
 - [x] macOS installer smoke covers install, health, upgrade with data preserved, uninstall with data preserved, and purge.
+- [x] Linux systemd user installer smoke covers install, health, service enablement, upgrade with data preserved, user-manager restart autostart, uninstall with data preserved, and purge.
 - [x] GitHub Actions `Quality Gates` is green for lint, types, tests, API docs drift, build, E2E, and Docker validation.
 - [x] README and backup design docs describe the shipped rollback path.
 - [x] Release target and local markdown link audits pass.
 
 ## Remaining Outside This Workspace
 
-- Linux systemd user installer smoke still needs validation on a Linux host or VM before tagging `0.1.0-beta`.
+- Full distro matrix coverage on separate Linux hosts or VMs remains future release hardening; the `0.1.0-beta` systemd user installer path has containerized Ubuntu smoke evidence.

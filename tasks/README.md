@@ -76,15 +76,12 @@ Completed release validation evidence:
 5. Native macOS install/health/upgrade/uninstall/purge smoke passed in an isolated temporary home.
 6. Release-target and local markdown link audits passed.
 7. GitHub Actions `Quality Gates` passed for the current release-validation commit, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
-
-Remaining environment validation before tagging `0.1.0-beta`:
-
-1. Smoke-test the Linux systemd user installer on a Linux host or VM.
+8. Linux systemd user installer smoke passed in an Ubuntu 24.04 Docker environment with systemd running as PID 1 and a non-root `systemctl --user` manager.
 
 Notes:
 
 - TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
-- TASK-048 completed the release checklist paths available in this workspace. Linux installer matrix validation still requires a Linux environment.
+- TASK-048 completed the release checklist paths available in this workspace, including a containerized Ubuntu systemd-user smoke for the Linux installer path.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
