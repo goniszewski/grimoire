@@ -1,6 +1,6 @@
 # TASK-017: AI Palette / Command Palette Integration
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** v0-beta
 **Area:** frontend

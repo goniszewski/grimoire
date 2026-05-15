@@ -1,6 +1,6 @@
 # TASK-026: Embeddings Pipeline Integration
 
-**Status:** backlog
+**Status:** done
 **Priority:** medium
 **Phase:** M3
 **Area:** backend

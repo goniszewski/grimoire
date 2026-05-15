@@ -1,6 +1,6 @@
 # TASK-020: YouTube Transcript Extractor
 
-**Status:** backlog
+**Status:** done
 **Priority:** low
 **Phase:** future
 **Area:** backend / pipeline
