@@ -290,7 +290,7 @@ Restore policy:
 
 Before replacing local data, the restore flow must create:
 
-`<DATA_DIR>.pre-restore-YYYY-MM-DDTHH-MM-SS-sssZ`
+`<DATA_DIR>/restore-rollbacks/pre-restore-YYYY-MM-DDTHH-MM-SS-sssZ`
 
 If restore fails after local replacement starts, the app should attempt automatic rollback from this directory.
 

@@ -152,7 +152,7 @@ curl -X POST http://127.0.0.1:3210/restore \
 ```
 
 Restore verifies checksums before replacing data, creates a rollback directory
-named like `~/.local/share/littleimp.pre-restore-...`, and returns
+under `DATA_DIR/restore-rollbacks/pre-restore-...`, and returns
 `restart_required: true`.
 
 For emergency database-only recovery, stop the daemon before copying files:

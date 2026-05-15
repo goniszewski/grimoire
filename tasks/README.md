@@ -61,18 +61,19 @@ tasks/
 | TASK-045 | [Create a Source-of-Truth API Contract and Regenerated Docs](done/TASK-045-api-docs-source-of-truth.md) | v0-beta hardening | medium | done |
 | TASK-046 | [Adopt the Shared API Contract in the Frontend](done/TASK-046-share-api-types-between-daemon-and-frontend.md) | v0-beta hardening | medium | done |
 | TASK-047 | [Align Roadmap, Release, and Product Documentation](done/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | done |
+| TASK-048 | [Release Validation and Docker Restore Hardening](done/TASK-048-release-validation.md) | v0-beta release validation | high | done |
 
 ## Current Status
 
-Core product tasks and v0-beta hardening tasks are complete through TASK-047. The remaining work before tagging `0.1.0-beta` is release validation, not new product implementation:
+Core product tasks, v0-beta hardening tasks, and local release validation are complete through TASK-048. Remaining work before tagging `0.1.0-beta` is environment-level release validation:
 
-1. Run the [release checklist](../docs/release-checklist.md).
-2. Smoke-test native install/upgrade/uninstall on macOS and Linux where available.
-3. Confirm CI, E2E, Docker health validation, API docs drift checks, and docs links.
+1. Smoke-test native install/upgrade/uninstall on macOS and Linux where available.
+2. Push the release-validation fixes and confirm CI, E2E, Docker health validation, API docs drift checks, and docs links remain green for the release commit.
 
 Notes:
 
 - TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
+- TASK-048 completed the local release checklist paths available in this workspace. Native installer matrix validation still requires clean OS environments.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.

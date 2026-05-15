@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from "fs";
+import { chmodSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { createBackupRoute } from "../../routes/backup.js";
@@ -330,6 +330,32 @@ describe("Backup API", () => {
     const restoredHash = await sha256File(dbPath);
     const snapshotHash = await sha256File(snapshotPath);
     expect(restoredHash).toBe(snapshotHash);
+  });
+
+  it("POST /restore stores rollback data inside DATA_DIR when its parent is not writable", async () => {
+    process.env.XDG_CONFIG_HOME = join(dataDir, "config-home");
+    settingsManager.invalidate();
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    chmodSync(tmpDir, 0o555);
+    try {
+      const res = await localOnlyApp.request("/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: backupName }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as { rollback_path: string; restart_required: boolean };
+      expect(json.rollback_path.startsWith(`${join(dataDir, "restore-rollbacks")}/`)).toBeTrue();
+      expect(existsSync(join(json.rollback_path, "littleimp.db"))).toBeTrue();
+      expect(json.restart_required).toBeTrue();
+    } finally {
+      chmodSync(tmpDir, 0o755);
+    }
   });
 
   it("POST /restore closes the live database handle until restart", async () => {

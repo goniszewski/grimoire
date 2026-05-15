@@ -864,7 +864,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       }
     }
 
-    const rollbackPath = `${resolvedDataDir}.pre-restore-${safeTimestamp()}`;
+    const rollbackPath = join(resolvedDataDir, "restore-rollbacks", `pre-restore-${safeTimestamp()}`);
 
     // --- Checkpoint WAL and create rollback data before replacement ---
     try {
