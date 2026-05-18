@@ -699,6 +699,39 @@ curl -X PUT http://127.0.0.1:3210/backup/destination \
   -d '{"path":"/Users/me/Backups/Little Imp"}'
 ```
 
+#### POST /backup/verify
+
+Verify a local backup snapshot without restoring it.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `BackupVerifyRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Local backup directory name |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BackupVerificationResult` | Backup verification result |
+| `400` | application/json | `LegacyError` | Malformed JSON |
+| `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `422` | application/json | `LegacyError` | Invalid verify request or backup validation failed |
+| `500` | application/json | `LegacyError` | Backup verification failed |
+
+Examples:
+
+**Verify a local backup**
+
+```bash
+curl -X POST http://127.0.0.1:3210/backup/verify \
+  -H "Content-Type: application/json" \
+  -d '{"name":"2026-05-13T09-30-00-000Z"}'
+```
+
 #### POST /restore
 
 Restore from a local backup directory or remote S3 snapshot.
@@ -1601,6 +1634,24 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | array<BackupEntry> | yes | Backup entries |
+
+### BackupVerifyRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Local backup directory name |
+
+### BackupVerificationResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ok` | boolean | yes | Whether verification succeeded |
+| `name` | string | yes | Local backup directory name |
+| `path` | string | yes | Local backup directory |
+| `checksum_verified` | boolean | yes | Whether checksum verification succeeded |
+| `verified_files` | array<string> | yes | Verified files |
+| `bookmark_count` | integer | yes | Bookmarks included |
+| `created_at` | string | yes | Backup creation timestamp |
 
 ### RestoreRequest
 

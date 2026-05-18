@@ -262,7 +262,6 @@ or enter maintenance mode before invoking replacement.
 Release limitations:
 
 - restore is safe but not seamless; callers must restart the daemon after a successful restore
-- packaged CLI restore/verify commands are not included in `0.1.0-beta`
 - password-based backup encryption remains a future packaging layer
 - backup is snapshot export, not live multi-device sync
 
@@ -554,7 +553,7 @@ The implementation keeps backup creation, listing, restore, destination, and sch
 Resolved implementation decisions:
 
 1. `settings.json` is the correct durable settings source and must be included in every backup.
-2. Backup and restore are available through the daemon API, Settings UI, and packaged CLI. CLI create/list/restore wrap the daemon API, while CLI verify checks local snapshot directories without restoring them.
+2. Backup and restore are available through the daemon API, Settings UI, and packaged CLI. CLI create/list/restore wrap the daemon API, CLI verify checks local snapshot directories, and Settings can verify listed local backups without restoring them.
 3. Optional password-based encryption is future packaging work and must preserve the same internal manifest and snapshot layout.
 4. A short maintenance window during backup or restore is acceptable.
 

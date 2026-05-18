@@ -291,6 +291,94 @@ describe("Backup API", () => {
     expect(Date.parse(json.data[0].created_at) >= Date.parse(json.data[1].created_at)).toBeTrue();
   });
 
+  // ─── POST /backup/verify ───────────────────────────────────────────────────
+
+  it("POST /backup/verify validates a local backup without replacing the live database", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    db.exec("CREATE TABLE _verify_marker (id INTEGER PRIMARY KEY)");
+    db.exec("INSERT INTO _verify_marker VALUES (42)");
+    const liveHashBeforeVerify = await sha256File(dbPath);
+
+    const res = await localOnlyApp.request("/backup/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      ok: boolean;
+      name: string;
+      path: string;
+      checksum_verified: boolean;
+      verified_files: string[];
+      bookmark_count: number;
+      created_at: string;
+    };
+    expect(json.ok).toBeTrue();
+    expect(json.name).toBe(backupName);
+    expect(json.path).toBe(backupPath);
+    expect(json.checksum_verified).toBeTrue();
+    expect(json.verified_files).toContain("snapshot.db");
+    expect(json.verified_files).toContain("data/settings.json");
+    expect(json.bookmark_count).toBe(0);
+    expect(json.created_at).toBeString();
+    expect(await sha256File(dbPath)).toBe(liveHashBeforeVerify);
+    expect(() => db.exec("CREATE TABLE _write_after_verify (id INTEGER PRIMARY KEY)")).not.toThrow();
+  });
+
+  it("POST /backup/verify returns 422 for invalid backup names", async () => {
+    const traversalAttempts = ["../../etc", "../data", "/etc", "foo/../../bar", "foo\\bar", ".", " name "];
+    for (const name of traversalAttempts) {
+      const res = await app.request("/backup/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("POST /backup/verify returns 422 when checksum verification fails", async () => {
+    const backupRes = await app.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    writeFileSync(join(backupPath, "snapshot.db"), "tampered content that will fail checksum");
+
+    const res = await app.request("/backup/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("Checksum");
+  });
+
+  it("POST /backup/verify refuses unsupported backup format versions", async () => {
+    const backupRes = await app.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    const manifestPath = join(backupPath, "manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { backup_format_version: number };
+    manifest.backup_format_version = 999;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+    const res = await app.request("/backup/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("Unsupported backup format version");
+  });
+
   // ─── POST /restore ─────────────────────────────────────────────────────────
 
   it("POST /restore with a valid backup restores the database file", async () => {
@@ -547,7 +635,7 @@ describe("Backup API", () => {
   });
 
   it("POST /restore returns 422 for path traversal attempts", async () => {
-    const traversalAttempts = ["../../etc", "../data", "/etc", "foo/../../bar"];
+    const traversalAttempts = ["../../etc", "../data", "/etc", "foo/../../bar", "foo\\bar", ".", " name "];
     for (const name of traversalAttempts) {
       const res = await app.request("/restore", {
         method: "POST",

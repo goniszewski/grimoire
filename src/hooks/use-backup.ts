@@ -4,6 +4,7 @@ import {
   listBackups,
   restoreBackup,
   restoreRemoteBackup,
+  verifyBackup,
   getBackupSchedule,
   updateBackupSchedule,
   getBackupDestination,
@@ -71,6 +72,12 @@ export function useRestoreBackup() {
       // The database on disk has been replaced; all cached data is now stale.
       qc.clear();
     },
+  });
+}
+
+export function useVerifyBackup() {
+  return useMutation({
+    mutationFn: (name: string) => verifyBackup(name),
   });
 }
 

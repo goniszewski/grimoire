@@ -599,6 +599,24 @@ const schemas = {
     ["name", "path", "size_bytes", "bookmark_count", "created_at", "source"]
   ),
   BackupListResponse: envelope(arrayOf(ref("BackupEntry"), "Backup entries")),
+  BackupVerifyRequest: objectSchema(
+    {
+      name: stringSchema("Local backup directory name"),
+    },
+    ["name"]
+  ),
+  BackupVerificationResult: objectSchema(
+    {
+      ok: booleanSchema("Whether verification succeeded"),
+      name: stringSchema("Local backup directory name"),
+      path: stringSchema("Local backup directory"),
+      checksum_verified: booleanSchema("Whether checksum verification succeeded"),
+      verified_files: arrayOf(stringSchema("Verified backup file path relative to the backup directory"), "Verified files"),
+      bookmark_count: integerSchema("Bookmarks included", { minimum: 0 }),
+      created_at: stringSchema("Backup creation timestamp", { format: "date-time" }),
+    },
+    ["ok", "name", "path", "checksum_verified", "verified_files", "bookmark_count", "created_at"]
+  ),
   RestoreRequest: objectSchema({
     name: stringSchema("Local backup directory name"),
     source: stringSchema("Restore source", { enum: ["remote"] }),
@@ -1104,6 +1122,27 @@ export const apiContract = {
           title: "Set a custom backup destination",
           request:
             'curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H "Content-Type: application/json" \\\n  -d \'{"path":"/Users/me/Backups/Little Imp"}\'',
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/backup/verify",
+      tag: "Backup",
+      summary: "Verify a local backup snapshot without restoring it.",
+      request: { body: { contentType: "application/json", schema: ref("BackupVerifyRequest") } },
+      responses: {
+        "200": jsonResponse("Backup verification result", ref("BackupVerificationResult")),
+        "400": legacyErrorResponse("Malformed JSON"),
+        "409": legacyErrorResponse("Backup or restore already in progress"),
+        "422": legacyErrorResponse("Invalid verify request or backup validation failed"),
+        "500": legacyErrorResponse("Backup verification failed"),
+      },
+      examples: [
+        {
+          title: "Verify a local backup",
+          request:
+            'curl -X POST http://127.0.0.1:3210/backup/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"2026-05-13T09-30-00-000Z"}\'',
         },
       ],
     },

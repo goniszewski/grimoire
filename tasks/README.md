@@ -63,10 +63,11 @@ tasks/
 | TASK-047 | [Align Roadmap, Release, and Product Documentation](done/TASK-047-align-roadmap-release-docs.md) | v0-beta hardening | medium | done |
 | TASK-048 | [Release Validation and Docker Restore Hardening](done/TASK-048-release-validation.md) | v0-beta release validation | high | done |
 | TASK-049 | [Packaged Backup CLI Commands](done/TASK-049-packaged-backup-cli.md) | next release operations | medium | done |
+| TASK-050 | [In-App Backup Verification UX](done/TASK-050-in-app-backup-verification.md) | next release operations | medium | done |
 
 ## Current Status
 
-Core product tasks, v0-beta hardening tasks, release validation work, and the first next-release operations task available from this macOS workspace are complete through TASK-049.
+Core product tasks, v0-beta hardening tasks, release validation work, and the first two next-release operations tasks available from this macOS workspace are complete through TASK-050.
 
 Completed release validation evidence:
 

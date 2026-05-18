@@ -51,6 +51,7 @@ const SNAPSHOT_FILE = "snapshot.db";
 const MANIFEST_FILE = "manifest.json";
 const CHECKSUM_FILE = "checksums.sha256";
 const SETTINGS_FILE = "data/settings.json";
+const LOCAL_BACKUP_NAME_RE = /^[A-Za-z0-9._-]+$/;
 
 type PortableSettings = {
   ai: {
@@ -437,6 +438,16 @@ interface BackupEntry {
   source: "local" | "remote";
 }
 
+interface BackupVerificationResult {
+  ok: true;
+  name: string;
+  path: string;
+  checksum_verified: true;
+  verified_files: string[];
+  bookmark_count: number;
+  created_at: string;
+}
+
 /** Lists all valid backups in a directory, sorted newest first. */
 function listBackups(resolvedBackupsDir: string): BackupEntry[] {
   let entries: string[];
@@ -558,6 +569,81 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
   /** In-flight operation guard — prevents concurrent backup or restore operations. */
   let operationInProgress = false;
+
+  function parseLocalBackupName(body: Record<string, unknown>): string {
+    if (!body.name || typeof body.name !== "string") {
+      throw statusError("Field 'name' (string) is required");
+    }
+
+    const name = body.name;
+    if (
+      name !== name.trim() ||
+      name === "." ||
+      !LOCAL_BACKUP_NAME_RE.test(name) ||
+      name.includes("/") ||
+      name.includes("\\") ||
+      name.includes("..") ||
+      basename(name) !== name
+    ) {
+      throw statusError("Invalid backup name");
+    }
+
+    return name;
+  }
+
+  function resolveLocalBackupPath(name: string): string {
+    const resolvedBackupsDir = getBackupsDir();
+    const backupPath = resolve(join(resolvedBackupsDir, name));
+
+    if (!backupPath.startsWith(resolvedBackupsDir + "/") && backupPath !== resolvedBackupsDir) {
+      log.warn("Backup path rejected: path traversal attempt", { name });
+      throw statusError("Invalid backup name");
+    }
+
+    return backupPath;
+  }
+
+  async function verifyLocalBackupDirectory(backupPath: string, name: string): Promise<BackupVerificationResult> {
+    try {
+      const st = statSync(backupPath);
+      if (!st.isDirectory()) {
+        throw statusError("Backup not found");
+      }
+    } catch (err) {
+      if ((err as { status?: number }).status === 422) throw err;
+      throw statusError("Backup not found");
+    }
+
+    const snapshotPath = join(backupPath, SNAPSHOT_FILE);
+    const checksumPath = join(backupPath, CHECKSUM_FILE);
+    const manifestPath = join(backupPath, MANIFEST_FILE);
+    const settingsPath = join(backupPath, SETTINGS_FILE);
+
+    if (!existsSync(snapshotPath)) {
+      throw statusError("Backup directory is missing snapshot.db");
+    }
+
+    const manifest = readManifest(manifestPath, currentSchemaVersion(deps.db));
+    const verifiedFiles = await verifyChecksums(backupPath, checksumPath);
+
+    if (manifest.settings.included && !verifiedFiles.includes(manifest.settings.filename)) {
+      throw statusError("Checksum file must include backed-up settings");
+    }
+
+    if (manifest.settings.included && !existsSync(settingsPath)) {
+      throw statusError("Backup settings file is missing");
+    }
+
+    return {
+      ok: true,
+      name,
+      path: backupPath,
+      checksum_verified: true,
+      verified_files: verifiedFiles,
+      bookmark_count: manifest.bookmark_count,
+      created_at: manifest.created_at,
+    };
+  }
 
   /**
    * POST /backup
@@ -821,6 +907,38 @@ export function createBackupRoute(deps: BackupDeps): Hono {
   });
 
   /**
+   * POST /backup/verify
+   * Validates a local backup snapshot without replacing the live database.
+   */
+  router.post("/backup/verify", async (c) => {
+    if (operationInProgress) {
+      return c.json({ error: "A backup or restore operation is already in progress" }, 409);
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await c.req.json() as Record<string, unknown>;
+    } catch {
+      return c.json({ error: "Request body must be valid JSON" }, 400);
+    }
+
+    operationInProgress = true;
+    try {
+      const name = parseLocalBackupName(body);
+      const backupPath = resolveLocalBackupPath(name);
+      const result = await verifyLocalBackupDirectory(backupPath, name);
+      return c.json(result);
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 422) return c.json({ error: (err as Error).message }, 422);
+      log.error("Backup verification failed", { error: String(err) });
+      return c.json({ error: "Backup verification failed" }, 500);
+    } finally {
+      operationInProgress = false;
+    }
+  });
+
+  /**
    * Shared restore logic: validates a backup directory and replaces the live database file.
    */
   async function restoreFromBackupDirectory(
@@ -1044,26 +1162,13 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       }
 
       // ── Local restore ─────────────────────────────────────────────────────────
-      if (!body.name || typeof body.name !== "string") {
-        return c.json({ error: "Field 'name' (string) is required" }, 422);
-      }
-
-      const name = body.name as string;
-
-      // Reject any name containing path separators or traversal sequences.
-      if (name.includes("/") || name.includes("\\") || name.includes("..")) {
-        return c.json({ error: "Invalid backup name" }, 422);
-      }
-
-      const resolvedBackupsDir = getBackupsDir();
-
-      // Resolve server-side — the caller never controls the base directory.
-      const backupPath = resolve(join(resolvedBackupsDir, name));
-
-      // Double-check the resolved path is still inside backupsDir (defense-in-depth).
-      if (!backupPath.startsWith(resolvedBackupsDir + "/") && backupPath !== resolvedBackupsDir) {
-        log.warn("Restore rejected: path traversal attempt", { name });
-        return c.json({ error: "Invalid backup name" }, 422);
+      let name: string;
+      let backupPath: string;
+      try {
+        name = parseLocalBackupName(body);
+        backupPath = resolveLocalBackupPath(name);
+      } catch (err) {
+        return c.json({ error: (err as Error).message }, 422);
       }
 
       const snapshotPath = join(backupPath, "snapshot.db");

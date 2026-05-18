@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   BackupDestinationDto,
   BackupEntryDto,
+  BackupVerificationResultDto,
   BackupScheduleDto,
   BookmarkDto,
   CategoryNodeDto,
@@ -13,6 +14,7 @@ import type {
 import type {
   ApiBackupDestination,
   ApiBackupEntry,
+  ApiBackupVerificationResult,
   ApiBackupSchedule,
   ApiBookmark,
   ApiCategory,
@@ -47,7 +49,9 @@ describe("frontend API contract types", () => {
       AssertAssignable<ApiBackupEntry["source"], BackupEntryDto["source"]>,
       AssertAssignable<ApiBackupSchedule["next_run_at"], BackupScheduleDto["next_run_at"]>,
       AssertAssignable<ApiBackupDestination["writable"], BackupDestinationDto["writable"]>,
+      AssertAssignable<ApiBackupVerificationResult["verified_files"], BackupVerificationResultDto["verified_files"]>,
     ] = [
+      true,
       true,
       true,
       true,

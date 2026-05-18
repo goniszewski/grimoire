@@ -1996,6 +1996,68 @@
       "additionalProperties": false,
       "description": "Response data"
     },
+    "BackupVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Local backup directory name"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "BackupVerificationResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Whether verification succeeded"
+        },
+        "name": {
+          "type": "string",
+          "description": "Local backup directory name"
+        },
+        "path": {
+          "type": "string",
+          "description": "Local backup directory"
+        },
+        "checksum_verified": {
+          "type": "boolean",
+          "description": "Whether checksum verification succeeded"
+        },
+        "verified_files": {
+          "type": "array",
+          "description": "Verified files",
+          "items": {
+            "type": "string",
+            "description": "Verified backup file path relative to the backup directory"
+          }
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Bookmarks included",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Backup creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ok",
+        "name",
+        "path",
+        "checksum_verified",
+        "verified_files",
+        "bookmark_count",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
     "RestoreRequest": {
       "type": "object",
       "properties": {
@@ -3609,6 +3671,63 @@
         {
           "title": "Set a custom backup destination",
           "request": "curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"path\":\"/Users/me/Backups/Little Imp\"}'"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/backup/verify",
+      "tag": "Backup",
+      "summary": "Verify a local backup snapshot without restoring it.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupVerifyRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Backup verification result",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupVerificationResult"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "409": {
+          "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid verify request or backup validation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Backup verification failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Verify a local backup",
+          "request": "curl -X POST http://127.0.0.1:3210/backup/verify \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"2026-05-13T09-30-00-000Z\"}'"
         }
       ]
     },

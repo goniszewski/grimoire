@@ -12,6 +12,8 @@ import type {
   BackupScheduleDto,
   BackupSchedulePatchDto,
   BackupScheduleResponseDto,
+  BackupVerificationResultDto,
+  BackupVerifyRequestDto,
   BookmarkArrayResponseDto,
   BookmarkCreateRequestDto,
   BookmarkDetailDto,
@@ -500,6 +502,16 @@ export interface ApiRestoreResult {
   restart_required: RestoreResultDto["restart_required"];
 }
 
+export interface ApiBackupVerificationResult {
+  ok: BackupVerificationResultDto["ok"];
+  name: BackupVerificationResultDto["name"];
+  path: BackupVerificationResultDto["path"];
+  checksum_verified: BackupVerificationResultDto["checksum_verified"];
+  verified_files: BackupVerificationResultDto["verified_files"];
+  bookmark_count: BackupVerificationResultDto["bookmark_count"];
+  created_at: BackupVerificationResultDto["created_at"];
+}
+
 export async function createBackup(): Promise<BackupResultDto> {
   return apiFetch<BackupResultDto>("/backup", { method: "POST" });
 }
@@ -507,6 +519,14 @@ export async function createBackup(): Promise<BackupResultDto> {
 export async function listBackups(includeRemote = false): Promise<BackupListResponseDto> {
   const url = includeRemote ? "/backup/list?include_remote=true" : "/backup/list";
   return apiFetch<BackupListResponseDto>(url);
+}
+
+/** Verify a local backup by directory name without restoring it. */
+export async function verifyBackup(name: string): Promise<BackupVerificationResultDto> {
+  return apiFetch<BackupVerificationResultDto>("/backup/verify", {
+    method: "POST",
+    body: JSON.stringify({ name } satisfies BackupVerifyRequestDto),
+  });
 }
 
 /** Restore from a local backup by its directory name (basename only — no path traversal). */

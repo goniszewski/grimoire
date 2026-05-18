@@ -139,7 +139,8 @@ snapshot contains `snapshot.db`, `manifest.json`, `checksums.sha256`, and
 `data/settings.json`. Settings backups omit secrets such as API keys and PIN
 hashes; restoring settings preserves the current local secrets. The Settings
 page also supports custom local destinations, scheduled snapshots, and
-S3-compatible remote backup targets.
+S3-compatible remote backup targets. Local backups in Settings can be verified
+without restoring them.
 
 Native installs also include a `littleimp` CLI command at
 `~/.local/bin/littleimp`. If that directory is on your `PATH`, you can manage
@@ -175,6 +176,11 @@ curl -X POST http://127.0.0.1:3210/backup
 
 # Restore a named backup snapshot
 curl -X POST http://127.0.0.1:3210/restore \
+  -H "Content-Type: application/json" \
+  -d '{"name":"BACKUP_DIRECTORY_NAME"}'
+
+# Verify a named local backup without restoring it
+curl -X POST http://127.0.0.1:3210/backup/verify \
   -H "Content-Type: application/json" \
   -d '{"name":"BACKUP_DIRECTORY_NAME"}'
 ```

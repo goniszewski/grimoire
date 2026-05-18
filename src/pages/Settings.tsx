@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Cloud,
   FolderOpen,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,6 +44,7 @@ import {
   useCreateBackup,
   useRestoreBackup,
   useRestoreRemoteBackup,
+  useVerifyBackup,
   useBackupListWithRemote,
   useTestS3Connection,
   useBackupSchedule,
@@ -132,6 +134,13 @@ const Settings = () => {
   const createBackupMutation = useCreateBackup();
   const restoreMutation = useRestoreBackup();
   const restoreRemoteMutation = useRestoreRemoteBackup();
+  const verifyBackupMutation = useVerifyBackup();
+  const [verifyingBackupName, setVerifyingBackupName] = useState<string | null>(null);
+  const backupOperationPending =
+    createBackupMutation.isPending ||
+    restoreMutation.isPending ||
+    restoreRemoteMutation.isPending ||
+    verifyBackupMutation.isPending;
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
 
@@ -290,6 +299,23 @@ const Settings = () => {
 
   const canSave = dirty && !isLoading && !isError && !saveMutation.isPending;
   const canTest = ai.provider !== "none" && !dirty && !testing;
+
+  function handleVerifyBackup(name: string) {
+    setVerifyingBackupName(name);
+    verifyBackupMutation.mutate(name, {
+      onSuccess: (result) => {
+        toast.success("Backup verified", {
+          description: `${result.verified_files.length} files checked · ${result.bookmark_count} bookmarks`,
+        });
+      },
+      onError: (err: Error) => {
+        toast.error("Backup verification failed", { description: err.message });
+      },
+      onSettled: () => {
+        setVerifyingBackupName(null);
+      },
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -511,7 +537,7 @@ const Settings = () => {
                         },
                       })
                     }
-                    disabled={createBackupMutation.isPending}
+                    disabled={backupOperationPending}
                   >
                     {createBackupMutation.isPending ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
@@ -538,6 +564,20 @@ const Settings = () => {
                           <span className="text-muted-foreground ml-3 shrink-0">
                             {formatBytes(entry.size_bytes)} · {entry.bookmark_count} bookmarks
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 ml-2"
+                            title="Verify backup integrity"
+                            disabled={backupOperationPending}
+                            onClick={() => handleVerifyBackup(entry.name)}
+                          >
+                            {verifyingBackupName === entry.name ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <ShieldCheck className="h-3 w-3" />
+                            )}
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -545,6 +585,7 @@ const Settings = () => {
                                 size="icon"
                                 className="h-6 w-6 ml-2"
                                 title="Restore this backup"
+                                disabled={backupOperationPending}
                               >
                                 <RotateCcw className="h-3 w-3" />
                               </Button>
@@ -602,7 +643,7 @@ const Settings = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={!manualRestoreName || restoreMutation.isPending}
+                          disabled={!manualRestoreName || backupOperationPending}
                         >
                           {restoreMutation.isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
@@ -935,7 +976,13 @@ const Settings = () => {
                                   </span>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" title="Restore from remote">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 ml-2"
+                                        title="Restore from remote"
+                                        disabled={backupOperationPending}
+                                      >
                                         <RotateCcw className="h-3 w-3" />
                                       </Button>
                                     </AlertDialogTrigger>
