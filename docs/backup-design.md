@@ -1,7 +1,7 @@
 # Little Imp Backup Design
 
-Version: v0.2
-Status: Release baseline implemented; encryption and packaged CLI remain future work
+Version: v0.3
+Status: Release baseline, packaged CLI, and encrypted CLI packages implemented; compression and in-app encryption UX remain future work
 Author: Robert Goniszewski
 Date: May 2026
 
@@ -97,8 +97,10 @@ Example:
 Remote backup targets mirror the same relative layout under the configured
 remote prefix.
 
-Archive compression remains a future-compatible packaging option, but the
-release format is the implemented directory snapshot.
+The implemented encrypted CLI package wraps this same directory layout after
+the snapshot has been created and verified. Archive compression remains a
+future-compatible packaging option; the current encrypted package stores an
+uncompressed portable snapshot archive inside AES-GCM encryption.
 
 Rationale:
 
@@ -262,7 +264,7 @@ or enter maintenance mode before invoking replacement.
 Release limitations:
 
 - restore is safe but not seamless; callers must restart the daemon after a successful restore
-- password-based backup encryption remains a future packaging layer
+- password-based backup encryption is available through the packaged CLI, not yet through the in-app Settings UI
 - backup is snapshot export, not live multi-device sync
 
 ### 8.2 Compatibility rules
@@ -413,21 +415,23 @@ Rules:
 
 Encryption policy:
 
-- encryption wraps a future packaged backup artifact rather than changing the internal portable layout
+- encryption wraps the packaged backup artifact rather than changing the internal portable layout
 - the same manifest schema and snapshot layout remain valid before encryption
 - password material must never be stored in the manifest, checksums file, or destination metadata
-- the restore flow must clearly distinguish "wrong password" from "corrupt backup" where possible
+- encrypted packages use PBKDF2-SHA256 password derivation and AES-256-GCM authenticated encryption
+- the restore flow reports decryption failure before any restore attempt; with authenticated encryption, wrong passwords and corrupted packages may be indistinguishable
 
 Recommended encrypted artifact naming:
 
-`little-imp-backup-YYYYMMDDTHHMMSSZ.zip.enc`
+`little-imp-backup-YYYYMMDDTHHMMSSZ.enc`
 
 Initial encryption UX:
 
-- the user may choose to protect a backup with a password
-- the password is requested at backup creation time
-- the password must be re-entered for restore
-- the app must warn clearly that a forgotten password makes the encrypted backup unusable
+- the CLI may protect a newly-created backup with `littleimp backup create --encrypt --output <file>`
+- the password is read from `LITTLEIMP_BACKUP_PASSWORD` or `--password-file`
+- the password must be re-entered for verify and restore
+- the CLI warns clearly that a forgotten password makes the encrypted backup unusable
+- package creation refuses to overwrite an existing output file
 
 ---
 
@@ -464,9 +468,12 @@ Implemented UI/API surface:
 Implemented CLI surface:
 
 - `littleimp backup create`
+- `littleimp backup create --encrypt --output <file>`
 - `littleimp backup list`
 - `littleimp backup restore`
+- `littleimp backup restore --encrypted-file <file>`
 - `littleimp backup verify`
+- `littleimp backup verify --encrypted --file <file>`
 
 Restore confirmation must communicate:
 
@@ -500,9 +507,10 @@ Restore confirmation must communicate:
 - add S3-compatible destination
 - add remote backup listing and restore download
 
-### Phase 4 — Future
+### Phase 4 — Partially Implemented
 
-- refine password-based encryption UX and verification tooling
+- implement password-based encrypted CLI package creation, verification, and restore
+- refine password-based encryption UX in Settings
 - consider provider-specific cloud APIs only if folder-based workflows are insufficient
 
 ---
@@ -514,8 +522,8 @@ Recommended internal modules:
 - `backup/manifest.ts`
 - `backup/checksums.ts`
 - `backup/snapshot.ts`
-- `backup/package.ts` for future compressed/encrypted packaging
-- `backup/encryption.ts`
+- `backup/package.ts` for encrypted CLI packaging
+- `backup/encryption.ts` if encryption expands beyond the current package module
 - `backup/restore.ts`
 - `backup/destinations/local-folder.ts`
 - `backup/destinations/s3.ts`
@@ -537,7 +545,9 @@ Implemented CLI surface:
 - `littleimp backup list`
 - `littleimp backup restore <name>`
 - `littleimp backup restore --remote-key <key>`
+- `littleimp backup restore --encrypted-file <file>`
 - `littleimp backup verify --file <snapshot-directory>`
+- `littleimp backup verify --encrypted --file <file>`
 
 Future CLI extensions:
 
@@ -554,7 +564,7 @@ Resolved implementation decisions:
 
 1. `settings.json` is the correct durable settings source and must be included in every backup.
 2. Backup and restore are available through the daemon API, Settings UI, and packaged CLI. CLI create/list/restore wrap the daemon API, CLI verify checks local snapshot directories, and Settings can verify listed local backups without restoring them.
-3. Optional password-based encryption is future packaging work and must preserve the same internal manifest and snapshot layout.
+3. Optional password-based encryption is implemented as a CLI package layer that preserves the same internal manifest and snapshot layout.
 4. A short maintenance window during backup or restore is acceptable.
 
 Operational note:

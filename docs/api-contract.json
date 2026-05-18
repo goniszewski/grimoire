@@ -1899,6 +1899,17 @@
       "additionalProperties": false,
       "description": "Response data"
     },
+    "BackupCreateRequest": {
+      "type": "object",
+      "properties": {
+        "skip_remote": {
+          "type": "boolean",
+          "description": "When true, create only the local snapshot and skip S3 upload"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
     "BackupResult": {
       "type": "object",
       "properties": {
@@ -3474,6 +3485,14 @@
       "path": "/backup",
       "tag": "Backup",
       "summary": "Create a local backup snapshot and optionally upload it to S3.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupCreateRequest"
+          }
+        }
+      },
       "responses": {
         "201": {
           "description": "Backup created",
@@ -3482,8 +3501,22 @@
             "ref": "BackupResult"
           }
         },
+        "400": {
+          "description": "Malformed or non-object JSON body",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
         "409": {
           "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid backup create request",
           "contentType": "application/json",
           "schema": {
             "ref": "LegacyError"

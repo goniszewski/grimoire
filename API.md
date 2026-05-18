@@ -587,12 +587,23 @@ Responses:
 
 Create a local backup snapshot and optionally upload it to S3.
 
+Request body:
+
+- Content type: `application/json`
+- Schema: `BackupCreateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `skip_remote` | boolean | no | When true, create only the local snapshot and skip S3 upload |
+
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `201` | application/json | `BackupResult` | Backup created |
+| `400` | application/json | `LegacyError` | Malformed or non-object JSON body |
 | `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `422` | application/json | `LegacyError` | Invalid backup create request |
 | `500` | application/json | `LegacyError` | Backup creation failed |
 
 #### GET /backup/list
@@ -1605,6 +1616,12 @@ Response data
 | `data.path` | string | yes | Effective backup directory |
 | `data.is_custom` | boolean | yes | Whether a custom destination is active |
 | `data.writable` | boolean | yes | Whether the daemon can write to this directory |
+
+### BackupCreateRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `skip_remote` | boolean | no | When true, create only the local snapshot and skip S3 upload |
 
 ### BackupResult
 

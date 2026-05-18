@@ -1,6 +1,14 @@
 #!/usr/bin/env bun
+import { accessSync, constants as fsConstants, mkdirSync, mkdtempSync, readFileSync, rmSync } from "fs";
+import { isAbsolute, join, resolve } from "path";
+import { tmpdir } from "os";
 import { version as APP_VERSION } from "../package.json";
 import { verifyBackupDirectory, BackupVerificationError } from "./backup/verification.js";
+import {
+  BackupPackageError,
+  createEncryptedBackupPackage,
+  extractEncryptedBackupPackage,
+} from "./backup/package.js";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
 
@@ -91,6 +99,39 @@ function assertNoPositionals(parsed: ParsedArgs, command: string): void {
   }
 }
 
+function readBackupPassword(parsed: ParsedArgs, env: CliEnv): string {
+  const passwordFile = parsed.values.get("--password-file");
+  const password = passwordFile
+    ? readFileSync(resolve(passwordFile), "utf8").replace(/\r?\n$/, "")
+    : env.LITTLEIMP_BACKUP_PASSWORD;
+
+  if (!password) {
+    throw new CliError(
+      "Encrypted backups require LITTLEIMP_BACKUP_PASSWORD or --password-file.",
+      2
+    );
+  }
+
+  return password;
+}
+
+function safeTimestamp(): string {
+  return new Date().toISOString().replace(/:/g, "-").replace(/\./g, "-");
+}
+
+function encryptedRestoreName(): string {
+  return `encrypted-restore-${safeTimestamp()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function ensureWritableDirectory(path: string): void {
+  try {
+    mkdirSync(path, { recursive: true });
+    accessSync(path, fsConstants.W_OK);
+  } catch {
+    throw new CliError(`Daemon backup destination is not writable: ${path}`);
+  }
+}
+
 async function requestJson<T>(
   io: Required<Pick<CliIO, "fetch">>,
   url: string,
@@ -134,11 +175,16 @@ function printCreateResult(io: Required<Pick<CliIO, "stdout">>, result: {
   bookmark_count: number;
   created_at: string;
   remote_url?: string;
+  encrypted_path?: string;
 }): void {
   io.stdout(`Backup created: ${result.path}`);
   io.stdout(`Bookmarks: ${result.bookmark_count}`);
   io.stdout(`Size: ${result.size_bytes} bytes`);
   if (result.remote_url) io.stdout(`Remote: ${result.remote_url}`);
+  if (result.encrypted_path) {
+    io.stdout(`Encrypted package: ${result.encrypted_path}`);
+    io.stdout("Password required: this package cannot be restored without the same password.");
+  }
 }
 
 function printBackupList(io: Required<Pick<CliIO, "stdout">>, entries: BackupEntry[]): void {
@@ -172,13 +218,17 @@ function usage(): string {
     "",
     "Usage:",
     "  littleimp backup create [--json] [--daemon-url URL]",
+    "  littleimp backup create --encrypt --output FILE [--json] [--daemon-url URL] [--password-file FILE]",
     "  littleimp backup list [--include-remote] [--json] [--daemon-url URL]",
     "  littleimp backup restore <name> --yes [--json] [--daemon-url URL]",
     "  littleimp backup restore --remote-key <key> --yes [--json] [--daemon-url URL]",
+    "  littleimp backup restore --encrypted-file FILE --yes [--json] [--daemon-url URL] [--password-file FILE]",
     "  littleimp backup verify --file <snapshot-directory> [--json]",
+    "  littleimp backup verify --encrypted --file FILE [--json] [--password-file FILE]",
     "",
     "Environment:",
     "  LITTLEIMP_DAEMON_URL  Defaults to http://127.0.0.1:3210",
+    "  LITTLEIMP_BACKUP_PASSWORD  Password for encrypted backup packages",
   ].join("\n");
 }
 
@@ -191,11 +241,22 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
 
   if (command === "create") {
     const parsed = parseArgs(rest, {
-      booleanFlags: ["--json"],
-      valueFlags: ["--daemon-url"],
+      booleanFlags: ["--json", "--encrypt"],
+      valueFlags: ["--daemon-url", "--output", "--password-file"],
     });
     assertNoPositionals(parsed, command);
     const json = parsed.flags.has("--json");
+    const encrypt = parsed.flags.has("--encrypt");
+    if (!encrypt && parsed.values.has("--output")) {
+      throw new CliError("--output is only valid with --encrypt.", 2);
+    }
+    if (!encrypt && parsed.values.has("--password-file")) {
+      throw new CliError("--password-file is only valid with --encrypt.", 2);
+    }
+    if (encrypt && !parsed.values.has("--output")) {
+      throw new CliError("backup create --encrypt requires --output <file>.", 2);
+    }
+    const password = encrypt ? readBackupPassword(parsed, io.env) : "";
     const daemonUrl = getDaemonUrl(parsed, io.env);
     const result = await requestJson<{
       path: string;
@@ -203,7 +264,30 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
       bookmark_count: number;
       created_at: string;
       remote_url?: string;
-    }>(io, `${daemonUrl}/backup`, { method: "POST" });
+    }>(io, `${daemonUrl}/backup`, encrypt
+      ? {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ skip_remote: true }),
+        }
+      : { method: "POST" });
+
+    if (encrypt) {
+      const packageResult = await createEncryptedBackupPackage({
+        sourceDir: result.path,
+        outputPath: parsed.values.get("--output")!,
+        password,
+      });
+      const encryptedResult = {
+        ...result,
+        encrypted_path: packageResult.path,
+        encrypted_size_bytes: packageResult.size_bytes,
+      };
+      if (json) printJson(io, encryptedResult);
+      else printCreateResult(io, encryptedResult);
+      return 0;
+    }
+
     if (json) printJson(io, result);
     else printCreateResult(io, result);
     return 0;
@@ -228,7 +312,7 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
   if (command === "restore") {
     const parsed = parseArgs(rest, {
       booleanFlags: ["--json", "--yes"],
-      valueFlags: ["--daemon-url", "--remote-key"],
+      valueFlags: ["--daemon-url", "--remote-key", "--encrypted-file", "--password-file"],
     });
     const json = parsed.flags.has("--json");
     const daemonUrl = getDaemonUrl(parsed, io.env);
@@ -237,15 +321,56 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
     }
 
     const remoteKey = parsed.values.get("--remote-key");
+    const encryptedFile = parsed.values.get("--encrypted-file");
     if (parsed.positionals.length > 1) {
       throw new CliError(`Unexpected argument for backup restore: ${parsed.positionals[1]}`, 2);
     }
     const backupName = parsed.positionals[0];
-    if (!remoteKey && !backupName) {
-      throw new CliError("backup restore requires a backup name or --remote-key.", 2);
+    if (!remoteKey && !backupName && !encryptedFile) {
+      throw new CliError("backup restore requires a backup name, --remote-key, or --encrypted-file.", 2);
     }
-    if (remoteKey && backupName) {
-      throw new CliError("Use either a local backup name or --remote-key, not both.", 2);
+    if ([remoteKey, backupName, encryptedFile].filter(Boolean).length > 1) {
+      throw new CliError("Use only one restore source: local backup name, --remote-key, or --encrypted-file.", 2);
+    }
+    if (!encryptedFile && parsed.values.has("--password-file")) {
+      throw new CliError("--password-file is only valid with --encrypted-file.", 2);
+    }
+
+    if (encryptedFile) {
+      const password = readBackupPassword(parsed, io.env);
+      const destination = await requestJson<{
+        data: { path: string; is_custom: boolean; writable: boolean };
+      }>(io, `${daemonUrl}/backup/destination`);
+      if (!isAbsolute(destination.data.path)) {
+        throw new CliError("Daemon backup destination is not an absolute path.");
+      }
+      ensureWritableDirectory(destination.data.path);
+
+      const name = encryptedRestoreName();
+      const restoreDir = join(destination.data.path, name);
+      try {
+        await extractEncryptedBackupPackage({
+          packagePath: encryptedFile,
+          outputDir: restoreDir,
+          password,
+        });
+        const result = await requestJson<{
+          restored_at: string;
+          bookmark_count: number;
+          checksum_verified: boolean;
+          rollback_path: string;
+          restart_required: boolean;
+        }>(io, `${daemonUrl}/restore`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        if (json) printJson(io, result);
+        else printRestoreResult(io, result);
+        return 0;
+      } finally {
+        rmSync(restoreDir, { recursive: true, force: true });
+      }
     }
 
     const body = remoteKey ? { source: "remote", key: remoteKey } : { name: backupName };
@@ -267,10 +392,11 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
 
   if (command === "verify") {
     const parsed = parseArgs(rest, {
-      booleanFlags: ["--json"],
-      valueFlags: ["--file"],
+      booleanFlags: ["--json", "--encrypted"],
+      valueFlags: ["--file", "--password-file"],
     });
     const json = parsed.flags.has("--json");
+    const encrypted = parsed.flags.has("--encrypted");
     if (parsed.values.has("--file") && parsed.positionals.length > 0) {
       throw new CliError(`Unexpected argument for backup verify: ${parsed.positionals[0]}`, 2);
     }
@@ -280,6 +406,30 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
     const path = parsed.values.get("--file") ?? parsed.positionals[0];
     if (!path) {
       throw new CliError("backup verify requires --file <snapshot-directory>.", 2);
+    }
+    if (!encrypted && parsed.values.has("--password-file")) {
+      throw new CliError("--password-file is only valid with --encrypted.", 2);
+    }
+    if (encrypted) {
+      const password = readBackupPassword(parsed, io.env);
+      const tmpDir = mkdtempSync(join(tmpdir(), "littleimp-verify-encrypted-"));
+      try {
+        const result = await extractEncryptedBackupPackage({
+          packagePath: path,
+          outputDir: tmpDir,
+          password,
+        });
+        const encryptedResult = {
+          ...result,
+          path: resolve(path),
+          package_encrypted: true,
+        };
+        if (json) printJson(io, encryptedResult);
+        else io.stdout(`Encrypted backup verified: ${resolve(path)}`);
+        return 0;
+      } finally {
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
     }
     const result = await verifyBackupDirectory(path);
     if (json) printJson(io, result);
@@ -309,7 +459,7 @@ export async function runLittleImpCli(args: string[], options: CliIO = {}): Prom
     }
     return await handleBackupCommand(rest, io);
   } catch (err) {
-    if (err instanceof CliError || err instanceof BackupVerificationError) {
+    if (err instanceof CliError || err instanceof BackupVerificationError || err instanceof BackupPackageError) {
       io.stderr(err.message);
       return err instanceof CliError ? err.code : 1;
     }

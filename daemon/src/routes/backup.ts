@@ -448,6 +448,10 @@ interface BackupVerificationResult {
   created_at: string;
 }
 
+type BackupCreateRequest = {
+  skip_remote?: boolean;
+};
+
 /** Lists all valid backups in a directory, sorted newest first. */
 function listBackups(resolvedBackupsDir: string): BackupEntry[] {
   let entries: string[];
@@ -658,11 +662,29 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     operationInProgress = true;
 
     try {
+      let body: BackupCreateRequest = {};
+      const contentType = c.req.header("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        let parsed: unknown;
+        try {
+          parsed = await c.req.json();
+        } catch {
+          return c.json({ error: "Request body must be valid JSON" }, 400);
+        }
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          return c.json({ error: "Request body must be an object" }, 400);
+        }
+        body = parsed as BackupCreateRequest;
+        if ("skip_remote" in body && typeof body.skip_remote !== "boolean") {
+          return c.json({ error: "`skip_remote` must be a boolean" }, 422);
+        }
+      }
+
       const result = await createBackupSnapshot(deps.db, getBackupsDir());
 
       // S3 upload — optional, runs after local backup succeeds
       const s3cfg = getS3Config();
-      if (s3ConfigPresent(s3cfg)) {
+      if (!body.skip_remote && s3ConfigPresent(s3cfg)) {
         try {
           const backupName = basename(result.path);
           const extraFiles: Array<{ relativePath: string; contentType: string }> = [

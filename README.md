@@ -159,8 +159,20 @@ littleimp backup list --include-remote
 # Verify a local snapshot directory without restoring it
 littleimp backup verify --file ~/.local/share/littleimp/backups/BACKUP_DIRECTORY_NAME
 
+# Create an encrypted package from a new local snapshot
+LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
+  littleimp backup create --encrypt --output ~/Desktop/little-imp-backup.enc
+
+# Verify an encrypted package without restoring it
+LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
+  littleimp backup verify --encrypted --file ~/Desktop/little-imp-backup.enc
+
 # Restore a local backup by directory name
 littleimp backup restore BACKUP_DIRECTORY_NAME --yes
+
+# Restore an encrypted package
+LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
+  littleimp backup restore --encrypted-file ~/Desktop/little-imp-backup.enc --yes
 
 # Restore a remote S3 snapshot key
 littleimp backup restore --remote-key little-imp-backups/BACKUP_DIRECTORY_NAME/snapshot.db --yes
@@ -168,7 +180,10 @@ littleimp backup restore --remote-key little-imp-backups/BACKUP_DIRECTORY_NAME/s
 
 Add `--json` to any backup CLI command for machine-readable output. Set
 `LITTLEIMP_DAEMON_URL` or pass `--daemon-url` when the daemon is listening on a
-non-default localhost URL.
+non-default localhost URL. Encrypted package commands can also read the password
+from `--password-file`; keep that password separately because an encrypted
+package cannot be restored without it. The `--output` file must not already
+exist; this avoids overwriting an earlier backup by accident.
 
 ```sh
 # Create a backup through the daemon

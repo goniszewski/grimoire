@@ -171,6 +171,21 @@ describe("Backup S3 API", () => {
     expect(mockUploads).toHaveLength(0);
   });
 
+  it("POST /backup skips S3 when requested by a local packaging client", async () => {
+    const app = createBackupRoute({ db, dbPath, dataDir, s3Config: S3_CONFIG });
+    const res = await app.request("/backup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ skip_remote: true }),
+    });
+    expect(res.status).toBe(201);
+
+    const json = await res.json() as { remote_url?: string; path: string };
+    expect(json.remote_url).toBeUndefined();
+    expect(json.path).toBeString();
+    expect(mockUploads).toHaveLength(0);
+  });
+
   it("POST /backup still returns 201 (local backup) when S3 upload fails", async () => {
     mockS3ShouldFail = true;
     const app = createBackupRoute({ db, dbPath, dataDir, s3Config: S3_CONFIG });

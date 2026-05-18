@@ -577,6 +577,9 @@ const schemas = {
     ["path"]
   ),
   BackupDestinationResponse: envelope(ref("BackupDestination")),
+  BackupCreateRequest: objectSchema({
+    skip_remote: booleanSchema("When true, create only the local snapshot and skip S3 upload"),
+  }),
   BackupResult: objectSchema(
     {
       path: stringSchema("Local backup directory"),
@@ -1049,8 +1052,11 @@ export const apiContract = {
       path: "/backup",
       tag: "Backup",
       summary: "Create a local backup snapshot and optionally upload it to S3.",
+      request: { body: { contentType: "application/json", schema: ref("BackupCreateRequest") } },
       responses: {
         "201": jsonResponse("Backup created", ref("BackupResult")),
+        "400": legacyErrorResponse("Malformed or non-object JSON body"),
+        "422": legacyErrorResponse("Invalid backup create request"),
         "409": legacyErrorResponse("Backup or restore already in progress"),
         "500": legacyErrorResponse("Backup creation failed"),
       },

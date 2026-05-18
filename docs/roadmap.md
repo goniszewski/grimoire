@@ -24,6 +24,7 @@ Shipped product areas:
 - Source-of-truth API contract in `daemon/src/api/contract.ts`, generated `API.md`, generated `docs/api-contract.json`, and API docs drift checking.
 - Packaged `littleimp` backup CLI commands for create, list, restore, and local snapshot verification.
 - In-app local backup verification from Settings without restoring the snapshot.
+- Optional encrypted backup packages through the `littleimp` CLI for create, verify, and restore.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
 ## Release Blockers
@@ -46,7 +47,7 @@ The next release should focus on reducing installation friction and improving co
 
 - Distribution polish: Homebrew formula or signed release archive.
 - One-command installer entry point after release artifact signing and checksum publication are settled.
-- Optional encrypted backup package format built around the current portable snapshot directory.
+- In-app encrypted backup package UX built around the current portable snapshot directory.
 - Better update flow based on the design in [docs/update-system.md](./update-system.md).
 - More complete installer matrix coverage for supported macOS and Linux versions on separate hosts or VMs.
 
