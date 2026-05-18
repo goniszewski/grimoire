@@ -34,10 +34,11 @@ cd little-imp/daemon
 The installer will:
 
 1. Copy daemon files to `~/.local/share/littleimp/daemon`
-2. Install npm dependencies (production only)
-3. Create a default config at `~/.local/share/littleimp/.env`
-4. Register a LaunchAgent (macOS) or systemd user unit (Linux) so the daemon starts on login
-5. Start the daemon and wait for it to become healthy
+2. Install daemon dependencies (production only)
+3. Build the frontend and install it to `~/.local/share/littleimp/dist`
+4. Create a default config at `~/.local/share/littleimp/.env`
+5. Register a LaunchAgent (macOS) or systemd user unit (Linux) so the daemon starts on login
+6. Start the daemon and wait for it to become healthy
 
 ### Verify the install
 
@@ -97,7 +98,8 @@ cd little-imp/daemon
 ./install.sh --upgrade
 ```
 
-This stops the daemon, replaces the files, reinstalls dependencies, and restarts.
+This stops the daemon, replaces the files, reinstalls dependencies, rebuilds the
+frontend, and restarts.
 
 ---
 
@@ -121,6 +123,7 @@ All application data lives in `~/.local/share/littleimp/`:
 |------|----------|
 | `~/.local/share/littleimp/littleimp.db` | SQLite database (bookmarks, categories, embeddings) |
 | `~/.local/share/littleimp/.env` | Install-time daemon defaults |
+| `~/.local/share/littleimp/dist/` | Built frontend served by the daemon |
 | `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
 
 Runtime user settings are stored separately at `~/.config/littleimp/config.json`.

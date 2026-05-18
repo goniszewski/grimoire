@@ -8,6 +8,7 @@ SERVICE_LABEL="com.littleimp.daemon"
 INSTALL_DIR="${HOME}/.local/share/littleimp/daemon"
 DATA_DIR="${HOME}/.local/share/littleimp"
 LOG_DIR="${DATA_DIR}/logs"
+FRONTEND_INSTALL_DIR="${DATA_DIR}/dist"
 CLI_BIN_DIR="${HOME}/.local/bin"
 CLI_BIN="${CLI_BIN_DIR}/littleimp"
 HEALTH_URL="http://127.0.0.1:3210/health"
@@ -16,6 +17,8 @@ BUN_MIN_MAJOR=1
 
 # Resolve script directory (where daemon source lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+FRONTEND_BUILD_DIR="${PROJECT_ROOT}/dist"
 
 # ---------- helpers ----------
 info()    { printf '\033[32m[INFO]\033[0m  %s\n' "$*"; }
@@ -94,6 +97,44 @@ install_daemon_files() {
   info "Installing dependencies…"
   (cd "${INSTALL_DIR}" && bun install --production)
   info "Daemon files installed"
+}
+
+install_frontend_files() {
+  if [[ -f "${PROJECT_ROOT}/package.json" && -f "${PROJECT_ROOT}/index.html" && -d "${PROJECT_ROOT}/src" ]]; then
+    info "Building frontend bundle…"
+    (cd "${PROJECT_ROOT}" && bun install --frozen-lockfile && bun run build)
+  elif [[ -f "${FRONTEND_BUILD_DIR}/index.html" ]]; then
+    info "Using existing frontend bundle at ${FRONTEND_BUILD_DIR}…"
+  else
+    warn "Frontend source/bundle not found. The daemon API will run, but the UI will not be installed."
+    if [[ -d "${FRONTEND_INSTALL_DIR}" ]]; then
+      warn "Removing stale frontend files from ${FRONTEND_INSTALL_DIR}…"
+      find "${FRONTEND_INSTALL_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    fi
+    return 0
+  fi
+
+  if [[ ! -f "${FRONTEND_BUILD_DIR}/index.html" ]]; then
+    die "Frontend build did not produce ${FRONTEND_BUILD_DIR}/index.html"
+  fi
+
+  mkdir -p "${FRONTEND_INSTALL_DIR}"
+  local source_dir install_dir
+  source_dir="$(cd "${FRONTEND_BUILD_DIR}" && pwd)"
+  install_dir="$(cd "${FRONTEND_INSTALL_DIR}" && pwd)"
+  if [[ "${source_dir}" == "${install_dir}" ]]; then
+    info "Frontend bundle already installed at ${FRONTEND_INSTALL_DIR}"
+    return 0
+  fi
+
+  info "Installing frontend files to ${FRONTEND_INSTALL_DIR}…"
+  if command -v rsync &>/dev/null; then
+    rsync -a --delete "${FRONTEND_BUILD_DIR}/" "${FRONTEND_INSTALL_DIR}/"
+  else
+    find "${FRONTEND_INSTALL_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    cp -R "${FRONTEND_BUILD_DIR}/." "${FRONTEND_INSTALL_DIR}/"
+  fi
+  info "Frontend files installed"
 }
 
 install_cli() {
@@ -216,7 +257,11 @@ print_success() {
   printf '  Health: %s\n' "${HEALTH_URL}"
   printf '  Data:   %s\n' "${DATA_DIR}"
   printf '  Logs:   %s\n' "${LOG_DIR}"
-  printf '  UI:     http://127.0.0.1:3210\n\n'
+  if [[ -f "${FRONTEND_INSTALL_DIR}/index.html" ]]; then
+    printf '  UI:     http://127.0.0.1:3210\n\n'
+  else
+    printf '  UI:     not installed (frontend bundle missing)\n\n'
+  fi
 }
 
 # ---------- uninstall ----------
@@ -299,6 +344,7 @@ main() {
   fi
 
   install_daemon_files
+  install_frontend_files
   install_cli
   create_config_dir
 

@@ -66,10 +66,11 @@ tasks/
 | TASK-050 | [In-App Backup Verification UX](done/TASK-050-in-app-backup-verification.md) | next release operations | medium | done |
 | TASK-051 | [Encrypted Backup Packages](done/TASK-051-encrypted-backup-packages.md) | next release operations | medium | done |
 | TASK-052 | [Multi-Provider AI Support](done/TASK-052-multi-provider-ai-support.md) | next release AI integrations | medium | done |
+| TASK-053 | [Native Installer Frontend Bundle Install](done/TASK-053-native-installer-frontend-bundle.md) | next release distribution polish | medium | done |
 
 ## Current Status
 
-Core product tasks, v0-beta hardening tasks, release validation work, the first three next-release operations tasks, and TASK-052 multi-provider AI support available from this macOS workspace are complete.
+Core product tasks, v0-beta hardening tasks, release validation work, the first three next-release operations tasks, TASK-052 multi-provider AI support, and TASK-053 native installer frontend bundle install available from this macOS workspace are complete.
 
 Completed release validation evidence:
 
