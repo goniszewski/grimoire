@@ -54,6 +54,26 @@ describe("API documentation generator", () => {
     expect(settingsPatch.properties.ai.properties.embeddings.properties.provider.enum).toEqual([
       "openai",
       "ollama",
+      "openai_compatible",
+    ]);
+    expect(settingsPatch.properties.ai.properties.provider.enum).toEqual([
+      "openai",
+      "ollama",
+      "anthropic",
+      "openrouter",
+      "openai_compatible",
+      "deepseek",
+      "none",
+    ]);
+    expect(settingsPatch.properties.ai.properties.anthropic.properties.api_key.type).toBe("string");
+    expect(settingsPatch.properties.ai.properties.openrouter.properties.base_url.format).toBe("uri");
+    expect(settingsPatch.properties.ai.properties.openai_compatible.properties.model.type).toBe("string");
+    expect(settingsPatch.properties.ai.properties.deepseek.properties.model.type).toBe("string");
+    expect(document.schemas.RuntimeEmbeddingCapability.properties.provider.enum).toEqual([
+      "openai",
+      "ollama",
+      "openai_compatible",
+      "none",
     ]);
   });
 

@@ -12,7 +12,8 @@
  */
 
 import { Database } from "bun:sqlite";
-import { LlmConfig, chatCompletion } from "./llm-client.js";
+import type { LlmConfig } from "./llm-client.js";
+import { ProviderLlmConfig, providerChatCompletion } from "./llm-provider.js";
 import { log } from "../logger.js";
 import { CategoryRow, TagRow } from "../db/types.js";
 
@@ -125,12 +126,12 @@ export interface EnrichInput {
  */
 export async function enrichBookmark(
   db: Database,
-  config: LlmConfig,
+  config: ProviderLlmConfig | LlmConfig,
   input: EnrichInput
 ): Promise<void> {
   const { bookmarkId, title, content } = input;
 
-  const rawResponse = await chatCompletion(
+  const rawResponse = await providerChatCompletion(
     config,
     [
       { role: "system", content: SYSTEM_PROMPT },

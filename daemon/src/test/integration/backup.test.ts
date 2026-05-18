@@ -161,7 +161,35 @@ describe("Backup API", () => {
         provider: "ollama",
         openai: { api_key: "backup-openai-secret", model: "gpt-backup" },
         ollama: { base_url: "http://localhost:11434", model: "llama3.2" },
-        embeddings: { provider: "ollama", model: "nomic-embed-text" },
+        anthropic: {
+          api_key: "backup-anthropic-secret",
+          base_url: "https://api.anthropic.com",
+          model: "claude-sonnet-4-6",
+        },
+        openrouter: {
+          api_key: "backup-openrouter-secret",
+          base_url: "https://openrouter.ai/api/v1",
+          model: "~openai/gpt-latest",
+        },
+        openai_compatible: {
+          api_key: "backup-custom-secret",
+          base_url: "https://llm.backup.example/v1",
+          model: "custom-backup-chat",
+        },
+        deepseek: {
+          api_key: "backup-deepseek-secret",
+          base_url: "https://api.deepseek.com",
+          model: "deepseek-v4-flash",
+        },
+        embeddings: {
+          provider: "openai_compatible",
+          model: "nomic-embed-text",
+          openai_compatible: {
+            api_key: "backup-embedding-secret",
+            base_url: "https://embed.backup.example/v1",
+            model: "custom-backup-embed",
+          },
+        },
       },
       app: {
         autostart: true,
@@ -194,7 +222,15 @@ describe("Backup API", () => {
         provider: string;
         openai: { api_key?: string; model: string };
         ollama: { base_url: string; model: string };
-        embeddings: { provider: string; model: string };
+        anthropic: { api_key?: string; base_url: string; model: string };
+        openrouter: { api_key?: string; base_url: string; model: string };
+        openai_compatible: { api_key?: string; base_url: string; model: string };
+        deepseek: { api_key?: string; base_url: string; model: string };
+        embeddings: {
+          provider: string;
+          model: string;
+          openai_compatible: { api_key?: string; base_url: string; model: string };
+        };
       };
       app: { autostart: boolean; theme: string; lock: { enabled: boolean; pin_hash?: string } };
       backup: {
@@ -214,6 +250,30 @@ describe("Backup API", () => {
     expect(backupSettings.ai.provider).toBe("ollama");
     expect(backupSettings.ai.openai.model).toBe("gpt-backup");
     expect(backupSettings.ai.openai.api_key).toBeUndefined();
+    expect(backupSettings.ai.anthropic).toEqual({
+      base_url: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    });
+    expect(backupSettings.ai.openrouter).toEqual({
+      base_url: "https://openrouter.ai/api/v1",
+      model: "~openai/gpt-latest",
+    });
+    expect(backupSettings.ai.openai_compatible).toEqual({
+      base_url: "https://llm.backup.example/v1",
+      model: "custom-backup-chat",
+    });
+    expect(backupSettings.ai.deepseek).toEqual({
+      base_url: "https://api.deepseek.com",
+      model: "deepseek-v4-flash",
+    });
+    expect(backupSettings.ai.embeddings).toEqual({
+      provider: "openai_compatible",
+      model: "nomic-embed-text",
+      openai_compatible: {
+        base_url: "https://embed.backup.example/v1",
+        model: "custom-backup-embed",
+      },
+    });
     expect(backupSettings.app.lock.enabled).toBeTrue();
     expect(backupSettings.app.lock.pin_hash).toBeUndefined();
     expect(backupSettings.backup.schedule).toEqual({
@@ -550,7 +610,35 @@ describe("Backup API", () => {
         provider: "ollama",
         openai: { api_key: "backup-secret", model: "gpt-backup" },
         ollama: { base_url: "http://localhost:11434", model: "llama3.2" },
-        embeddings: { provider: "ollama", model: "nomic-embed-text" },
+        anthropic: {
+          api_key: "backup-anthropic-secret",
+          base_url: "https://api.anthropic.com",
+          model: "claude-sonnet-4-6",
+        },
+        openrouter: {
+          api_key: "backup-openrouter-secret",
+          base_url: "https://openrouter.ai/api/v1",
+          model: "~openai/gpt-latest",
+        },
+        openai_compatible: {
+          api_key: "backup-custom-secret",
+          base_url: "https://llm.backup.example/v1",
+          model: "custom-backup-chat",
+        },
+        deepseek: {
+          api_key: "backup-deepseek-secret",
+          base_url: "https://api.deepseek.com",
+          model: "deepseek-v4-flash",
+        },
+        embeddings: {
+          provider: "openai_compatible",
+          model: "nomic-embed-text",
+          openai_compatible: {
+            api_key: "backup-embedding-secret",
+            base_url: "https://embed.backup.example/v1",
+            model: "custom-backup-embed",
+          },
+        },
       },
       backup: {
         local: { destination_path: "" },
@@ -576,7 +664,35 @@ describe("Backup API", () => {
         provider: "openai",
         openai: { api_key: "current-secret", model: "gpt-current" },
         ollama: { base_url: "http://localhost:11434", model: "llama-current" },
-        embeddings: { provider: "openai", model: "embed-current" },
+        anthropic: {
+          api_key: "current-anthropic-secret",
+          base_url: "https://api.anthropic.com",
+          model: "claude-current",
+        },
+        openrouter: {
+          api_key: "current-openrouter-secret",
+          base_url: "https://openrouter.ai/api/v1",
+          model: "current-router",
+        },
+        openai_compatible: {
+          api_key: "current-custom-secret",
+          base_url: "https://llm.current.example/v1",
+          model: "custom-current-chat",
+        },
+        deepseek: {
+          api_key: "current-deepseek-secret",
+          base_url: "https://api.deepseek.com",
+          model: "deepseek-current",
+        },
+        embeddings: {
+          provider: "openai",
+          model: "embed-current",
+          openai_compatible: {
+            api_key: "current-embedding-secret",
+            base_url: "https://embed.current.example/v1",
+            model: "custom-current-embed",
+          },
+        },
       },
       backup: {
         local: { destination_path: "" },
@@ -604,7 +720,18 @@ describe("Backup API", () => {
     expect(restored.ai.openai.model).toBe("gpt-backup");
     expect(restored.ai.openai.api_key).toBe("current-secret");
     expect(restored.ai.ollama.model).toBe("llama3.2");
-    expect(restored.ai.embeddings).toEqual({ provider: "ollama", model: "nomic-embed-text" });
+    expect(restored.ai.anthropic.model).toBe("claude-sonnet-4-6");
+    expect(restored.ai.anthropic.api_key).toBe("current-anthropic-secret");
+    expect(restored.ai.openrouter.model).toBe("~openai/gpt-latest");
+    expect(restored.ai.openrouter.api_key).toBe("current-openrouter-secret");
+    expect(restored.ai.openai_compatible.model).toBe("custom-backup-chat");
+    expect(restored.ai.openai_compatible.api_key).toBe("current-custom-secret");
+    expect(restored.ai.deepseek.model).toBe("deepseek-v4-flash");
+    expect(restored.ai.deepseek.api_key).toBe("current-deepseek-secret");
+    expect(restored.ai.embeddings.provider).toBe("openai_compatible");
+    expect(restored.ai.embeddings.model).toBe("nomic-embed-text");
+    expect(restored.ai.embeddings.openai_compatible.model).toBe("custom-backup-embed");
+    expect(restored.ai.embeddings.openai_compatible.api_key).toBe("current-embedding-secret");
     expect(restored.backup.schedule).toEqual({
       enabled: true,
       cron: "30 4 * * *",

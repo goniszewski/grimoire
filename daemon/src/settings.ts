@@ -26,8 +26,25 @@ function getConfigFile(): string {
 
 // ─── Settings schema ──────────────────────────────────────────────────────────
 
+export type AiProvider =
+  | "openai"
+  | "ollama"
+  | "anthropic"
+  | "openrouter"
+  | "openai_compatible"
+  | "deepseek"
+  | "none";
+
+export type EmbeddingProvider = "openai" | "ollama" | "openai_compatible";
+
+export interface ApiKeyProviderSettings {
+  api_key: string;
+  base_url: string;
+  model: string;
+}
+
 export interface AiSettings {
-  provider: "openai" | "ollama" | "none";
+  provider: AiProvider;
   openai: {
     api_key: string;
     model: string;
@@ -36,9 +53,14 @@ export interface AiSettings {
     base_url: string;
     model: string;
   };
+  anthropic: ApiKeyProviderSettings;
+  openrouter: ApiKeyProviderSettings;
+  openai_compatible: ApiKeyProviderSettings;
+  deepseek: ApiKeyProviderSettings;
   embeddings: {
-    provider: "openai" | "ollama";
+    provider: EmbeddingProvider;
     model: string;
+    openai_compatible: ApiKeyProviderSettings;
   };
 }
 
@@ -103,9 +125,34 @@ const DEFAULT_SETTINGS: Settings = {
       base_url: "http://localhost:11434",
       model: "llama3",
     },
+    anthropic: {
+      api_key: "",
+      base_url: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    },
+    openrouter: {
+      api_key: "",
+      base_url: "https://openrouter.ai/api/v1",
+      model: "~openai/gpt-latest",
+    },
+    openai_compatible: {
+      api_key: "",
+      base_url: "http://localhost:8000/v1",
+      model: "custom-chat-model",
+    },
+    deepseek: {
+      api_key: "",
+      base_url: "https://api.deepseek.com",
+      model: "deepseek-v4-flash",
+    },
     embeddings: {
       provider: "openai",
       model: Config.EMBEDDING_MODEL,
+      openai_compatible: {
+        api_key: "",
+        base_url: "http://localhost:8000/v1",
+        model: "custom-embedding-model",
+      },
     },
   },
   app: {
@@ -170,6 +217,11 @@ function removeRedactedSecretPlaceholders(patch: Partial<Settings>): Partial<Set
   const sanitized = structuredClone(patch) as Partial<Settings>;
 
   removeIfRedacted(sanitized.ai?.openai, "api_key");
+  removeIfRedacted(sanitized.ai?.anthropic, "api_key");
+  removeIfRedacted(sanitized.ai?.openrouter, "api_key");
+  removeIfRedacted(sanitized.ai?.openai_compatible, "api_key");
+  removeIfRedacted(sanitized.ai?.deepseek, "api_key");
+  removeIfRedacted(sanitized.ai?.embeddings?.openai_compatible, "api_key");
   removeIfRedacted(sanitized.app?.lock, "pin_hash");
   removeIfRedacted(sanitized.backup?.s3, "access_key");
   removeIfRedacted(sanitized.backup?.s3, "secret_key");
@@ -186,9 +238,47 @@ function removeIfRedacted(target: object | undefined, key: string): void {
 
 // ─── Settings validation ──────────────────────────────────────────────────────
 
-const VALID_AI_PROVIDERS = new Set(["openai", "ollama", "none"]);
-const VALID_EMBEDDING_PROVIDERS = new Set(["openai", "ollama"]);
+const VALID_AI_PROVIDERS = new Set<AiProvider>([
+  "openai",
+  "ollama",
+  "anthropic",
+  "openrouter",
+  "openai_compatible",
+  "deepseek",
+  "none",
+]);
+const VALID_EMBEDDING_PROVIDERS = new Set<EmbeddingProvider>([
+  "openai",
+  "ollama",
+  "openai_compatible",
+]);
 const VALID_THEMES = new Set(["light", "dark", "system"]);
+
+function validateProviderConfig(path: string, value: unknown): string | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return `\`${path}\` must be an object`;
+  }
+  const record = value as Record<string, unknown>;
+  if ("api_key" in record && typeof record.api_key !== "string") {
+    return `\`${path}.api_key\` must be a string`;
+  }
+  if ("base_url" in record) {
+    if (typeof record.base_url !== "string") return `\`${path}.base_url\` must be a string`;
+    let url: URL;
+    try {
+      url = new URL(record.base_url as string);
+    } catch {
+      return `\`${path}.base_url\` must be a valid URL`;
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return `\`${path}.base_url\` must use http or https`;
+    }
+  }
+  if ("model" in record && (typeof record.model !== "string" || !(record.model as string).trim())) {
+    return `\`${path}.model\` must be a non-empty string`;
+  }
+  return null;
+}
 
 /**
  * Validates a settings patch before it reaches deepMerge.
@@ -209,7 +299,7 @@ export function validateSettingsPatch(patch: unknown): string | null {
     const a = ai as Record<string, unknown>;
 
     if ("provider" in a) {
-      if (typeof a.provider !== "string" || !VALID_AI_PROVIDERS.has(a.provider)) {
+      if (typeof a.provider !== "string" || !VALID_AI_PROVIDERS.has(a.provider as AiProvider)) {
         return `\`ai.provider\` must be one of: ${[...VALID_AI_PROVIDERS].join(", ")}`;
       }
     }
@@ -232,9 +322,24 @@ export function validateSettingsPatch(patch: unknown): string | null {
       const oo = o as Record<string, unknown>;
       if ("base_url" in oo) {
         if (typeof oo.base_url !== "string") return "`ai.ollama.base_url` must be a string";
-        try { new URL(oo.base_url as string); } catch { return "`ai.ollama.base_url` must be a valid URL"; }
+        let url: URL;
+        try {
+          url = new URL(oo.base_url as string);
+        } catch {
+          return "`ai.ollama.base_url` must be a valid URL";
+        }
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          return "`ai.ollama.base_url` must use http or https";
+        }
       }
       if ("model" in oo && (typeof oo.model !== "string" || !(oo.model as string).trim())) return "`ai.ollama.model` must be a non-empty string";
+    }
+
+    for (const provider of ["anthropic", "openrouter", "openai_compatible", "deepseek"] as const) {
+      if (provider in a) {
+        const error = validateProviderConfig(`ai.${provider}`, a[provider]);
+        if (error) return error;
+      }
     }
 
     if ("embeddings" in a) {
@@ -243,10 +348,14 @@ export function validateSettingsPatch(patch: unknown): string | null {
         return "`ai.embeddings` must be an object";
       }
       const ee = e as Record<string, unknown>;
-      if ("provider" in ee && (typeof ee.provider !== "string" || !VALID_EMBEDDING_PROVIDERS.has(ee.provider as string))) {
+      if ("provider" in ee && (typeof ee.provider !== "string" || !VALID_EMBEDDING_PROVIDERS.has(ee.provider as EmbeddingProvider))) {
         return `\`ai.embeddings.provider\` must be one of: ${[...VALID_EMBEDDING_PROVIDERS].join(", ")}`;
       }
       if ("model" in ee && (typeof ee.model !== "string" || !(ee.model as string).trim())) return "`ai.embeddings.model` must be a non-empty string";
+      if ("openai_compatible" in ee) {
+        const error = validateProviderConfig("ai.embeddings.openai_compatible", ee.openai_compatible);
+        if (error) return error;
+      }
     }
   }
 
@@ -359,6 +468,29 @@ export function redactSettings(settings: Settings): object {
       openai: {
         ...settings.ai.openai,
         api_key: settings.ai.openai.api_key ? "***" : "",
+      },
+      anthropic: {
+        ...settings.ai.anthropic,
+        api_key: settings.ai.anthropic.api_key ? "***" : "",
+      },
+      openrouter: {
+        ...settings.ai.openrouter,
+        api_key: settings.ai.openrouter.api_key ? "***" : "",
+      },
+      openai_compatible: {
+        ...settings.ai.openai_compatible,
+        api_key: settings.ai.openai_compatible.api_key ? "***" : "",
+      },
+      deepseek: {
+        ...settings.ai.deepseek,
+        api_key: settings.ai.deepseek.api_key ? "***" : "",
+      },
+      embeddings: {
+        ...settings.ai.embeddings,
+        openai_compatible: {
+          ...settings.ai.embeddings.openai_compatible,
+          api_key: settings.ai.embeddings.openai_compatible.api_key ? "***" : "",
+        },
       },
     },
     app: {

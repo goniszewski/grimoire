@@ -24,6 +24,8 @@ export interface LlmConfig {
   apiKey: string;
   /** Chat-completion model name (e.g. "gpt-4o-mini", "llama3"). */
   model: string;
+  /** Optional provider-specific headers, e.g. OpenRouter attribution. */
+  headers?: Record<string, string>;
 }
 
 // ─── Message types ────────────────────────────────────────────────────────────
@@ -71,6 +73,7 @@ export async function chatCompletion(
   const url = `${config.baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...config.headers,
   };
   if (config.apiKey) {
     headers["Authorization"] = `Bearer ${config.apiKey}`;

@@ -1266,7 +1266,7 @@
       ],
       "additionalProperties": false
     },
-    "RuntimeCapability": {
+    "RuntimeLlmCapability": {
       "type": "object",
       "properties": {
         "enabled": {
@@ -1279,6 +1279,47 @@
           "enum": [
             "openai",
             "ollama",
+            "anthropic",
+            "openrouter",
+            "openai_compatible",
+            "deepseek",
+            "none"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "description": "Resolved model",
+          "nullable": true
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Resolved base URL",
+          "format": "uri",
+          "nullable": true
+        }
+      },
+      "required": [
+        "enabled",
+        "provider",
+        "model",
+        "base_url"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeEmbeddingCapability": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this runtime feature is usable"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Resolved embedding provider",
+          "enum": [
+            "openai",
+            "ollama",
+            "openai_compatible",
             "none"
           ]
         },
@@ -1306,10 +1347,10 @@
       "type": "object",
       "properties": {
         "llm": {
-          "ref": "RuntimeCapability"
+          "ref": "RuntimeLlmCapability"
         },
         "embeddings": {
-          "ref": "RuntimeCapability"
+          "ref": "RuntimeEmbeddingCapability"
         },
         "capabilities": {
           "type": "object",
@@ -1383,6 +1424,10 @@
               "enum": [
                 "openai",
                 "ollama",
+                "anthropic",
+                "openrouter",
+                "openai_compatible",
+                "deepseek",
                 "none"
               ]
             },
@@ -1423,6 +1468,102 @@
               ],
               "additionalProperties": false
             },
+            "anthropic": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Redacted Anthropic API key. Empty string means unset"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Anthropic API base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Anthropic Messages API model"
+                }
+              },
+              "required": [
+                "api_key",
+                "base_url",
+                "model"
+              ],
+              "additionalProperties": false
+            },
+            "openrouter": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Redacted OpenRouter API key. Empty string means unset"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "OpenRouter OpenAI-compatible base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "OpenRouter model slug"
+                }
+              },
+              "required": [
+                "api_key",
+                "base_url",
+                "model"
+              ],
+              "additionalProperties": false
+            },
+            "openai_compatible": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Redacted custom OpenAI-compatible API key. Empty string means unset"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Custom OpenAI-compatible chat base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Custom OpenAI-compatible chat model"
+                }
+              },
+              "required": [
+                "api_key",
+                "base_url",
+                "model"
+              ],
+              "additionalProperties": false
+            },
+            "deepseek": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Redacted DeepSeek API key. Empty string means unset"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "DeepSeek OpenAI-compatible base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "DeepSeek chat model"
+                }
+              },
+              "required": [
+                "api_key",
+                "base_url",
+                "model"
+              ],
+              "additionalProperties": false
+            },
             "embeddings": {
               "type": "object",
               "properties": {
@@ -1431,17 +1572,43 @@
                   "description": "Embedding provider",
                   "enum": [
                     "openai",
-                    "ollama"
+                    "ollama",
+                    "openai_compatible"
                   ]
                 },
                 "model": {
                   "type": "string",
                   "description": "Embedding model"
+                },
+                "openai_compatible": {
+                  "type": "object",
+                  "properties": {
+                    "api_key": {
+                      "type": "string",
+                      "description": "Redacted custom OpenAI-compatible embedding API key. Empty string means unset"
+                    },
+                    "base_url": {
+                      "type": "string",
+                      "description": "Custom OpenAI-compatible embeddings base URL",
+                      "format": "uri"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "Custom OpenAI-compatible embedding model"
+                    }
+                  },
+                  "required": [
+                    "api_key",
+                    "base_url",
+                    "model"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "required": [
                 "provider",
-                "model"
+                "model",
+                "openai_compatible"
               ],
               "additionalProperties": false
             }
@@ -1450,6 +1617,10 @@
             "provider",
             "openai",
             "ollama",
+            "anthropic",
+            "openrouter",
+            "openai_compatible",
+            "deepseek",
             "embeddings"
           ],
           "additionalProperties": false
@@ -1586,6 +1757,10 @@
               "enum": [
                 "openai",
                 "ollama",
+                "anthropic",
+                "openrouter",
+                "openai_compatible",
+                "deepseek",
                 "none"
               ]
             },
@@ -1620,6 +1795,86 @@
               "required": [],
               "additionalProperties": false
             },
+            "anthropic": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Anthropic API key, empty string clears it"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Anthropic API base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Anthropic Messages API model"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "openrouter": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "OpenRouter API key, empty string clears it"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "OpenRouter OpenAI-compatible base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "OpenRouter model slug"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "openai_compatible": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "Custom OpenAI-compatible API key, empty string clears it"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Custom OpenAI-compatible chat base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Custom OpenAI-compatible chat model"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "deepseek": {
+              "type": "object",
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "DeepSeek API key, empty string clears it"
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "DeepSeek OpenAI-compatible base URL",
+                  "format": "uri"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "DeepSeek chat model"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
             "embeddings": {
               "type": "object",
               "properties": {
@@ -1628,12 +1883,33 @@
                   "description": "Embedding provider",
                   "enum": [
                     "openai",
-                    "ollama"
+                    "ollama",
+                    "openai_compatible"
                   ]
                 },
                 "model": {
                   "type": "string",
                   "description": "Embedding model"
+                },
+                "openai_compatible": {
+                  "type": "object",
+                  "properties": {
+                    "api_key": {
+                      "type": "string",
+                      "description": "Custom OpenAI-compatible embedding API key, empty string clears it"
+                    },
+                    "base_url": {
+                      "type": "string",
+                      "description": "Custom OpenAI-compatible embeddings base URL",
+                      "format": "uri"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "Custom OpenAI-compatible embedding model"
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
                 }
               },
               "required": [],

@@ -112,9 +112,16 @@ export interface ApiRuntimeCapability {
   base_url: SettingsDto["runtime"]["llm"]["base_url"];
 }
 
+export interface ApiEmbeddingRuntimeCapability {
+  enabled: SettingsDto["runtime"]["embeddings"]["enabled"];
+  provider: SettingsDto["runtime"]["embeddings"]["provider"];
+  model: SettingsDto["runtime"]["embeddings"]["model"];
+  base_url: SettingsDto["runtime"]["embeddings"]["base_url"];
+}
+
 export interface ApiRuntimeCapabilities {
   llm: ApiRuntimeCapability;
-  embeddings: ApiRuntimeCapability;
+  embeddings: ApiEmbeddingRuntimeCapability;
   capabilities: {
     enrichment: SettingsDto["runtime"]["capabilities"]["enrichment"];
     semantic_search: SettingsDto["runtime"]["capabilities"]["semantic_search"];
@@ -143,9 +150,34 @@ export interface ApiSettings {
       base_url: SettingsDto["ai"]["ollama"]["base_url"];
       model: SettingsDto["ai"]["ollama"]["model"];
     };
+    anthropic: {
+      api_key: SettingsDto["ai"]["anthropic"]["api_key"];
+      base_url: SettingsDto["ai"]["anthropic"]["base_url"];
+      model: SettingsDto["ai"]["anthropic"]["model"];
+    };
+    openrouter: {
+      api_key: SettingsDto["ai"]["openrouter"]["api_key"];
+      base_url: SettingsDto["ai"]["openrouter"]["base_url"];
+      model: SettingsDto["ai"]["openrouter"]["model"];
+    };
+    openai_compatible: {
+      api_key: SettingsDto["ai"]["openai_compatible"]["api_key"];
+      base_url: SettingsDto["ai"]["openai_compatible"]["base_url"];
+      model: SettingsDto["ai"]["openai_compatible"]["model"];
+    };
+    deepseek: {
+      api_key: SettingsDto["ai"]["deepseek"]["api_key"];
+      base_url: SettingsDto["ai"]["deepseek"]["base_url"];
+      model: SettingsDto["ai"]["deepseek"]["model"];
+    };
     embeddings: {
       provider: ApiEmbeddingProvider;
       model: SettingsDto["ai"]["embeddings"]["model"];
+      openai_compatible: {
+        api_key: SettingsDto["ai"]["embeddings"]["openai_compatible"]["api_key"];
+        base_url: SettingsDto["ai"]["embeddings"]["openai_compatible"]["base_url"];
+        model: SettingsDto["ai"]["embeddings"]["openai_compatible"]["model"];
+      };
     };
   };
   app: {

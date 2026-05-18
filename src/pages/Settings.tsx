@@ -65,16 +65,28 @@ import { Switch } from "@/components/ui/switch";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Provider = ApiAiProvider;
+type ApiKeyProvider = "anthropic" | "openrouter" | "openai_compatible" | "deepseek";
+
+interface ApiKeyProviderFormState {
+  api_key: string;
+  base_url: string;
+  model: string;
+}
 
 interface AiFormState {
   provider: Provider;
   openai: { api_key: string; model: string };
   ollama: { base_url: string; model: string };
+  anthropic: ApiKeyProviderFormState;
+  openrouter: ApiKeyProviderFormState;
+  openai_compatible: ApiKeyProviderFormState;
+  deepseek: ApiKeyProviderFormState;
 }
 
 interface EmbeddingsFormState {
   provider: ApiEmbeddingProvider;
   model: string;
+  openai_compatible: ApiKeyProviderFormState;
 }
 
 // ─── Query key ────────────────────────────────────────────────────────────────
@@ -90,6 +102,44 @@ const REDACTED = "***";
 function isKeyRedacted(key: string) {
   return key === REDACTED;
 }
+
+function secretProviderPatch(provider: ApiKeyProviderFormState) {
+  const patch: { api_key?: string; base_url: string; model: string } = {
+    base_url: provider.base_url,
+    model: provider.model,
+  };
+  if (!isKeyRedacted(provider.api_key)) {
+    patch.api_key = provider.api_key;
+  }
+  return patch;
+}
+
+const apiKeyProviderMeta: Record<ApiKeyProvider, {
+  apiKeyPlaceholder: string;
+  baseUrlPlaceholder: string;
+  modelPlaceholder: string;
+}> = {
+  anthropic: {
+    apiKeyPlaceholder: "sk-ant-...",
+    baseUrlPlaceholder: "https://api.anthropic.com",
+    modelPlaceholder: "claude-sonnet-4-6",
+  },
+  openrouter: {
+    apiKeyPlaceholder: "sk-or-...",
+    baseUrlPlaceholder: "https://openrouter.ai/api/v1",
+    modelPlaceholder: "~openai/gpt-latest",
+  },
+  openai_compatible: {
+    apiKeyPlaceholder: "optional",
+    baseUrlPlaceholder: "http://localhost:8000/v1",
+    modelPlaceholder: "custom-chat-model",
+  },
+  deepseek: {
+    apiKeyPlaceholder: "sk-...",
+    baseUrlPlaceholder: "https://api.deepseek.com",
+    modelPlaceholder: "deepseek-v4-flash",
+  },
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -118,11 +168,36 @@ const Settings = () => {
     provider: "none",
     openai: { api_key: "", model: "gpt-4o-mini" },
     ollama: { base_url: "http://localhost:11434", model: "llama3" },
+    anthropic: {
+      api_key: "",
+      base_url: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    },
+    openrouter: {
+      api_key: "",
+      base_url: "https://openrouter.ai/api/v1",
+      model: "~openai/gpt-latest",
+    },
+    openai_compatible: {
+      api_key: "",
+      base_url: "http://localhost:8000/v1",
+      model: "custom-chat-model",
+    },
+    deepseek: {
+      api_key: "",
+      base_url: "https://api.deepseek.com",
+      model: "deepseek-v4-flash",
+    },
   });
 
   const [embeddings, setEmbeddings] = useState<EmbeddingsFormState>({
     provider: "openai",
     model: "text-embedding-3-small",
+    openai_compatible: {
+      api_key: "",
+      base_url: "http://localhost:8000/v1",
+      model: "custom-embedding-model",
+    },
   });
 
   const [dirty, setDirty] = useState(false);
@@ -194,8 +269,36 @@ const Settings = () => {
       provider: s.ai.provider,
       openai: { api_key: s.ai.openai.api_key, model: s.ai.openai.model },
       ollama: { base_url: s.ai.ollama.base_url, model: s.ai.ollama.model },
+      anthropic: {
+        api_key: s.ai.anthropic.api_key,
+        base_url: s.ai.anthropic.base_url,
+        model: s.ai.anthropic.model,
+      },
+      openrouter: {
+        api_key: s.ai.openrouter.api_key,
+        base_url: s.ai.openrouter.base_url,
+        model: s.ai.openrouter.model,
+      },
+      openai_compatible: {
+        api_key: s.ai.openai_compatible.api_key,
+        base_url: s.ai.openai_compatible.base_url,
+        model: s.ai.openai_compatible.model,
+      },
+      deepseek: {
+        api_key: s.ai.deepseek.api_key,
+        base_url: s.ai.deepseek.base_url,
+        model: s.ai.deepseek.model,
+      },
     });
-    setEmbeddings({ provider: s.ai.embeddings.provider, model: s.ai.embeddings.model });
+    setEmbeddings({
+      provider: s.ai.embeddings.provider,
+      model: s.ai.embeddings.model,
+      openai_compatible: {
+        api_key: s.ai.embeddings.openai_compatible.api_key,
+        base_url: s.ai.embeddings.openai_compatible.base_url,
+        model: s.ai.embeddings.openai_compatible.model,
+      },
+    });
     setDirty(false);
 
     // Populate S3 form from settings (credentials will be redacted "***")
@@ -225,7 +328,15 @@ const Settings = () => {
           provider: ai.provider,
           openai: openaiPatch,
           ollama: { base_url: ai.ollama.base_url, model: ai.ollama.model },
-          embeddings: { provider: embeddings.provider, model: embeddings.model },
+          anthropic: secretProviderPatch(ai.anthropic),
+          openrouter: secretProviderPatch(ai.openrouter),
+          openai_compatible: secretProviderPatch(ai.openai_compatible),
+          deepseek: secretProviderPatch(ai.deepseek),
+          embeddings: {
+            provider: embeddings.provider,
+            model: embeddings.model,
+            openai_compatible: secretProviderPatch(embeddings.openai_compatible),
+          },
         },
       };
 
@@ -287,6 +398,14 @@ const Settings = () => {
     setDirty(true);
   }
 
+  function updateAiApiKeyProvider(provider: ApiKeyProvider, patch: Partial<ApiKeyProviderFormState>) {
+    setAi((prev) => ({
+      ...prev,
+      [provider]: { ...prev[provider], ...patch },
+    }));
+    setDirty(true);
+  }
+
   function updateEmbeddingsProvider(provider: ApiEmbeddingProvider) {
     setEmbeddings((prev) => ({ ...prev, provider }));
     setDirty(true);
@@ -294,6 +413,14 @@ const Settings = () => {
 
   function updateEmbeddingsModel(model: string) {
     setEmbeddings((prev) => ({ ...prev, model }));
+    setDirty(true);
+  }
+
+  function updateEmbeddingOpenAiCompatible(patch: Partial<ApiKeyProviderFormState>) {
+    setEmbeddings((prev) => ({
+      ...prev,
+      openai_compatible: { ...prev.openai_compatible, ...patch },
+    }));
     setDirty(true);
   }
 
@@ -315,6 +442,43 @@ const Settings = () => {
         setVerifyingBackupName(null);
       },
     });
+  }
+
+  function renderApiKeyProviderFields(provider: ApiKeyProvider) {
+    const config = ai[provider];
+    const meta = apiKeyProviderMeta[provider];
+    return (
+      <>
+        <div className="space-y-1.5">
+          <Label className="text-xs">API Key</Label>
+          <Input
+            type="password"
+            value={config.api_key}
+            onChange={(e) => updateAiApiKeyProvider(provider, { api_key: e.target.value })}
+            placeholder={meta.apiKeyPlaceholder}
+            className="h-8 text-sm font-mono"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Base URL</Label>
+          <Input
+            value={config.base_url}
+            onChange={(e) => updateAiApiKeyProvider(provider, { base_url: e.target.value })}
+            placeholder={meta.baseUrlPlaceholder}
+            className="h-8 text-sm font-mono"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Model</Label>
+          <Input
+            value={config.model}
+            onChange={(e) => updateAiApiKeyProvider(provider, { model: e.target.value })}
+            placeholder={meta.modelPlaceholder}
+            className="h-8 text-sm font-mono"
+          />
+        </div>
+      </>
+    );
   }
 
   return (
@@ -378,6 +542,10 @@ const Settings = () => {
                     <SelectContent>
                       <SelectItem value="openai">OpenAI</SelectItem>
                       <SelectItem value="ollama">Ollama</SelectItem>
+                      <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="openrouter">OpenRouter</SelectItem>
+                      <SelectItem value="openai_compatible">OpenAI compatible</SelectItem>
+                      <SelectItem value="deepseek">DeepSeek</SelectItem>
                       <SelectItem value="none">None</SelectItem>
                     </SelectContent>
                   </Select>
@@ -429,6 +597,11 @@ const Settings = () => {
                     </div>
                   </>
                 )}
+
+                {ai.provider === "anthropic" && renderApiKeyProviderFields("anthropic")}
+                {ai.provider === "openrouter" && renderApiKeyProviderFields("openrouter")}
+                {ai.provider === "openai_compatible" && renderApiKeyProviderFields("openai_compatible")}
+                {ai.provider === "deepseek" && renderApiKeyProviderFields("deepseek")}
 
                 {ai.provider !== "none" && (
                   <div className="flex items-center gap-3">
@@ -488,23 +661,57 @@ const Settings = () => {
                     <SelectContent>
                       <SelectItem value="openai">OpenAI</SelectItem>
                       <SelectItem value="ollama">Ollama</SelectItem>
+                      <SelectItem value="openai_compatible">OpenAI compatible</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Model</Label>
-                  <Input
-                    value={embeddings.model}
-                    onChange={(e) => updateEmbeddingsModel(e.target.value)}
-                    placeholder={
-                      embeddings.provider === "openai"
-                        ? "text-embedding-3-small"
-                        : "nomic-embed-text"
-                    }
-                    className="h-8 text-sm font-mono"
-                  />
-                </div>
+                {embeddings.provider === "openai_compatible" ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">API Key</Label>
+                      <Input
+                        type="password"
+                        value={embeddings.openai_compatible.api_key}
+                        onChange={(e) => updateEmbeddingOpenAiCompatible({ api_key: e.target.value })}
+                        placeholder="optional"
+                        className="h-8 text-sm font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Base URL</Label>
+                      <Input
+                        value={embeddings.openai_compatible.base_url}
+                        onChange={(e) => updateEmbeddingOpenAiCompatible({ base_url: e.target.value })}
+                        placeholder="http://localhost:8000/v1"
+                        className="h-8 text-sm font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Model</Label>
+                      <Input
+                        value={embeddings.openai_compatible.model}
+                        onChange={(e) => updateEmbeddingOpenAiCompatible({ model: e.target.value })}
+                        placeholder="custom-embedding-model"
+                        className="h-8 text-sm font-mono"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Model</Label>
+                    <Input
+                      value={embeddings.model}
+                      onChange={(e) => updateEmbeddingsModel(e.target.value)}
+                      placeholder={
+                        embeddings.provider === "openai"
+                          ? "text-embedding-3-small"
+                          : "nomic-embed-text"
+                      }
+                      className="h-8 text-sm font-mono"
+                    />
+                  </div>
+                )}
               </div>
             </section>
 

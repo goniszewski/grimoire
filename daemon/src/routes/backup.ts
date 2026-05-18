@@ -58,7 +58,15 @@ type PortableSettings = {
     provider: Settings["ai"]["provider"];
     openai: { model: string };
     ollama: Settings["ai"]["ollama"];
-    embeddings: Settings["ai"]["embeddings"];
+    anthropic: Omit<Settings["ai"]["anthropic"], "api_key">;
+    openrouter: Omit<Settings["ai"]["openrouter"], "api_key">;
+    openai_compatible: Omit<Settings["ai"]["openai_compatible"], "api_key">;
+    deepseek: Omit<Settings["ai"]["deepseek"], "api_key">;
+    embeddings: {
+      provider: Settings["ai"]["embeddings"]["provider"];
+      model: string;
+      openai_compatible: Omit<Settings["ai"]["embeddings"]["openai_compatible"], "api_key">;
+    };
   };
   app: {
     autostart: boolean;
@@ -160,9 +168,29 @@ function portableSettings(settings: Settings): PortableSettings {
         base_url: settings.ai.ollama.base_url,
         model: settings.ai.ollama.model,
       },
+      anthropic: {
+        base_url: settings.ai.anthropic.base_url,
+        model: settings.ai.anthropic.model,
+      },
+      openrouter: {
+        base_url: settings.ai.openrouter.base_url,
+        model: settings.ai.openrouter.model,
+      },
+      openai_compatible: {
+        base_url: settings.ai.openai_compatible.base_url,
+        model: settings.ai.openai_compatible.model,
+      },
+      deepseek: {
+        base_url: settings.ai.deepseek.base_url,
+        model: settings.ai.deepseek.model,
+      },
       embeddings: {
         provider: settings.ai.embeddings.provider,
         model: settings.ai.embeddings.model,
+        openai_compatible: {
+          base_url: settings.ai.embeddings.openai_compatible.base_url,
+          model: settings.ai.embeddings.openai_compatible.model,
+        },
       },
     },
     app: {

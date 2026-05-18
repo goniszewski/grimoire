@@ -130,6 +130,8 @@ variables such as `LLM_API_KEY`, `LLM_MODEL`, `EMBEDDING_API_KEY`,
 install or unattended deployments. `GET /settings` redacts secrets as `"***"`;
 round-tripping that response through `PUT /settings` preserves the stored
 secret instead of writing the redacted placeholder.
+Supported LLM providers are OpenAI, Ollama, Anthropic, OpenRouter, custom
+OpenAI-compatible chat endpoints, DeepSeek international, and `none`.
 
 ### Backup and restore
 
@@ -341,7 +343,7 @@ Little Imp is built with:
 
 - **Frontend:** React, Vite, Tailwind CSS, shadcn/ui
 - **Backend:** Bun, Hono, SQLite
-- **AI:** Optional local LLM (Ollama) or external providers
+- **AI:** Optional local LLM (Ollama), OpenAI, Anthropic, OpenRouter, DeepSeek, or custom OpenAI-compatible providers
 
 For development setup and contribution guidelines, see the [Contributing Guide](./CONTRIBUTING.md).
 

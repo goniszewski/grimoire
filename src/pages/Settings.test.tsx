@@ -46,15 +46,46 @@ const mockedUseBackupDestination = backupHooks.useBackupDestination as unknown a
 const mockedUseUpdateBackupDestination = backupHooks.useUpdateBackupDestination as unknown as ReturnType<typeof vi.fn>;
 const mockedUseVerifyBackup = backupHooks.useVerifyBackup as unknown as ReturnType<typeof vi.fn>;
 
-function settingsResponse() {
+function settingsResponse(aiPatch: Record<string, unknown> = {}) {
+  const ai = {
+    provider: "none" as const,
+    openai: { api_key: "", model: "gpt-4o-mini" },
+    ollama: { base_url: "http://localhost:11434", model: "llama3" },
+    anthropic: {
+      api_key: "",
+      base_url: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    },
+    openrouter: {
+      api_key: "",
+      base_url: "https://openrouter.ai/api/v1",
+      model: "~openai/gpt-latest",
+    },
+    openai_compatible: {
+      api_key: "",
+      base_url: "http://localhost:8000/v1",
+      model: "custom-chat-model",
+    },
+    deepseek: {
+      api_key: "",
+      base_url: "https://api.deepseek.com",
+      model: "deepseek-v4-flash",
+    },
+    embeddings: {
+      provider: "openai" as const,
+      model: "text-embedding-3-small",
+      openai_compatible: {
+        api_key: "",
+        base_url: "http://localhost:8000/v1",
+        model: "custom-embedding-model",
+      },
+    },
+    ...aiPatch,
+  };
+
   return {
     data: {
-      ai: {
-        provider: "none" as const,
-        openai: { api_key: "", model: "gpt-4o-mini" },
-        ollama: { base_url: "http://localhost:11434", model: "llama3" },
-        embeddings: { provider: "openai" as const, model: "text-embedding-3-small" },
-      },
+      ai,
       app: {
         autostart: false,
         theme: "system" as const,
@@ -159,5 +190,76 @@ describe("Settings backup verification", () => {
         })
       );
     });
+  });
+});
+
+describe("Settings AI providers", () => {
+  it("renders provider-specific Anthropic fields from settings", async () => {
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "anthropic" as const,
+      anthropic: {
+        api_key: "***",
+        base_url: "https://api.anthropic.com",
+        model: "claude-sonnet-4-6",
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByDisplayValue("https://api.anthropic.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("claude-sonnet-4-6")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("***")).toBeInTheDocument();
+  });
+
+  it("omits an unchanged redacted OpenRouter key when saving provider fields", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "~openai/gpt-latest",
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const model = await screen.findByDisplayValue("~openai/gpt-latest");
+    fireEvent.change(model, { target: { value: "openai/gpt-5.2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            provider: "openrouter",
+            openrouter: {
+              base_url: "https://openrouter.ai/api/v1",
+              model: "openai/gpt-5.2",
+            },
+          }),
+        })
+      );
+    });
+  });
+
+  it("renders custom OpenAI-compatible embedding fields separately from the LLM provider", async () => {
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      embeddings: {
+        provider: "openai_compatible" as const,
+        model: "text-embedding-3-small",
+        openai_compatible: {
+          api_key: "***",
+          base_url: "https://embeddings.example.test/v1",
+          model: "custom-embed",
+        },
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByDisplayValue("https://embeddings.example.test/v1")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("custom-embed")).toBeInTheDocument();
   });
 });

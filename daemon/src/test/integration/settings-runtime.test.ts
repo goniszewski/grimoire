@@ -11,6 +11,7 @@ let createApp: typeof import("../../server.js").createApp;
 let JobQueue: typeof import("../../queue.js").JobQueue;
 let runPipeline: typeof import("../../pipeline/pipeline.js").runPipeline;
 let settingsManager: typeof import("../../settings.js").settingsManager;
+let resolveRuntimeSettings: typeof import("../../runtime-settings.js").resolveRuntimeSettings;
 let Config: typeof import("../../config.js").Config;
 
 type MutableConfig = {
@@ -65,6 +66,11 @@ function requestHeaders(
   return new Headers();
 }
 
+function requestJsonBody(init?: Parameters<typeof fetch>[1]): Record<string, unknown> {
+  if (typeof init?.body !== "string") return {};
+  return JSON.parse(init.body) as Record<string, unknown>;
+}
+
 describe("settings-driven AI runtime configuration", () => {
   const originalXdgConfigHome = process.env.XDG_CONFIG_HOME;
   const originalLlmApiKey = process.env.LLM_API_KEY;
@@ -86,6 +92,7 @@ describe("settings-driven AI runtime configuration", () => {
     ({ JobQueue } = await import("../../queue.js"));
     ({ runPipeline } = await import("../../pipeline/pipeline.js"));
     ({ settingsManager } = await import("../../settings.js"));
+    ({ resolveRuntimeSettings } = await import("../../runtime-settings.js"));
   });
 
   beforeEach(() => {
@@ -468,5 +475,351 @@ describe("settings-driven AI runtime configuration", () => {
         authorization: null,
       },
     ]);
+  });
+
+  it("redacts, preserves, and resolves new provider secrets without leaking runtime data", async () => {
+    const app = createApp({
+      db,
+      queue: new JobQueue(),
+      startTime: new Date(),
+      version: "0.0.0-test",
+    });
+
+    const putRes = await app.request("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ai: {
+          provider: "anthropic",
+          anthropic: {
+            api_key: "anthropic-secret",
+            base_url: "https://api.anthropic.com",
+            model: "claude-sonnet-4-6",
+          },
+          openrouter: {
+            api_key: "openrouter-secret",
+            base_url: "https://openrouter.ai/api/v1",
+            model: "~openai/gpt-latest",
+          },
+          openai_compatible: {
+            api_key: "custom-secret",
+            base_url: "https://llm.example.test/v1",
+            model: "custom-chat",
+          },
+          deepseek: {
+            api_key: "deepseek-secret",
+            base_url: "https://api.deepseek.com",
+            model: "deepseek-v4-flash",
+          },
+          embeddings: {
+            provider: "openai_compatible",
+            model: "text-embedding-3-small",
+            openai_compatible: {
+              api_key: "embedding-secret",
+              base_url: "https://embed.example.test/v1",
+              model: "custom-embed",
+            },
+          },
+        },
+      }),
+    });
+    expect(putRes.status).toBe(200);
+
+    const getRes = await app.request("/settings");
+    expect(getRes.status).toBe(200);
+    const getJson = (await getRes.json()) as {
+      data: {
+        ai: {
+          anthropic: { api_key: string };
+          openrouter: { api_key: string };
+          openai_compatible: { api_key: string };
+          deepseek: { api_key: string };
+          embeddings: { openai_compatible: { api_key: string } };
+        };
+        runtime: {
+          llm: { enabled: boolean; provider: string; model: string | null; base_url: string | null };
+          embeddings: { enabled: boolean; provider: string; model: string | null; base_url: string | null };
+        };
+      };
+    };
+
+    expect(getJson.data.ai.anthropic.api_key).toBe("***");
+    expect(getJson.data.ai.openrouter.api_key).toBe("***");
+    expect(getJson.data.ai.openai_compatible.api_key).toBe("***");
+    expect(getJson.data.ai.deepseek.api_key).toBe("***");
+    expect(getJson.data.ai.embeddings.openai_compatible.api_key).toBe("***");
+    expect(getJson.data.runtime.llm).toEqual({
+      enabled: true,
+      provider: "anthropic",
+      model: "claude-sonnet-4-6",
+      base_url: "https://api.anthropic.com/v1",
+    });
+    expect(getJson.data.runtime.embeddings).toEqual({
+      enabled: true,
+      provider: "openai_compatible",
+      model: "custom-embed",
+      base_url: "https://embed.example.test/v1",
+    });
+    expect(JSON.stringify(getJson.data.runtime)).not.toContain("anthropic-secret");
+    expect(JSON.stringify(getJson.data.runtime)).not.toContain("embedding-secret");
+
+    const roundTripRes = await app.request("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(getJson.data),
+    });
+    expect(roundTripRes.status).toBe(200);
+
+    const stored = settingsManager.read();
+    expect(stored.ai.anthropic.api_key).toBe("anthropic-secret");
+    expect(stored.ai.openrouter.api_key).toBe("openrouter-secret");
+    expect(stored.ai.openai_compatible.api_key).toBe("custom-secret");
+    expect(stored.ai.deepseek.api_key).toBe("deepseek-secret");
+    expect(stored.ai.embeddings.openai_compatible.api_key).toBe("embedding-secret");
+  });
+
+  it("rejects non-HTTP AI provider base URLs before they reach runtime fetches", async () => {
+    const app = createApp({
+      db,
+      queue: new JobQueue(),
+      startTime: new Date(),
+      version: "0.0.0-test",
+    });
+
+    const putRes = await app.request("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ai: {
+          provider: "anthropic",
+          anthropic: {
+            api_key: "anthropic-key",
+            base_url: "file:///tmp/anthropic",
+            model: "claude-sonnet-4-6",
+          },
+        },
+      }),
+    });
+
+    expect(putRes.status).toBe(422);
+    const problem = (await putRes.json()) as { detail?: string };
+    expect(problem.detail).toBe("`ai.anthropic.base_url` must use http or https");
+  });
+
+  it("does not fall through to another runtime provider when persisted provider values are invalid", () => {
+    const malformedSettings = structuredClone(settingsManager.read());
+    (malformedSettings.ai as unknown as { provider: string }).provider = "bogus";
+    malformedSettings.ai.deepseek.api_key = "deepseek-key-that-must-not-be-used";
+    (malformedSettings.ai.embeddings as unknown as { provider: string }).provider = "anthropic";
+
+    const runtime = resolveRuntimeSettings(malformedSettings);
+
+    expect(runtime.llmConfig).toBeNull();
+    expect(runtime.embeddingConfig).toBeNull();
+    expect(runtime.runtime.llm).toEqual({
+      enabled: false,
+      provider: "none",
+      model: null,
+      base_url: null,
+    });
+    expect(runtime.runtime.embeddings).toEqual({
+      enabled: false,
+      provider: "none",
+      model: null,
+      base_url: null,
+    });
+  });
+
+  it("uses the Anthropic Messages API request shape for enrichment", async () => {
+    const app = createApp({
+      db,
+      queue: new JobQueue(),
+      startTime: new Date(),
+      version: "0.0.0-test",
+    });
+
+    const settingsRes = await app.request("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ai: {
+          provider: "anthropic",
+          anthropic: {
+            api_key: "anthropic-key",
+            base_url: "https://api.anthropic.com",
+            model: "claude-sonnet-4-6",
+          },
+          embeddings: { provider: "ollama", model: "nomic-embed-text" },
+        },
+      }),
+    });
+    expect(settingsRes.status).toBe(200);
+
+    const bookmarkId = crypto.randomUUID();
+    const url = "https://example.com/anthropic-runtime";
+    db.run(
+      `INSERT INTO bookmarks (id, url, domain, title, status)
+       VALUES (?, ?, ?, ?, 'saved')`,
+      [bookmarkId, url, "example.com", "Anthropic Runtime"]
+    );
+
+    const llmRequests: Array<{
+      url: string;
+      headers: Headers;
+      body: Record<string, unknown>;
+    }> = [];
+    globalThis.fetch = (async (input, init) => {
+      const urlString = requestUrl(input);
+
+      if (urlString === url) {
+        return makeHtmlResponse(
+          `<html><head><title>Anthropic Runtime</title></head>
+           <body><article><p>Anthropic should use the Messages API adapter.</p></article></body></html>`,
+          url
+        );
+      }
+
+      if (urlString.endsWith("/v1/messages")) {
+        llmRequests.push({
+          url: urlString,
+          headers: requestHeaders(input, init),
+          body: requestJsonBody(init),
+        });
+        return jsonResponse({
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                summary: "Summary from Anthropic.",
+                tags: ["anthropic", "runtime"],
+                category: "Article",
+                confidence: 0.9,
+              }),
+            },
+          ],
+        });
+      }
+
+      if (urlString.endsWith("/embeddings")) {
+        return jsonResponse({ data: [{ embedding: [0.2, 0.3, 0.4] }] });
+      }
+
+      return new Response("not found", { status: 404 });
+    }) as typeof fetch;
+
+    await runPipeline(db, { bookmarkId, url });
+
+    const content = db
+      .query<{ summary: string | null }, [string]>(
+        "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+      )
+      .get(bookmarkId);
+    expect(content?.summary).toBe("Summary from Anthropic.");
+
+    expect(llmRequests).toHaveLength(1);
+    const request = llmRequests[0];
+    expect(request.url).toBe("https://api.anthropic.com/v1/messages");
+    expect(request.headers.get("x-api-key")).toBe("anthropic-key");
+    expect(request.headers.get("anthropic-version")).toBe("2023-06-01");
+    expect(request.body.model).toBe("claude-sonnet-4-6");
+    expect(request.body.max_tokens).toBe(512);
+    expect(request.body.system).toBeString();
+    expect(request.body.messages).toEqual([
+      expect.objectContaining({
+        role: "user",
+        content: expect.stringContaining("Title: Anthropic Runtime"),
+      }),
+    ]);
+    expect(request.body).not.toHaveProperty("response_format");
+  });
+
+  it("tests new OpenAI-compatible providers through their resolved endpoints", async () => {
+    const app = createApp({
+      db,
+      queue: new JobQueue(),
+      startTime: new Date(),
+      version: "0.0.0-test",
+    });
+
+    const cases = [
+      {
+        provider: "openrouter",
+        patch: {
+          openrouter: {
+            api_key: "openrouter-key",
+            base_url: "https://openrouter.ai/api/v1",
+            model: "~openai/gpt-latest",
+          },
+        },
+        expectedUrl: "https://openrouter.ai/api/v1/chat/completions",
+        expectedAuth: "Bearer openrouter-key",
+        expectedModel: "~openai/gpt-latest",
+        expectedOpenRouterTitle: "Little Imp",
+      },
+      {
+        provider: "openai_compatible",
+        patch: {
+          openai_compatible: {
+            api_key: "custom-key",
+            base_url: "https://llm.example.test/v1/",
+            model: "custom-chat",
+          },
+        },
+        expectedUrl: "https://llm.example.test/v1/chat/completions",
+        expectedAuth: "Bearer custom-key",
+        expectedModel: "custom-chat",
+        expectedOpenRouterTitle: null,
+      },
+      {
+        provider: "deepseek",
+        patch: {
+          deepseek: {
+            api_key: "deepseek-key",
+            base_url: "https://api.deepseek.com",
+            model: "deepseek-v4-flash",
+          },
+        },
+        expectedUrl: "https://api.deepseek.com/chat/completions",
+        expectedAuth: "Bearer deepseek-key",
+        expectedModel: "deepseek-v4-flash",
+        expectedOpenRouterTitle: null,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const putRes = await app.request("/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ai: {
+            provider: testCase.provider,
+            ...testCase.patch,
+          },
+        }),
+      });
+      expect(putRes.status).toBe(200);
+
+      const requests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
+      globalThis.fetch = (async (input, init) => {
+        requests.push({
+          url: requestUrl(input),
+          headers: requestHeaders(input, init),
+          body: requestJsonBody(init),
+        });
+        return jsonResponse({ choices: [{ message: { content: "pong" } }] });
+      }) as typeof fetch;
+
+      const testRes = await app.request("/settings/test-ai", { method: "POST" });
+      expect(testRes.status).toBe(200);
+      const testJson = (await testRes.json()) as { ok: boolean };
+      expect(testJson.ok).toBe(true);
+      expect(requests).toHaveLength(1);
+      expect(requests[0].url).toBe(testCase.expectedUrl);
+      expect(requests[0].headers.get("authorization")).toBe(testCase.expectedAuth);
+      expect(requests[0].headers.get("x-openrouter-title")).toBe(testCase.expectedOpenRouterTitle);
+      expect(requests[0].body.model).toBe(testCase.expectedModel);
+      expect(requests[0].body.messages).toEqual([{ role: "user", content: "ping" }]);
+      expect(requests[0].body.max_tokens).toBe(1);
+    }
   });
 });

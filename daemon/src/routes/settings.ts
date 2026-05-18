@@ -2,6 +2,7 @@ import { Hono, Context } from "hono";
 import { settingsManager, redactSettings, validateSettingsPatch } from "../settings.js";
 import { log } from "../logger.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
+import { testProviderConnection } from "../ai/llm-provider.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -100,27 +101,8 @@ export function createSettingsRoute(): Hono {
     }
 
     try {
-      const res = await fetch(`${llmConfig.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(llmConfig.apiKey ? { Authorization: `Bearer ${llmConfig.apiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          model: llmConfig.model,
-          messages: [{ role: "user", content: "ping" }],
-          max_tokens: 1,
-        }),
-        signal: AbortSignal.timeout(10_000),
-      });
-
-      if (res.ok || res.status === 400) {
-        // 400 from OpenAI still means the API is reachable and auth is valid
-        return c.json({ ok: true });
-      }
-
-      const text = (await res.text().catch(() => res.statusText)).slice(0, 500);
-      return c.json({ ok: false, error: `Provider returned ${res.status}: ${text}` });
+      await testProviderConnection(llmConfig);
+      return c.json({ ok: true });
     } catch (err) {
       log.warn("AI provider connectivity test failed", { provider, error: String(err) });
       return c.json({ ok: false, error: `Connection failed: ${String(err)}` });

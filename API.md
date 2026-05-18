@@ -531,16 +531,36 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
 | `ai.ollama` | object | no |  |
 | `ai.ollama.base_url` | string | no | Ollama base URL |
 | `ai.ollama.model` | string | no | Ollama model |
+| `ai.anthropic` | object | no |  |
+| `ai.anthropic.api_key` | string | no | Anthropic API key, empty string clears it |
+| `ai.anthropic.base_url` | string | no | Anthropic API base URL |
+| `ai.anthropic.model` | string | no | Anthropic Messages API model |
+| `ai.openrouter` | object | no |  |
+| `ai.openrouter.api_key` | string | no | OpenRouter API key, empty string clears it |
+| `ai.openrouter.base_url` | string | no | OpenRouter OpenAI-compatible base URL |
+| `ai.openrouter.model` | string | no | OpenRouter model slug |
+| `ai.openai_compatible` | object | no |  |
+| `ai.openai_compatible.api_key` | string | no | Custom OpenAI-compatible API key, empty string clears it |
+| `ai.openai_compatible.base_url` | string | no | Custom OpenAI-compatible chat base URL |
+| `ai.openai_compatible.model` | string | no | Custom OpenAI-compatible chat model |
+| `ai.deepseek` | object | no |  |
+| `ai.deepseek.api_key` | string | no | DeepSeek API key, empty string clears it |
+| `ai.deepseek.base_url` | string | no | DeepSeek OpenAI-compatible base URL |
+| `ai.deepseek.model` | string | no | DeepSeek chat model |
 | `ai.embeddings` | object | no |  |
-| `ai.embeddings.provider` | "openai" \| "ollama" | no | Embedding provider |
+| `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
+| `ai.embeddings.openai_compatible` | object | no |  |
+| `ai.embeddings.openai_compatible.api_key` | string | no | Custom OpenAI-compatible embedding API key, empty string clears it |
+| `ai.embeddings.openai_compatible.base_url` | string | no | Custom OpenAI-compatible embeddings base URL |
+| `ai.embeddings.openai_compatible.model` | string | no | Custom OpenAI-compatible embedding model |
 | `app` | object | no |  |
 | `app.autostart` | boolean | no | Start daemon automatically |
 | `app.theme` | "light" \| "dark" \| "system" | no | UI theme |
@@ -1375,12 +1395,21 @@ Response data
 | `done` | boolean | yes | Whether import processing is complete |
 | `error` | string \| null | yes | Background import error |
 
-### RuntimeCapability
+### RuntimeLlmCapability
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `enabled` | boolean | yes | Whether this runtime feature is usable |
-| `provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
+| `model` | string \| null | yes | Resolved model |
+| `base_url` | string \| null | yes | Resolved base URL |
+
+### RuntimeEmbeddingCapability
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `enabled` | boolean | yes | Whether this runtime feature is usable |
+| `provider` | "openai" \| "ollama" \| "openai_compatible" \| "none" | yes | Resolved embedding provider |
 | `model` | string \| null | yes | Resolved model |
 | `base_url` | string \| null | yes | Resolved base URL |
 
@@ -1388,14 +1417,14 @@ Response data
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `llm` | RuntimeCapability | yes |  |
+| `llm` | RuntimeLlmCapability | yes |  |
 | `llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
 | `llm.model` | string \| null | yes | Resolved model |
 | `llm.base_url` | string \| null | yes | Resolved base URL |
-| `embeddings` | RuntimeCapability | yes |  |
+| `embeddings` | RuntimeEmbeddingCapability | yes |  |
 | `embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" \| "none" | yes | Resolved embedding provider |
 | `embeddings.model` | string \| null | yes | Resolved model |
 | `embeddings.base_url` | string \| null | yes | Resolved base URL |
 | `capabilities` | object | yes |  |
@@ -1417,16 +1446,36 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | yes |  |
-| `ai.provider` | "openai" \| "ollama" \| "none" | yes | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | LLM provider |
 | `ai.openai` | object | yes |  |
 | `ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `ai.openai.model` | string | yes | OpenAI chat model |
 | `ai.ollama` | object | yes |  |
 | `ai.ollama.base_url` | string | yes | Ollama base URL |
 | `ai.ollama.model` | string | yes | Ollama model |
+| `ai.anthropic` | object | yes |  |
+| `ai.anthropic.api_key` | string | yes | Redacted Anthropic API key. Empty string means unset |
+| `ai.anthropic.base_url` | string | yes | Anthropic API base URL |
+| `ai.anthropic.model` | string | yes | Anthropic Messages API model |
+| `ai.openrouter` | object | yes |  |
+| `ai.openrouter.api_key` | string | yes | Redacted OpenRouter API key. Empty string means unset |
+| `ai.openrouter.base_url` | string | yes | OpenRouter OpenAI-compatible base URL |
+| `ai.openrouter.model` | string | yes | OpenRouter model slug |
+| `ai.openai_compatible` | object | yes |  |
+| `ai.openai_compatible.api_key` | string | yes | Redacted custom OpenAI-compatible API key. Empty string means unset |
+| `ai.openai_compatible.base_url` | string | yes | Custom OpenAI-compatible chat base URL |
+| `ai.openai_compatible.model` | string | yes | Custom OpenAI-compatible chat model |
+| `ai.deepseek` | object | yes |  |
+| `ai.deepseek.api_key` | string | yes | Redacted DeepSeek API key. Empty string means unset |
+| `ai.deepseek.base_url` | string | yes | DeepSeek OpenAI-compatible base URL |
+| `ai.deepseek.model` | string | yes | DeepSeek chat model |
 | `ai.embeddings` | object | yes |  |
-| `ai.embeddings.provider` | "openai" \| "ollama" | yes | Embedding provider |
+| `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `ai.embeddings.model` | string | yes | Embedding model |
+| `ai.embeddings.openai_compatible` | object | yes |  |
+| `ai.embeddings.openai_compatible.api_key` | string | yes | Redacted custom OpenAI-compatible embedding API key. Empty string means unset |
+| `ai.embeddings.openai_compatible.base_url` | string | yes | Custom OpenAI-compatible embeddings base URL |
+| `ai.embeddings.openai_compatible.model` | string | yes | Custom OpenAI-compatible embedding model |
 | `app` | object | yes |  |
 | `app.autostart` | boolean | yes | Start daemon automatically |
 | `app.theme` | "light" \| "dark" \| "system" | yes | UI theme |
@@ -1448,14 +1497,14 @@ Response data
 | `backup.s3.region` | string | yes | S3 region |
 | `backup.s3.prefix` | string | yes | Object key prefix |
 | `runtime` | RuntimeCapabilities | yes |  |
-| `runtime.llm` | RuntimeCapability | yes |  |
+| `runtime.llm` | RuntimeLlmCapability | yes |  |
 | `runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `runtime.llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
 | `runtime.llm.model` | string \| null | yes | Resolved model |
 | `runtime.llm.base_url` | string \| null | yes | Resolved base URL |
-| `runtime.embeddings` | RuntimeCapability | yes |  |
+| `runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
 | `runtime.embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `runtime.embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `runtime.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" \| "none" | yes | Resolved embedding provider |
 | `runtime.embeddings.model` | string \| null | yes | Resolved model |
 | `runtime.embeddings.base_url` | string \| null | yes | Resolved base URL |
 | `runtime.capabilities` | object | yes |  |
@@ -1469,16 +1518,36 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
 | `ai.ollama` | object | no |  |
 | `ai.ollama.base_url` | string | no | Ollama base URL |
 | `ai.ollama.model` | string | no | Ollama model |
+| `ai.anthropic` | object | no |  |
+| `ai.anthropic.api_key` | string | no | Anthropic API key, empty string clears it |
+| `ai.anthropic.base_url` | string | no | Anthropic API base URL |
+| `ai.anthropic.model` | string | no | Anthropic Messages API model |
+| `ai.openrouter` | object | no |  |
+| `ai.openrouter.api_key` | string | no | OpenRouter API key, empty string clears it |
+| `ai.openrouter.base_url` | string | no | OpenRouter OpenAI-compatible base URL |
+| `ai.openrouter.model` | string | no | OpenRouter model slug |
+| `ai.openai_compatible` | object | no |  |
+| `ai.openai_compatible.api_key` | string | no | Custom OpenAI-compatible API key, empty string clears it |
+| `ai.openai_compatible.base_url` | string | no | Custom OpenAI-compatible chat base URL |
+| `ai.openai_compatible.model` | string | no | Custom OpenAI-compatible chat model |
+| `ai.deepseek` | object | no |  |
+| `ai.deepseek.api_key` | string | no | DeepSeek API key, empty string clears it |
+| `ai.deepseek.base_url` | string | no | DeepSeek OpenAI-compatible base URL |
+| `ai.deepseek.model` | string | no | DeepSeek chat model |
 | `ai.embeddings` | object | no |  |
-| `ai.embeddings.provider` | "openai" \| "ollama" | no | Embedding provider |
+| `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
+| `ai.embeddings.openai_compatible` | object | no |  |
+| `ai.embeddings.openai_compatible.api_key` | string | no | Custom OpenAI-compatible embedding API key, empty string clears it |
+| `ai.embeddings.openai_compatible.base_url` | string | no | Custom OpenAI-compatible embeddings base URL |
+| `ai.embeddings.openai_compatible.model` | string | no | Custom OpenAI-compatible embedding model |
 | `app` | object | no |  |
 | `app.autostart` | boolean | no | Start daemon automatically |
 | `app.theme` | "light" \| "dark" \| "system" | no | UI theme |
@@ -1508,16 +1577,36 @@ Response data
 |---|---|---:|---|
 | `data` | Settings | yes |  |
 | `data.ai` | object | yes |  |
-| `data.ai.provider` | "openai" \| "ollama" \| "none" | yes | LLM provider |
+| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | LLM provider |
 | `data.ai.openai` | object | yes |  |
 | `data.ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `data.ai.openai.model` | string | yes | OpenAI chat model |
 | `data.ai.ollama` | object | yes |  |
 | `data.ai.ollama.base_url` | string | yes | Ollama base URL |
 | `data.ai.ollama.model` | string | yes | Ollama model |
+| `data.ai.anthropic` | object | yes |  |
+| `data.ai.anthropic.api_key` | string | yes | Redacted Anthropic API key. Empty string means unset |
+| `data.ai.anthropic.base_url` | string | yes | Anthropic API base URL |
+| `data.ai.anthropic.model` | string | yes | Anthropic Messages API model |
+| `data.ai.openrouter` | object | yes |  |
+| `data.ai.openrouter.api_key` | string | yes | Redacted OpenRouter API key. Empty string means unset |
+| `data.ai.openrouter.base_url` | string | yes | OpenRouter OpenAI-compatible base URL |
+| `data.ai.openrouter.model` | string | yes | OpenRouter model slug |
+| `data.ai.openai_compatible` | object | yes |  |
+| `data.ai.openai_compatible.api_key` | string | yes | Redacted custom OpenAI-compatible API key. Empty string means unset |
+| `data.ai.openai_compatible.base_url` | string | yes | Custom OpenAI-compatible chat base URL |
+| `data.ai.openai_compatible.model` | string | yes | Custom OpenAI-compatible chat model |
+| `data.ai.deepseek` | object | yes |  |
+| `data.ai.deepseek.api_key` | string | yes | Redacted DeepSeek API key. Empty string means unset |
+| `data.ai.deepseek.base_url` | string | yes | DeepSeek OpenAI-compatible base URL |
+| `data.ai.deepseek.model` | string | yes | DeepSeek chat model |
 | `data.ai.embeddings` | object | yes |  |
-| `data.ai.embeddings.provider` | "openai" \| "ollama" | yes | Embedding provider |
+| `data.ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `data.ai.embeddings.model` | string | yes | Embedding model |
+| `data.ai.embeddings.openai_compatible` | object | yes |  |
+| `data.ai.embeddings.openai_compatible.api_key` | string | yes | Redacted custom OpenAI-compatible embedding API key. Empty string means unset |
+| `data.ai.embeddings.openai_compatible.base_url` | string | yes | Custom OpenAI-compatible embeddings base URL |
+| `data.ai.embeddings.openai_compatible.model` | string | yes | Custom OpenAI-compatible embedding model |
 | `data.app` | object | yes |  |
 | `data.app.autostart` | boolean | yes | Start daemon automatically |
 | `data.app.theme` | "light" \| "dark" \| "system" | yes | UI theme |
@@ -1539,14 +1628,14 @@ Response data
 | `data.backup.s3.region` | string | yes | S3 region |
 | `data.backup.s3.prefix` | string | yes | Object key prefix |
 | `data.runtime` | RuntimeCapabilities | yes |  |
-| `data.runtime.llm` | RuntimeCapability | yes |  |
+| `data.runtime.llm` | RuntimeLlmCapability | yes |  |
 | `data.runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `data.runtime.llm.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
 | `data.runtime.llm.model` | string \| null | yes | Resolved model |
 | `data.runtime.llm.base_url` | string \| null | yes | Resolved base URL |
-| `data.runtime.embeddings` | RuntimeCapability | yes |  |
+| `data.runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
 | `data.runtime.embeddings.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `data.runtime.embeddings.provider` | "openai" \| "ollama" \| "none" | yes | Resolved provider |
+| `data.runtime.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" \| "none" | yes | Resolved embedding provider |
 | `data.runtime.embeddings.model` | string \| null | yes | Resolved model |
 | `data.runtime.embeddings.base_url` | string \| null | yes | Resolved base URL |
 | `data.runtime.capabilities` | object | yes |  |

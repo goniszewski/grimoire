@@ -65,10 +65,11 @@ tasks/
 | TASK-049 | [Packaged Backup CLI Commands](done/TASK-049-packaged-backup-cli.md) | next release operations | medium | done |
 | TASK-050 | [In-App Backup Verification UX](done/TASK-050-in-app-backup-verification.md) | next release operations | medium | done |
 | TASK-051 | [Encrypted Backup Packages](done/TASK-051-encrypted-backup-packages.md) | next release operations | medium | done |
+| TASK-052 | [Multi-Provider AI Support](done/TASK-052-multi-provider-ai-support.md) | next release AI integrations | medium | done |
 
 ## Current Status
 
-Core product tasks, v0-beta hardening tasks, release validation work, and the first three next-release operations tasks available from this macOS workspace are complete through TASK-051.
+Core product tasks, v0-beta hardening tasks, release validation work, the first three next-release operations tasks, and TASK-052 multi-provider AI support available from this macOS workspace are complete.
 
 Completed release validation evidence:
 

@@ -392,10 +392,23 @@ const schemas = {
     },
     ["queued", "skipped", "total", "done", "error"]
   ),
-  RuntimeCapability: objectSchema(
+  RuntimeLlmCapability: objectSchema(
     {
       enabled: booleanSchema("Whether this runtime feature is usable"),
-      provider: stringSchema("Resolved provider", { enum: ["openai", "ollama", "none"] }),
+      provider: stringSchema("Resolved provider", {
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+      }),
+      model: nullable(stringSchema("Resolved model")),
+      base_url: nullable(stringSchema("Resolved base URL", { format: "uri" })),
+    },
+    ["enabled", "provider", "model", "base_url"]
+  ),
+  RuntimeEmbeddingCapability: objectSchema(
+    {
+      enabled: booleanSchema("Whether this runtime feature is usable"),
+      provider: stringSchema("Resolved embedding provider", {
+        enum: ["openai", "ollama", "openai_compatible", "none"],
+      }),
       model: nullable(stringSchema("Resolved model")),
       base_url: nullable(stringSchema("Resolved base URL", { format: "uri" })),
     },
@@ -403,8 +416,8 @@ const schemas = {
   ),
   RuntimeCapabilities: objectSchema(
     {
-      llm: ref("RuntimeCapability"),
-      embeddings: ref("RuntimeCapability"),
+      llm: ref("RuntimeLlmCapability"),
+      embeddings: ref("RuntimeEmbeddingCapability"),
       capabilities: objectSchema(
         {
           enrichment: booleanSchema("LLM enrichment available"),
@@ -429,7 +442,9 @@ const schemas = {
     {
       ai: objectSchema(
         {
-          provider: stringSchema("LLM provider", { enum: ["openai", "ollama", "none"] }),
+          provider: stringSchema("LLM provider", {
+            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+          }),
           openai: objectSchema(
             {
               api_key: stringSchema("Redacted OpenAI API key. Empty string means unset"),
@@ -444,15 +459,64 @@ const schemas = {
             },
             ["base_url", "model"]
           ),
+          anthropic: objectSchema(
+            {
+              api_key: stringSchema("Redacted Anthropic API key. Empty string means unset"),
+              base_url: stringSchema("Anthropic API base URL", { format: "uri" }),
+              model: stringSchema("Anthropic Messages API model"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
+          openrouter: objectSchema(
+            {
+              api_key: stringSchema("Redacted OpenRouter API key. Empty string means unset"),
+              base_url: stringSchema("OpenRouter OpenAI-compatible base URL", { format: "uri" }),
+              model: stringSchema("OpenRouter model slug"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
+          openai_compatible: objectSchema(
+            {
+              api_key: stringSchema("Redacted custom OpenAI-compatible API key. Empty string means unset"),
+              base_url: stringSchema("Custom OpenAI-compatible chat base URL", { format: "uri" }),
+              model: stringSchema("Custom OpenAI-compatible chat model"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
+          deepseek: objectSchema(
+            {
+              api_key: stringSchema("Redacted DeepSeek API key. Empty string means unset"),
+              base_url: stringSchema("DeepSeek OpenAI-compatible base URL", { format: "uri" }),
+              model: stringSchema("DeepSeek chat model"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
           embeddings: objectSchema(
             {
-              provider: stringSchema("Embedding provider", { enum: ["openai", "ollama"] }),
+              provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
               model: stringSchema("Embedding model"),
+              openai_compatible: objectSchema(
+                {
+                  api_key: stringSchema("Redacted custom OpenAI-compatible embedding API key. Empty string means unset"),
+                  base_url: stringSchema("Custom OpenAI-compatible embeddings base URL", { format: "uri" }),
+                  model: stringSchema("Custom OpenAI-compatible embedding model"),
+                },
+                ["api_key", "base_url", "model"]
+              ),
             },
-            ["provider", "model"]
+            ["provider", "model", "openai_compatible"]
           ),
         },
-        ["provider", "openai", "ollama", "embeddings"]
+        [
+          "provider",
+          "openai",
+          "ollama",
+          "anthropic",
+          "openrouter",
+          "openai_compatible",
+          "deepseek",
+          "embeddings",
+        ]
       ),
       app: objectSchema(
         {
@@ -497,7 +561,9 @@ const schemas = {
   ),
   SettingsPatch: objectSchema({
     ai: objectSchema({
-      provider: stringSchema("LLM provider", { enum: ["openai", "ollama", "none"] }),
+      provider: stringSchema("LLM provider", {
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+      }),
       openai: objectSchema({
         api_key: stringSchema("OpenAI API key, empty string clears it"),
         model: stringSchema("OpenAI chat model"),
@@ -506,9 +572,34 @@ const schemas = {
         base_url: stringSchema("Ollama base URL", { format: "uri" }),
         model: stringSchema("Ollama model"),
       }),
+      anthropic: objectSchema({
+        api_key: stringSchema("Anthropic API key, empty string clears it"),
+        base_url: stringSchema("Anthropic API base URL", { format: "uri" }),
+        model: stringSchema("Anthropic Messages API model"),
+      }),
+      openrouter: objectSchema({
+        api_key: stringSchema("OpenRouter API key, empty string clears it"),
+        base_url: stringSchema("OpenRouter OpenAI-compatible base URL", { format: "uri" }),
+        model: stringSchema("OpenRouter model slug"),
+      }),
+      openai_compatible: objectSchema({
+        api_key: stringSchema("Custom OpenAI-compatible API key, empty string clears it"),
+        base_url: stringSchema("Custom OpenAI-compatible chat base URL", { format: "uri" }),
+        model: stringSchema("Custom OpenAI-compatible chat model"),
+      }),
+      deepseek: objectSchema({
+        api_key: stringSchema("DeepSeek API key, empty string clears it"),
+        base_url: stringSchema("DeepSeek OpenAI-compatible base URL", { format: "uri" }),
+        model: stringSchema("DeepSeek chat model"),
+      }),
       embeddings: objectSchema({
-        provider: stringSchema("Embedding provider", { enum: ["openai", "ollama"] }),
+        provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
         model: stringSchema("Embedding model"),
+        openai_compatible: objectSchema({
+          api_key: stringSchema("Custom OpenAI-compatible embedding API key, empty string clears it"),
+          base_url: stringSchema("Custom OpenAI-compatible embeddings base URL", { format: "uri" }),
+          model: stringSchema("Custom OpenAI-compatible embedding model"),
+        }),
       }),
     }),
     app: objectSchema({
