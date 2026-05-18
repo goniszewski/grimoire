@@ -4,6 +4,14 @@
 
 This document proposes a comprehensive update system for Little Imp that balances the local-first philosophy with the need for security updates and feature improvements.
 
+## Current Implementation
+
+The packaged `littleimp` CLI includes a manual `littleimp update check` command.
+It reads GitHub Releases-compatible JSON from the default GitHub Releases API or
+from `LITTLEIMP_UPDATE_SOURCE` / `--source`, filters by `stable` or `beta`
+channel, ignores malformed release tags, and reports whether a newer semver
+release exists. It does not download, install, schedule, or roll back updates.
+
 ## Design Principles
 
 1. **User Control**: Updates are never automatic - users explicitly choose when to update
@@ -240,7 +248,8 @@ littleimpd update export --output ./little-imp-update.tar.gz
 
 ### Phase 1: Basic Update System (v1.1)
 
-- [ ] Update check service
+- [x] Manual CLI update check
+- [ ] Daemon update check service
 - [ ] Download and verification
 - [ ] Basic UI notifications
 - [ ] CLI commands

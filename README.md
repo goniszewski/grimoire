@@ -190,6 +190,28 @@ from `--password-file`; keep that password separately because an encrypted
 package cannot be restored without it. The `--output` file must not already
 exist; this avoids overwriting an earlier backup by accident.
 
+### Update checks
+
+The packaged `littleimp` CLI can manually check a GitHub Releases-compatible
+source for newer releases with semver-style tags such as `v0.2.0` or
+`v0.2.0-beta.1`. This only reports availability; it does not download or
+install updates.
+
+```sh
+# Check the default release source
+littleimp update check
+
+# Check only stable releases and print machine-readable output
+littleimp update check --channel stable --json
+
+# Use an alternate release source
+littleimp update check --source https://updates.example.com/little-imp/releases
+```
+
+Set `LITTLEIMP_UPDATE_SOURCE` to change the default source for scripted
+environments. Beta builds check the beta channel by default; stable builds check
+the stable channel by default.
+
 ```sh
 # Create a backup through the daemon
 curl -X POST http://127.0.0.1:3210/backup
