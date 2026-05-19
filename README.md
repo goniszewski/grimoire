@@ -192,10 +192,10 @@ exist; this avoids overwriting an earlier backup by accident.
 
 ### Update checks
 
-The packaged `littleimp` CLI can manually check a GitHub Releases-compatible
-source for newer releases with semver-style tags such as `v0.2.0` or
-`v0.2.0-beta.1`. This only reports availability; it does not download or
-install updates.
+The daemon and packaged `littleimp` CLI can manually check a GitHub
+Releases-compatible source for newer releases with semver-style tags such as
+`v0.2.0` or `v0.2.0-beta.1`. This only reports availability; it does not
+download or install updates.
 
 ```sh
 # Check the default release source
@@ -206,11 +206,16 @@ littleimp update check --channel stable --json
 
 # Use an alternate release source
 littleimp update check --source https://updates.example.com/little-imp/releases
+
+# Check through the daemon API
+curl 'http://127.0.0.1:3210/updates/check?channel=stable'
 ```
 
 Set `LITTLEIMP_UPDATE_SOURCE` to change the default source for scripted
 environments. Beta builds check the beta channel by default; stable builds check
-the stable channel by default.
+the stable channel by default. The daemon API rejects private and loopback
+source hosts; use the CLI for explicit local mirrors in controlled offline
+environments.
 
 ```sh
 # Create a backup through the daemon

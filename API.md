@@ -33,6 +33,35 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `HealthResponse` | Daemon health |
 
+### Updates
+
+#### GET /updates/check
+
+Check a GitHub Releases-compatible source for a newer Little Imp release.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `channel` | "stable" \| "beta" | no | Update channel to check; defaults from the current package version |
+| `source` | string | no | Public GitHub Releases-compatible JSON endpoint; private and loopback hosts are rejected |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `UpdateCheckResponse` | Update check result |
+| `422` | application/problem+json | `ProblemDetails` | Invalid channel or source URL |
+| `502` | application/problem+json | `ProblemDetails` | Update source could not be read or returned an invalid response |
+
+Examples:
+
+**Check for updates**
+
+```bash
+curl 'http://127.0.0.1:3210/updates/check?channel=stable'
+```
+
 ### Bookmarks
 
 #### POST /bookmarks
@@ -1830,6 +1859,52 @@ Response data
 | `version` | string | yes | Daemon package version |
 | `uptime` | integer | yes | Process uptime in milliseconds |
 | `queueSize` | integer | yes | Queued background jobs |
+
+### UpdateRelease
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `version` | string | yes | Normalized semantic version |
+| `tag` | string | yes | Release tag from the update source |
+| `name` | string | yes | Release display name |
+| `prerelease` | boolean | yes | Whether the release is marked as a prerelease |
+| `published_at` | string | yes | Release publication timestamp |
+| `url` | string | yes | Human-readable release URL |
+
+### UpdateCheckResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `current_version` | string | yes | Current packaged Little Imp version |
+| `update_available` | boolean | yes | Whether a compatible release is newer than the current version |
+| `source` | string | yes | Release source URL used for the check |
+| `channel` | "stable" \| "beta" | yes | Applied update channel |
+| `latest` | UpdateRelease \| null | yes |  |
+| `latest.version` | string | yes | Normalized semantic version |
+| `latest.tag` | string | yes | Release tag from the update source |
+| `latest.name` | string | yes | Release display name |
+| `latest.prerelease` | boolean | yes | Whether the release is marked as a prerelease |
+| `latest.published_at` | string | yes | Release publication timestamp |
+| `latest.url` | string | yes | Human-readable release URL |
+
+### UpdateCheckResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | UpdateCheckResult | yes |  |
+| `data.current_version` | string | yes | Current packaged Little Imp version |
+| `data.update_available` | boolean | yes | Whether a compatible release is newer than the current version |
+| `data.source` | string | yes | Release source URL used for the check |
+| `data.channel` | "stable" \| "beta" | yes | Applied update channel |
+| `data.latest` | UpdateRelease \| null | yes |  |
+| `data.latest.version` | string | yes | Normalized semantic version |
+| `data.latest.tag` | string | yes | Release tag from the update source |
+| `data.latest.name` | string | yes | Release display name |
+| `data.latest.prerelease` | boolean | yes | Whether the release is marked as a prerelease |
+| `data.latest.published_at` | string | yes | Release publication timestamp |
+| `data.latest.url` | string | yes | Human-readable release URL |
 
 ### ExportBookmark
 

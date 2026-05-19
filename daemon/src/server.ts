@@ -19,6 +19,7 @@ import { createTimelineRoute } from "./routes/timeline.js";
 import { createSuggestionsRoute } from "./routes/suggestions.js";
 import { createBackupRoute } from "./routes/backup.js";
 import { createMcpRoute } from "./routes/mcp.js";
+import { createUpdatesRoute } from "./routes/updates.js";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -100,6 +101,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createTimelineRoute({ db: deps.db }));
   app.route("/", createSuggestionsRoute({ db: deps.db }));
   app.route("/", createBackupRoute({ db: deps.db, dbPath: join(Config.DATA_DIR, "littleimp.db") }));
+  app.route("/", createUpdatesRoute());
   app.route("/", createMcpRoute({ db: deps.db, queue: deps.queue, version: deps.version }));
 
   if (deps.staticDir !== false) {

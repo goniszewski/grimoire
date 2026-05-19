@@ -9,11 +9,16 @@ import {
   createEncryptedBackupPackage,
   extractEncryptedBackupPackage,
 } from "./backup/package.js";
+import {
+  DEFAULT_UPDATE_SOURCE,
+  UpdateCheckError,
+  checkForUpdates,
+  parseUpdateChannel,
+  type UpdateChannel,
+  type UpdateRelease,
+} from "./update/service.js";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
-const DEFAULT_UPDATE_SOURCE = "https://api.github.com/repos/goniszewski/little-imp/releases";
-
-type UpdateChannel = "stable" | "beta";
 
 type CliEnv = Record<string, string | undefined>;
 
@@ -42,31 +47,6 @@ type BackupEntry = {
   bookmark_count: number;
   created_at: string;
   source: "local" | "remote";
-};
-
-type GitHubRelease = {
-  tag_name?: unknown;
-  name?: unknown;
-  draft?: unknown;
-  prerelease?: unknown;
-  published_at?: unknown;
-  html_url?: unknown;
-};
-
-type ParsedVersion = {
-  major: number;
-  minor: number;
-  patch: number;
-  prerelease: string[];
-};
-
-type UpdateRelease = {
-  version: string;
-  tag: string;
-  name: string;
-  prerelease: boolean;
-  published_at: string;
-  url: string;
 };
 
 class CliError extends Error {
@@ -126,15 +106,16 @@ function getUpdateSource(parsed: ParsedArgs, env: CliEnv): string {
   return configured?.trim() ? configured.trim() : DEFAULT_UPDATE_SOURCE;
 }
 
-function defaultUpdateChannel(): UpdateChannel {
-  return APP_VERSION.includes("-") ? "beta" : "stable";
-}
-
 function getUpdateChannel(parsed: ParsedArgs): UpdateChannel {
   const value = parsed.values.get("--channel");
-  if (!value) return defaultUpdateChannel();
-  if (value === "stable" || value === "beta") return value;
-  throw new CliError("--channel must be stable or beta.", 2);
+  try {
+    return parseUpdateChannel(value);
+  } catch (err) {
+    if (err instanceof UpdateCheckError && err.status === 422) {
+      throw new CliError("--channel must be stable or beta.", 2);
+    }
+    throw err;
+  }
 }
 
 function assertNoPositionals(parsed: ParsedArgs, command: string, namespace = "backup"): void {
@@ -165,127 +146,6 @@ function safeTimestamp(): string {
 
 function encryptedRestoreName(): string {
   return `encrypted-restore-${safeTimestamp()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function parseVersion(raw: string): ParsedVersion | null {
-  const normalized = raw.trim().replace(/^v/i, "").split("+", 1)[0];
-  const match = normalized.match(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$/
-  );
-  if (!match) return null;
-  const major = Number(match[1]);
-  const minor = Number(match[2]);
-  const patch = Number(match[3]);
-  const prerelease = match[4] ?? "";
-  return {
-    major,
-    minor,
-    patch,
-    prerelease: prerelease ? prerelease.split(".") : [],
-  };
-}
-
-function comparePrerelease(left: string[], right: string[]): number {
-  if (left.length === 0 && right.length === 0) return 0;
-  if (left.length === 0) return 1;
-  if (right.length === 0) return -1;
-
-  const length = Math.max(left.length, right.length);
-  for (let i = 0; i < length; i++) {
-    const leftPart = left[i];
-    const rightPart = right[i];
-    if (leftPart === undefined) return -1;
-    if (rightPart === undefined) return 1;
-    if (leftPart === rightPart) continue;
-
-    const leftNumber = Number(leftPart);
-    const rightNumber = Number(rightPart);
-    const leftIsNumber = Number.isInteger(leftNumber);
-    const rightIsNumber = Number.isInteger(rightNumber);
-    if (leftIsNumber && rightIsNumber) return Math.sign(leftNumber - rightNumber);
-    if (leftIsNumber) return -1;
-    if (rightIsNumber) return 1;
-    return leftPart < rightPart ? -1 : 1;
-  }
-  return 0;
-}
-
-function compareVersions(leftRaw: string, rightRaw: string): number {
-  const left = parseVersion(leftRaw);
-  const right = parseVersion(rightRaw);
-  if (!left || !right) return 0;
-  for (const key of ["major", "minor", "patch"] as const) {
-    if (left[key] !== right[key]) return Math.sign(left[key] - right[key]);
-  }
-  return comparePrerelease(left.prerelease, right.prerelease);
-}
-
-function normalizeRelease(release: GitHubRelease): UpdateRelease | null {
-  if (release.draft === true) return null;
-  if (typeof release.tag_name !== "string") return null;
-  const version = release.tag_name.trim().replace(/^v/i, "");
-  if (!parseVersion(version)) return null;
-  return {
-    version,
-    tag: release.tag_name,
-    name: typeof release.name === "string" && release.name.trim() ? release.name : release.tag_name,
-    prerelease: release.prerelease === true,
-    published_at: typeof release.published_at === "string" ? release.published_at : "",
-    url: typeof release.html_url === "string" ? release.html_url : "",
-  };
-}
-
-function releaseMatchesChannel(release: UpdateRelease, channel: UpdateChannel): boolean {
-  return channel === "beta" || !release.prerelease;
-}
-
-function findLatestCompatibleRelease(releases: GitHubRelease[], channel: UpdateChannel): UpdateRelease | null {
-  return releases
-    .map(normalizeRelease)
-    .filter((release): release is UpdateRelease => Boolean(release))
-    .filter((release) => releaseMatchesChannel(release, channel))
-    .sort((left, right) => compareVersions(right.version, left.version))[0] ?? null;
-}
-
-async function fetchUpdateReleases(
-  io: Required<Pick<CliIO, "fetch">>,
-  source: string
-): Promise<GitHubRelease[]> {
-  let res: Response;
-  try {
-    res = await io.fetch(source, {
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": `littleimp-update-check/${APP_VERSION}`,
-      },
-    });
-  } catch (err) {
-    throw new CliError(`Could not check updates at ${source}: ${String(err)}`);
-  }
-
-  const text = await res.text();
-  let payload: unknown = null;
-  if (text.trim()) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      throw new CliError(`Update source returned non-JSON response with status ${res.status}`);
-    }
-  }
-
-  if (!res.ok) {
-    const message =
-      typeof payload === "object" && payload !== null && "message" in payload && typeof payload.message === "string"
-        ? payload.message
-        : `Update check failed with status ${res.status}`;
-    throw new CliError(message);
-  }
-
-  if (!Array.isArray(payload)) {
-    throw new CliError("Update source returned an unexpected response.");
-  }
-
-  return payload as GitHubRelease[];
 }
 
 function ensureWritableDirectory(path: string): void {
@@ -435,15 +295,7 @@ async function handleUpdateCommand(args: string[], io: Required<CliIO>): Promise
   const json = parsed.flags.has("--json");
   const source = getUpdateSource(parsed, io.env);
   const channel = getUpdateChannel(parsed);
-  const releases = await fetchUpdateReleases(io, source);
-  const latest = findLatestCompatibleRelease(releases, channel);
-  const result = {
-    current_version: APP_VERSION,
-    update_available: latest ? compareVersions(latest.version, APP_VERSION) > 0 : false,
-    source,
-    channel,
-    latest,
-  };
+  const result = await checkForUpdates({ source, channel, fetchImpl: io.fetch, allowPrivateHosts: true });
 
   if (json) printJson(io, result);
   else printUpdateResult(io, result);
@@ -680,7 +532,12 @@ export async function runLittleImpCli(args: string[], options: CliIO = {}): Prom
     }
     return await handleBackupCommand(rest, io);
   } catch (err) {
-    if (err instanceof CliError || err instanceof BackupVerificationError || err instanceof BackupPackageError) {
+    if (
+      err instanceof CliError ||
+      err instanceof UpdateCheckError ||
+      err instanceof BackupVerificationError ||
+      err instanceof BackupPackageError
+    ) {
       io.stderr(err.message);
       return err instanceof CliError ? err.code : 1;
     }

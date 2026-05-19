@@ -66,4 +66,7 @@ export type TimelinePageDto = ApiDto<"TimelinePage">;
 export type SuggestionDto = ApiDto<"Suggestion">;
 export type SuggestionsResponseDto = ApiDto<"SuggestionsResponse">;
 export type HealthResponseDto = ApiDto<"HealthResponse">;
+export type UpdateReleaseDto = ApiDto<"UpdateRelease">;
+export type UpdateCheckResultDto = ApiDto<"UpdateCheckResult">;
+export type UpdateCheckResponseDto = ApiDto<"UpdateCheckResponse">;
 export type ExportBookmarkDto = ApiDto<"ExportBookmark">;

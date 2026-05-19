@@ -6,11 +6,15 @@ This document proposes a comprehensive update system for Little Imp that balance
 
 ## Current Implementation
 
-The packaged `littleimp` CLI includes a manual `littleimp update check` command.
-It reads GitHub Releases-compatible JSON from the default GitHub Releases API or
-from `LITTLEIMP_UPDATE_SOURCE` / `--source`, filters by `stable` or `beta`
-channel, ignores malformed release tags, and reports whether a newer semver
-release exists. It does not download, install, schedule, or roll back updates.
+The daemon includes a read-only `GET /updates/check` endpoint, and the packaged
+`littleimp` CLI includes a manual `littleimp update check` command. Both read
+GitHub Releases-compatible JSON from the default GitHub Releases API or an
+operator-provided source, filter by `stable` or `beta` channel, ignore malformed
+release tags, and report whether a newer semver release exists. The daemon API
+rejects private and loopback source hosts to preserve the local network safety
+posture; the user-invoked CLI can still target explicit local mirrors in
+controlled offline environments. They do not download, install, schedule, or
+roll back updates.
 
 ## Design Principles
 
@@ -66,14 +70,13 @@ release exists. It does not download, install, schedule, or roll back updates.
 
 1. **Update Service** (`daemon/src/update/service.ts`)
    - Checks for available updates
-   - Downloads update packages
-   - Manages update queue
-   - Handles rollback operations
+   - Shares release parsing and version comparison between the daemon API and CLI
+   - Future scope: download packages, manage update queue, and handle rollback operations
 
 2. **Update API** (`daemon/src/routes/updates.ts`)
-   - REST endpoints for update operations
+   - Read-only update availability check
    - Status reporting
-   - Download management
+   - Future scope: download management
 
 3. **Update UI** (Frontend components)
    - Update notifications
@@ -249,7 +252,7 @@ littleimpd update export --output ./little-imp-update.tar.gz
 ### Phase 1: Basic Update System (v1.1)
 
 - [x] Manual CLI update check
-- [ ] Daemon update check service
+- [x] Daemon update check service
 - [ ] Download and verification
 - [ ] Basic UI notifications
 - [ ] CLI commands
@@ -316,9 +319,9 @@ UPDATE_CERTIFICATE_PINNING=true
 
 ### From Current Version
 
-1. **Add update service** to existing daemon
-2. **Integrate with settings** system
-3. **Add UI components** incrementally
+1. **Integrate with settings** system
+2. **Add UI components** incrementally
+3. **Add download and verification** after release artifacts, checksums, and signatures are defined
 4. **Maintain backward compatibility**
 5. **Provide migration tools** for existing installations
 

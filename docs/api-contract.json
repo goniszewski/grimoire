@@ -2618,6 +2618,97 @@
       ],
       "additionalProperties": false
     },
+    "UpdateRelease": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Normalized semantic version"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Release tag from the update source"
+        },
+        "name": {
+          "type": "string",
+          "description": "Release display name"
+        },
+        "prerelease": {
+          "type": "boolean",
+          "description": "Whether the release is marked as a prerelease"
+        },
+        "published_at": {
+          "type": "string",
+          "description": "Release publication timestamp",
+          "format": "date-time"
+        },
+        "url": {
+          "type": "string",
+          "description": "Human-readable release URL",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "version",
+        "tag",
+        "name",
+        "prerelease",
+        "published_at",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "UpdateCheckResult": {
+      "type": "object",
+      "properties": {
+        "current_version": {
+          "type": "string",
+          "description": "Current packaged Little Imp version"
+        },
+        "update_available": {
+          "type": "boolean",
+          "description": "Whether a compatible release is newer than the current version"
+        },
+        "source": {
+          "type": "string",
+          "description": "Release source URL used for the check",
+          "format": "uri"
+        },
+        "channel": {
+          "type": "string",
+          "description": "Applied update channel",
+          "enum": [
+            "stable",
+            "beta"
+          ]
+        },
+        "latest": {
+          "ref": "UpdateRelease",
+          "nullable": true
+        }
+      },
+      "required": [
+        "current_version",
+        "update_available",
+        "source",
+        "channel",
+        "latest"
+      ],
+      "additionalProperties": false
+    },
+    "UpdateCheckResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "UpdateCheckResult"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
     "ExportBookmark": {
       "type": "object",
       "properties": {
@@ -2704,6 +2795,63 @@
           }
         }
       }
+    },
+    {
+      "method": "GET",
+      "path": "/updates/check",
+      "tag": "Updates",
+      "summary": "Check a GitHub Releases-compatible source for a newer Little Imp release.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string",
+              "description": "Update channel to check; defaults from the current package version",
+              "enum": [
+                "stable",
+                "beta"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "description": "Public GitHub Releases-compatible JSON endpoint; private and loopback hosts are rejected",
+              "format": "uri"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Update check result",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "UpdateCheckResponse"
+          }
+        },
+        "422": {
+          "description": "Invalid channel or source URL",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "502": {
+          "description": "Update source could not be read or returned an invalid response",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Check for updates",
+          "request": "curl 'http://127.0.0.1:3210/updates/check?channel=stable'"
+        }
+      ]
     },
     {
       "method": "POST",

@@ -787,6 +787,28 @@ const schemas = {
     },
     ["status", "version", "uptime", "queueSize"]
   ),
+  UpdateRelease: objectSchema(
+    {
+      version: stringSchema("Normalized semantic version"),
+      tag: stringSchema("Release tag from the update source"),
+      name: stringSchema("Release display name"),
+      prerelease: booleanSchema("Whether the release is marked as a prerelease"),
+      published_at: stringSchema("Release publication timestamp", { format: "date-time" }),
+      url: stringSchema("Human-readable release URL", { format: "uri" }),
+    },
+    ["version", "tag", "name", "prerelease", "published_at", "url"]
+  ),
+  UpdateCheckResult: objectSchema(
+    {
+      current_version: stringSchema("Current packaged Little Imp version"),
+      update_available: booleanSchema("Whether a compatible release is newer than the current version"),
+      source: stringSchema("Release source URL used for the check", { format: "uri" }),
+      channel: stringSchema("Applied update channel", { enum: ["stable", "beta"] }),
+      latest: nullable(ref("UpdateRelease")),
+    },
+    ["current_version", "update_available", "source", "channel", "latest"]
+  ),
+  UpdateCheckResponse: envelope(ref("UpdateCheckResult")),
   ExportBookmark: objectSchema(
     {
       id: stringSchema("Bookmark ID"),
@@ -816,6 +838,34 @@ export const apiContract = {
       tag: "System",
       summary: "Return daemon health, version, uptime, and queue size.",
       responses: { "200": jsonResponse("Daemon health", ref("HealthResponse")) },
+    },
+    {
+      method: "GET",
+      path: "/updates/check",
+      tag: "Updates",
+      summary: "Check a GitHub Releases-compatible source for a newer Little Imp release.",
+      request: {
+        query: objectSchema({
+          channel: stringSchema("Update channel to check; defaults from the current package version", {
+            enum: ["stable", "beta"],
+          }),
+          source: stringSchema(
+            "Public GitHub Releases-compatible JSON endpoint; private and loopback hosts are rejected",
+            { format: "uri" }
+          ),
+        }),
+      },
+      responses: {
+        "200": jsonResponse("Update check result", ref("UpdateCheckResponse")),
+        "422": problemResponse("Invalid channel or source URL"),
+        "502": problemResponse("Update source could not be read or returned an invalid response"),
+      },
+      examples: [
+        {
+          title: "Check for updates",
+          request: "curl 'http://127.0.0.1:3210/updates/check?channel=stable'",
+        },
+      ],
     },
     {
       method: "POST",
