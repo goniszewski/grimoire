@@ -1,7 +1,7 @@
 # Little Imp Backup Design
 
 Version: v0.3
-Status: Release baseline, packaged CLI, and encrypted CLI packages implemented; compression and in-app encryption UX remain future work
+Status: Release baseline, packaged CLI, and encrypted backup packages implemented; compression remains future work
 Author: Robert Goniszewski
 Date: May 2026
 
@@ -97,8 +97,8 @@ Example:
 Remote backup targets mirror the same relative layout under the configured
 remote prefix.
 
-The implemented encrypted CLI package wraps this same directory layout after
-the snapshot has been created and verified. Archive compression remains a
+The implemented encrypted package wraps this same directory layout after the
+snapshot has been created and verified. Archive compression remains a
 future-compatible packaging option; the current encrypted package stores an
 uncompressed portable snapshot archive inside AES-GCM encryption.
 
@@ -429,8 +429,9 @@ Initial encryption UX:
 
 - the CLI may protect a newly-created backup with `littleimp backup create --encrypt --output <file>`
 - Settings may protect an existing listed local backup by creating a sibling `.littleimp-backup.enc` package
-- the password is read from `LITTLEIMP_BACKUP_PASSWORD` or `--password-file`
-- the password must be re-entered for verify and restore
+- CLI package commands read the password from `LITTLEIMP_BACKUP_PASSWORD` or `--password-file`
+- Settings package creation requires a password for each request and does not store it
+- the password must be re-entered for CLI verify and restore
 - the CLI warns clearly that a forgotten password makes the encrypted backup unusable
 - package creation refuses to overwrite an existing output file
 
@@ -509,11 +510,14 @@ Restore confirmation must communicate:
 - add S3-compatible destination
 - add remote backup listing and restore download
 
-### Phase 4 — Partially Implemented
+### Phase 4 — Implemented Encrypted Package Baseline
 
 - implement password-based encrypted CLI package creation, verification, and restore
-- refine password-based encryption UX in Settings
-- consider provider-specific cloud APIs only if folder-based workflows are insufficient
+- expose Settings package creation for listed local backups
+
+Deferred:
+
+- provider-specific cloud APIs unless folder-based workflows are insufficient
 
 ---
 
@@ -524,7 +528,7 @@ Recommended internal modules:
 - `backup/manifest.ts`
 - `backup/checksums.ts`
 - `backup/snapshot.ts`
-- `backup/package.ts` for encrypted CLI packaging
+- `backup/package.ts` for encrypted backup packaging
 - `backup/encryption.ts` if encryption expands beyond the current package module
 - `backup/restore.ts`
 - `backup/destinations/local-folder.ts`

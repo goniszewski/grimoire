@@ -41,3 +41,6 @@ format and uses the same password-based package implementation as the packaged
   `npm test -- src/pages/Settings.test.tsx src/lib/api-contract.test.ts`.
 - Verified the final change set with `npx tsc --noEmit`, `git diff --check`,
   and `npm run check`.
+- Post-review documentation alignment corrected stale backup design and overview
+  wording so Settings encrypted package creation is no longer described as
+  future or CLI-only.

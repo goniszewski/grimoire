@@ -113,6 +113,7 @@ Data movement features:
 - In-app backup verification without restore.
 - Restore with checksum verification, rollback directory creation, and `restart_required: true`.
 - Custom local backup folders, scheduled snapshots, retention, and S3-compatible remote targets.
+- Settings encrypted package creation for listed local backup snapshots.
 - Packaged `littleimp` CLI backup commands, including encrypted package create, verify, and restore.
 
 For detailed backup behavior, see [backup-design.md](./backup-design.md).
@@ -440,7 +441,7 @@ erDiagram
 - Restore replaces the local database and requires daemon restart.
 - Settings backups omit secrets; restore preserves the current local API keys, app lock secret, and S3 credentials.
 - Backup scheduling reads live enable/disable settings, but the scheduler interval itself is initialized at daemon startup.
-- Encrypted backup packages are CLI-only in the current implementation; in-app encrypted package UX is future work.
+- Encrypted backup packages can be created from Settings for listed local backups; package verification and encrypted restore remain CLI workflows.
 
 ## Primary Files
 
