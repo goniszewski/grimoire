@@ -12,6 +12,7 @@ vi.mock("sonner", () => ({
 vi.mock("@/lib/api", () => ({
   DAEMON_URL: "http://127.0.0.1:3210",
   ApiError: class ApiError extends Error {},
+  checkForUpdates: vi.fn(),
   getSettings: vi.fn(),
   updateSettings: vi.fn(),
 }));
@@ -34,6 +35,7 @@ import * as api from "@/lib/api";
 import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
+const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
 const mockedUseCreateBackup = backupHooks.useCreateBackup as unknown as ReturnType<typeof vi.fn>;
 const mockedUseRestoreBackup = backupHooks.useRestoreBackup as unknown as ReturnType<typeof vi.fn>;
@@ -141,6 +143,15 @@ function makeWrapper() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedGetSettings.mockResolvedValue(settingsResponse());
+  mockedCheckForUpdates.mockResolvedValue({
+    data: {
+      current_version: "0.1.0-beta",
+      update_available: false,
+      source: "https://api.github.com/repos/goniszewski/little-imp/releases",
+      channel: "beta",
+      latest: null,
+    },
+  });
   mockedUseBackupList.mockReturnValue({
     data: [
       {
@@ -169,6 +180,55 @@ beforeEach(() => {
   });
   mockedUseUpdateBackupDestination.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseVerifyBackup.mockReturnValue({ mutate: vi.fn(), isPending: false });
+});
+
+describe("Settings update checks", () => {
+  it("renders when the daemon returns an older settings shape", async () => {
+    const legacySettings = settingsResponse();
+    delete (legacySettings.data.ai as Partial<typeof legacySettings.data.ai>).anthropic;
+    delete (legacySettings.data.ai as Partial<typeof legacySettings.data.ai>).openrouter;
+    delete (legacySettings.data.ai as Partial<typeof legacySettings.data.ai>).openai_compatible;
+    delete (legacySettings.data.ai as Partial<typeof legacySettings.data.ai>).deepseek;
+    delete (legacySettings.data.ai.embeddings as Partial<typeof legacySettings.data.ai.embeddings>).openai_compatible;
+    mockedGetSettings.mockResolvedValue(legacySettings);
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByText("Updates")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Check for updates" })).toBeInTheDocument();
+  });
+
+  it("checks for updates and shows the available release", async () => {
+    mockedCheckForUpdates.mockResolvedValue({
+      data: {
+        current_version: "0.1.0-beta",
+        update_available: true,
+        source: "https://api.github.com/repos/goniszewski/little-imp/releases",
+        channel: "beta",
+        latest: {
+          version: "0.2.0-beta.1",
+          tag: "v0.2.0-beta.1",
+          name: "Little Imp 0.2.0 beta 1",
+          prerelease: true,
+          published_at: "2026-05-19T10:00:00.000Z",
+          url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1",
+        },
+      },
+    });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Check for updates" }));
+
+    await waitFor(() => {
+      expect(mockedCheckForUpdates).toHaveBeenCalledWith();
+    });
+    expect(await screen.findByText(/v0\.2\.0-beta\.1 is available/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View release" })).toHaveAttribute(
+      "href",
+      "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1"
+    );
+  });
 });
 
 describe("Settings backup verification", () => {

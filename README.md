@@ -192,10 +192,10 @@ exist; this avoids overwriting an earlier backup by accident.
 
 ### Update checks
 
-The daemon and packaged `littleimp` CLI can manually check a GitHub
-Releases-compatible source for newer releases with semver-style tags such as
-`v0.2.0` or `v0.2.0-beta.1`. This only reports availability; it does not
-download or install updates.
+The Settings page, daemon, and packaged `littleimp` CLI can manually check a
+GitHub Releases-compatible source for newer releases with semver-style tags
+such as `v0.2.0` or `v0.2.0-beta.1`. This only reports availability; it does
+not download or install updates.
 
 ```sh
 # Check the default release source

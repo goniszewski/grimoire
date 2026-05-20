@@ -43,6 +43,8 @@ import type {
   SuggestionsResponseDto,
   TagListResponseDto,
   TimelinePageDto,
+  UpdateCheckResponseDto,
+  UpdateCheckResultDto,
 } from "../../daemon/src/api/types";
 
 export const DAEMON_URL = "http://127.0.0.1:3210";
@@ -129,6 +131,8 @@ export interface ApiRuntimeCapabilities {
     organization_agent: SettingsDto["runtime"]["capabilities"]["organization_agent"];
   };
 }
+
+export type ApiUpdateCheckResult = UpdateCheckResultDto;
 
 export interface ApiS3Config {
   endpoint: SettingsDto["backup"]["s3"]["endpoint"];
@@ -505,6 +509,12 @@ export async function updateSettings(patch: ApiSettingsPatch): Promise<{ data: A
     method: "PUT",
     body: JSON.stringify(patch),
   });
+}
+
+// ─── Updates ──────────────────────────────────────────────────────────────────
+
+export async function checkForUpdates(): Promise<UpdateCheckResponseDto> {
+  return apiFetch<UpdateCheckResponseDto>("/updates/check");
 }
 
 // ─── Backup & Restore ─────────────────────────────────────────────────────────

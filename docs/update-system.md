@@ -6,9 +6,10 @@ This document proposes a comprehensive update system for Little Imp that balance
 
 ## Current Implementation
 
+The Settings page can run a manual update availability check through the daemon.
 The daemon includes a read-only `GET /updates/check` endpoint, and the packaged
-`littleimp` CLI includes a manual `littleimp update check` command. Both read
-GitHub Releases-compatible JSON from the default GitHub Releases API or an
+`littleimp` CLI includes a manual `littleimp update check` command. The checks
+read GitHub Releases-compatible JSON from the default GitHub Releases API or an
 operator-provided source, filter by `stable` or `beta` channel, ignore malformed
 release tags, and report whether a newer semver release exists. The daemon API
 rejects private and loopback source hosts to preserve the local network safety
@@ -253,6 +254,7 @@ littleimpd update export --output ./little-imp-update.tar.gz
 
 - [x] Manual CLI update check
 - [x] Daemon update check service
+- [x] Manual in-app update check
 - [ ] Download and verification
 - [ ] Basic UI notifications
 - [ ] CLI commands

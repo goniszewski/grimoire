@@ -69,14 +69,15 @@ tasks/
 | TASK-053 | [Native Installer Frontend Bundle Install](done/TASK-053-native-installer-frontend-bundle.md) | next release distribution polish | medium | done |
 | TASK-054 | [CLI Update Check Foundation](done/TASK-054-cli-update-check.md) | next release distribution polish | medium | done |
 | TASK-055 | [Daemon Update Check Service](done/TASK-055-daemon-update-check-service.md) | next release distribution polish | medium | done |
+| TASK-056 | [In-App Update Check](done/TASK-056-in-app-update-check.md) | next release distribution polish | medium | done |
 
 ## Current Status
 
 Core product tasks, v0-beta hardening tasks, release validation work, the first
 three next-release operations tasks, TASK-052 multi-provider AI support,
 TASK-053 native installer frontend bundle install, TASK-054 CLI update check
-foundation, and TASK-055 daemon update check service available from this macOS
-workspace are complete.
+foundation, TASK-055 daemon update check service, and TASK-056 in-app update
+check available from this macOS workspace are complete.
 
 Completed release validation evidence:
 

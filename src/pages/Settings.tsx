@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSettings, updateSettings, DAEMON_URL, ApiError } from "@/lib/api";
+import { checkForUpdates, getSettings, updateSettings, DAEMON_URL, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,8 @@ import {
   Cloud,
   FolderOpen,
   ShieldCheck,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -58,7 +60,9 @@ import type {
   ApiEmbeddingProvider,
   ApiRestoreResult,
   ApiS3Config,
+  ApiSettings,
   ApiSettingsPatch,
+  ApiUpdateCheckResult,
 } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 
@@ -141,30 +145,8 @@ const apiKeyProviderMeta: Record<ApiKeyProvider, {
   },
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function restoreSuccessDescription(result: ApiRestoreResult): string {
-  return result.rollback_path
-    ? `Restart the daemon before using Little Imp again. Rollback: ${result.rollback_path}`
-    : "Restart the daemon before using Little Imp again.";
-}
-
-const Settings = () => {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: settingsKeys.all,
-    queryFn: getSettings,
-  });
-
-  const [ai, setAi] = useState<AiFormState>({
+function defaultAiFormState(): AiFormState {
+  return {
     provider: "none",
     openai: { api_key: "", model: "gpt-4o-mini" },
     ollama: { base_url: "http://localhost:11434", model: "llama3" },
@@ -188,9 +170,11 @@ const Settings = () => {
       base_url: "https://api.deepseek.com",
       model: "deepseek-v4-flash",
     },
-  });
+  };
+}
 
-  const [embeddings, setEmbeddings] = useState<EmbeddingsFormState>({
+function defaultEmbeddingsFormState(): EmbeddingsFormState {
+  return {
     provider: "openai",
     model: "text-embedding-3-small",
     openai_compatible: {
@@ -198,11 +182,88 @@ const Settings = () => {
       base_url: "http://localhost:8000/v1",
       model: "custom-embedding-model",
     },
+  };
+}
+
+function mergeApiKeyProvider(
+  defaults: ApiKeyProviderFormState,
+  settings: Partial<ApiKeyProviderFormState> | undefined
+): ApiKeyProviderFormState {
+  return { ...defaults, ...settings };
+}
+
+function aiFormStateFromSettings(settings: Partial<ApiSettings["ai"]> | undefined): AiFormState {
+  const defaults = defaultAiFormState();
+  return {
+    ...defaults,
+    provider: settings?.provider ?? defaults.provider,
+    openai: { ...defaults.openai, ...(settings?.openai as Partial<AiFormState["openai"]> | undefined) },
+    ollama: { ...defaults.ollama, ...(settings?.ollama as Partial<AiFormState["ollama"]> | undefined) },
+    anthropic: mergeApiKeyProvider(defaults.anthropic, settings?.anthropic),
+    openrouter: mergeApiKeyProvider(defaults.openrouter, settings?.openrouter),
+    openai_compatible: mergeApiKeyProvider(defaults.openai_compatible, settings?.openai_compatible),
+    deepseek: mergeApiKeyProvider(defaults.deepseek, settings?.deepseek),
+  };
+}
+
+function embeddingsFormStateFromSettings(
+  settings: Partial<ApiSettings["ai"]["embeddings"]> | undefined
+): EmbeddingsFormState {
+  const defaults = defaultEmbeddingsFormState();
+  return {
+    ...defaults,
+    provider: settings?.provider ?? defaults.provider,
+    model: settings?.model ?? defaults.model,
+    openai_compatible: mergeApiKeyProvider(defaults.openai_compatible, settings?.openai_compatible),
+  };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function restoreSuccessDescription(result: ApiRestoreResult): string {
+  return result.rollback_path
+    ? `Restart the daemon before using Little Imp again. Rollback: ${result.rollback_path}`
+    : "Restart the daemon before using Little Imp again.";
+}
+
+function updateCheckMessage(result: ApiUpdateCheckResult): string {
+  if (result.update_available) {
+    return `${result.latest?.tag ?? result.latest?.version ?? "A newer release"} is available`;
+  }
+  return `Little Imp ${result.current_version} is up to date`;
+}
+
+const Settings = () => {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: settingsKeys.all,
+    queryFn: getSettings,
   });
+
+  const [ai, setAi] = useState<AiFormState>(() => defaultAiFormState());
+
+  const [embeddings, setEmbeddings] = useState<EmbeddingsFormState>(() => defaultEmbeddingsFormState());
 
   const [dirty, setDirty] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
   const [testing, setTesting] = useState(false);
+
+  // ─── Updates ────────────────────────────────────────────────────────────────
+  const updateCheckMutation = useMutation({
+    mutationFn: () => checkForUpdates(),
+    onError: (err: Error) => {
+      toast.error("Update check failed", { description: err.message });
+    },
+  });
+  const updateCheckResult = updateCheckMutation.data?.data ?? null;
 
   // ─── Backup & Restore ────────────────────────────────────────────────────────
   const backupList = useBackupList();
@@ -265,40 +326,9 @@ const Settings = () => {
   useEffect(() => {
     if (!data?.data) return;
     const s = data.data;
-    setAi({
-      provider: s.ai.provider,
-      openai: { api_key: s.ai.openai.api_key, model: s.ai.openai.model },
-      ollama: { base_url: s.ai.ollama.base_url, model: s.ai.ollama.model },
-      anthropic: {
-        api_key: s.ai.anthropic.api_key,
-        base_url: s.ai.anthropic.base_url,
-        model: s.ai.anthropic.model,
-      },
-      openrouter: {
-        api_key: s.ai.openrouter.api_key,
-        base_url: s.ai.openrouter.base_url,
-        model: s.ai.openrouter.model,
-      },
-      openai_compatible: {
-        api_key: s.ai.openai_compatible.api_key,
-        base_url: s.ai.openai_compatible.base_url,
-        model: s.ai.openai_compatible.model,
-      },
-      deepseek: {
-        api_key: s.ai.deepseek.api_key,
-        base_url: s.ai.deepseek.base_url,
-        model: s.ai.deepseek.model,
-      },
-    });
-    setEmbeddings({
-      provider: s.ai.embeddings.provider,
-      model: s.ai.embeddings.model,
-      openai_compatible: {
-        api_key: s.ai.embeddings.openai_compatible.api_key,
-        base_url: s.ai.embeddings.openai_compatible.base_url,
-        model: s.ai.embeddings.openai_compatible.model,
-      },
-    });
+    const aiSettings = s.ai as Partial<ApiSettings["ai"]> | undefined;
+    setAi(aiFormStateFromSettings(aiSettings));
+    setEmbeddings(embeddingsFormStateFromSettings(aiSettings?.embeddings));
     setDirty(false);
 
     // Populate S3 form from settings (credentials will be redacted "***")
@@ -713,6 +743,73 @@ const Settings = () => {
                   </div>
                 )}
               </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Updates */}
+            <section className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold">Updates</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Check the configured release channel for a newer Little Imp version.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateCheckMutation.mutate()}
+                  disabled={updateCheckMutation.isPending}
+                  className="shrink-0"
+                >
+                  {updateCheckMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Check for updates
+                </Button>
+              </div>
+
+              {updateCheckMutation.isError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {updateCheckMutation.error instanceof Error
+                      ? updateCheckMutation.error.message
+                      : "Could not check for updates"}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {updateCheckResult && (
+                <div className="rounded border px-3 py-2 text-xs bg-muted/30 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    {updateCheckResult.update_available ? (
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    )}
+                    <span className="font-medium">{updateCheckMessage(updateCheckResult)}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+                    <span>Channel: {updateCheckResult.channel}</span>
+                    <span>Current: {updateCheckResult.current_version}</span>
+                    {updateCheckResult.latest && (
+                      <a
+                        href={updateCheckResult.latest.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        View release
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
 
             <div className="border-t" />

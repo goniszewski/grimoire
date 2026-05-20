@@ -124,7 +124,7 @@ Supported run modes:
 - Native daemon install through `daemon/install.sh` on macOS LaunchAgent or Linux systemd user units.
 - Docker deployment serving both frontend and daemon API from a loopback-bound port.
 - Development with Vite frontend and a Bun daemon.
-- Manual update availability checks through `littleimp update check` and `GET /updates/check`; installation and rollback remain future update-system work.
+- Manual update availability checks through Settings, `littleimp update check`, and `GET /updates/check`; installation and rollback remain future update-system work.
 
 Integration points:
 

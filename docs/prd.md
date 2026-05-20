@@ -560,7 +560,7 @@ Focuses on release operations:
 - Homebrew or signed release archive
 - one-command installer entry point
 - in-app encrypted backup package UX
-- update flow beyond the current manual CLI availability check
+- update flow beyond the current read-only availability checks
 
 ### Future
 
