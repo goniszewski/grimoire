@@ -777,7 +777,7 @@ Responses:
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json | `BackupVerificationResult` | Backup verification result |
-| `400` | application/json | `LegacyError` | Malformed JSON |
+| `400` | application/json | `LegacyError` | Malformed JSON or non-object request body |
 | `409` | application/json | `LegacyError` | Backup or restore already in progress |
 | `422` | application/json | `LegacyError` | Invalid verify request or backup validation failed |
 | `500` | application/json | `LegacyError` | Backup verification failed |
@@ -790,6 +790,40 @@ Examples:
 curl -X POST http://127.0.0.1:3210/backup/verify \
   -H "Content-Type: application/json" \
   -d '{"name":"2026-05-13T09-30-00-000Z"}'
+```
+
+#### POST /backup/package
+
+Create an encrypted package file from a local backup snapshot.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `BackupPackageRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Local backup directory name |
+| `password` | string | yes | Password used to encrypt the package |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `201` | application/json | `EncryptedBackupPackageResult` | Encrypted backup package created |
+| `400` | application/json | `LegacyError` | Malformed JSON or non-object request body |
+| `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `422` | application/json | `LegacyError` | Invalid package request or backup validation failed |
+| `500` | application/json | `LegacyError` | Encrypted backup package creation failed |
+
+Examples:
+
+**Create an encrypted package**
+
+```bash
+curl -X POST http://127.0.0.1:3210/backup/package \
+  -H "Content-Type: application/json" \
+  -d '{"name":"2026-05-13T09-30-00-000Z","password":"correct horse battery staple"}'
 ```
 
 #### POST /restore
@@ -1776,6 +1810,13 @@ Response data
 |---|---|---:|---|
 | `name` | string | yes | Local backup directory name |
 
+### BackupPackageRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Local backup directory name |
+| `password` | string | yes | Password used to encrypt the package |
+
 ### BackupVerificationResult
 
 | Field | Type | Required | Description |
@@ -1787,6 +1828,16 @@ Response data
 | `verified_files` | array<string> | yes | Verified files |
 | `bookmark_count` | integer | yes | Bookmarks included |
 | `created_at` | string | yes | Backup creation timestamp |
+
+### EncryptedBackupPackageResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Encrypted package file path |
+| `source_path` | string | yes | Source local backup directory |
+| `encrypted` | boolean | yes | Whether the package is encrypted |
+| `size_bytes` | integer | yes | Encrypted package size |
+| `created_at` | string | yes | Package creation timestamp |
 
 ### RestoreRequest
 

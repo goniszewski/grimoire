@@ -8,6 +8,7 @@ import type {
   BackupDestinationResponseDto,
   BackupEntryDto,
   BackupListResponseDto,
+  BackupPackageRequestDto,
   BackupResultDto,
   BackupScheduleDto,
   BackupSchedulePatchDto,
@@ -30,6 +31,7 @@ import type {
   ConnectivityTestResponseDto,
   DomainDto,
   DomainListResponseDto,
+  EncryptedBackupPackageResultDto,
   ImportProgressEventDto,
   ImportSummaryResponseDto,
   PaginationDto,
@@ -554,6 +556,14 @@ export interface ApiBackupVerificationResult {
   created_at: BackupVerificationResultDto["created_at"];
 }
 
+export interface ApiEncryptedBackupPackageResult {
+  path: EncryptedBackupPackageResultDto["path"];
+  source_path: EncryptedBackupPackageResultDto["source_path"];
+  encrypted: EncryptedBackupPackageResultDto["encrypted"];
+  size_bytes: EncryptedBackupPackageResultDto["size_bytes"];
+  created_at: EncryptedBackupPackageResultDto["created_at"];
+}
+
 export async function createBackup(): Promise<BackupResultDto> {
   return apiFetch<BackupResultDto>("/backup", { method: "POST" });
 }
@@ -568,6 +578,16 @@ export async function verifyBackup(name: string): Promise<BackupVerificationResu
   return apiFetch<BackupVerificationResultDto>("/backup/verify", {
     method: "POST",
     body: JSON.stringify({ name } satisfies BackupVerifyRequestDto),
+  });
+}
+
+/** Create an encrypted package from an existing local backup by directory name. */
+export async function createEncryptedBackupPackage(
+  request: BackupPackageRequestDto
+): Promise<EncryptedBackupPackageResultDto> {
+  return apiFetch<EncryptedBackupPackageResultDto>("/backup/package", {
+    method: "POST",
+    body: JSON.stringify(request),
   });
 }
 

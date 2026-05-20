@@ -2296,6 +2296,24 @@
       ],
       "additionalProperties": false
     },
+    "BackupPackageRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Local backup directory name"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password used to encrypt the package"
+        }
+      },
+      "required": [
+        "name",
+        "password"
+      ],
+      "additionalProperties": false
+    },
     "BackupVerificationResult": {
       "type": "object",
       "properties": {
@@ -2341,6 +2359,41 @@
         "checksum_verified",
         "verified_files",
         "bookmark_count",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "EncryptedBackupPackageResult": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Encrypted package file path"
+        },
+        "source_path": {
+          "type": "string",
+          "description": "Source local backup directory"
+        },
+        "encrypted": {
+          "type": "boolean",
+          "description": "Whether the package is encrypted"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "description": "Encrypted package size",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Package creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "path",
+        "source_path",
+        "encrypted",
+        "size_bytes",
         "created_at"
       ],
       "additionalProperties": false
@@ -4153,7 +4206,7 @@
           }
         },
         "400": {
-          "description": "Malformed JSON",
+          "description": "Malformed JSON or non-object request body",
           "contentType": "application/json",
           "schema": {
             "ref": "LegacyError"
@@ -4185,6 +4238,63 @@
         {
           "title": "Verify a local backup",
           "request": "curl -X POST http://127.0.0.1:3210/backup/verify \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"2026-05-13T09-30-00-000Z\"}'"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/backup/package",
+      "tag": "Backup",
+      "summary": "Create an encrypted package file from a local backup snapshot.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BackupPackageRequest"
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Encrypted backup package created",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "EncryptedBackupPackageResult"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON or non-object request body",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "409": {
+          "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid package request or backup validation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Encrypted backup package creation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Create an encrypted package",
+          "request": "curl -X POST http://127.0.0.1:3210/backup/package \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"2026-05-13T09-30-00-000Z\",\"password\":\"correct horse battery staple\"}'"
         }
       ]
     },

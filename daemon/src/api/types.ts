@@ -56,6 +56,8 @@ export type BackupEntryDto = ApiDto<"BackupEntry">;
 export type BackupListResponseDto = ApiDto<"BackupListResponse">;
 export type BackupVerifyRequestDto = ApiDto<"BackupVerifyRequest">;
 export type BackupVerificationResultDto = ApiDto<"BackupVerificationResult">;
+export type BackupPackageRequestDto = ApiDto<"BackupPackageRequest">;
+export type EncryptedBackupPackageResultDto = ApiDto<"EncryptedBackupPackageResult">;
 export type RestoreRequestDto = ApiDto<"RestoreRequest">;
 export type RestoreResultDto = ApiDto<"RestoreResult">;
 

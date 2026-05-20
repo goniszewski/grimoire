@@ -22,6 +22,12 @@ import { log } from "../logger.js";
 import { settingsManager, type Settings } from "../settings.js";
 import { nextCronRunAt } from "../lib/cron.js";
 import {
+  BackupPackageError,
+  createEncryptedBackupPackage,
+  type EncryptedBackupPackageResult,
+} from "../backup/package.js";
+import { BackupVerificationError } from "../backup/verification.js";
+import {
   s3ConfigPresent,
   uploadToS3,
   downloadFromS3,
@@ -480,6 +486,11 @@ type BackupCreateRequest = {
   skip_remote?: boolean;
 };
 
+type BackupPackageRequest = {
+  name: string;
+  password: string;
+};
+
 /** Lists all valid backups in a directory, sorted newest first. */
 function listBackups(resolvedBackupsDir: string): BackupEntry[] {
   let entries: string[];
@@ -633,6 +644,18 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     }
 
     return backupPath;
+  }
+
+  function encryptedPackagePath(name: string): string {
+    return resolve(join(getBackupsDir(), `${name}.littleimp-backup.enc`));
+  }
+
+  function parseBackupPackageRequest(body: Record<string, unknown>): BackupPackageRequest {
+    const name = parseLocalBackupName(body);
+    if (typeof body.password !== "string") {
+      throw statusError("Field 'password' (string) is required");
+    }
+    return { name, password: body.password };
   }
 
   async function verifyLocalBackupDirectory(backupPath: string, name: string): Promise<BackupVerificationResult> {
@@ -971,6 +994,9 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     } catch {
       return c.json({ error: "Request body must be valid JSON" }, 400);
     }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return c.json({ error: "Request body must be an object" }, 400);
+    }
 
     operationInProgress = true;
     try {
@@ -983,6 +1009,47 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       if (status === 422) return c.json({ error: (err as Error).message }, 422);
       log.error("Backup verification failed", { error: String(err) });
       return c.json({ error: "Backup verification failed" }, 500);
+    } finally {
+      operationInProgress = false;
+    }
+  });
+
+  /**
+   * POST /backup/package
+   * Creates an encrypted package file from an existing local backup snapshot.
+   */
+  router.post("/backup/package", async (c) => {
+    if (operationInProgress) {
+      return c.json({ error: "A backup or restore operation is already in progress" }, 409);
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await c.req.json() as Record<string, unknown>;
+    } catch {
+      return c.json({ error: "Request body must be valid JSON" }, 400);
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return c.json({ error: "Request body must be an object" }, 400);
+    }
+
+    operationInProgress = true;
+    try {
+      const { name, password } = parseBackupPackageRequest(body);
+      const backupPath = resolveLocalBackupPath(name);
+      const result: EncryptedBackupPackageResult = await createEncryptedBackupPackage({
+        sourceDir: backupPath,
+        outputPath: encryptedPackagePath(name),
+        password,
+      });
+      return c.json(result, 201);
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 422 || err instanceof BackupPackageError || err instanceof BackupVerificationError) {
+        return c.json({ error: (err as Error).message }, 422);
+      }
+      log.error("Encrypted backup package creation failed", { error: String(err) });
+      return c.json({ error: "Encrypted backup package creation failed" }, 500);
     } finally {
       operationInProgress = false;
     }

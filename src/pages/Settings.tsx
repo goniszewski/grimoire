@@ -26,6 +26,7 @@ import {
   Cloud,
   FolderOpen,
   ShieldCheck,
+  LockKeyhole,
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
@@ -53,11 +54,13 @@ import {
   useUpdateBackupSchedule,
   useBackupDestination,
   useUpdateBackupDestination,
+  useCreateEncryptedBackupPackage,
 } from "@/hooks/use-backup";
 import type {
   ApiAiProvider,
   ApiBackupEntry,
   ApiEmbeddingProvider,
+  ApiEncryptedBackupPackageResult,
   ApiRestoreResult,
   ApiS3Config,
   ApiSettings,
@@ -239,6 +242,79 @@ function updateCheckMessage(result: ApiUpdateCheckResult): string {
   return `Little Imp ${result.current_version} is up to date`;
 }
 
+function encryptedPackageDescription(result: ApiEncryptedBackupPackageResult): string {
+  return `${formatBytes(result.size_bytes)} · ${result.path}`;
+}
+
+interface EncryptedPackageActionProps {
+  entry: ApiBackupEntry;
+  disabled: boolean;
+  active: boolean;
+  onCreate: (name: string, password: string) => void;
+}
+
+function EncryptedPackageAction({
+  entry,
+  disabled,
+  active,
+  onCreate,
+}: EncryptedPackageActionProps) {
+  const [password, setPassword] = useState("");
+  const passwordInputId = `encrypted-package-password-${entry.name}`;
+
+  return (
+    <AlertDialog onOpenChange={(open) => {
+      if (!open) setPassword("");
+    }}>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 ml-2"
+          title="Create encrypted package"
+          disabled={disabled}
+        >
+          {active ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <LockKeyhole className="h-3 w-3" />
+          )}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Create encrypted package?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This creates an encrypted package file beside{" "}
+            <strong className="font-mono break-all">{entry.name}</strong>. Keep the password safe:
+            it is required to verify or restore the package.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor={passwordInputId} className="text-xs">Package password</Label>
+          <Input
+            id={passwordInputId}
+            type="password"
+            autoComplete="new-password"
+            className="h-8 text-sm"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={!password || disabled}
+            onClick={() => onCreate(entry.name, password)}
+          >
+            Create package
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 const Settings = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -271,12 +347,15 @@ const Settings = () => {
   const restoreMutation = useRestoreBackup();
   const restoreRemoteMutation = useRestoreRemoteBackup();
   const verifyBackupMutation = useVerifyBackup();
+  const createEncryptedPackageMutation = useCreateEncryptedBackupPackage();
   const [verifyingBackupName, setVerifyingBackupName] = useState<string | null>(null);
+  const [encryptingBackupName, setEncryptingBackupName] = useState<string | null>(null);
   const backupOperationPending =
     createBackupMutation.isPending ||
     restoreMutation.isPending ||
     restoreRemoteMutation.isPending ||
-    verifyBackupMutation.isPending;
+    verifyBackupMutation.isPending ||
+    createEncryptedPackageMutation.isPending;
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
 
@@ -470,6 +549,23 @@ const Settings = () => {
       },
       onSettled: () => {
         setVerifyingBackupName(null);
+      },
+    });
+  }
+
+  function handleCreateEncryptedPackage(name: string, password: string) {
+    setEncryptingBackupName(name);
+    createEncryptedPackageMutation.mutate({ name, password }, {
+      onSuccess: (result) => {
+        toast.success("Encrypted package created", {
+          description: encryptedPackageDescription(result),
+        });
+      },
+      onError: (err: Error) => {
+        toast.error("Encrypted package failed", { description: err.message });
+      },
+      onSettled: () => {
+        setEncryptingBackupName(null);
       },
     });
   }
@@ -882,6 +978,12 @@ const Settings = () => {
                               <ShieldCheck className="h-3 w-3" />
                             )}
                           </Button>
+                          <EncryptedPackageAction
+                            entry={entry}
+                            disabled={backupOperationPending}
+                            active={encryptingBackupName === entry.name}
+                            onCreate={handleCreateEncryptedPackage}
+                          />
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button

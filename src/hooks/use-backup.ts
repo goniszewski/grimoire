@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  createEncryptedBackupPackage,
   createBackup,
   listBackups,
   restoreBackup,
@@ -78,6 +79,13 @@ export function useRestoreBackup() {
 export function useVerifyBackup() {
   return useMutation({
     mutationFn: (name: string) => verifyBackup(name),
+  });
+}
+
+export function useCreateEncryptedBackupPackage() {
+  return useMutation({
+    mutationFn: (request: { name: string; password: string }) =>
+      createEncryptedBackupPackage(request),
   });
 }
 

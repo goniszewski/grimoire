@@ -264,7 +264,7 @@ or enter maintenance mode before invoking replacement.
 Release limitations:
 
 - restore is safe but not seamless; callers must restart the daemon after a successful restore
-- password-based backup encryption is available through the packaged CLI, not yet through the in-app Settings UI
+- password-based backup encryption is available through the packaged CLI and the in-app Settings UI
 - backup is snapshot export, not live multi-device sync
 
 ### 8.2 Compatibility rules
@@ -428,6 +428,7 @@ Recommended encrypted artifact naming:
 Initial encryption UX:
 
 - the CLI may protect a newly-created backup with `littleimp backup create --encrypt --output <file>`
+- Settings may protect an existing listed local backup by creating a sibling `.littleimp-backup.enc` package
 - the password is read from `LITTLEIMP_BACKUP_PASSWORD` or `--password-file`
 - the password must be re-entered for verify and restore
 - the CLI warns clearly that a forgotten password makes the encrypted backup unusable
@@ -461,6 +462,7 @@ Implemented UI/API surface:
 
 - backup section in Settings
 - "Create backup now"
+- "Create encrypted package" for listed local backups
 - destination configuration
 - backup history list
 - "Restore from backup" entry point with warning dialog
@@ -532,6 +534,8 @@ Implemented daemon API surface:
 
 - `POST /backup`
 - `GET /backup/list`
+- `POST /backup/verify`
+- `POST /backup/package`
 - `POST /restore`
 - `GET /backup/destination`
 - `PUT /backup/destination`
@@ -564,7 +568,7 @@ Resolved implementation decisions:
 
 1. `settings.json` is the correct durable settings source and must be included in every backup.
 2. Backup and restore are available through the daemon API, Settings UI, and packaged CLI. CLI create/list/restore wrap the daemon API, CLI verify checks local snapshot directories, and Settings can verify listed local backups without restoring them.
-3. Optional password-based encryption is implemented as a CLI package layer that preserves the same internal manifest and snapshot layout.
+3. Optional password-based encryption is implemented as a package layer that preserves the same internal manifest and snapshot layout. Settings can create encrypted packages for listed local backups; CLI commands can create, verify, and restore encrypted packages.
 4. A short maintenance window during backup or restore is acceptable.
 
 Operational note:

@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Settings page update check backed by the daemon `/updates/check` endpoint.
+- Settings backup rows can create encrypted `.littleimp-backup.enc` packages through the daemon `/backup/package` endpoint.
 
 ## [0.1.0-beta] - 2026-05-14
 

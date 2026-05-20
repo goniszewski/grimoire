@@ -29,6 +29,7 @@ vi.mock("@/hooks/use-backup", () => ({
   useBackupDestination: vi.fn(),
   useUpdateBackupDestination: vi.fn(),
   useVerifyBackup: vi.fn(),
+  useCreateEncryptedBackupPackage: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -47,6 +48,7 @@ const mockedUseUpdateBackupSchedule = backupHooks.useUpdateBackupSchedule as unk
 const mockedUseBackupDestination = backupHooks.useBackupDestination as unknown as ReturnType<typeof vi.fn>;
 const mockedUseUpdateBackupDestination = backupHooks.useUpdateBackupDestination as unknown as ReturnType<typeof vi.fn>;
 const mockedUseVerifyBackup = backupHooks.useVerifyBackup as unknown as ReturnType<typeof vi.fn>;
+const mockedUseCreateEncryptedBackupPackage = backupHooks.useCreateEncryptedBackupPackage as unknown as ReturnType<typeof vi.fn>;
 
 function settingsResponse(aiPatch: Record<string, unknown> = {}) {
   const ai = {
@@ -180,6 +182,7 @@ beforeEach(() => {
   });
   mockedUseUpdateBackupDestination.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseVerifyBackup.mockReturnValue({ mutate: vi.fn(), isPending: false });
+  mockedUseCreateEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
 });
 
 describe("Settings update checks", () => {
@@ -244,6 +247,33 @@ describe("Settings backup verification", () => {
     await waitFor(() => {
       expect(verifyMutate).toHaveBeenCalledWith(
         "2026-05-18T10-00-00-000Z",
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+        })
+      );
+    });
+  });
+
+  it("offers an encrypted package action for local backup rows", async () => {
+    const packageMutate = vi.fn();
+    mockedUseCreateEncryptedBackupPackage.mockReturnValue({ mutate: packageMutate, isPending: false });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await screen.findByText("Recent backups");
+    fireEvent.click(screen.getByTitle("Create encrypted package"));
+    fireEvent.change(screen.getByLabelText("Package password"), {
+      target: { value: "correct horse battery staple" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create package" }));
+
+    await waitFor(() => {
+      expect(packageMutate).toHaveBeenCalledWith(
+        {
+          name: "2026-05-18T10-00-00-000Z",
+          password: "correct horse battery staple",
+        },
         expect.objectContaining({
           onSuccess: expect.any(Function),
           onError: expect.any(Function),

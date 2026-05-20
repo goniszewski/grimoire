@@ -699,6 +699,13 @@ const schemas = {
     },
     ["name"]
   ),
+  BackupPackageRequest: objectSchema(
+    {
+      name: stringSchema("Local backup directory name"),
+      password: stringSchema("Password used to encrypt the package"),
+    },
+    ["name", "password"]
+  ),
   BackupVerificationResult: objectSchema(
     {
       ok: booleanSchema("Whether verification succeeded"),
@@ -710,6 +717,16 @@ const schemas = {
       created_at: stringSchema("Backup creation timestamp", { format: "date-time" }),
     },
     ["ok", "name", "path", "checksum_verified", "verified_files", "bookmark_count", "created_at"]
+  ),
+  EncryptedBackupPackageResult: objectSchema(
+    {
+      path: stringSchema("Encrypted package file path"),
+      source_path: stringSchema("Source local backup directory"),
+      encrypted: booleanSchema("Whether the package is encrypted"),
+      size_bytes: integerSchema("Encrypted package size", { minimum: 0 }),
+      created_at: stringSchema("Package creation timestamp", { format: "date-time" }),
+    },
+    ["path", "source_path", "encrypted", "size_bytes", "created_at"]
   ),
   RestoreRequest: objectSchema({
     name: stringSchema("Local backup directory name"),
@@ -1280,7 +1297,7 @@ export const apiContract = {
       request: { body: { contentType: "application/json", schema: ref("BackupVerifyRequest") } },
       responses: {
         "200": jsonResponse("Backup verification result", ref("BackupVerificationResult")),
-        "400": legacyErrorResponse("Malformed JSON"),
+        "400": legacyErrorResponse("Malformed JSON or non-object request body"),
         "409": legacyErrorResponse("Backup or restore already in progress"),
         "422": legacyErrorResponse("Invalid verify request or backup validation failed"),
         "500": legacyErrorResponse("Backup verification failed"),
@@ -1290,6 +1307,27 @@ export const apiContract = {
           title: "Verify a local backup",
           request:
             'curl -X POST http://127.0.0.1:3210/backup/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"2026-05-13T09-30-00-000Z"}\'',
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/backup/package",
+      tag: "Backup",
+      summary: "Create an encrypted package file from a local backup snapshot.",
+      request: { body: { contentType: "application/json", schema: ref("BackupPackageRequest") } },
+      responses: {
+        "201": jsonResponse("Encrypted backup package created", ref("EncryptedBackupPackageResult")),
+        "400": legacyErrorResponse("Malformed JSON or non-object request body"),
+        "409": legacyErrorResponse("Backup or restore already in progress"),
+        "422": legacyErrorResponse("Invalid package request or backup validation failed"),
+        "500": legacyErrorResponse("Encrypted backup package creation failed"),
+      },
+      examples: [
+        {
+          title: "Create an encrypted package",
+          request:
+            'curl -X POST http://127.0.0.1:3210/backup/package \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"2026-05-13T09-30-00-000Z","password":"correct horse battery staple"}\'',
         },
       ],
     },

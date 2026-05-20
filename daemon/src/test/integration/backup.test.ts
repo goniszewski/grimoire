@@ -439,6 +439,82 @@ describe("Backup API", () => {
     expect(json.error).toInclude("Unsupported backup format version");
   });
 
+  // ─── POST /backup/package ──────────────────────────────────────────────────
+
+  it("POST /backup/package creates an encrypted package for an existing local backup", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    const res = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct horse battery staple" }),
+    });
+
+    expect(res.status).toBe(201);
+    const json = await res.json() as {
+      path: string;
+      source_path: string;
+      encrypted: boolean;
+      size_bytes: number;
+      created_at: string;
+    };
+    expect(json.path).toBe(join(dataDir, "backups", `${backupName}.littleimp-backup.enc`));
+    expect(json.source_path).toBe(backupPath);
+    expect(json.encrypted).toBeTrue();
+    expect(json.size_bytes).toBeGreaterThan(0);
+    expect(json.created_at).toBeString();
+    expect(existsSync(json.path)).toBeTrue();
+  });
+
+  it("POST /backup/package returns 422 when the password is missing", async () => {
+    const backupRes = await app.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    const res = await app.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "" }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("Password is required");
+  });
+
+  it("POST /backup/package returns 400 when the body is not an object", async () => {
+    const res = await app.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "null",
+    });
+
+    expect(res.status).toBe(400);
+    const json = await res.json() as { error: string };
+    expect(json.error).toBe("Request body must be an object");
+  });
+
+  it("POST /backup/package returns 422 when backup verification fails", async () => {
+    const backupRes = await app.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+
+    writeFileSync(join(backupPath, "snapshot.db"), "tampered content that will fail checksum");
+
+    const res = await app.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct horse battery staple" }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("Checksum");
+  });
+
   // ─── POST /restore ─────────────────────────────────────────────────────────
 
   it("POST /restore with a valid backup restores the database file", async () => {
