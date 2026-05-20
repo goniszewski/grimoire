@@ -38,12 +38,12 @@ MCP runs over stdio (for local tools) or HTTP/SSE. Since `littleimpd` is already
 
 ## Acceptance Criteria
 
-- [ ] `bun check` passes with no type errors
-- [ ] `GET /mcp` returns MCP server info (name, version, capabilities)
-- [ ] `search_bookmarks` returns ranked results using existing search route logic
-- [ ] `add_bookmark` ingests a URL through the existing pipeline
-- [ ] MCP server can be configured in Claude Desktop `claude_desktop_config.json`
-- [ ] No changes to existing REST API routes
+- [x] `bun check` passes with no type errors
+- [x] `/mcp` exposes a Streamable HTTP MCP endpoint with server name, version, tools, and resources through MCP initialization
+- [x] `search_bookmarks` returns ranked results using existing search route logic
+- [x] `add_bookmark` ingests a URL through the existing pipeline
+- [x] MCP server can be configured in Claude Desktop `claude_desktop_config.json`
+- [x] No changes to existing REST API routes
 
 ## Notes
 

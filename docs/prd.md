@@ -154,12 +154,15 @@ Example failure behavior:
 
 | Stage | Failure behavior |
 | ------ | ---------------- |
-| fetch | bookmark saved with URL only |
+| fetch | bookmark remains saved with URL only and the durable queue retries the job |
 | extraction | fallback to page title |
-| LLM enrichment | retry later |
-| embedding | retry later |
+| LLM enrichment | transient provider calls retry internally; bookmark continues without AI summary/tags/category if enrichment ultimately fails |
+| embedding | transient provider calls retry internally; bookmark continues without semantic-search vector if embedding ultimately fails |
 
 Bookmarks are **visible and searchable immediately**.
+
+User-triggered reprocessing, re-embedding, and failed-stage retry UX are MVP
+readiness follow-ups rather than shipped `0.1.0-beta` behavior.
 
 ---
 

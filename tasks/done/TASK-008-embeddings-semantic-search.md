@@ -47,3 +47,9 @@ Where:
 - [x] Hybrid search mode blends keyword + vector + recency scores
 - [x] Related bookmarks endpoint: `GET /bookmarks/:id/related`
 - [ ] Re-embedding job available for library-wide re-processing
+
+## TASK-058 Audit Note
+
+Library-wide re-embedding is not shipped in this task. The gap is carried by
+TASK-064, which defines reprocess and re-embed jobs for provider changes and
+library-wide recovery.

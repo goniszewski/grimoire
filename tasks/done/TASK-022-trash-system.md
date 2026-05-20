@@ -31,9 +31,9 @@ Introduce a proper Trash concept: deleting a bookmark moves it to Trash (sets `d
 
 ## Acceptance Criteria
 
-- [ ] Clicking trash icon moves bookmark to `/trash`, disappears from main feed
-- [ ] Restored bookmark reappears in main feed
-- [ ] Permanently deleted bookmark is gone from DB
-- [ ] Purge job removes rows older than 30 days
-- [ ] `/archive` never shows trashed bookmarks
-- [ ] Trashed bookmarks excluded from search results
+- [x] Clicking trash icon moves bookmark to `/trash`, disappears from main feed
+- [x] Restored bookmark reappears in main feed
+- [x] Permanently deleted bookmark is gone from DB
+- [x] Purge job removes rows older than 30 days
+- [x] `/archive` never shows trashed bookmarks
+- [x] Trashed bookmarks excluded from search results

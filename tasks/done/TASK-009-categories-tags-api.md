@@ -31,4 +31,4 @@ Implement CRUD API for categories and tags, plus endpoints used by the sidebar.
 - [x] Category list returns count of bookmarks per category
 - [x] Deleting a category does not delete its bookmarks
 - [x] Auto-created tags from LLM enrichment go through this API
-- [ ] Frontend sidebar connects to these endpoints (replaces mock data)
+- [x] Frontend sidebar connects to these endpoints (replaces mock data)

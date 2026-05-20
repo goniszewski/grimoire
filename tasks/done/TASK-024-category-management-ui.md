@@ -31,9 +31,9 @@ The backend fully supports category rename, delete, and reparenting. This task w
 
 ## Acceptance Criteria
 
-- [ ] Category can be renamed inline; new name persists on reload
-- [ ] Category can be deleted; its bookmarks are reassigned or left uncategorized per user choice
-- [ ] Category can be moved via drag-and-drop
-- [ ] Category can be moved via "Move to…" dropdown
-- [ ] Depth limit error is shown to user if they try to nest beyond 3 levels
-- [ ] Empty state handled: deleting last category leaves uncategorized bookmarks accessible
+- [x] Category can be renamed inline; new name persists on reload
+- [x] Category can be deleted; its bookmarks are left uncategorized and child categories move to the deleted category's parent
+- [x] Category can be moved via drag-and-drop
+- [x] Category can be moved via "Move to…" dropdown
+- [x] Depth limit error is shown to user if they try to nest beyond 3 levels
+- [x] Empty state handled: deleting last category leaves uncategorized bookmarks accessible

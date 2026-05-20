@@ -20,9 +20,18 @@ The embed pipeline stage and `embeddings` table exist but the stage is stubbed. 
 
 ## Acceptance Criteria
 
-- [ ] After `ai_enriched`, pipeline proceeds to `embed` stage when provider is configured
-- [ ] Embedding row exists in `embeddings` table after successful ingestion
-- [ ] Bookmark reaches `indexed` status
-- [ ] When no embedding provider is configured, bookmark still reaches `indexed` (embedding skipped)
-- [ ] `PipelineBadge` shows `indexed` in the UI
-- [ ] Transient failures are retried with backoff
+- [x] After `ai_enriched`, pipeline proceeds to `embed` stage when provider is configured
+- [x] Embedding row exists in `embeddings` table after successful ingestion
+- [x] Bookmark reaches `indexed` status
+- [x] When no embedding provider is configured, bookmark still reaches `indexed` (embedding skipped)
+- [x] `PipelineBadge` shows `indexed` in the UI
+- [~] Transient embedding provider calls retry with backoff inside the provider
+      client, but exhausted stage failures are not yet user-retriable.
+
+## TASK-058 Audit Note
+
+Queue-level job failures are retried with exponential backoff, and embedding
+provider calls retry transient failures internally. However, LLM and embedding
+stage failures that exhaust provider retries are currently non-fatal and do not
+enqueue a targeted durable retry. User-triggered recovery and retry behavior are
+tracked by TASK-064 and TASK-065.

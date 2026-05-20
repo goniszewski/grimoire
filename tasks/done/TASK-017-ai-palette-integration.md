@@ -18,7 +18,13 @@ The `AIPalette.tsx` component exists in the frontend. Wire it to the real search
 ## Acceptance Criteria
 
 - [ ] Palette queries `GET /search?q=<query>&mode=semantic` for NL queries
-- [ ] Results shown in palette with title + domain
-- [ ] Keyboard navigation through results (already exists in UI)
-- [ ] Selecting a result opens BookmarkDetail
-- [ ] "Add bookmark" action in palette triggers AddBookmarkDialog
+- [x] Results shown in palette with title + domain
+- [x] Keyboard navigation through results (already exists in UI)
+- [x] Selecting a result opens BookmarkDetail
+- [x] "Add bookmark" action in palette triggers AddBookmarkDialog
+
+## TASK-058 Audit Note
+
+The palette is wired to live search, result selection, and bookmark creation,
+but it does not force `mode=semantic`; it uses the search endpoint default. The
+semantic palette follow-up is captured by TASK-072.

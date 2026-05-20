@@ -41,8 +41,8 @@ Polish the experience for two key first-launch scenarios: an empty library and a
 
 ## Acceptance Criteria
 
-- [ ] Empty library state shows onboarding UI with both CTAs
-- [ ] Degraded mode banner appears when no AI provider is configured, is dismissible, and links to settings
-- [ ] Dismissed banner does not reappear on page reload (persisted in localStorage)
-- [ ] Review Queue page shows cold-start message when < 20 bookmarks
-- [ ] Playwright test covers: launch with empty library → empty state visible → add bookmark → empty state gone
+- [x] Empty library state shows onboarding UI with both CTAs
+- [x] Degraded mode banner appears when no AI provider is configured, is dismissible, and links to settings
+- [x] Dismissed banner does not reappear on page reload (persisted in localStorage)
+- [x] Review Queue page shows cold-start message when < 20 bookmarks
+- [x] Playwright test covers: launch with empty library → empty state visible → add bookmark → empty state gone

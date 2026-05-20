@@ -47,10 +47,16 @@ This task makes the persisted Settings API the runtime source of truth for AI an
 - [x] The degraded-mode banner matches actual runtime capability.
 - [x] Frontend settings saves do not overwrite stored secrets with redacted placeholder values.
 - [x] Unit or integration tests cover settings-driven enrichment and settings-driven semantic search.
-- [ ] `bun run check`, `bun test`, `npm run test`, and `npm run build` pass.
+- [x] `bun run check`, `bun test`, `npm run test`, and `npm run build` pass.
 
 ## Completion Notes
 
 Implemented with runtime settings resolution for pipeline enrichment, embeddings, REST search, related bookmarks, MCP search, and organization suggestions. `GET /settings` now reports effective runtime capability without secrets, and redacted secret placeholders are ignored on save.
 
-Verification passed for `bun test`, `npm run test`, `npm run build`, `npx tsc --noEmit`, and `git diff --check`. The remaining unchecked quality-gate item is blocked by pre-existing TASK-043 lint/type-check debt: daemon `bun run check` still fails on Bun fetch mock typings, and root `npm run lint` still fails on existing lint violations outside this task.
+Verification originally passed for `bun test`, `npm run test`,
+`npm run build`, `npx tsc --noEmit`, and `git diff --check`.
+
+TASK-058 audit update: the stale quality-gate note is now resolved. `npm run check`
+passes, including daemon `bun run check`, daemon `bun test`, frontend
+`npm run test`, API docs drift check, and production build. Root lint still
+emits existing warnings, but no lint errors.

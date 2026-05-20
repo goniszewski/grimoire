@@ -39,10 +39,10 @@ Backend endpoints already exist: `GET /settings`, `PUT /settings`, `POST /settin
 
 ## Acceptance Criteria
 
-- [ ] `/settings` route renders a dedicated page
-- [ ] Current settings load from `GET /settings` on mount
-- [ ] API keys are displayed masked
-- [ ] "Test connection" shows inline success or error message
-- [ ] Save calls `PUT /settings` and shows confirmation toast
-- [ ] Settings persist across daemon restarts
-- [ ] Sidebar has a link to `/settings`
+- [x] `/settings` route renders a dedicated page
+- [x] Current settings load from `GET /settings` on mount
+- [x] API keys are displayed masked
+- [x] "Test connection" shows inline success or error message
+- [x] Save calls `PUT /settings` and shows confirmation toast
+- [x] Settings persist across daemon restarts
+- [x] Sidebar has a link to `/settings`

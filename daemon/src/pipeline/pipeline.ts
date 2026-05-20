@@ -8,15 +8,12 @@
  *   4. embed       — generate embedding vector (skipped when embeddings are not configured)
  *   5. index       — update FTS5 search index
  *
- * Each stage:
- *   - Updates bookmark.status on success
- *   - Logs the error and re-throws on failure (caller decides retry behaviour)
- *
- * Failure behaviour per task spec:
- *   - Fetch failure   → bookmark stays "saved",  caller logs + retries
- *   - Extract failure → falls back to title only, pipeline continues
- *   - LLM failure     → bookmark usable without enrichment, pipeline continues
- *   - Embed failure   → caller retries
+ * Failure behavior:
+ *   - Fetch failure   -> throws; durable queue retries and bookmark stays "saved"
+ *   - Extract failure -> stores minimal content and skips remaining stages
+ *   - LLM failure     -> bookmark remains usable without AI enrichment
+ *   - Embed failure   -> bookmark remains indexed without a semantic vector
+ *   - Index failure   -> throws; durable queue retries
  */
 
 import { Database } from "bun:sqlite";

@@ -29,4 +29,4 @@ Implement import from Netscape Bookmark HTML format (exported by Chrome, Firefox
 - [x] Shows real-time import progress (SSE or polling endpoint)
 - [x] Large imports (1000+ bookmarks) don't block the API
 - [x] Import jobs are batched and processed by background worker
-- [ ] Frontend import dialog connects to this endpoint (replaces mock)
+- [x] Frontend import dialog connects to this endpoint (replaces mock)

@@ -398,7 +398,7 @@ erDiagram
 | Deployment model | Localhost daemon plus static/frontend SPA | Keeps data local while allowing a normal browser UI |
 | Persistence | SQLite with WAL, migrations, FTS5, and BLOB embeddings | Simple local install, durable queue, good enough search without external services |
 | AI | Optional provider configuration | Core features still work offline or without API keys |
-| Pipeline | Async job worker | Saving is fast and enrichment can fail or retry independently |
+| Pipeline | Async job worker | Saving is fast; thrown job failures retry through the queue; optional provider stages use internal transient retries and do not block indexing after final failure |
 | Backup | Portable snapshot directories | Easy to verify, inspect, copy, upload, and restore |
 | Remote backup | S3-compatible target first | Broad provider support without custom integrations per cloud vendor |
 | External integrations | MCP over stateless Streamable HTTP | Allows local assistants and tools to use the bookmark library without exposing a public API |

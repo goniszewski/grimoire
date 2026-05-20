@@ -71,6 +71,21 @@ tasks/
 | TASK-055 | [Daemon Update Check Service](done/TASK-055-daemon-update-check-service.md) | next release distribution polish | medium | done |
 | TASK-056 | [In-App Update Check](done/TASK-056-in-app-update-check.md) | next release distribution polish | medium | done |
 | TASK-057 | [In-App Encrypted Backup Packages](done/TASK-057-in-app-encrypted-backup-packages.md) | next release operations | medium | done |
+| TASK-058 | [MVP Evidence and Acceptance Criteria Audit](done/TASK-058-mvp-evidence-acceptance-audit.md) | MVP readiness | high | done |
+| TASK-059 | [Signed Release Archive Packaging](todo/TASK-059-signed-release-archive-packaging.md) | MVP readiness | high | todo |
+| TASK-060 | [One-Command Installer Entry Point](todo/TASK-060-one-command-installer-entrypoint.md) | MVP readiness | high | todo |
+| TASK-061 | [Packaged Upgrade Flow](todo/TASK-061-packaged-upgrade-flow.md) | MVP readiness | high | todo |
+| TASK-062 | [Installer Matrix Validation](todo/TASK-062-installer-matrix-validation.md) | MVP readiness | high | todo |
+| TASK-063 | [Homebrew Formula or Tap](todo/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | todo |
+| TASK-064 | [Library Reprocess and Re-Embed Jobs](todo/TASK-064-library-reprocess-reembed-jobs.md) | MVP readiness | high | todo |
+| TASK-065 | [Pipeline Failure Recovery UX](todo/TASK-065-pipeline-failure-recovery-ux.md) | MVP readiness | high | todo |
+| TASK-066 | [In-App Encrypted Backup Verify and Restore](todo/TASK-066-in-app-encrypted-backup-verify-restore.md) | MVP readiness | medium | todo |
+| TASK-067 | [Post-Restore Restart and Recovery UX](todo/TASK-067-post-restore-restart-recovery-ux.md) | MVP readiness | medium | todo |
+| TASK-068 | [Diagnostics and Support Bundle](todo/TASK-068-diagnostics-support-bundle.md) | MVP readiness | medium | todo |
+| TASK-069 | [Production Security Headers and Local Hardening](todo/TASK-069-production-security-headers-local-hardening.md) | MVP readiness | medium | todo |
+| TASK-070 | [Installed-App E2E Smoke Suite](todo/TASK-070-installed-app-e2e-smoke-suite.md) | MVP readiness | high | todo |
+| TASK-071 | [MVP Release Documentation Pass](todo/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | todo |
+| TASK-072 | [Audit Follow-Up Gaps](backlog/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | backlog |
 
 ## Current Status
 
@@ -78,8 +93,17 @@ Core product tasks, v0-beta hardening tasks, release validation work, the first
 three next-release operations tasks, TASK-052 multi-provider AI support,
 TASK-053 native installer frontend bundle install, TASK-054 CLI update check
 foundation, TASK-055 daemon update check service, TASK-056 in-app update check,
-and TASK-057 in-app encrypted backup package work available from this macOS
-workspace are complete.
+TASK-057 in-app encrypted backup package work, and TASK-058 MVP evidence and
+acceptance criteria audit work available from this macOS workspace are complete.
+
+TASK-059 through TASK-071 define the remaining MVP-readiness closeout queue.
+They focus on verified completion evidence, install-without-cloning
+distribution, packaged upgrade support, installer matrix validation, library
+reprocessing and failure recovery, in-app encrypted backup recovery,
+diagnostics, local hardening, installed-artifact smoke testing, and final MVP
+release documentation alignment.
+TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
+audit.
 
 Completed release validation evidence:
 

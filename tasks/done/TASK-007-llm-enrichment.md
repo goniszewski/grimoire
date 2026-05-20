@@ -38,8 +38,16 @@ Provider and model configured via preferences API / preferences dialog.
 - [x] Single LLM call returns summary + tags + category
 - [x] Provider abstraction supports OpenAI API-compatible endpoints (covers OpenAI + Ollama)
 - [x] API key stored in local config file (not in DB)
-- [x] Retry on LLM failure with exponential backoff (max 3 retries)
+- [x] Retry transient LLM provider request failures with exponential backoff
+      inside the provider client (max 3 attempts)
 - [x] Enrichment result stored and bookmark status updated to `ai_enriched`
 - [x] Works with local Ollama instance (configurable base URL)
 - [x] Prompt is tuned for technical/developer content
 - [x] Gracefully degrades if LLM is unavailable (bookmark still usable)
+
+## TASK-058 Review Note
+
+The LLM client retries transient provider errors, but the pipeline treats a
+final enrichment failure as non-fatal and continues without AI-generated
+summary, tags, or category. Targeted user-triggered enrichment retry is tracked
+by TASK-064 and TASK-065.

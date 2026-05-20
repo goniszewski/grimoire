@@ -7,7 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Settings page update check backed by the daemon `/updates/check` endpoint.
+- Packaged `littleimp` CLI backup commands for create, list, restore, verify, encrypted package creation, encrypted package verification, and encrypted package restore.
+- In-app local backup verification from Settings without restoring a snapshot.
+- Multi-provider LLM settings for Anthropic, OpenRouter, OpenAI-compatible custom endpoints, and DeepSeek, plus custom OpenAI-compatible embeddings.
+- Native installer support for installing a prebuilt frontend bundle from packaged release layouts.
+- CLI, daemon API, and Settings update checks for GitHub Releases-compatible release sources.
 - Settings backup rows can create encrypted `.littleimp-backup.enc` packages through the daemon `/backup/package` endpoint.
 
 ## [0.1.0-beta] - 2026-05-14
