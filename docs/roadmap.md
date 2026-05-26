@@ -57,7 +57,7 @@ These are not part of `0.1.0-beta`:
 
 - Browser extension for one-click saves.
 - Multi-device sync of live data.
-- Multi-user or public-network deployment mode.
+- Multi-user or public-network deployment mode, tracked as post-MVP direction research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
 - Optional authentication/rate limiting for non-local deployments.
 - Plugin system.
 - GitHub Issues extractor.

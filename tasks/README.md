@@ -86,6 +86,7 @@ tasks/
 | TASK-070 | [Installed-App E2E Smoke Suite](todo/TASK-070-installed-app-e2e-smoke-suite.md) | MVP readiness | high | todo |
 | TASK-071 | [MVP Release Documentation Pass](todo/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | todo |
 | TASK-072 | [Audit Follow-Up Gaps](backlog/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | backlog |
+| TASK-073 | [Project Status Review Package](in-review/TASK-073-project-status-review-package.md) | MVP readiness | medium | in-review |
 
 ## Current Status
 
@@ -103,7 +104,9 @@ reprocessing and failure recovery, in-app encrypted backup recovery,
 diagnostics, local hardening, installed-artifact smoke testing, and final MVP
 release documentation alignment.
 TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
-audit.
+audit. TASK-073 is in review with post-MVP multi-user direction research and a
+focused development-server Playwright smoke suite for documented business
+requirements.
 
 Completed release validation evidence:
 
