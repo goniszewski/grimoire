@@ -26,6 +26,10 @@ Use this checklist before tagging or publishing a beta build.
   `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash`.
 - Run the one-command upgrade path over an existing install:
   `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade`.
+- Run the packaged CLI upgrade path against the published release artifacts:
+  `littleimp update install --version 0.1.0-beta`.
+- Run the packaged CLI local archive upgrade path against a downloaded archive
+  and checksum, adding `--signature` when the detached signature is published.
 - Run `cd daemon && ./install.sh` on a clean macOS profile or VM.
 - Verify `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.

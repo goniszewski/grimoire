@@ -140,14 +140,22 @@ tail -f ~/.local/share/littleimp/logs/daemon.log
 # One-command release upgrade
 curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
 
+# From the installed packaged CLI, selecting a release version to download
+littleimp update install --version 0.1.0-beta
+
 # From an unpacked release archive or source checkout
 cd little-imp-0.1.0-beta-macos/daemon
 ./install.sh --upgrade
 ```
 
-This stops the daemon, replaces the files, reinstalls dependencies, rebuilds the
+The CLI upgrade command downloads the selected platform archive, verifies its
+published checksum, verifies a detached signature when one is available, runs
+the packaged native installer with `--upgrade`, restarts the daemon, and checks
+that `/health` reports the upgraded version. The native upgrade path stops the
+daemon, replaces application files, reinstalls dependencies, rebuilds the
 frontend when source files are present or reuses the bundled frontend archive,
-and restarts.
+and restarts. User data under `~/.local/share/littleimp`, runtime settings,
+backups, and logs are preserved.
 
 ---
 
@@ -239,12 +247,12 @@ from `--password-file`; keep that password separately because an encrypted
 package cannot be restored without it. The `--output` file must not already
 exist; this avoids overwriting an earlier backup by accident.
 
-### Update checks
+### Update checks and manual upgrades
 
 The Settings page, daemon, and packaged `littleimp` CLI can manually check a
 GitHub Releases-compatible source for newer releases with semver-style tags
-such as `v0.2.0` or `v0.2.0-beta.1`. This only reports availability; it does
-not download or install updates.
+such as `v0.2.0` or `v0.2.0-beta.1`. `littleimp update check` is read-only: it
+only reports availability and never downloads or installs updates.
 
 ```sh
 # Check the default release source
@@ -256,6 +264,19 @@ littleimp update check --channel stable --json
 # Use an alternate release source
 littleimp update check --source https://updates.example.com/little-imp/releases
 
+# Download and install the latest compatible update found by the release source
+littleimp update install
+
+# Download and install a selected release from a release artifact base URL
+littleimp update install --version 0.2.0-beta.1 \
+  --release-base-url https://github.com/goniszewski/little-imp/releases/download/v0.2.0-beta.1
+
+# Upgrade from an already downloaded archive, checksum, and optional signature
+littleimp update install \
+  --archive ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz \
+  --checksum ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz.sha256 \
+  --signature ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz.asc
+
 # Check through the daemon API
 curl 'http://127.0.0.1:3210/updates/check?channel=stable'
 ```
@@ -264,7 +285,12 @@ Set `LITTLEIMP_UPDATE_SOURCE` to change the default source for scripted
 environments. Beta builds check the beta channel by default; stable builds check
 the stable channel by default. The daemon API rejects private and loopback
 source hosts; use the CLI for explicit local mirrors in controlled offline
-environments.
+environments. When `update install` selects a release from a GitHub-compatible
+`html_url`, it derives the matching artifact download URL. Set
+`LITTLEIMP_RELEASE_BASE_URL` or pass `--release-base-url` when archives are
+hosted somewhere else. Failed upgrades print rollback guidance; rerun the
+previous verified release installer with `--upgrade` to revert application files
+while preserving local data.
 
 ```sh
 # Create a backup through the daemon

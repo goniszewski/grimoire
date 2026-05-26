@@ -14,8 +14,22 @@ operator-provided source, filter by `stable` or `beta` channel, ignore malformed
 release tags, and report whether a newer semver release exists. The daemon API
 rejects private and loopback source hosts to preserve the local network safety
 posture; the user-invoked CLI can still target explicit local mirrors in
-controlled offline environments. They do not download, install, schedule, or
-roll back updates.
+controlled offline environments. `update check` remains read-only and never
+downloads or installs updates.
+
+The packaged CLI also supports explicit manual native upgrades through
+`littleimp update install` and the alias `littleimp update upgrade`. A user can
+install the latest compatible release discovered by the update source, select a
+specific version to download from a release artifact base URL, or point to a
+local archive with matching `.sha256` and optional `.asc` files. The CLI verifies
+the archive checksum, derives artifact download URLs from GitHub-compatible
+release `html_url` values when possible, verifies a detached signature when
+provided or published, extracts only safe release archive layouts, runs the packaged
+`daemon/install.sh --upgrade`, and then verifies `/health` reports the upgraded
+version. On failure after installer execution, the CLI prints rollback guidance
+that directs the user to rerun the previous verified release installer with
+`--upgrade`; local data, settings, backups, and logs remain under
+`~/.local/share/littleimp`.
 
 ## Design Principles
 
@@ -72,21 +86,22 @@ roll back updates.
 1. **Update Service** (`daemon/src/update/service.ts`)
    - Checks for available updates
    - Shares release parsing and version comparison between the daemon API and CLI
-   - Future scope: download packages, manage update queue, and handle rollback operations
+   - Keeps channel filtering and semver-compatible release selection shared
 
 2. **Update API** (`daemon/src/routes/updates.ts`)
    - Read-only update availability check
    - Status reporting
-   - Future scope: download management
+   - Does not download or install release artifacts
 
 3. **Update UI** (Frontend components)
    - Update notifications
    - Progress indicators
    - Version management interface
 
-4. **Update CLI** (`daemon/src/update/cli.ts`)
-   - Command-line update operations
-   - Scriptable updates for automation
+4. **Update CLI** (`daemon/src/cli.ts`, `daemon/src/update/upgrade.ts`)
+   - Read-only `update check`
+   - Explicit `update install` / `update upgrade` for manual packaged native upgrades
+   - Scriptable downloads, local archive upgrades, checksum/signature verification, restart health checks, and rollback guidance
 
 ### Update Package Format
 
@@ -140,23 +155,23 @@ UI Notification → User Decision
 ### 2. Download Update
 
 ```
-User → Install Update
+User → littleimp update install
         ↓
-Update Service → Download Package → Verify Checksum
-        ↓ Success
-Stage Update → Notify User → Schedule Installation
+CLI → Download Archive + Checksum + Optional Signature
+        ↓
+Verify Checksum + Signature → Extract Safe Archive
 ```
 
 ### 3. Install Update
 
 ```
-User → Restart to Update (or scheduled)
+Verified Archive → daemon/install.sh --upgrade
         ↓
-Backup Current Installation → Extract New Version
+Stop Daemon → Replace Application Files
         ↓
-Migrate Data → Update Configuration → Start New Version
+Reinstall Dependencies → Start Daemon
         ↓
-Verify Installation → Cleanup → Notify Success
+Verify /health Version → Print Success or Rollback Guidance
 ```
 
 ## User Interface
@@ -202,10 +217,10 @@ Verify Installation → Cleanup → Notify Success
 
 ### Manual Rollback
 
-- User-initiated through settings
-- Version selection interface
-- Data preservation during rollback
-- Rollback history tracking
+- User-initiated by rerunning the previous release's verified installer with `--upgrade`
+- Data, settings, backups, and logs remain in `~/.local/share/littleimp`
+- CLI failures after installer execution print the rollback command strategy and log locations
+- Full version history and one-command rollback remain future scope
 
 ## Air-Gapped Support
 
@@ -227,25 +242,26 @@ Verify Installation → Cleanup → Notify Success
 
 ```bash
 # Check for updates
-littleimpd update check
+littleimp update check
 
-# List available updates
-littleimpd update list
+# Check a specific release channel
+littleimp update check --channel stable
 
-# Install specific update
-littleimpd update install --version 1.2.0
+# Install the latest compatible release found by the configured source
+littleimp update install
 
-# Rollback to previous version
-littleimpd update rollback --version 1.1.0
+# Download and install a specific release version
+littleimp update install --version 1.2.0
 
-# Configure update settings
-littleimpd update config --channel stable --frequency weekly
+# Download from an alternate artifact base URL
+littleimp update install --version 1.2.0 \
+  --release-base-url https://updates.example.com/little-imp/v1.2.0
 
-# Disable update checks
-littleimpd update disable
-
-# Export current version as update package
-littleimpd update export --output ./little-imp-update.tar.gz
+# Install from a local archive, checksum, and optional detached signature
+littleimp update install \
+  --archive ./little-imp-1.2.0-macos.tar.gz \
+  --checksum ./little-imp-1.2.0-macos.tar.gz.sha256 \
+  --signature ./little-imp-1.2.0-macos.tar.gz.asc
 ```
 
 ## Implementation Timeline
@@ -255,9 +271,9 @@ littleimpd update export --output ./little-imp-update.tar.gz
 - [x] Manual CLI update check
 - [x] Daemon update check service
 - [x] Manual in-app update check
-- [ ] Download and verification
+- [x] Manual packaged CLI download and verification
 - [ ] Basic UI notifications
-- [ ] CLI commands
+- [x] Explicit CLI install/upgrade command
 
 ### Phase 2: Enhanced Features (v1.2)
 

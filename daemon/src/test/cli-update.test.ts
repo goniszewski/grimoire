@@ -1,9 +1,19 @@
 import { describe, expect, it } from "bun:test";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "fs";
+import { createHash } from "crypto";
+import { tmpdir } from "os";
+import { dirname, join } from "path";
+import { spawnSync } from "child_process";
 import { runLittleImpCli } from "../cli.js";
 
 type FetchCall = {
   url: string;
   init?: RequestInit;
+};
+
+type SpawnCall = {
+  command: string;
+  args: string[];
 };
 
 function makeUpdateHarness(response: unknown, status = 200, env: Record<string, string | undefined> = {}) {
@@ -26,6 +36,124 @@ function makeUpdateHarness(response: unknown, status = 200, env: Record<string, 
       runLittleImpCli(args, {
         env,
         fetch: fetchImpl as typeof fetch,
+        stdout: (line) => stdout.push(line),
+        stderr: (line) => stderr.push(line),
+      }),
+  };
+}
+
+function writeExecutable(path: string, contents: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, contents);
+  chmodSync(path, 0o755);
+}
+
+function sha256(path: string): string {
+  const hash = createHash("sha256");
+  hash.update(readFileSync(path));
+  return hash.digest("hex");
+}
+
+function platformName(): "macos" | "linux" {
+  return process.platform === "darwin" ? "macos" : "linux";
+}
+
+function createUpgradeArchiveFixture(options: { badChecksum?: boolean; signature?: boolean } = {}) {
+  const releaseDir = mkdtempSync(join(tmpdir(), "little-imp-cli-upgrade-release-"));
+  const payloadStage = join(releaseDir, "payload");
+  const version = "0.2.0-beta";
+  const platform = platformName();
+  const archiveRoot = `little-imp-${version}-${platform}`;
+  const archiveName = `${archiveRoot}.tar.gz`;
+  const archivePath = join(releaseDir, archiveName);
+  const checksumPath = `${archivePath}.sha256`;
+  const signaturePath = `${archivePath}.asc`;
+  const payloadRoot = join(payloadStage, archiveRoot);
+
+  mkdirSync(payloadRoot, { recursive: true });
+  writeFileSync(join(payloadRoot, "VERSION"), `${version}\n`);
+  writeExecutable(
+    join(payloadRoot, "daemon", "install.sh"),
+    [
+      "#!/usr/bin/env bash",
+      "set -euo pipefail",
+      "# The real test injects spawnSync, so this should not execute.",
+      "exit 99",
+      "",
+    ].join("\n")
+  );
+
+  const tar = spawnSync("tar", ["-czf", archivePath, "-C", payloadStage, archiveRoot], {
+    encoding: "utf8",
+  });
+  if (tar.status !== 0) {
+    throw new Error(tar.stderr);
+  }
+
+  const digest = options.badChecksum ? "0".repeat(64) : sha256(archivePath);
+  writeFileSync(checksumPath, `${digest}  ${archiveName}\n`);
+  if (options.signature) {
+    writeFileSync(signaturePath, "invalid signature\n");
+  }
+
+  return {
+    archiveName,
+    archivePath,
+    checksumPath,
+    signaturePath,
+    releaseDir,
+    version,
+  };
+}
+
+function makeUpgradeHarness(
+  healthVersion = "0.2.0-beta",
+  runCommand?: (command: string, args: string[]) => { status: number; stderr?: string }
+) {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const fetchCalls: FetchCall[] = [];
+  const spawnCalls: SpawnCall[] = [];
+  const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+    fetchCalls.push({ url: String(url), init });
+    return new Response(JSON.stringify({ status: "ok", version: healthVersion }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const spawnImpl = (command: string, args: string[]) => {
+    spawnCalls.push({ command, args });
+    const result = runCommand?.(command, args);
+    if (result) {
+      return {
+        status: result.status,
+        signal: null,
+        output: ["", "", result.stderr ?? ""],
+        pid: 123,
+        stdout: "",
+        stderr: result.stderr ?? "",
+      };
+    }
+    return {
+      status: 0,
+      signal: null,
+      output: ["", "", ""],
+      pid: 123,
+      stdout: "",
+      stderr: "",
+    };
+  };
+
+  return {
+    fetchCalls,
+    spawnCalls,
+    stdout,
+    stderr,
+    run: (args: string[]) =>
+      runLittleImpCli(args, {
+        env: {},
+        fetch: fetchImpl as typeof fetch,
+        spawnSync: spawnImpl,
         stdout: (line) => stdout.push(line),
         stderr: (line) => stderr.push(line),
       }),
@@ -192,5 +320,238 @@ describe("littleimp update CLI", () => {
     expect(code).toBe(2);
     expect(harness.calls).toHaveLength(0);
     expect(harness.stderr.join("\n")).toContain("Unexpected argument for update check");
+  });
+
+  it("upgrades from a verified local release archive and checks the restarted daemon version", async () => {
+    const fixture = createUpgradeArchiveFixture();
+    const harness = makeUpgradeHarness(fixture.version);
+
+    const code = await harness.run([
+      "update",
+      "install",
+      "--archive",
+      fixture.archivePath,
+      "--checksum",
+      fixture.checksumPath,
+      "--json",
+    ]);
+
+    expect(code).toBe(0);
+    expect(harness.spawnCalls).toHaveLength(1);
+    expect(harness.spawnCalls[0].command).toBe("bash");
+    expect(harness.spawnCalls[0].args[0]).toEndWith("/daemon/install.sh");
+    expect(harness.spawnCalls[0].args).toContain("--upgrade");
+    expect(harness.fetchCalls[0].url).toBe("http://127.0.0.1:3210/health");
+    expect(JSON.parse(harness.stdout[0])).toMatchObject({
+      current_version: "0.1.0-beta",
+      upgraded_version: fixture.version,
+      archive: fixture.archivePath,
+      checksum_verified: true,
+      signature_verified: false,
+      restart_status: "healthy",
+      health_version: fixture.version,
+    });
+  });
+
+  it("refuses to upgrade a local release archive when checksum verification fails", async () => {
+    const fixture = createUpgradeArchiveFixture({ badChecksum: true });
+    const harness = makeUpgradeHarness(fixture.version);
+
+    const code = await harness.run([
+      "update",
+      "install",
+      "--archive",
+      fixture.archivePath,
+      "--checksum",
+      fixture.checksumPath,
+    ]);
+
+    expect(code).toBe(1);
+    expect(harness.spawnCalls).toHaveLength(0);
+    expect(harness.fetchCalls).toHaveLength(0);
+    expect(harness.stderr.join("\n")).toContain("Checksum mismatch");
+  });
+
+  it("refuses to upgrade a local release archive when detached signature verification fails", async () => {
+    const fixture = createUpgradeArchiveFixture({ signature: true });
+    const harness = makeUpgradeHarness(fixture.version, (command) =>
+      command === "gpg" ? { status: 1, stderr: "bad signature" } : { status: 0 }
+    );
+
+    const code = await harness.run([
+      "update",
+      "install",
+      "--archive",
+      fixture.archivePath,
+      "--checksum",
+      fixture.checksumPath,
+      "--signature",
+      fixture.signaturePath,
+    ]);
+
+    expect(code).toBe(1);
+    expect(harness.spawnCalls).toHaveLength(1);
+    expect(harness.spawnCalls[0].command).toBe("gpg");
+    expect(harness.fetchCalls).toHaveLength(0);
+    expect(harness.stderr.join("\n")).toContain("Signature verification failed");
+  });
+
+  it("downloads a selected release artifact before running the packaged upgrade", async () => {
+    const fixture = createUpgradeArchiveFixture();
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const fetchCalls: FetchCall[] = [];
+    const spawnCalls: SpawnCall[] = [];
+    const baseUrl = "https://updates.example.test/little-imp/v0.2.0-beta";
+    const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+      const rawUrl = String(url);
+      fetchCalls.push({ url: rawUrl, init });
+      if (rawUrl.endsWith(fixture.archiveName)) {
+        return new Response(Bun.file(fixture.archivePath));
+      }
+      if (rawUrl.endsWith(`${fixture.archiveName}.sha256`)) {
+        return new Response(Bun.file(fixture.checksumPath));
+      }
+      if (rawUrl.endsWith(`${fixture.archiveName}.asc`)) {
+        return new Response("missing", { status: 404 });
+      }
+      if (rawUrl === "http://127.0.0.1:3210/health") {
+        return new Response(JSON.stringify({ status: "ok", version: fixture.version }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("unexpected", { status: 500 });
+    };
+    const spawnImpl = (command: string, args: string[]) => {
+      spawnCalls.push({ command, args });
+      return {
+        status: 0,
+        signal: null,
+        output: ["", "", ""],
+        pid: 123,
+        stdout: "",
+        stderr: "",
+      };
+    };
+
+    const code = await runLittleImpCli([
+      "update",
+      "install",
+      "--version",
+      fixture.version,
+      "--release-base-url",
+      baseUrl,
+      "--json",
+    ], {
+      env: {},
+      fetch: fetchImpl as typeof fetch,
+      spawnSync: spawnImpl,
+      stdout: (line) => stdout.push(line),
+      stderr: (line) => stderr.push(line),
+    });
+
+    expect(code).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(fetchCalls.map((call) => call.url)).toEqual([
+      `${baseUrl}/${fixture.archiveName}`,
+      `${baseUrl}/${fixture.archiveName}.sha256`,
+      `${baseUrl}/${fixture.archiveName}.asc`,
+      "http://127.0.0.1:3210/health",
+    ]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      upgraded_version: fixture.version,
+      checksum_verified: true,
+      signature_verified: false,
+      restart_status: "healthy",
+    });
+    expect(JSON.parse(stdout[0]).archive).toEndWith(fixture.archiveName);
+  });
+
+  it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
+    const fixture = createUpgradeArchiveFixture();
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const fetchCalls: FetchCall[] = [];
+    const spawnCalls: SpawnCall[] = [];
+    const sourceUrl = "https://updates.example.test/releases";
+    const tagUrl = `https://updates.example.test/little-imp/releases/tag/v${fixture.version}`;
+    const baseUrl = `https://updates.example.test/little-imp/releases/download/v${fixture.version}`;
+    const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+      const rawUrl = String(url);
+      fetchCalls.push({ url: rawUrl, init });
+      if (rawUrl === sourceUrl) {
+        return new Response(JSON.stringify([
+          {
+            tag_name: `v${fixture.version}`,
+            name: `Little Imp ${fixture.version}`,
+            draft: false,
+            prerelease: true,
+            published_at: "2026-05-26T12:00:00Z",
+            html_url: tagUrl,
+          },
+        ]), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (rawUrl.endsWith(fixture.archiveName)) {
+        return new Response(Bun.file(fixture.archivePath));
+      }
+      if (rawUrl.endsWith(`${fixture.archiveName}.sha256`)) {
+        return new Response(Bun.file(fixture.checksumPath));
+      }
+      if (rawUrl.endsWith(`${fixture.archiveName}.asc`)) {
+        return new Response("missing", { status: 404 });
+      }
+      if (rawUrl === "http://127.0.0.1:3210/health") {
+        return new Response(JSON.stringify({ status: "ok", version: fixture.version }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("unexpected", { status: 500 });
+    };
+    const spawnImpl = (command: string, args: string[]) => {
+      spawnCalls.push({ command, args });
+      return {
+        status: 0,
+        signal: null,
+        output: ["", "", ""],
+        pid: 123,
+        stdout: "",
+        stderr: "",
+      };
+    };
+
+    const code = await runLittleImpCli([
+      "update",
+      "install",
+      "--source",
+      sourceUrl,
+      "--json",
+    ], {
+      env: {},
+      fetch: fetchImpl as typeof fetch,
+      spawnSync: spawnImpl,
+      stdout: (line) => stdout.push(line),
+      stderr: (line) => stderr.push(line),
+    });
+
+    expect(code).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(fetchCalls.map((call) => call.url)).toEqual([
+      sourceUrl,
+      `${baseUrl}/${fixture.archiveName}`,
+      `${baseUrl}/${fixture.archiveName}.sha256`,
+      `${baseUrl}/${fixture.archiveName}.asc`,
+      "http://127.0.0.1:3210/health",
+    ]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(JSON.parse(stdout[0])).toMatchObject({
+      upgraded_version: fixture.version,
+      restart_status: "healthy",
+    });
   });
 });

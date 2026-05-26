@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Multi-provider LLM settings for Anthropic, OpenRouter, OpenAI-compatible custom endpoints, and DeepSeek, plus custom OpenAI-compatible embeddings.
 - Native installer support for installing a prebuilt frontend bundle from packaged release layouts.
 - CLI, daemon API, and Settings update checks for GitHub Releases-compatible release sources.
+- Packaged `littleimp update install` flow for explicit native upgrades with archive download, local archive support, checksum/signature verification, daemon restart, health-version verification, and rollback guidance.
 - Settings backup rows can create encrypted `.littleimp-backup.enc` packages through the daemon `/backup/package` endpoint.
 
 ## [0.1.0-beta] - 2026-05-14

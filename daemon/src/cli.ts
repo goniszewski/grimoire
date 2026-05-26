@@ -17,6 +17,17 @@ import {
   type UpdateChannel,
   type UpdateRelease,
 } from "./update/service.js";
+import {
+  UpgradeError,
+  createUpgradeWorkDir,
+  defaultReleaseBaseUrl,
+  downloadUpgradeArtifact,
+  removeUpgradeWorkDir,
+  rollbackGuidance,
+  runNativeUpgradeInstaller,
+  verifyAndExtractUpgradeArtifact,
+  type InstallerRunner,
+} from "./update/upgrade.js";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
 
@@ -25,9 +36,13 @@ type CliEnv = Record<string, string | undefined>;
 type CliIO = {
   env?: CliEnv;
   fetch?: typeof fetch;
+  spawnSync?: InstallerRunner;
   stdout?: (line: string) => void;
   stderr?: (line: string) => void;
 };
+
+type CliRuntime = Required<Pick<CliIO, "env" | "fetch" | "stdout" | "stderr">> &
+  Pick<CliIO, "spawnSync">;
 
 type ParsedArgs = {
   flags: Set<string>;
@@ -254,12 +269,41 @@ function printUpdateResult(
   if (result.latest.url) io.stdout(`Release: ${result.latest.url}`);
 }
 
+type PackagedUpgradeResult = {
+  current_version: string;
+  upgraded_version: string;
+  archive: string;
+  checksum_verified: boolean;
+  signature_verified: boolean;
+  restart_status: "healthy";
+  health_version: string;
+  rollback_guidance: string[];
+};
+
+function printUpgradeResult(io: Required<Pick<CliIO, "stdout">>, result: PackagedUpgradeResult): void {
+  io.stdout(`Upgrade complete: ${result.current_version} -> ${result.upgraded_version}`);
+  io.stdout(`Archive: ${result.archive}`);
+  io.stdout("Checksum: verified");
+  io.stdout(result.signature_verified ? "Signature: verified" : "Signature: not provided; checksum verified only.");
+  io.stdout(`Restart: daemon healthy (${result.health_version})`);
+  io.stdout("Rollback guidance:");
+  for (const line of result.rollback_guidance) {
+    io.stdout(`- ${line}`);
+  }
+}
+
+function formatRollbackGuidance(lines: string[]): string {
+  return `Rollback guidance:\n${lines.map((line) => `- ${line}`).join("\n")}`;
+}
+
 function usage(): string {
   return [
     `littleimp ${APP_VERSION}`,
     "",
     "Usage:",
     "  littleimp update check [--channel stable|beta] [--source URL] [--json]",
+    "  littleimp update install [--version VERSION] [--release-base-url URL] [--channel stable|beta] [--source URL] [--json]",
+    "  littleimp update install --archive FILE --checksum FILE [--signature FILE] [--json]",
     "  littleimp backup create [--json] [--daemon-url URL]",
     "  littleimp backup create --encrypt --output FILE [--json] [--daemon-url URL] [--password-file FILE]",
     "  littleimp backup list [--include-remote] [--json] [--daemon-url URL]",
@@ -273,36 +317,218 @@ function usage(): string {
     "  LITTLEIMP_DAEMON_URL  Defaults to http://127.0.0.1:3210",
     "  LITTLEIMP_BACKUP_PASSWORD  Password for encrypted backup packages",
     "  LITTLEIMP_UPDATE_SOURCE  Defaults to the GitHub Releases API",
+    "  LITTLEIMP_RELEASE_BASE_URL  Base URL for release archive downloads",
   ].join("\n");
 }
 
-async function handleUpdateCommand(args: string[], io: Required<CliIO>): Promise<number> {
+async function handleUpdateCommand(args: string[], io: CliRuntime): Promise<number> {
   const [command, ...rest] = args;
   if (!command || command === "--help" || command === "-h") {
     io.stdout(usage());
     return command ? 0 : 2;
   }
 
-  if (command !== "check") {
-    throw new CliError(`Unknown update command: ${command}`, 2);
+  if (command === "check") {
+    const parsed = parseArgs(rest, {
+      booleanFlags: ["--json"],
+      valueFlags: ["--channel", "--source"],
+    });
+    assertNoPositionals(parsed, command, "update");
+    const json = parsed.flags.has("--json");
+    const source = getUpdateSource(parsed, io.env);
+    const channel = getUpdateChannel(parsed);
+    const result = await checkForUpdates({ source, channel, fetchImpl: io.fetch, allowPrivateHosts: true });
+
+    if (json) printJson(io, result);
+    else printUpdateResult(io, result);
+    return 0;
   }
 
-  const parsed = parseArgs(rest, {
-    booleanFlags: ["--json"],
-    valueFlags: ["--channel", "--source"],
-  });
-  assertNoPositionals(parsed, command, "update");
-  const json = parsed.flags.has("--json");
-  const source = getUpdateSource(parsed, io.env);
-  const channel = getUpdateChannel(parsed);
-  const result = await checkForUpdates({ source, channel, fetchImpl: io.fetch, allowPrivateHosts: true });
+  if (command === "install" || command === "upgrade") {
+    return await handleUpdateInstallCommand(command, rest, io);
+  }
 
-  if (json) printJson(io, result);
-  else printUpdateResult(io, result);
-  return 0;
+  throw new CliError(`Unknown update command: ${command}`, 2);
 }
 
-async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise<number> {
+async function handleUpdateInstallCommand(
+  command: "install" | "upgrade",
+  rest: string[],
+  io: CliRuntime
+): Promise<number> {
+  const parsed = parseArgs(rest, {
+    booleanFlags: ["--json"],
+    valueFlags: [
+      "--archive",
+      "--checksum",
+      "--signature",
+      "--version",
+      "--release-base-url",
+      "--daemon-url",
+      "--channel",
+      "--source",
+    ],
+  });
+  assertNoPositionals(parsed, command, "update");
+
+  const archive = parsed.values.get("--archive");
+  const checksum = parsed.values.get("--checksum");
+  const signature = parsed.values.get("--signature");
+  const versionFlag = parsed.values.get("--version");
+  const json = parsed.flags.has("--json");
+  const daemonUrl = getDaemonUrl(parsed, io.env);
+  const currentVersion = APP_VERSION;
+  const workDir = createUpgradeWorkDir();
+
+  if (archive && versionFlag) {
+    removeUpgradeWorkDir(workDir);
+    throw new CliError("Use either --archive for a local artifact or --version for a downloaded artifact, not both.", 2);
+  }
+  if (archive && !checksum) {
+    removeUpgradeWorkDir(workDir);
+    throw new CliError("update install --archive requires --checksum <file>.", 2);
+  }
+  if (!archive && (checksum || signature)) {
+    removeUpgradeWorkDir(workDir);
+    throw new CliError("--checksum and --signature are only valid with --archive.", 2);
+  }
+
+  try {
+    const artifact = archive
+      ? {
+          archivePath: archive,
+          checksumPath: checksum!,
+          signaturePath: signature,
+        }
+      : await resolveDownloadedUpgradeArtifact(parsed, io, workDir);
+
+    const verified = verifyAndExtractUpgradeArtifact({
+      archivePath: artifact.archivePath,
+      checksumPath: artifact.checksumPath,
+      signaturePath: artifact.signaturePath,
+      signatureRunner: io.spawnSync,
+      env: io.env,
+      workDir,
+    });
+    const guidance = rollbackGuidance(currentVersion, verified.version);
+
+    try {
+      runNativeUpgradeInstaller({
+        extractedRoot: verified.extractedRoot,
+        runner: io.spawnSync,
+        env: io.env,
+      });
+    } catch (err) {
+      if (err instanceof UpgradeError) {
+        throw new CliError(`${err.message}\n${formatRollbackGuidance(guidance)}`);
+      }
+      throw err;
+    }
+
+    const health = await readDaemonHealthAfterUpgrade(io, daemonUrl, verified.version, guidance);
+    const result: PackagedUpgradeResult = {
+      current_version: currentVersion,
+      upgraded_version: verified.version,
+      archive: verified.archivePath,
+      checksum_verified: verified.checksumVerified,
+      signature_verified: verified.signatureVerified,
+      restart_status: "healthy",
+      health_version: health.version,
+      rollback_guidance: guidance,
+    };
+
+    if (json) printJson(io, result);
+    else printUpgradeResult(io, result);
+    return 0;
+  } finally {
+    removeUpgradeWorkDir(workDir);
+  }
+}
+
+async function resolveDownloadedUpgradeArtifact(
+  parsed: ParsedArgs,
+  io: CliRuntime,
+  workDir: string
+): Promise<{
+  archivePath: string;
+  checksumPath: string;
+  signaturePath?: string;
+}> {
+  const requestedVersion = parsed.values.get("--version");
+  let version = requestedVersion;
+  let discoveredReleaseBaseUrl: string | null = null;
+  if (!version) {
+    const source = getUpdateSource(parsed, io.env);
+    const channel = getUpdateChannel(parsed);
+    const result = await checkForUpdates({ source, channel, fetchImpl: io.fetch, allowPrivateHosts: true });
+    if (!result.latest || !result.update_available) {
+      throw new CliError("No newer compatible update found. Use --version to install a specific release.", 1);
+    }
+    version = result.latest.version;
+    discoveredReleaseBaseUrl = releaseDownloadBaseUrlFromReleaseUrl(result.latest.url);
+  }
+
+  const releaseBaseUrl =
+    parsed.values.get("--release-base-url") ??
+    io.env.LITTLEIMP_RELEASE_BASE_URL ??
+    discoveredReleaseBaseUrl ??
+    defaultReleaseBaseUrl(version);
+
+  return await downloadUpgradeArtifact({
+    version,
+    releaseBaseUrl,
+    workDir,
+    fetchImpl: io.fetch,
+  });
+}
+
+function releaseDownloadBaseUrlFromReleaseUrl(releaseUrl: string): string | null {
+  if (!releaseUrl.trim()) return null;
+  let url: URL;
+  try {
+    url = new URL(releaseUrl);
+  } catch {
+    return null;
+  }
+
+  const match = url.pathname.match(/^(.*\/releases)\/tag\/([^/]+)$/);
+  if (!match) return null;
+
+  url.pathname = `${match[1]}/download/${match[2]}`;
+  url.search = "";
+  url.hash = "";
+  return url.toString().replace(/\/$/, "");
+}
+
+async function readDaemonHealthAfterUpgrade(
+  io: CliRuntime,
+  daemonUrl: string,
+  expectedVersion: string,
+  guidance: string[]
+): Promise<{ status: string; version: string }> {
+  try {
+    const health = await requestJson<{ status?: unknown; version?: unknown }>(io, `${daemonUrl}/health`);
+    const status = typeof health.status === "string" ? health.status : "";
+    const version = typeof health.version === "string" ? health.version : "";
+    if (status !== "ok") {
+      throw new CliError(`littleimpd health check did not report ok after upgrade.\n${formatRollbackGuidance(guidance)}`);
+    }
+    if (version !== expectedVersion) {
+      throw new CliError(
+        `littleimpd restarted with version ${version || "unknown"}, expected ${expectedVersion}.\n${formatRollbackGuidance(guidance)}`
+      );
+    }
+    return { status, version };
+  } catch (err) {
+    if (err instanceof CliError) {
+      if (err.message.includes("Rollback guidance:")) throw err;
+      throw new CliError(`${err.message}\n${formatRollbackGuidance(guidance)}`, err.code);
+    }
+    throw new CliError(`Could not verify littleimpd health after upgrade: ${String(err)}\n${formatRollbackGuidance(guidance)}`);
+  }
+}
+
+async function handleBackupCommand(args: string[], io: CliRuntime): Promise<number> {
   const [command, ...rest] = args;
   if (!command || command === "--help" || command === "-h") {
     io.stdout(usage());
@@ -511,9 +737,10 @@ async function handleBackupCommand(args: string[], io: Required<CliIO>): Promise
 }
 
 export async function runLittleImpCli(args: string[], options: CliIO = {}): Promise<number> {
-  const io: Required<CliIO> = {
+  const io: CliRuntime = {
     env: options.env ?? process.env,
     fetch: options.fetch ?? fetch,
+    spawnSync: options.spawnSync,
     stdout: options.stdout ?? ((line: string) => console.log(line)),
     stderr: options.stderr ?? ((line: string) => console.error(line)),
   };
@@ -535,6 +762,7 @@ export async function runLittleImpCli(args: string[], options: CliIO = {}): Prom
     if (
       err instanceof CliError ||
       err instanceof UpdateCheckError ||
+      err instanceof UpgradeError ||
       err instanceof BackupVerificationError ||
       err instanceof BackupPackageError
     ) {
