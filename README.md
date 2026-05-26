@@ -22,6 +22,25 @@ Little Imp has two parts:
 
 ## Installation
 
+### One-command release install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
+```
+
+For an in-place upgrade that preserves your database, settings, backups, and
+logs:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
+```
+
+The one-command installer downloads the release archive for your platform,
+verifies the published SHA-256 checksum before extraction, verifies the detached
+signature when the release publishes one, and then runs the native installer.
+If no `.asc` signature is published, it prints a checksum-only warning and does
+not claim signature verification.
+
 ### Release archive
 
 Download the archive and matching checksum for your platform from the release:
@@ -37,7 +56,12 @@ cd little-imp-0.1.0-beta-macos/daemon
 Use `little-imp-0.1.0-beta-linux.tar.gz` on Linux. Each archive includes the
 daemon runtime files, installer assets, packaged `littleimp` CLI entry point,
 built frontend bundle, version metadata, payload checksums, and signing
-instructions.
+instructions. If the release includes `little-imp-0.1.0-beta-macos.tar.gz.asc`
+or `little-imp-0.1.0-beta-linux.tar.gz.asc`, verify it before extraction:
+
+```sh
+gpg --verify little-imp-0.1.0-beta-macos.tar.gz.asc little-imp-0.1.0-beta-macos.tar.gz
+```
 
 ### Source checkout
 
@@ -113,6 +137,9 @@ tail -f ~/.local/share/littleimp/logs/daemon.log
 ## Upgrade
 
 ```sh
+# One-command release upgrade
+curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
+
 # From an unpacked release archive or source checkout
 cd little-imp-0.1.0-beta-macos/daemon
 ./install.sh --upgrade
@@ -372,10 +399,8 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Option 1: Native Installation (Recommended)
 
 ```bash
-# Clone and install
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp/daemon
-./install.sh
+# Install the current release
+curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
 ```
 
 ### Option 2: Docker (Alternative)

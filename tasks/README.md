@@ -73,7 +73,7 @@ tasks/
 | TASK-057 | [In-App Encrypted Backup Packages](done/TASK-057-in-app-encrypted-backup-packages.md) | next release operations | medium | done |
 | TASK-058 | [MVP Evidence and Acceptance Criteria Audit](done/TASK-058-mvp-evidence-acceptance-audit.md) | MVP readiness | high | done |
 | TASK-059 | [Signed Release Archive Packaging](done/TASK-059-signed-release-archive-packaging.md) | MVP readiness | high | done |
-| TASK-060 | [One-Command Installer Entry Point](todo/TASK-060-one-command-installer-entrypoint.md) | MVP readiness | high | todo |
+| TASK-060 | [One-Command Installer Entry Point](done/TASK-060-one-command-installer-entrypoint.md) | MVP readiness | high | done |
 | TASK-061 | [Packaged Upgrade Flow](todo/TASK-061-packaged-upgrade-flow.md) | MVP readiness | high | todo |
 | TASK-062 | [Installer Matrix Validation](todo/TASK-062-installer-matrix-validation.md) | MVP readiness | high | todo |
 | TASK-063 | [Homebrew Formula or Tap](todo/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | todo |
@@ -95,14 +95,15 @@ three next-release operations tasks, TASK-052 multi-provider AI support,
 TASK-053 native installer frontend bundle install, TASK-054 CLI update check
 foundation, TASK-055 daemon update check service, TASK-056 in-app update check,
 TASK-057 in-app encrypted backup package work, TASK-058 MVP evidence and
-acceptance criteria audit, and TASK-059 signed release archive packaging work
-available from this macOS workspace are complete.
+acceptance criteria audit, TASK-059 signed release archive packaging work, and
+TASK-060 one-command installer entry point work available from this macOS
+workspace are complete.
 
-TASK-060 through TASK-071 define the remaining MVP-readiness closeout queue.
-They focus on one-command installation, packaged upgrade support, installer
-matrix validation, library reprocessing and failure recovery, in-app encrypted
-backup recovery, diagnostics, local hardening, installed-artifact smoke testing,
-and final MVP release documentation alignment.
+TASK-061 through TASK-071 define the remaining MVP-readiness closeout queue.
+They focus on packaged upgrade support, installer matrix validation, library
+reprocessing and failure recovery, in-app encrypted backup recovery,
+diagnostics, local hardening, installed-artifact smoke testing, and final MVP
+release documentation alignment.
 TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
 audit. TASK-073 is in review with post-MVP multi-user direction research and a
 focused development-server Playwright smoke suite for documented business

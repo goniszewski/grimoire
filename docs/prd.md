@@ -554,15 +554,15 @@ Current release target. Adds the complete local-first beta surface:
 - Settings UI, first-run/degraded-mode UX, app lock, and runtime settings persistence
 - portable backup/restore, scheduled snapshots, custom destinations, and S3-compatible remote backups
 - in-app local backup verification without restore and encrypted backup packages through Settings and the CLI
-- Docker deployment, MCP integration, packaged backup/update-check CLI, signed release archive packaging, source-of-truth API docs, CI, and release checklist
+- Docker deployment, MCP integration, packaged backup/update-check CLI, signed release archive packaging, one-command release installer, source-of-truth API docs, CI, and release checklist
 
 ### Next release
 
 Focuses on release operations:
 
-- one-command installer entry point
 - Homebrew formula or tap
-- update flow beyond the current read-only availability checks
+- packaged upgrade flow beyond the current read-only availability checks
+- installer matrix validation and final release documentation
 
 ### Future
 

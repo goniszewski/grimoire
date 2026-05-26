@@ -27,6 +27,7 @@ Shipped product areas:
 - Optional encrypted backup packages through the `littleimp` CLI and Settings.
 - Manual Settings, daemon API, and packaged `littleimp update check` paths for GitHub Releases-compatible update availability checks.
 - Signed release archive packaging for macOS and Linux with built frontend assets, daemon runtime files, checksums, and signature-ready manifests.
+- One-command release installer that downloads the platform archive, verifies the published checksum, verifies detached signatures when present, and delegates to the native installer.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
 ## Release Blockers
@@ -47,7 +48,7 @@ No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. Broa
 
 The next release should focus on reducing installation friction and improving confidence around backup and operations:
 
-- Distribution polish: Homebrew formula and one-command installer entry point after release artifact signing and checksum publication are settled.
+- Distribution polish: Homebrew formula or tap and installer matrix validation beyond the locally available environments.
 - Better update flow beyond the current read-only availability checks, based on the design in [docs/update-system.md](./update-system.md).
 - More complete installer matrix coverage for supported macOS and Linux versions on separate hosts or VMs.
 
@@ -89,7 +90,7 @@ These are not part of `0.1.0-beta`:
 | Create encrypted backup packages in Settings | Shipped |
 | Run through Docker on localhost | Shipped |
 | Connect through MCP on localhost | Shipped |
-| Install without cloning the repository | Shipped through release archives |
+| Install without cloning the repository | Shipped through release archives and the one-command release installer |
 | Sync live data across devices | Future |
 
 ## Milestone Summary

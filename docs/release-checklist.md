@@ -20,6 +20,12 @@ Use this checklist before tagging or publishing a beta build.
   `gpg --armor --detach-sign --output release/ARCHIVE.tar.gz.asc release/ARCHIVE.tar.gz`.
 - Run `npm run release:validate -- --require-signatures` before publishing
   signed artifacts.
+- Confirm root `install.sh` is executable and references the current release
+  target.
+- Run the one-command installer path against the published release URL:
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash`.
+- Run the one-command upgrade path over an existing install:
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade`.
 - Run `cd daemon && ./install.sh` on a clean macOS profile or VM.
 - Verify `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.
