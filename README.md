@@ -22,6 +22,25 @@ Little Imp has two parts:
 
 ## Installation
 
+### Release archive
+
+Download the archive and matching checksum for your platform from the release:
+
+```sh
+# macOS example
+shasum -a 256 -c little-imp-0.1.0-beta-macos.tar.gz.sha256
+tar -xzf little-imp-0.1.0-beta-macos.tar.gz
+cd little-imp-0.1.0-beta-macos/daemon
+./install.sh
+```
+
+Use `little-imp-0.1.0-beta-linux.tar.gz` on Linux. Each archive includes the
+daemon runtime files, installer assets, packaged `littleimp` CLI entry point,
+built frontend bundle, version metadata, payload checksums, and signing
+instructions.
+
+### Source checkout
+
 ```sh
 # 1. Clone the repository
 git clone https://github.com/goniszewski/little-imp.git
@@ -94,12 +113,14 @@ tail -f ~/.local/share/littleimp/logs/daemon.log
 ## Upgrade
 
 ```sh
-cd little-imp/daemon
+# From an unpacked release archive or source checkout
+cd little-imp-0.1.0-beta-macos/daemon
 ./install.sh --upgrade
 ```
 
 This stops the daemon, replaces the files, reinstalls dependencies, rebuilds the
-frontend, and restarts.
+frontend when source files are present or reuses the bundled frontend archive,
+and restarts.
 
 ---
 

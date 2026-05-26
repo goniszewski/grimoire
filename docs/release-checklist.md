@@ -6,6 +6,20 @@ Use this checklist before tagging or publishing a beta build.
 
 ## Install
 
+- From a clean checkout, run `npm run package:release`.
+- Confirm `release/` contains:
+  - `little-imp-0.1.0-beta-macos.tar.gz`
+  - `little-imp-0.1.0-beta-macos.tar.gz.sha256`
+  - `little-imp-0.1.0-beta-linux.tar.gz`
+  - `little-imp-0.1.0-beta-linux.tar.gz.sha256`
+  - `release-manifest.json`
+- Run `npm run release:validate`.
+- Verify checksums from inside `release/` with `shasum -a 256 -c *.sha256`
+  on macOS or `sha256sum -c *.sha256` on Linux.
+- Sign each archive before publication:
+  `gpg --armor --detach-sign --output release/ARCHIVE.tar.gz.asc release/ARCHIVE.tar.gz`.
+- Run `npm run release:validate -- --require-signatures` before publishing
+  signed artifacts.
 - Run `cd daemon && ./install.sh` on a clean macOS profile or VM.
 - Verify `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.

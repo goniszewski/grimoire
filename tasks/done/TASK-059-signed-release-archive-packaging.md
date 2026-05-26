@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** high
-**Status:** todo
+**Status:** done
 **Area:** distribution / release engineering
 
 ## Description
@@ -26,14 +26,14 @@ or signature-ready manifest.
 
 ## Acceptance Criteria
 
-- [ ] A local command creates versioned release archive artifacts from a clean
+- [x] A local command creates versioned release archive artifacts from a clean
       checkout.
-- [ ] Archives include the built frontend, daemon runtime files, installer, CLI,
+- [x] Archives include the built frontend, daemon runtime files, installer, CLI,
       platform files, and version metadata.
-- [ ] A checksum file is generated for every archive.
-- [ ] The release process supports signing or has a documented signing step that
+- [x] A checksum file is generated for every archive.
+- [x] The release process supports signing or has a documented signing step that
       can be enforced before publication.
-- [ ] Packaging output is covered by focused tests or a deterministic validation
+- [x] Packaging output is covered by focused tests or a deterministic validation
       script.
 
 ## Dependencies
@@ -45,3 +45,19 @@ or signature-ready manifest.
 - This is the primary task for closing the roadmap gap called "install without
   cloning the repository."
 - Avoid introducing auto-update installation here; that belongs to TASK-061.
+
+## Completion Notes
+
+- Added `npm run package:release`, which builds the frontend and creates
+  versioned macOS and Linux `.tar.gz` archives under `release/`.
+- Release archives include `dist/`, daemon runtime files, installer/platform
+  assets, `bin/littleimp`, `VERSION`, `RELEASE.json`, internal
+  `CHECKSUMS.sha256`, and `SIGNING.md`.
+- Added external `.sha256` files and `release-manifest.json` with expected
+  detached `.asc` signature paths.
+- Added `npm run release:validate` to verify manifest artifacts and checksums,
+  with `--require-signatures` for publication gates.
+- Added focused Vitest coverage for payload staging, checksums, missing runtime
+  file failures, manifest signing metadata, and release artifact validation.
+- Updated README, PRD, roadmap, and release checklist documentation for the
+  archive format and signing workflow.
