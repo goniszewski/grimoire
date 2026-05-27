@@ -97,7 +97,9 @@ Record command output, host details, and deviations in
 
 - Create a local backup from Settings or `POST /backup`.
 - Verify the snapshot contains `snapshot.db`, `manifest.json`, `checksums.sha256`, and `data/settings.json`.
+- Create an encrypted package from Settings, then verify it with `POST /backup/package/verify` using a fresh password entry.
 - Restore the snapshot from Settings or `POST /restore`.
+- Restore the encrypted package from Settings or `POST /restore` with `source: "encrypted_package"` and confirm wrong passwords fail before restore.
 - Confirm restore creates a rollback directory and returns `restart_required: true`.
 - Restart the daemon and confirm bookmarks and non-secret settings are restored while local secrets are preserved.
 

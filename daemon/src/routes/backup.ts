@@ -9,12 +9,13 @@ import {
   renameSync,
   readFileSync,
   rmSync,
+  realpathSync,
   existsSync,
   writeFileSync,
   accessSync,
   constants as fsConstants,
 } from "fs";
-import { join, resolve, basename, dirname, isAbsolute } from "path";
+import { join, resolve, basename, dirname, isAbsolute, relative } from "path";
 import { tmpdir } from "os";
 import { version as APP_VERSION } from "../../package.json";
 import { Config } from "../config.js";
@@ -24,6 +25,7 @@ import { nextCronRunAt } from "../lib/cron.js";
 import {
   BackupPackageError,
   createEncryptedBackupPackage,
+  extractEncryptedBackupPackage,
   type EncryptedBackupPackageResult,
 } from "../backup/package.js";
 import { BackupVerificationError } from "../backup/verification.js";
@@ -482,12 +484,27 @@ interface BackupVerificationResult {
   created_at: string;
 }
 
+interface EncryptedBackupPackageVerificationResult {
+  ok: true;
+  path: string;
+  package_encrypted: true;
+  checksum_verified: true;
+  verified_files: string[];
+  bookmark_count: number;
+  created_at: string;
+}
+
 type BackupCreateRequest = {
   skip_remote?: boolean;
 };
 
 type BackupPackageRequest = {
   name: string;
+  password: string;
+};
+
+type EncryptedBackupPackageRequest = {
+  path: string;
   password: string;
 };
 
@@ -650,12 +667,66 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     return resolve(join(getBackupsDir(), `${name}.littleimp-backup.enc`));
   }
 
+  function resolveEncryptedPackagePath(path: string): string {
+    const rawPath = path.trim();
+    if (rawPath !== path || !rawPath) {
+      throw statusError("Field 'path' must be a non-empty absolute path");
+    }
+    if (!isAbsolute(rawPath)) {
+      throw statusError("Encrypted package path must be absolute");
+    }
+
+    const packagePath = resolve(rawPath);
+    if (!packagePath.endsWith(".littleimp-backup.enc")) {
+      throw statusError("Encrypted package path must end with .littleimp-backup.enc");
+    }
+
+    let realBackupsDir: string;
+    let realPackagePath: string;
+    try {
+      const st = statSync(packagePath);
+      if (!st.isFile()) {
+        throw statusError("Encrypted package not found");
+      }
+      realBackupsDir = realpathSync(resolve(getBackupsDir()));
+      realPackagePath = realpathSync(packagePath);
+    } catch (err) {
+      if ((err as { status?: number }).status === 422) throw err;
+      throw statusError("Encrypted package not found");
+    }
+
+    if (!realPackagePath.endsWith(".littleimp-backup.enc")) {
+      throw statusError("Encrypted package path must resolve to a .littleimp-backup.enc file");
+    }
+
+    const relativePath = relative(realBackupsDir, realPackagePath);
+    if (relativePath === "" || relativePath.startsWith("..") || isAbsolute(relativePath)) {
+      throw statusError("Encrypted package path must be inside the configured backup directory");
+    }
+
+    return packagePath;
+  }
+
   function parseBackupPackageRequest(body: Record<string, unknown>): BackupPackageRequest {
     const name = parseLocalBackupName(body);
     if (typeof body.password !== "string") {
       throw statusError("Field 'password' (string) is required");
     }
     return { name, password: body.password };
+  }
+
+  function parseEncryptedPackageRequest(body: Record<string, unknown>): EncryptedBackupPackageRequest {
+    if (typeof body.path !== "string") {
+      throw statusError("Field 'path' (string) is required");
+    }
+    if (typeof body.password !== "string") {
+      throw statusError("Field 'password' (string) is required");
+    }
+
+    return {
+      path: resolveEncryptedPackagePath(body.path),
+      password: body.password,
+    };
   }
 
   async function verifyLocalBackupDirectory(backupPath: string, name: string): Promise<BackupVerificationResult> {
@@ -1056,6 +1127,57 @@ export function createBackupRoute(deps: BackupDeps): Hono {
   });
 
   /**
+   * POST /backup/package/verify
+   * Decrypts and verifies an encrypted backup package without restoring it.
+   */
+  router.post("/backup/package/verify", async (c) => {
+    if (operationInProgress) {
+      return c.json({ error: "A backup or restore operation is already in progress" }, 409);
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await c.req.json() as Record<string, unknown>;
+    } catch {
+      return c.json({ error: "Request body must be valid JSON" }, 400);
+    }
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return c.json({ error: "Request body must be an object" }, 400);
+    }
+
+    operationInProgress = true;
+    const tmpVerifyDir = mkdtempSync(join(tmpdir(), "littleimp-verify-encrypted-"));
+    try {
+      const { path: packagePath, password } = parseEncryptedPackageRequest(body);
+      const verification = await extractEncryptedBackupPackage({
+        packagePath,
+        outputDir: tmpVerifyDir,
+        password,
+      });
+      const result: EncryptedBackupPackageVerificationResult = {
+        ok: true,
+        path: packagePath,
+        package_encrypted: true,
+        checksum_verified: verification.checksum_verified,
+        verified_files: verification.verified_files,
+        bookmark_count: verification.bookmark_count,
+        created_at: verification.created_at,
+      };
+      return c.json(result);
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 422 || err instanceof BackupPackageError || err instanceof BackupVerificationError) {
+        return c.json({ error: (err as Error).message }, 422);
+      }
+      log.error("Encrypted backup package verification failed", { error: String(err) });
+      return c.json({ error: "Encrypted backup package verification failed" }, 500);
+    } finally {
+      try { rmSync(tmpVerifyDir, { recursive: true, force: true }); } catch { /* best-effort */ }
+      operationInProgress = false;
+    }
+  });
+
+  /**
    * Shared restore logic: validates a backup directory and replaces the live database file.
    */
   async function restoreFromBackupDirectory(
@@ -1194,7 +1316,48 @@ export function createBackupRoute(deps: BackupDeps): Hono {
         return c.json({ error: "Request body must be valid JSON" }, 400);
       }
 
-      // ── Remote restore ────────────────────────────────────────────────────────
+      // ── Encrypted package restore ─────────────────────────────────────────────
+      if (body.source === "encrypted_package") {
+        let packagePath: string;
+        let password: string;
+        try {
+          ({ path: packagePath, password } = parseEncryptedPackageRequest(body));
+        } catch (err) {
+          return c.json({ error: (err as Error).message }, 422);
+        }
+
+        const tmpRestoreDir = mkdtempSync(join(tmpdir(), "littleimp-restore-encrypted-"));
+        try {
+          await extractEncryptedBackupPackage({
+            packagePath,
+            outputDir: tmpRestoreDir,
+            password,
+          });
+
+          const { bookmark_count, checksum_verified, rollback_path } = await restoreFromBackupDirectory(
+            tmpRestoreDir
+          );
+
+          return c.json({
+            restored_at: new Date().toISOString(),
+            bookmark_count,
+            checksum_verified,
+            rollback_path,
+            restart_required: true,
+          });
+        } catch (err) {
+          if (err instanceof BackupPackageError || err instanceof BackupVerificationError) {
+            return c.json({ error: err.message }, 422);
+          }
+          const status = (err as { status?: number }).status;
+          if (status === 422) return c.json({ error: (err as Error).message }, 422);
+          log.error("Encrypted package restore failed", { error: String(err) });
+          return c.json({ error: "Encrypted package restore failed" }, 500);
+        } finally {
+          try { rmSync(tmpRestoreDir, { recursive: true, force: true }); } catch { /* best-effort */ }
+        }
+      }
+
       if (body.source === "remote") {
         if (!body.key || typeof body.key !== "string") {
           return c.json({ error: "Field 'key' (string) is required for remote restore" }, 422);

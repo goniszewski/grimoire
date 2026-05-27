@@ -760,6 +760,13 @@ const schemas = {
     },
     ["name", "password"]
   ),
+  EncryptedBackupPackageRequest: objectSchema(
+    {
+      path: stringSchema("Absolute encrypted package file path under the configured backup directory"),
+      password: stringSchema("Password used to decrypt the package"),
+    },
+    ["path", "password"]
+  ),
   BackupVerificationResult: objectSchema(
     {
       ok: booleanSchema("Whether verification succeeded"),
@@ -782,10 +789,24 @@ const schemas = {
     },
     ["path", "source_path", "encrypted", "size_bytes", "created_at"]
   ),
+  EncryptedBackupPackageVerificationResult: objectSchema(
+    {
+      ok: booleanSchema("Whether verification succeeded"),
+      path: stringSchema("Encrypted package file path"),
+      package_encrypted: booleanSchema("Whether the verified input was encrypted"),
+      checksum_verified: booleanSchema("Whether checksum verification succeeded after decryption"),
+      verified_files: arrayOf(stringSchema("Verified backup file path relative to the package archive"), "Verified files"),
+      bookmark_count: integerSchema("Bookmarks included", { minimum: 0 }),
+      created_at: stringSchema("Backup creation timestamp", { format: "date-time" }),
+    },
+    ["ok", "path", "package_encrypted", "checksum_verified", "verified_files", "bookmark_count", "created_at"]
+  ),
   RestoreRequest: objectSchema({
     name: stringSchema("Local backup directory name"),
-    source: stringSchema("Restore source", { enum: ["remote"] }),
+    source: stringSchema("Restore source", { enum: ["remote", "encrypted_package"] }),
     key: stringSchema("Remote S3 snapshot.db key"),
+    path: stringSchema("Absolute encrypted package file path under the configured backup directory"),
+    password: stringSchema("Password used to decrypt the encrypted package"),
     allow_unsafe_no_checksum: booleanSchema("Allow restoring a backup with no checksum file"),
   }),
   RestoreResult: objectSchema(
@@ -1441,9 +1462,30 @@ export const apiContract = {
     },
     {
       method: "POST",
+      path: "/backup/package/verify",
+      tag: "Backup",
+      summary: "Verify an encrypted package file without restoring it.",
+      request: { body: { contentType: "application/json", schema: ref("EncryptedBackupPackageRequest") } },
+      responses: {
+        "200": jsonResponse("Encrypted backup package verification result", ref("EncryptedBackupPackageVerificationResult")),
+        "400": legacyErrorResponse("Malformed JSON or non-object request body"),
+        "409": legacyErrorResponse("Backup or restore already in progress"),
+        "422": legacyErrorResponse("Invalid package request, wrong password, or package validation failed"),
+        "500": legacyErrorResponse("Encrypted backup package verification failed"),
+      },
+      examples: [
+        {
+          title: "Verify an encrypted package",
+          request:
+            'curl -X POST http://127.0.0.1:3210/backup/package/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"path":"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc","password":"correct horse battery staple"}\'',
+        },
+      ],
+    },
+    {
+      method: "POST",
       path: "/restore",
       tag: "Backup",
-      summary: "Restore from a local backup directory or remote S3 snapshot.",
+      summary: "Restore from a local backup directory, remote S3 snapshot, or encrypted package.",
       request: { body: { contentType: "application/json", schema: ref("RestoreRequest") } },
       responses: {
         "200": jsonResponse("Restore completed", ref("RestoreResult")),
@@ -1462,6 +1504,11 @@ export const apiContract = {
           title: "Restore a remote backup",
           request:
             'curl -X POST http://127.0.0.1:3210/restore \\\n  -H "Content-Type: application/json" \\\n  -d \'{"source":"remote","key":"little-imp/2026-05-13T09-30-00-000Z/snapshot.db"}\'',
+        },
+        {
+          title: "Restore an encrypted package",
+          request:
+            'curl -X POST http://127.0.0.1:3210/restore \\\n  -H "Content-Type: application/json" \\\n  -d \'{"source":"encrypted_package","path":"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc","password":"correct horse battery staple"}\'',
         },
       ],
     },

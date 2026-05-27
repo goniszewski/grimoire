@@ -2521,6 +2521,24 @@
       ],
       "additionalProperties": false
     },
+    "EncryptedBackupPackageRequest": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute encrypted package file path under the configured backup directory"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password used to decrypt the package"
+        }
+      },
+      "required": [
+        "path",
+        "password"
+      ],
+      "additionalProperties": false
+    },
     "BackupVerificationResult": {
       "type": "object",
       "properties": {
@@ -2605,6 +2623,55 @@
       ],
       "additionalProperties": false
     },
+    "EncryptedBackupPackageVerificationResult": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Whether verification succeeded"
+        },
+        "path": {
+          "type": "string",
+          "description": "Encrypted package file path"
+        },
+        "package_encrypted": {
+          "type": "boolean",
+          "description": "Whether the verified input was encrypted"
+        },
+        "checksum_verified": {
+          "type": "boolean",
+          "description": "Whether checksum verification succeeded after decryption"
+        },
+        "verified_files": {
+          "type": "array",
+          "description": "Verified files",
+          "items": {
+            "type": "string",
+            "description": "Verified backup file path relative to the package archive"
+          }
+        },
+        "bookmark_count": {
+          "type": "integer",
+          "description": "Bookmarks included",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Backup creation timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ok",
+        "path",
+        "package_encrypted",
+        "checksum_verified",
+        "verified_files",
+        "bookmark_count",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
     "RestoreRequest": {
       "type": "object",
       "properties": {
@@ -2616,12 +2683,21 @@
           "type": "string",
           "description": "Restore source",
           "enum": [
-            "remote"
+            "remote",
+            "encrypted_package"
           ]
         },
         "key": {
           "type": "string",
           "description": "Remote S3 snapshot.db key"
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute encrypted package file path under the configured backup directory"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password used to decrypt the encrypted package"
         },
         "allow_unsafe_no_checksum": {
           "type": "boolean",
@@ -4671,9 +4747,66 @@
     },
     {
       "method": "POST",
+      "path": "/backup/package/verify",
+      "tag": "Backup",
+      "summary": "Verify an encrypted package file without restoring it.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "EncryptedBackupPackageRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Encrypted backup package verification result",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "EncryptedBackupPackageVerificationResult"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON or non-object request body",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "409": {
+          "description": "Backup or restore already in progress",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid package request, wrong password, or package validation failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "500": {
+          "description": "Encrypted backup package verification failed",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Verify an encrypted package",
+          "request": "curl -X POST http://127.0.0.1:3210/backup/package/verify \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"path\":\"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc\",\"password\":\"correct horse battery staple\"}'"
+        }
+      ]
+    },
+    {
+      "method": "POST",
       "path": "/restore",
       "tag": "Backup",
-      "summary": "Restore from a local backup directory or remote S3 snapshot.",
+      "summary": "Restore from a local backup directory, remote S3 snapshot, or encrypted package.",
       "request": {
         "body": {
           "contentType": "application/json",
@@ -4727,6 +4860,10 @@
         {
           "title": "Restore a remote backup",
           "request": "curl -X POST http://127.0.0.1:3210/restore \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"source\":\"remote\",\"key\":\"little-imp/2026-05-13T09-30-00-000Z/snapshot.db\"}'"
+        },
+        {
+          "title": "Restore an encrypted package",
+          "request": "curl -X POST http://127.0.0.1:3210/restore \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"source\":\"encrypted_package\",\"path\":\"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc\",\"password\":\"correct horse battery staple\"}'"
         }
       ]
     },

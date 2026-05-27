@@ -4,7 +4,9 @@ import {
   createBackup,
   listBackups,
   restoreBackup,
+  restoreEncryptedBackupPackage,
   restoreRemoteBackup,
+  verifyEncryptedBackupPackage,
   verifyBackup,
   getBackupSchedule,
   updateBackupSchedule,
@@ -86,6 +88,24 @@ export function useCreateEncryptedBackupPackage() {
   return useMutation({
     mutationFn: (request: { name: string; password: string }) =>
       createEncryptedBackupPackage(request),
+  });
+}
+
+export function useVerifyEncryptedBackupPackage() {
+  return useMutation({
+    mutationFn: (request: { path: string; password: string }) =>
+      verifyEncryptedBackupPackage(request),
+  });
+}
+
+export function useRestoreEncryptedBackupPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (request: { path: string; password: string }) =>
+      restoreEncryptedBackupPackage(request),
+    onSuccess: () => {
+      qc.clear();
+    },
   });
 }
 

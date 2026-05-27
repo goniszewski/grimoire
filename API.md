@@ -914,9 +914,43 @@ curl -X POST http://127.0.0.1:3210/backup/package \
   -d '{"name":"2026-05-13T09-30-00-000Z","password":"correct horse battery staple"}'
 ```
 
+#### POST /backup/package/verify
+
+Verify an encrypted package file without restoring it.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `EncryptedBackupPackageRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Absolute encrypted package file path under the configured backup directory |
+| `password` | string | yes | Password used to decrypt the package |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `EncryptedBackupPackageVerificationResult` | Encrypted backup package verification result |
+| `400` | application/json | `LegacyError` | Malformed JSON or non-object request body |
+| `409` | application/json | `LegacyError` | Backup or restore already in progress |
+| `422` | application/json | `LegacyError` | Invalid package request, wrong password, or package validation failed |
+| `500` | application/json | `LegacyError` | Encrypted backup package verification failed |
+
+Examples:
+
+**Verify an encrypted package**
+
+```bash
+curl -X POST http://127.0.0.1:3210/backup/package/verify \
+  -H "Content-Type: application/json" \
+  -d '{"path":"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc","password":"correct horse battery staple"}'
+```
+
 #### POST /restore
 
-Restore from a local backup directory or remote S3 snapshot.
+Restore from a local backup directory, remote S3 snapshot, or encrypted package.
 
 Request body:
 
@@ -926,8 +960,10 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | no | Local backup directory name |
-| `source` | "remote" | no | Restore source |
+| `source` | "remote" \| "encrypted_package" | no | Restore source |
 | `key` | string | no | Remote S3 snapshot.db key |
+| `path` | string | no | Absolute encrypted package file path under the configured backup directory |
+| `password` | string | no | Password used to decrypt the encrypted package |
 | `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 Responses:
@@ -956,6 +992,14 @@ curl -X POST http://127.0.0.1:3210/restore \
 curl -X POST http://127.0.0.1:3210/restore \
   -H "Content-Type: application/json" \
   -d '{"source":"remote","key":"little-imp/2026-05-13T09-30-00-000Z/snapshot.db"}'
+```
+
+**Restore an encrypted package**
+
+```bash
+curl -X POST http://127.0.0.1:3210/restore \
+  -H "Content-Type: application/json" \
+  -d '{"source":"encrypted_package","path":"/Users/me/Library/Application Support/littleimp/backups/2026-05-13T09-30-00-000Z.littleimp-backup.enc","password":"correct horse battery staple"}'
 ```
 
 #### POST /settings/test-s3
@@ -1992,6 +2036,13 @@ Response data
 | `name` | string | yes | Local backup directory name |
 | `password` | string | yes | Password used to encrypt the package |
 
+### EncryptedBackupPackageRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `path` | string | yes | Absolute encrypted package file path under the configured backup directory |
+| `password` | string | yes | Password used to decrypt the package |
+
 ### BackupVerificationResult
 
 | Field | Type | Required | Description |
@@ -2014,13 +2065,27 @@ Response data
 | `size_bytes` | integer | yes | Encrypted package size |
 | `created_at` | string | yes | Package creation timestamp |
 
+### EncryptedBackupPackageVerificationResult
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `ok` | boolean | yes | Whether verification succeeded |
+| `path` | string | yes | Encrypted package file path |
+| `package_encrypted` | boolean | yes | Whether the verified input was encrypted |
+| `checksum_verified` | boolean | yes | Whether checksum verification succeeded after decryption |
+| `verified_files` | array<string> | yes | Verified files |
+| `bookmark_count` | integer | yes | Bookmarks included |
+| `created_at` | string | yes | Backup creation timestamp |
+
 ### RestoreRequest
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | no | Local backup directory name |
-| `source` | "remote" | no | Restore source |
+| `source` | "remote" \| "encrypted_package" | no | Restore source |
 | `key` | string | no | Remote S3 snapshot.db key |
+| `path` | string | no | Absolute encrypted package file path under the configured backup directory |
+| `password` | string | no | Password used to decrypt the encrypted package |
 | `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 ### RestoreResult

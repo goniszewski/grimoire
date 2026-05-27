@@ -56,6 +56,8 @@ Little Imp is designed as a local-first application that runs entirely on the us
 - SQLite database with WAL mode for consistency
 - Backup checksum validation
 - Backup settings export omits secrets; restore preserves current local secrets
+- Encrypted backup package passwords are required per verify/restore operation and are not stored
+- In-app encrypted package verify/restore is limited to daemon-local package paths under the configured backup directory
 - Safe file operations with proper error handling
 - No sensitive data in logs (API keys are masked)
 

@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** medium
-**Status:** todo
+**Status:** done
 **Area:** backup / frontend
 
 ## Description
@@ -27,13 +27,13 @@ practical.
 
 ## Acceptance Criteria
 
-- [ ] Settings can verify an encrypted backup package without restoring it.
-- [ ] Settings can restore an encrypted backup package with explicit destructive
+- [x] Settings can verify an encrypted backup package without restoring it.
+- [x] Settings can restore an encrypted backup package with explicit destructive
       confirmation.
-- [ ] Passwords are required per operation and are never persisted.
-- [ ] Wrong password or corrupt package errors occur before any restore attempt.
-- [ ] Restore reports rollback path and `restart_required: true`.
-- [ ] API docs and frontend types reflect the new endpoints or request shapes.
+- [x] Passwords are required per operation and are never persisted.
+- [x] Wrong password or corrupt package errors occur before any restore attempt.
+- [x] Restore reports rollback path and `restart_required: true`.
+- [x] API docs and frontend types reflect the new endpoints or request shapes.
 
 ## Dependencies
 

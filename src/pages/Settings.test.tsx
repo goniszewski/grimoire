@@ -32,6 +32,8 @@ vi.mock("@/hooks/use-backup", () => ({
   useUpdateBackupDestination: vi.fn(),
   useVerifyBackup: vi.fn(),
   useCreateEncryptedBackupPackage: vi.fn(),
+  useVerifyEncryptedBackupPackage: vi.fn(),
+  useRestoreEncryptedBackupPackage: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -53,6 +55,8 @@ const mockedUseBackupDestination = backupHooks.useBackupDestination as unknown a
 const mockedUseUpdateBackupDestination = backupHooks.useUpdateBackupDestination as unknown as ReturnType<typeof vi.fn>;
 const mockedUseVerifyBackup = backupHooks.useVerifyBackup as unknown as ReturnType<typeof vi.fn>;
 const mockedUseCreateEncryptedBackupPackage = backupHooks.useCreateEncryptedBackupPackage as unknown as ReturnType<typeof vi.fn>;
+const mockedUseVerifyEncryptedBackupPackage = backupHooks.useVerifyEncryptedBackupPackage as unknown as ReturnType<typeof vi.fn>;
+const mockedUseRestoreEncryptedBackupPackage = backupHooks.useRestoreEncryptedBackupPackage as unknown as ReturnType<typeof vi.fn>;
 
 function settingsResponse(aiPatch: Record<string, unknown> = {}) {
   const ai = {
@@ -208,6 +212,8 @@ beforeEach(() => {
   mockedUseUpdateBackupDestination.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseVerifyBackup.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseCreateEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
+  mockedUseVerifyEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
+  mockedUseRestoreEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
 });
 
 describe("Settings update checks", () => {
@@ -297,6 +303,65 @@ describe("Settings backup verification", () => {
       expect(packageMutate).toHaveBeenCalledWith(
         {
           name: "2026-05-18T10-00-00-000Z",
+          password: "correct horse battery staple",
+        },
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+        })
+      );
+    });
+  });
+
+  it("verifies an encrypted package path with a per-operation password", async () => {
+    const verifyEncryptedMutate = vi.fn();
+    mockedUseVerifyEncryptedBackupPackage.mockReturnValue({ mutate: verifyEncryptedMutate, isPending: false });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await screen.findByText("Encrypted Packages");
+    fireEvent.change(screen.getByLabelText("Encrypted package path"), {
+      target: { value: "/tmp/backups/2026-05-18T10-00-00-000Z.littleimp-backup.enc" },
+    });
+    fireEvent.change(screen.getByLabelText("Encrypted package password"), {
+      target: { value: "correct horse battery staple" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Verify package" }));
+
+    await waitFor(() => {
+      expect(verifyEncryptedMutate).toHaveBeenCalledWith(
+        {
+          path: "/tmp/backups/2026-05-18T10-00-00-000Z.littleimp-backup.enc",
+          password: "correct horse battery staple",
+        },
+        expect.objectContaining({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+        })
+      );
+    });
+  });
+
+  it("restores an encrypted package path only after explicit confirmation", async () => {
+    const restoreEncryptedMutate = vi.fn();
+    mockedUseRestoreEncryptedBackupPackage.mockReturnValue({ mutate: restoreEncryptedMutate, isPending: false });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await screen.findByText("Encrypted Packages");
+    fireEvent.change(screen.getByLabelText("Encrypted package path"), {
+      target: { value: "/tmp/backups/2026-05-18T10-00-00-000Z.littleimp-backup.enc" },
+    });
+    fireEvent.change(screen.getByLabelText("Encrypted package password"), {
+      target: { value: "correct horse battery staple" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Restore package" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Restore encrypted package" }));
+
+    await waitFor(() => {
+      expect(restoreEncryptedMutate).toHaveBeenCalledWith(
+        {
+          path: "/tmp/backups/2026-05-18T10-00-00-000Z.littleimp-backup.enc",
           password: "correct horse battery staple",
         },
         expect.objectContaining({

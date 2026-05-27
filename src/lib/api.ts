@@ -31,7 +31,9 @@ import type {
   ConnectivityTestResponseDto,
   DomainDto,
   DomainListResponseDto,
+  EncryptedBackupPackageRequestDto,
   EncryptedBackupPackageResultDto,
+  EncryptedBackupPackageVerificationResultDto,
   ImportProgressEventDto,
   ImportSummaryResponseDto,
   PaginationDto,
@@ -592,6 +594,16 @@ export interface ApiEncryptedBackupPackageResult {
   created_at: EncryptedBackupPackageResultDto["created_at"];
 }
 
+export interface ApiEncryptedBackupPackageVerificationResult {
+  ok: EncryptedBackupPackageVerificationResultDto["ok"];
+  path: EncryptedBackupPackageVerificationResultDto["path"];
+  package_encrypted: EncryptedBackupPackageVerificationResultDto["package_encrypted"];
+  checksum_verified: EncryptedBackupPackageVerificationResultDto["checksum_verified"];
+  verified_files: EncryptedBackupPackageVerificationResultDto["verified_files"];
+  bookmark_count: EncryptedBackupPackageVerificationResultDto["bookmark_count"];
+  created_at: EncryptedBackupPackageVerificationResultDto["created_at"];
+}
+
 export async function createBackup(): Promise<BackupResultDto> {
   return apiFetch<BackupResultDto>("/backup", { method: "POST" });
 }
@@ -619,6 +631,16 @@ export async function createEncryptedBackupPackage(
   });
 }
 
+/** Verify an encrypted package by daemon-local absolute path without restoring it. */
+export async function verifyEncryptedBackupPackage(
+  request: EncryptedBackupPackageRequestDto
+): Promise<EncryptedBackupPackageVerificationResultDto> {
+  return apiFetch<EncryptedBackupPackageVerificationResultDto>("/backup/package/verify", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
 /** Restore from a local backup by its directory name (basename only — no path traversal). */
 export async function restoreBackup(name: string): Promise<RestoreResultDto> {
   return apiFetch<RestoreResultDto>("/restore", {
@@ -632,6 +654,16 @@ export async function restoreRemoteBackup(key: string): Promise<RestoreResultDto
   return apiFetch<RestoreResultDto>("/restore", {
     method: "POST",
     body: JSON.stringify({ source: "remote", key } satisfies RestoreRequestDto),
+  });
+}
+
+/** Restore an encrypted package by daemon-local absolute path. */
+export async function restoreEncryptedBackupPackage(
+  request: EncryptedBackupPackageRequestDto
+): Promise<RestoreResultDto> {
+  return apiFetch<RestoreResultDto>("/restore", {
+    method: "POST",
+    body: JSON.stringify({ source: "encrypted_package", ...request } satisfies RestoreRequestDto),
   });
 }
 

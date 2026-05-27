@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { chmodSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from "fs";
+import { chmodSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, symlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { createBackupRoute } from "../../routes/backup.js";
+import { createEncryptedBackupPackage } from "../../backup/package.js";
 import { runMigrations } from "../../db/migrations.js";
 import { settingsManager } from "../../settings.js";
 import { version as DAEMON_VERSION } from "../../../package.json";
@@ -519,6 +520,97 @@ describe("Backup API", () => {
     expect(json.error).toInclude("Checksum");
   });
 
+  it("POST /backup/package/verify validates an encrypted package without replacing the live database", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    const packageRes = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct horse battery staple" }),
+    });
+    const { path: packagePath } = await packageRes.json() as { path: string };
+
+    db.exec("CREATE TABLE _encrypted_verify_marker (id INTEGER PRIMARY KEY)");
+    db.exec("INSERT INTO _encrypted_verify_marker VALUES (42)");
+    const liveHashBeforeVerify = await sha256File(dbPath);
+
+    const res = await localOnlyApp.request("/backup/package/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: packagePath, password: "correct horse battery staple" }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      ok: boolean;
+      path: string;
+      package_encrypted: boolean;
+      checksum_verified: boolean;
+      verified_files: string[];
+      bookmark_count: number;
+      created_at: string;
+    };
+    expect(json.ok).toBeTrue();
+    expect(json.path).toBe(packagePath);
+    expect(json.package_encrypted).toBeTrue();
+    expect(json.checksum_verified).toBeTrue();
+    expect(json.verified_files).toContain("snapshot.db");
+    expect(json.verified_files).toContain("data/settings.json");
+    expect(json.bookmark_count).toBe(0);
+    expect(json.created_at).toBeString();
+    expect(await sha256File(dbPath)).toBe(liveHashBeforeVerify);
+    expect(() => db.exec("CREATE TABLE _write_after_encrypted_verify (id INTEGER PRIMARY KEY)")).not.toThrow();
+  });
+
+  it("POST /backup/package/verify returns 422 for wrong encrypted package passwords", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    const packageRes = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct-password" }),
+    });
+    const { path: packagePath } = await packageRes.json() as { path: string };
+
+    const res = await localOnlyApp.request("/backup/package/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: packagePath, password: "wrong-password" }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("password is incorrect or package is corrupted");
+  });
+
+  it("POST /backup/package/verify rejects package symlinks that resolve outside the backup directory", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const outsidePackagePath = join(tmpDir, "outside-package.littleimp-backup.enc");
+    await createEncryptedBackupPackage({
+      sourceDir: backupPath,
+      outputPath: outsidePackagePath,
+      password: "correct horse battery staple",
+    });
+    const symlinkPath = join(dataDir, "backups", "outside-link.littleimp-backup.enc");
+    symlinkSync(outsidePackagePath, symlinkPath);
+
+    const res = await localOnlyApp.request("/backup/package/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: symlinkPath, password: "correct horse battery staple" }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("inside the configured backup directory");
+  });
+
   // ─── POST /restore ─────────────────────────────────────────────────────────
 
   it("POST /restore with a valid backup restores the database file", async () => {
@@ -869,6 +961,80 @@ describe("Backup API", () => {
     expect(res.status).toBe(422);
     const json = await res.json() as { error: string };
     expect(json.error).toInclude("Checksum");
+  });
+
+  it("POST /restore restores from an encrypted package path after password verification", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    const snapshotPath = join(backupPath, "snapshot.db");
+    const packageRes = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct horse battery staple" }),
+    });
+    const { path: packagePath } = await packageRes.json() as { path: string };
+
+    db.exec("CREATE TABLE _encrypted_restore_marker (id INTEGER PRIMARY KEY)");
+    db.exec("INSERT INTO _encrypted_restore_marker VALUES (42)");
+
+    const res = await localOnlyApp.request("/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "encrypted_package",
+        path: packagePath,
+        password: "correct horse battery staple",
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      restored_at: string;
+      bookmark_count: number;
+      checksum_verified: boolean;
+      rollback_path: string;
+      restart_required: boolean;
+    };
+    expect(json.restored_at).toBeString();
+    expect(json.bookmark_count).toBe(0);
+    expect(json.checksum_verified).toBeTrue();
+    expect(existsSync(join(json.rollback_path, "littleimp.db"))).toBeTrue();
+    expect(json.restart_required).toBeTrue();
+    expect(await sha256File(dbPath)).toBe(await sha256File(snapshotPath));
+  });
+
+  it("POST /restore rejects wrong encrypted package passwords before replacing the database", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    const packageRes = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "correct-password" }),
+    });
+    const { path: packagePath } = await packageRes.json() as { path: string };
+
+    db.exec("CREATE TABLE _encrypted_restore_password_marker (id INTEGER PRIMARY KEY)");
+    const liveHashBeforeRestore = await sha256File(dbPath);
+
+    const res = await localOnlyApp.request("/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "encrypted_package",
+        path: packagePath,
+        password: "wrong-password",
+      }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toInclude("password is incorrect or package is corrupted");
+    expect(await sha256File(dbPath)).toBe(liveHashBeforeRestore);
+    expect(() => db.exec("CREATE TABLE _write_after_wrong_password (id INTEGER PRIMARY KEY)")).not.toThrow();
   });
 
   it("POST /restore returns 422 when snapshot.db is missing", async () => {

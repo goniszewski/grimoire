@@ -240,7 +240,10 @@ hashes; restoring settings preserves the current local secrets. The Settings
 page also supports custom local destinations, scheduled snapshots, and
 S3-compatible remote backup targets. Local backups in Settings can be verified
 without restoring them or wrapped as encrypted `.littleimp-backup.enc` package
-files.
+files. Settings can verify or restore encrypted packages by daemon-local
+absolute path when the package is under the configured backup folder. Browser
+file pickers cannot provide arbitrary absolute paths, so use the packaged CLI
+for encrypted packages stored elsewhere.
 
 Native installs also include a `littleimp` CLI command at
 `~/.local/bin/littleimp`. If that directory is on your `PATH`, you can manage
@@ -348,6 +351,16 @@ curl -X POST http://127.0.0.1:3210/backup/verify \
 curl -X POST http://127.0.0.1:3210/backup/package \
   -H "Content-Type: application/json" \
   -d '{"name":"BACKUP_DIRECTORY_NAME","password":"use-a-long-unique-password"}'
+
+# Verify an encrypted package without restoring it
+curl -X POST http://127.0.0.1:3210/backup/package/verify \
+  -H "Content-Type: application/json" \
+  -d '{"path":"/absolute/path/inside/backups/BACKUP_DIRECTORY_NAME.littleimp-backup.enc","password":"use-a-long-unique-password"}'
+
+# Restore an encrypted package
+curl -X POST http://127.0.0.1:3210/restore \
+  -H "Content-Type: application/json" \
+  -d '{"source":"encrypted_package","path":"/absolute/path/inside/backups/BACKUP_DIRECTORY_NAME.littleimp-backup.enc","password":"use-a-long-unique-password"}'
 ```
 
 Restore verifies checksums before replacing data, creates a rollback directory

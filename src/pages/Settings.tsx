@@ -63,6 +63,8 @@ import {
   useBackupDestination,
   useUpdateBackupDestination,
   useCreateEncryptedBackupPackage,
+  useVerifyEncryptedBackupPackage,
+  useRestoreEncryptedBackupPackage,
 } from "@/hooks/use-backup";
 import type {
   ApiAiProvider,
@@ -392,14 +394,20 @@ const Settings = () => {
   const restoreRemoteMutation = useRestoreRemoteBackup();
   const verifyBackupMutation = useVerifyBackup();
   const createEncryptedPackageMutation = useCreateEncryptedBackupPackage();
+  const verifyEncryptedPackageMutation = useVerifyEncryptedBackupPackage();
+  const restoreEncryptedPackageMutation = useRestoreEncryptedBackupPackage();
   const [verifyingBackupName, setVerifyingBackupName] = useState<string | null>(null);
   const [encryptingBackupName, setEncryptingBackupName] = useState<string | null>(null);
+  const [encryptedPackagePath, setEncryptedPackagePath] = useState("");
+  const [encryptedPackagePassword, setEncryptedPackagePassword] = useState("");
   const backupOperationPending =
     createBackupMutation.isPending ||
     restoreMutation.isPending ||
     restoreRemoteMutation.isPending ||
     verifyBackupMutation.isPending ||
-    createEncryptedPackageMutation.isPending;
+    createEncryptedPackageMutation.isPending ||
+    verifyEncryptedPackageMutation.isPending ||
+    restoreEncryptedPackageMutation.isPending;
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
 
@@ -601,6 +609,7 @@ const Settings = () => {
     setEncryptingBackupName(name);
     createEncryptedPackageMutation.mutate({ name, password }, {
       onSuccess: (result) => {
+        setEncryptedPackagePath(result.path);
         toast.success("Encrypted package created", {
           description: encryptedPackageDescription(result),
         });
@@ -610,6 +619,43 @@ const Settings = () => {
       },
       onSettled: () => {
         setEncryptingBackupName(null);
+      },
+    });
+  }
+
+  function handleVerifyEncryptedPackage() {
+    const path = encryptedPackagePath.trim();
+    const password = encryptedPackagePassword;
+    verifyEncryptedPackageMutation.mutate({ path, password }, {
+      onSuccess: (result) => {
+        toast.success("Encrypted package verified", {
+          description: `${result.verified_files.length} files checked · ${result.bookmark_count} bookmarks`,
+        });
+      },
+      onError: (err: Error) => {
+        toast.error("Encrypted package verification failed", { description: err.message });
+      },
+      onSettled: () => {
+        setEncryptedPackagePassword("");
+      },
+    });
+  }
+
+  function handleRestoreEncryptedPackage() {
+    const path = encryptedPackagePath.trim();
+    const password = encryptedPackagePassword;
+    restoreEncryptedPackageMutation.mutate({ path, password }, {
+      onSuccess: (result) => {
+        toast.success("Encrypted package restored", {
+          description: restoreSuccessDescription(result),
+        });
+        setEncryptedPackagePath("");
+      },
+      onError: (err: Error) => {
+        toast.error("Encrypted package restore failed", { description: err.message });
+      },
+      onSettled: () => {
+        setEncryptedPackagePassword("");
       },
     });
   }
@@ -1212,6 +1258,90 @@ const Settings = () => {
                             }}
                           >
                             Restore
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <h3 className="text-xs font-medium">Encrypted Packages</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Verify or restore a package file that the daemon can read from the configured backup folder.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="encrypted-package-path" className="text-xs">
+                        Encrypted package path
+                      </Label>
+                      <Input
+                        id="encrypted-package-path"
+                        placeholder="/Users/me/.../backups/backup.littleimp-backup.enc"
+                        className="h-8 text-sm font-mono"
+                        value={encryptedPackagePath}
+                        onChange={(e) => setEncryptedPackagePath(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="encrypted-package-password" className="text-xs">
+                        Encrypted package password
+                      </Label>
+                      <Input
+                        id="encrypted-package-password"
+                        type="password"
+                        autoComplete="new-password"
+                        className="h-8 text-sm"
+                        value={encryptedPackagePassword}
+                        onChange={(e) => setEncryptedPackagePassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!encryptedPackagePath.trim() || !encryptedPackagePassword || backupOperationPending}
+                      onClick={handleVerifyEncryptedPackage}
+                    >
+                      {verifyEncryptedPackageMutation.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      ) : (
+                        <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      Verify package
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!encryptedPackagePath.trim() || !encryptedPackagePassword || backupOperationPending}
+                        >
+                          {restoreEncryptedPackageMutation.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                          ) : (
+                            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                          )}
+                          Restore package
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Restore encrypted package?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This decrypts and verifies the package, creates a rollback copy,
+                            preserves local secrets, and replaces your current library with{" "}
+                            <strong className="font-mono break-all">{encryptedPackagePath}</strong>.
+                            The daemon must be restarted after restoring.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRestoreEncryptedPackage}>
+                            Restore encrypted package
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
