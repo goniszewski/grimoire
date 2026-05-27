@@ -4,6 +4,20 @@ Release target: `0.1.0-beta`
 
 Use this checklist before tagging or publishing a beta build.
 
+## Supported Installer Matrix
+
+The MVP native installer supports this exact OS matrix:
+
+| Target | Architecture | Service manager | Release artifact | Required before publish |
+|---|---|---|---|---|
+| macOS 12+ arm64 | Apple Silicon | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Validate on the available Apple Silicon host or VM. |
+| macOS 12+ x64 | Intel | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Validate manually on Intel hardware or an x64 macOS VM when available. |
+| Ubuntu 24.04 LTS | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
+| Debian 12 | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
+
+Record command output, host details, and deviations in
+[installer-matrix-validation.md](./installer-matrix-validation.md).
+
 ## Install
 
 - From a clean checkout, run `npm run package:release`.
@@ -30,11 +44,19 @@ Use this checklist before tagging or publishing a beta build.
   `littleimp update install --version 0.1.0-beta`.
 - Run the packaged CLI local archive upgrade path against a downloaded archive
   and checksum, adding `--signature` when the detached signature is published.
-- Run `cd daemon && ./install.sh` on a clean macOS profile or VM.
-- Verify `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
+- Run clean install, health check, autostart registration, upgrade, uninstall,
+  and purge validation for every supported installer matrix target.
+- On Linux, run `npm run installer:matrix:linux` to validate Ubuntu 24.04 LTS
+  and Debian 12 systemd user installs where privileged Docker systemd
+  containers are available.
+- On macOS, run `cd daemon && ./install.sh` on a clean profile or VM for each
+  available architecture, then verify
+  `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.
-- Run `./install.sh --upgrade` over an existing install and confirm data is preserved.
-- Run `./install.sh --uninstall` and confirm application data remains unless `--purge` is used.
+- Run `./install.sh --upgrade` over an existing install and confirm data is
+  preserved.
+- Run `./install.sh --uninstall` and confirm application data remains unless
+  `--purge` is used.
 
 ## Docker
 

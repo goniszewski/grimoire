@@ -14,6 +14,7 @@ async function writeExecutable(path: string, content: string): Promise<void> {
 type FixtureRepoOptions = {
   frontend: "source" | "prebuilt" | "missing";
   disableRsync?: boolean;
+  os?: "linux" | "macos";
   prepareHome?: (homeDir: string) => Promise<void>;
 };
 
@@ -54,7 +55,7 @@ async function createFixtureRepo(root: string, options: FixtureRepoOptions): Pro
   return fixtureRepo;
 }
 
-async function createFakePath(root: string): Promise<string> {
+async function createFakePath(root: string, os: "linux" | "macos"): Promise<string> {
   const binDir = join(root, "bin");
   await mkdir(binDir, { recursive: true });
 
@@ -89,14 +90,32 @@ esac
 printf '{"status":"ok"}\\n'
 `
   );
-  await writeExecutable(join(binDir, "systemctl"), "#!/usr/bin/env bash\nexit 0\n");
-  await writeExecutable(join(binDir, "uname"), "#!/usr/bin/env bash\nprintf 'Linux\\n'\n");
+  await writeExecutable(
+    join(binDir, "uname"),
+    `#!/usr/bin/env bash
+printf '${os === "macos" ? "Darwin" : "Linux"}\\n'
+`
+  );
+
+  if (os === "macos") {
+    await writeExecutable(
+      join(binDir, "launchctl"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "\${LITTLEIMP_TEST_LAUNCHCTL_LOG:?}"
+exit 0
+`
+    );
+  } else {
+    await writeExecutable(join(binDir, "systemctl"), "#!/usr/bin/env bash\nexit 0\n");
+  }
 
   return binDir;
 }
 
 async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
   homeDir: string;
+  launchctlLogPath: string;
   stdout: string;
   stderr: string;
   tempRoot: string;
@@ -108,7 +127,8 @@ async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
     const homeDir = join(tempRoot, "home");
     await mkdir(homeDir, { recursive: true });
     await options.prepareHome?.(homeDir);
-    const fakePath = await createFakePath(tempRoot);
+    const fakePath = await createFakePath(tempRoot, options.os ?? "linux");
+    const launchctlLogPath = join(tempRoot, "launchctl.log");
     const bashEnv = options.disableRsync ? join(tempRoot, "no-rsync.bashenv") : undefined;
 
     if (bashEnv) {
@@ -131,6 +151,7 @@ async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
         ...process.env,
         HOME: homeDir,
         PATH: `${fakePath}:${process.env.PATH ?? ""}`,
+        LITTLEIMP_TEST_LAUNCHCTL_LOG: launchctlLogPath,
         ...(bashEnv ? { BASH_ENV: bashEnv } : {}),
       },
       stdout: "pipe",
@@ -145,7 +166,7 @@ async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
 
     expect(exitCode, `${stdout}\n${stderr}`).toBe(0);
 
-    return { homeDir, stdout, stderr, tempRoot };
+    return { homeDir, launchctlLogPath, stdout, stderr, tempRoot };
   } catch (error) {
     await rm(tempRoot, { recursive: true, force: true });
     throw error;
@@ -180,6 +201,28 @@ describe("install.sh static frontend install", () => {
       await expect(readFile(join(installedDist, "index.html"), "utf8")).resolves.toContain(
         "<title>Prebuilt Little Imp</title>"
       );
+    } finally {
+      await rm(result.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("installs a macOS LaunchAgent with resolved runtime paths", async () => {
+    const result = await runInstallerFixture({ frontend: "prebuilt", os: "macos" });
+
+    try {
+      const plistPath = join(result.homeDir, "Library", "LaunchAgents", "com.littleimp.daemon.plist");
+      const plist = await readFile(plistPath, "utf8");
+      const launchctlLog = await readFile(result.launchctlLogPath, "utf8");
+
+      expect(plist).toContain("<string>com.littleimp.daemon</string>");
+      expect(plist).toContain(`<string>${result.homeDir}/.local/share/littleimp/daemon/src/index.ts</string>`);
+      expect(plist).toContain(`<string>${result.homeDir}/.local/share/littleimp</string>`);
+      expect(plist).not.toContain("__INSTALL_DIR__");
+      expect(plist).not.toContain("__DATA_DIR__");
+      expect(plist).not.toContain("__BUN_PATH__");
+      expect(launchctlLog).toContain(`unload -- ${plistPath}`);
+      expect(launchctlLog).toContain(`load -w -- ${plistPath}`);
+      expect(launchctlLog).toContain("start com.littleimp.daemon");
     } finally {
       await rm(result.tempRoot, { recursive: true, force: true });
     }

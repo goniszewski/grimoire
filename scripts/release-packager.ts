@@ -360,6 +360,8 @@ function copyRequiredDirectory(
 function copyDirectory(source: string, target: string, exclude?: (relativePath: string) => boolean): void {
   mkdirSync(target, { recursive: true });
   for (const entry of readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (isPortableMetadataEntry(entry.name)) continue;
+
     const sourcePath = join(source, entry.name);
     const targetPath = join(target, entry.name);
     const relativePath = normalizeRelativePath(relative(source, sourcePath));
@@ -381,6 +383,8 @@ function copyDirectoryWithRoot(
 ): void {
   mkdirSync(target, { recursive: true });
   for (const entry of readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (isPortableMetadataEntry(entry.name)) continue;
+
     const sourcePath = join(source, entry.name);
     const targetPath = join(target, entry.name);
     const relativePath = normalizeRelativePath(relative(sourceRoot, sourcePath));
@@ -410,6 +414,8 @@ function listFiles(root: string): string[] {
   const entries = readdirSync(root, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
   const files: string[] = [];
   for (const entry of entries) {
+    if (isPortableMetadataEntry(entry.name)) continue;
+
     const path = join(root, entry.name);
     if (entry.isDirectory()) {
       files.push(...listFiles(path));
@@ -447,12 +453,27 @@ function createTarGzArchive(options: {
   archivePath: string;
 }): void {
   mkdirSync(dirname(options.archivePath), { recursive: true });
-  runCommand("tar", ["-czf", options.archivePath, "-C", options.stageRoot, options.rootDirectoryName], options.stageRoot);
+  runCommand(
+    "tar",
+    ["--no-xattrs", "-czf", options.archivePath, "-C", options.stageRoot, options.rootDirectoryName],
+    options.stageRoot,
+    {
+      COPYFILE_DISABLE: "1",
+    }
+  );
 }
 
-function runCommand(command: string, args: string[], cwd: string): void {
+function isPortableMetadataEntry(name: string): boolean {
+  return name === ".DS_Store" || name === "__MACOSX" || name.startsWith("._");
+}
+
+function runCommand(command: string, args: string[], cwd: string, env: Record<string, string> = {}): void {
   const result = spawnSync(command, args, {
     cwd,
+    env: {
+      ...process.env,
+      ...env,
+    },
     stdio: "inherit",
   });
   if (result.error) {

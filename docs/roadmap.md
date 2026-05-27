@@ -40,18 +40,19 @@ These checks are complete for the current beta validation state:
 - Docker Compose startup, loopback-only port publishing, container health, and named-volume preservation after shutdown.
 - macOS native installer install, upgrade, health, uninstall, and purge smoke in an isolated temporary home.
 - Linux systemd-user installer install, upgrade, health, service enablement, user-manager restart autostart, uninstall, and purge smoke in an Ubuntu 24.04 Docker environment with systemd running as PID 1.
+- Installer matrix validation names macOS 12+ arm64, macOS 12+ x64, Ubuntu 24.04 LTS, and Debian 12 as the MVP targets, with Ubuntu and Debian packaged archive smokes passing in systemd-user containers.
 - Documentation release-target and local markdown link audits.
 - GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
 
-No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. Broader Linux host/VM distro matrix coverage remains future release hardening.
+No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. macOS 12+ x64 remains a manual pre-publish validation target because this workspace has no Intel Mac or x64 macOS VM.
 
 ## Next Release
 
 The next release should focus on reducing installation friction and improving confidence around backup and operations:
 
-- Distribution polish: Homebrew formula or tap and installer matrix validation beyond the locally available environments.
+- Distribution polish: Homebrew formula or tap.
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
-- More complete installer matrix coverage for supported macOS and Linux versions on separate hosts or VMs.
+- Fresh host or VM installer matrix reruns before publication, especially macOS 12+ x64.
 
 ## Future Ideas
 

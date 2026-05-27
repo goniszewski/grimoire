@@ -75,7 +75,7 @@ tasks/
 | TASK-059 | [Signed Release Archive Packaging](done/TASK-059-signed-release-archive-packaging.md) | MVP readiness | high | done |
 | TASK-060 | [One-Command Installer Entry Point](done/TASK-060-one-command-installer-entrypoint.md) | MVP readiness | high | done |
 | TASK-061 | [Packaged Upgrade Flow](done/TASK-061-packaged-upgrade-flow.md) | MVP readiness | high | done |
-| TASK-062 | [Installer Matrix Validation](todo/TASK-062-installer-matrix-validation.md) | MVP readiness | high | todo |
+| TASK-062 | [Installer Matrix Validation](done/TASK-062-installer-matrix-validation.md) | MVP readiness | high | done |
 | TASK-063 | [Homebrew Formula or Tap](todo/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | todo |
 | TASK-064 | [Library Reprocess and Re-Embed Jobs](todo/TASK-064-library-reprocess-reembed-jobs.md) | MVP readiness | high | todo |
 | TASK-065 | [Pipeline Failure Recovery UX](todo/TASK-065-pipeline-failure-recovery-ux.md) | MVP readiness | high | todo |
@@ -99,11 +99,11 @@ acceptance criteria audit, TASK-059 signed release archive packaging work, and
 TASK-060 one-command installer entry point work available from this macOS
 workspace are complete.
 
-TASK-061 packaged upgrade support is complete. TASK-062 through TASK-071 define
-the remaining MVP-readiness closeout queue. They focus on installer matrix
-validation, library reprocessing and failure recovery, in-app encrypted backup
-recovery, diagnostics, local hardening, installed-artifact smoke testing, and
-final MVP release documentation alignment.
+TASK-061 packaged upgrade support and TASK-062 installer matrix validation are
+complete. TASK-063 through TASK-071 define the remaining MVP-readiness closeout
+queue. They focus on Homebrew packaging, library reprocessing and failure
+recovery, in-app encrypted backup recovery, diagnostics, local hardening,
+installed-artifact smoke testing, and final MVP release documentation alignment.
 TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
 audit. TASK-073 is in review with post-MVP multi-user direction research and a
 focused development-server Playwright smoke suite for documented business
@@ -119,11 +119,13 @@ Completed release validation evidence:
 6. Release-target and local markdown link audits passed.
 7. GitHub Actions `Quality Gates` passed for the current release-validation commit, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
 8. Linux systemd user installer smoke passed in an Ubuntu 24.04 Docker environment with systemd running as PID 1 and a non-root `systemctl --user` manager.
+9. Installer matrix validation names the exact MVP OS targets and passed the packaged Linux archive smoke on Ubuntu 24.04 LTS and Debian 12 systemd-user containers.
 
 Notes:
 
 - TASK-029 is not present as a task file; daemon test coverage is represented by TASK-030 and TASK-035.
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
 - TASK-048 completed the release checklist paths available in this workspace, including a containerized Ubuntu systemd-user smoke for the Linux installer path.
+- TASK-062 documents macOS 12+ x64 as a manual pre-publish target because this workspace does not have Intel macOS hardware or an x64 macOS VM.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.

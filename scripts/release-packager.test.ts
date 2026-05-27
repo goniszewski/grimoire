@@ -31,6 +31,8 @@ function createProjectFixture(): string {
   writeFixtureFile(root, "daemon/platform/com.littleimp.daemon.plist", "<plist />\n");
   writeFixtureFile(root, "daemon/src/cli.ts", "console.log('cli');\n");
   writeFixtureFile(root, "daemon/src/index.ts", "console.log('daemon');\n");
+  writeFixtureFile(root, "daemon/src/db/migrations/0001_initial.sql", "SELECT 1;\n");
+  writeFixtureFile(root, "daemon/src/db/migrations/._0001_initial.sql", "AppleDouble metadata\n");
   writeFixtureFile(root, "daemon/src/test/ignored.test.ts", "throw new Error('not runtime');\n");
   writeFixtureFile(root, "daemon/node_modules/ignored/index.js", "module.exports = {};\n");
 
@@ -55,6 +57,9 @@ describe("release packager", () => {
     expect(readFileSync(join(result.payloadRoot, "dist/index.html"), "utf8")).toContain("root");
     expect(readFileSync(join(result.payloadRoot, "daemon/install.sh"), "utf8")).toContain("bash");
     expect(readFileSync(join(result.payloadRoot, "daemon/src/cli.ts"), "utf8")).toContain("cli");
+    expect(readFileSync(join(result.payloadRoot, "daemon/src/db/migrations/0001_initial.sql"), "utf8")).toContain(
+      "SELECT 1"
+    );
     expect(readFileSync(join(result.payloadRoot, "bin/littleimp"), "utf8")).toContain("../daemon/src/cli.ts");
     expect(readFileSync(join(result.payloadRoot, "RELEASE.json"), "utf8")).toContain("\"platform\": \"linux\"");
     expect(readFileSync(join(result.payloadRoot, "SIGNING.md"), "utf8")).toContain("detach-sign");
@@ -63,6 +68,7 @@ describe("release packager", () => {
     expect(statSync(join(result.payloadRoot, "daemon/install.sh")).mode & 0o111).toBeGreaterThan(0);
 
     expect(() => statSync(join(result.payloadRoot, "daemon/src/test/ignored.test.ts"))).toThrow();
+    expect(() => statSync(join(result.payloadRoot, "daemon/src/db/migrations/._0001_initial.sql"))).toThrow();
     expect(() => statSync(join(result.payloadRoot, "daemon/node_modules/ignored/index.js"))).toThrow();
   });
 

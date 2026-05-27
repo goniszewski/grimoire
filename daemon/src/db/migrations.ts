@@ -4,6 +4,13 @@ import { join } from "path";
 import { log } from "../logger.js";
 
 const MIGRATIONS_DIR = join(import.meta.dir, "migrations");
+const MIGRATION_FILE_PATTERN = /^\d{4}_.+\.sql$/;
+
+export function listMigrationFiles(migrationsDir: string = MIGRATIONS_DIR): string[] {
+  return readdirSync(migrationsDir)
+    .filter((file) => MIGRATION_FILE_PATTERN.test(file))
+    .sort(); // lexicographic -> 0001, 0002, ...
+}
 
 /** Apply all pending SQL migration files in version order. */
 export function runMigrations(db: Database): void {
@@ -22,9 +29,7 @@ export function runMigrations(db: Database): void {
       .map((r) => r.version)
   );
 
-  const files = readdirSync(MIGRATIONS_DIR)
-    .filter((f) => f.endsWith(".sql"))
-    .sort(); // lexicographic → 0001, 0002, …
+  const files = listMigrationFiles();
 
   for (const file of files) {
     const version = file.split("_")[0]; // e.g. "0001"
