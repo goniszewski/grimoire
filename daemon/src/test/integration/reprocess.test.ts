@@ -134,6 +134,40 @@ describe("Reprocess API", () => {
     expect(payload.bookmarkId).toBe(failed.id);
   });
 
+  it("failed-only mode includes bookmarks with undismissed non-blocking pipeline failures", async () => {
+    const failed = insertBookmark("https://example.com/non-blocking-failure");
+    const dismissed = insertBookmark("https://example.com/dismissed-failure");
+    const clean = insertBookmark("https://example.com/no-failure");
+
+    db.run(
+      `INSERT INTO pipeline_failures (bookmark_id, stage, message, configuration_related, retryable)
+       VALUES (?, 'embed', 'Embedding provider unavailable', 1, 1)`,
+      [failed.id]
+    );
+    db.run(
+      `INSERT INTO pipeline_failures (
+         bookmark_id, stage, message, configuration_related, retryable, dismissed_at
+       )
+       VALUES (?, 'ai_enrich', 'Provider was unavailable', 1, 1, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`,
+      [dismissed.id]
+    );
+    insertJob(clean.id, clean.url, JobStatus.Done, "2026-01-01T00:00:00.000Z");
+
+    const res = await app.request("/bookmarks/reprocess", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "failed_only" }),
+    });
+
+    expect(res.status).toBe(202);
+    const json = (await res.json()) as ReprocessResponse;
+    expect(json.data.requested).toBe(1);
+    expect(json.data.enqueued).toBe(1);
+
+    const payload = JSON.parse(readJob(json.data.job_ids[0])!.payload) as { bookmarkId: string };
+    expect(payload.bookmarkId).toBe(failed.id);
+  });
+
   it("returns a non-pollable empty batch when all targets already have active work", async () => {
     const bookmark = insertBookmark("https://example.com/already-running");
     insertJob(bookmark.id, bookmark.url, JobStatus.Pending, "2026-01-01T00:00:00.000Z");

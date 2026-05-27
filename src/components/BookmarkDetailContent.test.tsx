@@ -13,6 +13,10 @@ vi.mock("./PipelineBadge", () => ({
   ),
 }));
 
+vi.mock("./PipelineRecoveryPanel", () => ({
+  PipelineRecoveryPanel: () => null,
+}));
+
 vi.mock("@/hooks/use-toast", () => ({
   toast: vi.fn(),
 }));

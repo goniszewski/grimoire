@@ -1,11 +1,14 @@
 import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
+import { randomUUID } from "crypto";
 import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { SearchRepository } from "../db/search-repository.js";
 import { log } from "../logger.js";
 import { isPrivateHost } from "../lib/network.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
+import { JobStatus } from "../types/job.js";
+import { dismissPipelineFailure, getPipelineFailure } from "../pipeline/failures.js";
 
 interface BookmarksDeps {
   db: Database;
@@ -49,6 +52,19 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   if (!val) return fallback;
   const n = parseInt(val, 10);
   return isNaN(n) ? fallback : Math.max(n, min);
+}
+
+function hasActivePipelineJob(db: Database, bookmarkId: string): boolean {
+  const row = db
+    .query<{ count: number }, [string, JobStatus, JobStatus]>(
+      `SELECT COUNT(*) AS count
+       FROM jobs
+       WHERE json_extract(payload, '$.bookmarkId') = ?
+         AND type IN ('ingest', 'reprocess')
+         AND status IN (?, ?)`
+    )
+    .get(bookmarkId, JobStatus.Pending, JobStatus.Running);
+  return (row?.count ?? 0) > 0;
 }
 
 // ─── Response envelope ────────────────────────────────────────────────────────
@@ -298,10 +314,12 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     if (!bm) return problem(c, 404, "Not Found", "Bookmark not found");
 
     const job = repo.getPipelineStatus(id);
+    const lastFailure = getPipelineFailure(deps.db, id);
 
     return ok(c, {
       bookmarkId: id,
       bookmarkStatus: bm.status,
+      last_failure: lastFailure,
       job: job
         ? {
             id: job.id,
@@ -314,6 +332,61 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
           }
         : null,
     });
+  });
+
+  // POST /bookmarks/:id/retry — enqueue reprocessing for one bookmark
+  router.post("/bookmarks/:id/retry", (c) => {
+    const id = c.req.param("id");
+    const bookmark = repo.findById(id);
+    if (!bookmark) return problem(c, 404, "Not Found", "Bookmark not found");
+
+    const batchId = randomUUID();
+    const jobIds: string[] = [];
+    let skipped = 0;
+
+    if (hasActivePipelineJob(deps.db, id)) {
+      skipped = 1;
+    } else {
+      const job = deps.queue.enqueue("reprocess", {
+        bookmarkId: bookmark.id,
+        url: bookmark.url,
+        mode: "full",
+        replaceAiFields: false,
+        batchId,
+      });
+      jobIds.push(job.id);
+    }
+
+    return c.json({
+      data: {
+        batch_id: batchId,
+        mode: "selected",
+        requested: 1,
+        enqueued: jobIds.length,
+        skipped,
+        job_ids: jobIds,
+        status_url: jobIds.length > 0 ? `/reprocess/${batchId}` : null,
+      },
+    }, 202);
+  });
+
+  // POST /bookmarks/:id/failure/dismiss — hide the current non-blocking failure
+  router.post("/bookmarks/:id/failure/dismiss", (c) => {
+    const id = c.req.param("id");
+    if (!repo.findById(id)) return problem(c, 404, "Not Found", "Bookmark not found");
+
+    const latestJob = repo.getPipelineStatus(id);
+    if (latestJob?.status === JobStatus.Failed) {
+      return problem(
+        c,
+        409,
+        "Conflict",
+        "Blocking pipeline failures must be retried before they can be dismissed"
+      );
+    }
+
+    dismissPipelineFailure(deps.db, id);
+    return c.body(null, 204);
   });
 
   return router;

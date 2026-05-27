@@ -571,6 +571,55 @@
       "additionalProperties": false,
       "description": "Response data"
     },
+    "PipelineFailure": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "description": "Pipeline stage that last reported an actionable failure",
+          "enum": [
+            "fetch",
+            "extract",
+            "ai_enrich",
+            "embed",
+            "index"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Failure message safe to show in the local UI"
+        },
+        "configuration_related": {
+          "type": "boolean",
+          "description": "Whether the failure likely requires provider settings"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Whether retrying the bookmark pipeline is supported"
+        },
+        "failed_at": {
+          "type": "string",
+          "description": "Failure timestamp",
+          "format": "date-time"
+        },
+        "dismissed_at": {
+          "type": "string",
+          "description": "Dismissal timestamp",
+          "format": "date-time",
+          "nullable": true
+        }
+      },
+      "required": [
+        "stage",
+        "message",
+        "configuration_related",
+        "retryable",
+        "failed_at",
+        "dismissed_at"
+      ],
+      "additionalProperties": false,
+      "description": "Latest actionable pipeline failure for a bookmark"
+    },
     "BookmarkPipelineStatus": {
       "type": "object",
       "properties": {
@@ -588,6 +637,10 @@
             "ai_enriched",
             "indexed"
           ]
+        },
+        "last_failure": {
+          "ref": "PipelineFailure",
+          "nullable": true
         },
         "job": {
           "type": "object",
@@ -649,6 +702,7 @@
       "required": [
         "bookmarkId",
         "bookmarkStatus",
+        "last_failure",
         "job"
       ],
       "additionalProperties": false
@@ -3458,7 +3512,7 @@
       "method": "GET",
       "path": "/bookmarks/:id/status",
       "tag": "Bookmarks",
-      "summary": "Get latest pipeline job status for a bookmark.",
+      "summary": "Get latest pipeline job and failure status for a bookmark.",
       "request": {
         "pathParams": {
           "type": "object",
@@ -3484,6 +3538,83 @@
         },
         "404": {
           "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/:id/retry",
+      "tag": "Reprocess",
+      "summary": "Retry pipeline work for one bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "202": {
+          "description": "Selected bookmark retry accepted",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ReprocessBatchResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/:id/failure/dismiss",
+      "tag": "Bookmarks",
+      "summary": "Dismiss the current non-blocking pipeline failure for a bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "204": {
+          "description": "Pipeline failure dismissed"
+        },
+        "404": {
+          "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "Blocking pipeline failure cannot be dismissed",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

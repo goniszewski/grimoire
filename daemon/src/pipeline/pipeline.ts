@@ -25,6 +25,11 @@ import { getEmbedding, buildEmbedInput } from "../ai/embeddings.js";
 import { EmbeddingRepository } from "../db/embedding-repository.js";
 import { BookmarkContentRow } from "../db/types.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
+import {
+  clearPipelineFailure,
+  errorMessage,
+  recordPipelineFailure,
+} from "./failures.js";
 
 export interface PipelinePayload {
   bookmarkId: string;
@@ -110,6 +115,7 @@ export async function runPipeline(
 ): Promise<void> {
   const { bookmarkId, url } = payload;
   const preserveExistingFields = options.replaceAiFields === false;
+  clearPipelineFailure(db, bookmarkId);
 
   // Fetch current bookmark for fallback title
   const row = db
@@ -121,7 +127,17 @@ export async function runPipeline(
 
   // ── Stage 1: fetch ────────────────────────────────────────────────────────
   log.info("Pipeline: fetch", { bookmarkId, url });
-  const fetched = await fetchPage(url); // throws → stays "saved", caller retries
+  let fetched;
+  try {
+    fetched = await fetchPage(url); // throws → stays "saved", caller retries
+  } catch (err) {
+    recordPipelineFailure(db, {
+      bookmarkId,
+      stage: "fetch",
+      message: errorMessage(err),
+    });
+    throw err;
+  }
   setStatus(db, bookmarkId, "fetched");
   log.info("Pipeline: fetch done", { bookmarkId, finalUrl: fetched.finalUrl });
 
@@ -131,9 +147,15 @@ export async function runPipeline(
   try {
     extracted = await extractContent(url, fetched, existingTitle);
   } catch (err) {
+    const message = errorMessage(err);
+    recordPipelineFailure(db, {
+      bookmarkId,
+      stage: "extract",
+      message,
+    });
     log.warn("Pipeline: extraction failed, storing title only", {
       bookmarkId,
-      error: err instanceof Error ? err.message : String(err),
+      error: message,
     });
     // Graceful degradation: store minimal content so bookmark is still usable.
     // Cap raw HTML to avoid storing up to 10 MB per failed bookmark.
@@ -206,9 +228,16 @@ export async function runPipeline(
       });
       log.info("Pipeline: ai_enrich done", { bookmarkId });
     } catch (err) {
+      const message = errorMessage(err);
+      recordPipelineFailure(db, {
+        bookmarkId,
+        stage: "ai_enrich",
+        message,
+        configurationRelated: true,
+      });
       log.warn("Pipeline: ai_enrich failed, continuing without enrichment", {
         bookmarkId,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
       });
       // Non-fatal: bookmark is fully usable without LLM enrichment
     }
@@ -253,9 +282,16 @@ export async function runPipeline(
       embRepo.upsert(bookmarkId, runtimeSettings.embeddingConfig.model, vector);
       log.info("Pipeline: embed done", { bookmarkId, dimensions: vector.length });
     } catch (err) {
+      const message = errorMessage(err);
+      recordPipelineFailure(db, {
+        bookmarkId,
+        stage: "embed",
+        message,
+        configurationRelated: true,
+      });
       log.warn("Pipeline: embed failed, continuing without embedding", {
         bookmarkId,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
       });
       // Non-fatal: bookmark is fully usable without embedding
     }
@@ -287,9 +323,15 @@ export async function runPipeline(
     })();
     log.info("Pipeline: index done", { bookmarkId });
   } catch (err) {
+    const message = errorMessage(err);
+    recordPipelineFailure(db, {
+      bookmarkId,
+      stage: "index",
+      message,
+    });
     log.warn("Pipeline: FTS index update failed", {
       bookmarkId,
-      error: err instanceof Error ? err.message : String(err),
+      error: message,
     });
     // Non-fatal: bookmark is still usable; FTS will pick it up on next rebuild
   }

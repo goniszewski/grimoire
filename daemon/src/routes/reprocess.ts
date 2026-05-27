@@ -81,17 +81,24 @@ function getFailedTargets(db: Database): ReprocessTarget[] {
     .query<ReprocessTarget, [JobStatus]>(
       `SELECT b.id, b.url
        FROM bookmarks b
-       JOIN jobs j ON j.id = (
-         SELECT j2.id
-         FROM jobs j2
-         WHERE json_extract(j2.payload, '$.bookmarkId') = b.id
-           AND j2.type IN ('ingest', 'reprocess')
-         ORDER BY j2.created_at DESC
-         LIMIT 1
-       )
        WHERE b.is_trashed = 0
-         AND j.status = ?
-       ORDER BY j.created_at DESC`
+         AND (
+           EXISTS (
+             SELECT 1
+             FROM pipeline_failures pf
+             WHERE pf.bookmark_id = b.id
+               AND pf.dismissed_at IS NULL
+           )
+           OR (
+             SELECT j.status
+             FROM jobs j
+             WHERE json_extract(j.payload, '$.bookmarkId') = b.id
+               AND j.type IN ('ingest', 'reprocess')
+             ORDER BY j.created_at DESC
+             LIMIT 1
+           ) = ?
+         )
+       ORDER BY b.created_at DESC`
     )
     .all(JobStatus.Failed);
 }

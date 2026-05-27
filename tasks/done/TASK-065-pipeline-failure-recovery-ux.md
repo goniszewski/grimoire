@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** high
-**Status:** todo
+**Status:** done
 **Area:** frontend / daemon / pipeline
 
 ## Description
@@ -25,14 +25,14 @@ for the user to understand what happened and retry the failed work.
 
 ## Acceptance Criteria
 
-- [ ] Failed pipeline states are visible from the bookmark detail UI.
-- [ ] Users can retry failed work for a bookmark without deleting and re-adding
+- [x] Failed pipeline states are visible from the bookmark detail UI.
+- [x] Users can retry failed work for a bookmark without deleting and re-adding
       it.
-- [ ] Configuration-related failures link to Settings.
-- [ ] Bulk retry is available for imported or accumulated failures when
+- [x] Configuration-related failures link to Settings.
+- [x] Bulk retry is available for imported or accumulated failures when
       practical.
-- [ ] Retry actions are idempotent and do not create duplicate bookmarks.
-- [ ] Frontend and daemon tests cover the failure recovery paths.
+- [x] Retry actions are idempotent and do not create duplicate bookmarks.
+- [x] Frontend and daemon tests cover the failure recovery paths.
 
 ## Dependencies
 

@@ -354,6 +354,14 @@ export async function reprocessBookmarks(
   });
 }
 
+export async function retryBookmarkPipeline(id: string): Promise<ReprocessBatchResponseDto> {
+  return apiFetch<ReprocessBatchResponseDto>(`/bookmarks/${id}/retry`, { method: "POST" });
+}
+
+export async function dismissBookmarkFailure(id: string): Promise<void> {
+  await apiFetch<void>(`/bookmarks/${id}/failure/dismiss`, { method: "POST" });
+}
+
 export async function getReprocessStatus(batchId: string): Promise<ReprocessBatchStatusResponseDto> {
   return apiFetch<ReprocessBatchStatusResponseDto>(`/reprocess/${batchId}`);
 }

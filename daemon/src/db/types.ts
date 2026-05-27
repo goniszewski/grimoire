@@ -9,6 +9,13 @@ export type BookmarkStatus =
 
 export type JobStatus = "pending" | "running" | "done" | "failed";
 
+export type PipelineFailureStage =
+  | "fetch"
+  | "extract"
+  | "ai_enrich"
+  | "embed"
+  | "index";
+
 export type SuggestionStatus = "pending" | "accepted" | "rejected";
 
 export interface BookmarkRow {
@@ -69,6 +76,16 @@ export interface JobRow {
   next_run_at: string | null;
   started_at: string | null;
   finished_at: string | null;
+}
+
+export interface PipelineFailureRow {
+  bookmark_id: string;
+  stage: PipelineFailureStage;
+  message: string;
+  configuration_related: 0 | 1;
+  retryable: 0 | 1;
+  failed_at: string;
+  dismissed_at: string | null;
 }
 
 export interface AgentSuggestionRow {

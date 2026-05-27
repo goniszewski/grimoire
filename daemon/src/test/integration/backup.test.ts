@@ -136,9 +136,13 @@ describe("Backup API", () => {
     expect(manifest.app_version).toBe(DAEMON_VERSION);
     expect(manifest.bookmark_count).toBe(0);
     expect(manifest.db_size_bytes).toBeGreaterThan(0);
+    const latestSchemaVersion = db
+      .query<{ version: string }, []>("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
+      .get()?.version;
+    if (!latestSchemaVersion) throw new Error("Expected at least one applied schema migration");
     expect(manifest.database).toEqual({
       filename: "snapshot.db",
-      schema_version: "0009",
+      schema_version: latestSchemaVersion,
       size_bytes: manifest.db_size_bytes,
     });
     expect(manifest.settings).toEqual({

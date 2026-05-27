@@ -251,12 +251,27 @@ const schemas = {
     notes: nullable(stringSchema("Personal notes, or null to clear", { maxLength: 100000 })),
   }),
   RelatedBookmarksResponse: envelope(arrayOf(ref("Bookmark"), "Related bookmarks")),
+  PipelineFailure: objectSchema(
+    {
+      stage: stringSchema("Pipeline stage that last reported an actionable failure", {
+        enum: ["fetch", "extract", "ai_enrich", "embed", "index"],
+      }),
+      message: stringSchema("Failure message safe to show in the local UI"),
+      configuration_related: booleanSchema("Whether the failure likely requires provider settings"),
+      retryable: booleanSchema("Whether retrying the bookmark pipeline is supported"),
+      failed_at: stringSchema("Failure timestamp", { format: "date-time" }),
+      dismissed_at: nullable(stringSchema("Dismissal timestamp", { format: "date-time" })),
+    },
+    ["stage", "message", "configuration_related", "retryable", "failed_at", "dismissed_at"],
+    "Latest actionable pipeline failure for a bookmark"
+  ),
   BookmarkPipelineStatus: objectSchema(
     {
       bookmarkId: stringSchema("Bookmark ID"),
       bookmarkStatus: stringSchema("Current bookmark pipeline status", {
         enum: ["saved", "fetched", "extracted", "ai_enriched", "indexed"],
       }),
+      last_failure: nullable(ref("PipelineFailure")),
       job: nullable(
         objectSchema(
           {
@@ -272,7 +287,7 @@ const schemas = {
         )
       ),
     },
-    ["bookmarkId", "bookmarkStatus", "job"]
+    ["bookmarkId", "bookmarkStatus", "last_failure", "job"]
   ),
   BookmarkPipelineStatusResponse: envelope(ref("BookmarkPipelineStatus")),
   ReprocessRequest: objectSchema(
@@ -1041,11 +1056,34 @@ export const apiContract = {
       method: "GET",
       path: "/bookmarks/:id/status",
       tag: "Bookmarks",
-      summary: "Get latest pipeline job status for a bookmark.",
+      summary: "Get latest pipeline job and failure status for a bookmark.",
       request: { pathParams: idParam() },
       responses: {
         "200": jsonResponse("Bookmark pipeline status", ref("BookmarkPipelineStatusResponse")),
         "404": problemResponse("Bookmark not found"),
+      },
+    },
+    {
+      method: "POST",
+      path: "/bookmarks/:id/retry",
+      tag: "Reprocess",
+      summary: "Retry pipeline work for one bookmark.",
+      request: { pathParams: idParam() },
+      responses: {
+        "202": jsonResponse("Selected bookmark retry accepted", ref("ReprocessBatchResponse")),
+        "404": problemResponse("Bookmark not found"),
+      },
+    },
+    {
+      method: "POST",
+      path: "/bookmarks/:id/failure/dismiss",
+      tag: "Bookmarks",
+      summary: "Dismiss the current non-blocking pipeline failure for a bookmark.",
+      request: { pathParams: idParam() },
+      responses: {
+        "204": noContentResponse("Pipeline failure dismissed"),
+        "404": problemResponse("Bookmark not found"),
+        "409": problemResponse("Blocking pipeline failure cannot be dismissed"),
       },
     },
     {

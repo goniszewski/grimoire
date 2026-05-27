@@ -258,7 +258,7 @@ curl "http://127.0.0.1:3210/bookmarks/bm_123/related?limit=5"
 
 #### GET /bookmarks/:id/status
 
-Get latest pipeline job status for a bookmark.
+Get latest pipeline job and failure status for a bookmark.
 
 Path parameters:
 
@@ -273,7 +273,42 @@ Responses:
 | `200` | application/json | `BookmarkPipelineStatusResponse` | Bookmark pipeline status |
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 
+#### POST /bookmarks/:id/failure/dismiss
+
+Dismiss the current non-blocking pipeline failure for a bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Pipeline failure dismissed |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+| `409` | application/problem+json | `ProblemDetails` | Blocking pipeline failure cannot be dismissed |
+
 ### Reprocess
+
+#### POST /bookmarks/:id/retry
+
+Retry pipeline work for one bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `202` | application/json | `ReprocessBatchResponse` | Selected bookmark retry accepted |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 
 #### POST /bookmarks/reprocess
 
@@ -1274,12 +1309,32 @@ Response data
 |---|---|---:|---|
 | `data` | array<Bookmark> | yes | Related bookmarks |
 
+### PipelineFailure
+
+Latest actionable pipeline failure for a bookmark
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `stage` | "fetch" \| "extract" \| "ai_enrich" \| "embed" \| "index" | yes | Pipeline stage that last reported an actionable failure |
+| `message` | string | yes | Failure message safe to show in the local UI |
+| `configuration_related` | boolean | yes | Whether the failure likely requires provider settings |
+| `retryable` | boolean | yes | Whether retrying the bookmark pipeline is supported |
+| `failed_at` | string | yes | Failure timestamp |
+| `dismissed_at` | string \| null | yes | Dismissal timestamp |
+
 ### BookmarkPipelineStatus
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `bookmarkId` | string | yes | Bookmark ID |
 | `bookmarkStatus` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Current bookmark pipeline status |
+| `last_failure` | PipelineFailure \| null | yes |  |
+| `last_failure.stage` | "fetch" \| "extract" \| "ai_enrich" \| "embed" \| "index" | yes | Pipeline stage that last reported an actionable failure |
+| `last_failure.message` | string | yes | Failure message safe to show in the local UI |
+| `last_failure.configuration_related` | boolean | yes | Whether the failure likely requires provider settings |
+| `last_failure.retryable` | boolean | yes | Whether retrying the bookmark pipeline is supported |
+| `last_failure.failed_at` | string | yes | Failure timestamp |
+| `last_failure.dismissed_at` | string \| null | yes | Dismissal timestamp |
 | `job` | object \| null | yes |  |
 | `job.id` | string | yes | Job ID |
 | `job.type` | string | yes | Job type |
@@ -1298,6 +1353,13 @@ Response data
 | `data` | BookmarkPipelineStatus | yes |  |
 | `data.bookmarkId` | string | yes | Bookmark ID |
 | `data.bookmarkStatus` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Current bookmark pipeline status |
+| `data.last_failure` | PipelineFailure \| null | yes |  |
+| `data.last_failure.stage` | "fetch" \| "extract" \| "ai_enrich" \| "embed" \| "index" | yes | Pipeline stage that last reported an actionable failure |
+| `data.last_failure.message` | string | yes | Failure message safe to show in the local UI |
+| `data.last_failure.configuration_related` | boolean | yes | Whether the failure likely requires provider settings |
+| `data.last_failure.retryable` | boolean | yes | Whether retrying the bookmark pipeline is supported |
+| `data.last_failure.failed_at` | string | yes | Failure timestamp |
+| `data.last_failure.dismissed_at` | string \| null | yes | Dismissal timestamp |
 | `data.job` | object \| null | yes |  |
 | `data.job.id` | string | yes | Job ID |
 | `data.job.type` | string | yes | Job type |
