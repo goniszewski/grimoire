@@ -34,5 +34,17 @@ export interface IngestJobPayload {
 
 export type IngestJob = Job<IngestJobPayload>;
 
+export type ReprocessJobMode = "full" | "embeddings_only";
+
+export interface ReprocessJobPayload {
+  bookmarkId: string;
+  url: string;
+  mode: ReprocessJobMode;
+  replaceAiFields: boolean;
+  batchId: string;
+}
+
+export type ReprocessJob = Job<ReprocessJobPayload>;
+
 // Union of all known job payload types (extend as new job types are added)
-export type AnyJob = PingJob | IngestJob | Job<unknown>;
+export type AnyJob = PingJob | IngestJob | ReprocessJob | Job<unknown>;

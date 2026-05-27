@@ -666,6 +666,159 @@
       "additionalProperties": false,
       "description": "Response data"
     },
+    "ReprocessRequest": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Reprocess mode",
+          "enum": [
+            "selected",
+            "failed_only",
+            "all",
+            "embeddings_only"
+          ]
+        },
+        "bookmark_id": {
+          "type": "string",
+          "description": "Bookmark ID required when mode is selected"
+        },
+        "replace_ai_fields": {
+          "type": "boolean",
+          "description": "When true, allow reprocessing to update AI-derived title, category, and tags; manual notes are never overwritten"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "ReprocessBatch": {
+      "type": "object",
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "description": "Reprocess batch ID"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Accepted reprocess mode",
+          "enum": [
+            "selected",
+            "failed_only",
+            "all",
+            "embeddings_only"
+          ]
+        },
+        "requested": {
+          "type": "integer",
+          "description": "Target bookmarks considered",
+          "minimum": 0
+        },
+        "enqueued": {
+          "type": "integer",
+          "description": "Jobs enqueued",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "description": "Bookmarks skipped because work is already queued or running",
+          "minimum": 0
+        },
+        "job_ids": {
+          "type": "array",
+          "description": "Queued job IDs",
+          "items": {
+            "type": "string",
+            "description": "Queued job ID"
+          }
+        },
+        "status_url": {
+          "type": "string",
+          "description": "Batch status URL when jobs were enqueued",
+          "nullable": true
+        }
+      },
+      "required": [
+        "batch_id",
+        "mode",
+        "requested",
+        "enqueued",
+        "skipped",
+        "job_ids",
+        "status_url"
+      ],
+      "additionalProperties": false
+    },
+    "ReprocessBatchResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "ReprocessBatch"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
+    "ReprocessBatchStatus": {
+      "type": "object",
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "description": "Reprocess batch ID"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total jobs in the batch",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "description": "Pending jobs",
+          "minimum": 0
+        },
+        "running": {
+          "type": "integer",
+          "description": "Running jobs",
+          "minimum": 0
+        },
+        "done": {
+          "type": "integer",
+          "description": "Completed jobs",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Failed jobs",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "batch_id",
+        "total",
+        "pending",
+        "running",
+        "done",
+        "failed"
+      ],
+      "additionalProperties": false
+    },
+    "ReprocessBatchStatusResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "ReprocessBatchStatus"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
     "SearchResultItem": {
       "type": "object",
       "properties": {
@@ -3331,6 +3484,93 @@
         },
         "404": {
           "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/reprocess",
+      "tag": "Reprocess",
+      "summary": "Enqueue durable reprocess or re-embed jobs for existing bookmarks.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ReprocessRequest"
+          }
+        }
+      },
+      "responses": {
+        "202": {
+          "description": "Reprocess batch accepted",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ReprocessBatchResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "404": {
+          "description": "Selected bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid reprocess request",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Retry failed pipeline work",
+          "request": "curl -X POST http://127.0.0.1:3210/bookmarks/reprocess \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"mode\":\"failed_only\"}'"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/reprocess/:batchId",
+      "tag": "Reprocess",
+      "summary": "Return progress counts for a durable reprocess batch.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "batchId": {
+              "type": "string",
+              "description": "batchId path parameter"
+            }
+          },
+          "required": [
+            "batchId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Reprocess batch status",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "ReprocessBatchStatusResponse"
+          }
+        },
+        "404": {
+          "description": "Reprocess batch not found",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

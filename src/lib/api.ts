@@ -36,6 +36,9 @@ import type {
   ImportSummaryResponseDto,
   PaginationDto,
   RelatedBookmarksResponseDto,
+  ReprocessBatchResponseDto,
+  ReprocessBatchStatusResponseDto,
+  ReprocessRequestDto,
   RestoreRequestDto,
   RestoreResultDto,
   SearchResponseDto,
@@ -336,6 +339,23 @@ export async function getBookmarkStatus(id: string): Promise<BookmarkPipelineSta
 
 export async function getRelatedBookmarks(id: string, limit = 5): Promise<RelatedBookmarksResponseDto> {
   return apiFetch<RelatedBookmarksResponseDto>(`/bookmarks/${id}/related?limit=${limit}`);
+}
+
+export type ApiReprocessRequest = ReprocessRequestDto;
+export type ApiReprocessBatch = ReprocessBatchResponseDto["data"];
+export type ApiReprocessBatchStatus = ReprocessBatchStatusResponseDto["data"];
+
+export async function reprocessBookmarks(
+  request: ReprocessRequestDto
+): Promise<ReprocessBatchResponseDto> {
+  return apiFetch<ReprocessBatchResponseDto>("/bookmarks/reprocess", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export async function getReprocessStatus(batchId: string): Promise<ReprocessBatchStatusResponseDto> {
+  return apiFetch<ReprocessBatchStatusResponseDto>(`/reprocess/${batchId}`);
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────

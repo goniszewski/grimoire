@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { checkForUpdates, getSettings, updateSettings, DAEMON_URL, ApiError } from "@/lib/api";
+import {
+  checkForUpdates,
+  getReprocessStatus,
+  getSettings,
+  reprocessBookmarks,
+  updateSettings,
+  DAEMON_URL,
+  ApiError,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +69,8 @@ import type {
   ApiBackupEntry,
   ApiEmbeddingProvider,
   ApiEncryptedBackupPackageResult,
+  ApiReprocessBatch,
+  ApiReprocessRequest,
   ApiRestoreResult,
   ApiS3Config,
   ApiSettings,
@@ -246,6 +256,11 @@ function encryptedPackageDescription(result: ApiEncryptedBackupPackageResult): s
   return `${formatBytes(result.size_bytes)} · ${result.path}`;
 }
 
+function reprocessQueuedDescription(result: ApiReprocessBatch): string {
+  const skipped = result.skipped > 0 ? ` · ${result.skipped} skipped` : "";
+  return `${result.enqueued} jobs queued${skipped}`;
+}
+
 interface EncryptedPackageActionProps {
   entry: ApiBackupEntry;
   disabled: boolean;
@@ -340,6 +355,35 @@ const Settings = () => {
     },
   });
   const updateCheckResult = updateCheckMutation.data?.data ?? null;
+
+  // ─── Library maintenance / reprocessing ───────────────────────────────────
+  const [replaceAiFields, setReplaceAiFields] = useState(false);
+  const [reprocessBatch, setReprocessBatch] = useState<ApiReprocessBatch | null>(null);
+  const reprocessMutation = useMutation({
+    mutationFn: (mode: ApiReprocessRequest["mode"]) =>
+      reprocessBookmarks({ mode, replace_ai_fields: replaceAiFields }),
+    onSuccess: (result) => {
+      setReprocessBatch(result.data);
+      if (result.data.status_url) {
+        qc.invalidateQueries({ queryKey: ["reprocess", result.data.batch_id] });
+      }
+      toast.success("Reprocess queued", { description: reprocessQueuedDescription(result.data) });
+    },
+    onError: (err: Error) => {
+      toast.error("Reprocess failed", { description: err.message });
+    },
+  });
+  const reprocessStatusQuery = useQuery({
+    queryKey: ["reprocess", reprocessBatch?.batch_id],
+    queryFn: () => getReprocessStatus(reprocessBatch!.batch_id),
+    enabled: !!reprocessBatch?.status_url,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data;
+      if (!status) return 2_000;
+      return status.pending + status.running > 0 ? 2_000 : false;
+    },
+  });
+  const reprocessStatus = reprocessStatusQuery.data?.data ?? null;
 
   // ─── Backup & Restore ────────────────────────────────────────────────────────
   const backupList = useBackupList();
@@ -836,6 +880,87 @@ const Settings = () => {
                       }
                       className="h-8 text-sm font-mono"
                     />
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <div className="border-t" />
+
+            {/* Library Maintenance */}
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Library Maintenance</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Re-run failed work, refresh existing bookmarks, or rebuild embeddings after provider changes.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 rounded border px-3 py-2 bg-muted/30">
+                  <Label htmlFor="replace-ai-fields" className="text-xs">
+                    Allow AI field updates
+                  </Label>
+                  <Switch
+                    id="replace-ai-fields"
+                    checked={replaceAiFields}
+                    onCheckedChange={setReplaceAiFields}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reprocessMutation.isPending}
+                    onClick={() => reprocessMutation.mutate("failed_only")}
+                  >
+                    {reprocessMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Retry failed
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reprocessMutation.isPending}
+                    onClick={() => reprocessMutation.mutate("all")}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    Reprocess all
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reprocessMutation.isPending}
+                    onClick={() => reprocessMutation.mutate("embeddings_only")}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    Rebuild embeddings
+                  </Button>
+                </div>
+
+                {reprocessBatch && (
+                  <div className="rounded border px-3 py-2 text-xs bg-muted/30 space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium">{reprocessBatch.enqueued} jobs queued</span>
+                      <span className="font-mono text-muted-foreground truncate max-w-[12rem]">
+                        {reprocessBatch.batch_id}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
+                      {reprocessBatch.skipped > 0 && <span>{reprocessBatch.skipped} skipped</span>}
+                      {reprocessStatus && (
+                        <>
+                          <span>{reprocessStatus.pending} pending</span>
+                          <span>{reprocessStatus.running} running</span>
+                          <span>{reprocessStatus.done} done</span>
+                          <span>{reprocessStatus.failed} failed</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

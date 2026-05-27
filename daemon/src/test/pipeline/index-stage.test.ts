@@ -107,6 +107,48 @@ describe("pipeline index stage", () => {
     expect(ids).toContain(bookmarkId);
   });
 
+  it("preserves an existing title during reprocess unless AI fields are replaceable", async () => {
+    const bookmarkId = crypto.randomUUID();
+    const url = "https://example.com/manual-title";
+    const html = `
+      <html>
+        <head><title>Extracted Replacement Title</title></head>
+        <body><article><p>Manual title preservation content.</p></article></body>
+      </html>
+    `;
+
+    insertBookmark(db, bookmarkId, url, "Manual Title");
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
+
+    await runPipeline(db, { bookmarkId, url }, { replaceAiFields: false });
+
+    const bm = db.query<{ title: string | null }, [string]>(
+      "SELECT title FROM bookmarks WHERE id = ?"
+    ).get(bookmarkId);
+    expect(bm?.title).toBe("Manual Title");
+  });
+
+  it("updates the bookmark title during normal ingest", async () => {
+    const bookmarkId = crypto.randomUUID();
+    const url = "https://example.com/extracted-title";
+    const html = `
+      <html>
+        <head><title>Extracted Article Title</title></head>
+        <body><article><p>Normal ingest should keep populating extracted titles.</p></article></body>
+      </html>
+    `;
+
+    insertBookmark(db, bookmarkId, url, "Initial Title");
+    globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
+
+    await runPipeline(db, { bookmarkId, url });
+
+    const bm = db.query<{ title: string | null }, [string]>(
+      "SELECT title FROM bookmarks WHERE id = ?"
+    ).get(bookmarkId);
+    expect(bm?.title).toBe("Extracted Article Title");
+  });
+
   it("body content is NOT searchable before pipeline runs, but becomes searchable after", async () => {
     const bookmarkId = crypto.randomUUID();
     const url = "https://example.com/react-hooks-guide";

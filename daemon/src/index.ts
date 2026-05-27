@@ -6,10 +6,10 @@ import { JobWorker } from "./worker.js";
 import { Scheduler } from "./scheduler.js";
 import { createApp } from "./server.js";
 import { getDatabase, closeDatabase } from "./db/database.js";
-import { runPipeline } from "./pipeline/pipeline.js";
+import { runEmbeddingRefresh, runPipeline } from "./pipeline/pipeline.js";
 import { OrganizationAgent } from "./ai/organization-agent.js";
 import { BookmarkRepository } from "./db/bookmark-repository.js";
-import type { IngestJobPayload } from "./types/job.js";
+import type { IngestJobPayload, ReprocessJobPayload } from "./types/job.js";
 import { join } from "path";
 import { createBackupSnapshot, applyRetentionPolicy } from "./routes/backup.js";
 import { settingsManager } from "./settings.js";
@@ -27,6 +27,20 @@ const scheduler = new Scheduler();
 worker.registerHandler("ingest", async (job) => {
   const payload = job.payload as IngestJobPayload;
   await runPipeline(db, { bookmarkId: payload.bookmarkId, url: payload.url });
+});
+
+worker.registerHandler("reprocess", async (job) => {
+  const payload = job.payload as ReprocessJobPayload;
+  if (payload.mode === "embeddings_only") {
+    await runEmbeddingRefresh(db, { bookmarkId: payload.bookmarkId });
+    return;
+  }
+
+  await runPipeline(
+    db,
+    { bookmarkId: payload.bookmarkId, url: payload.url },
+    { replaceAiFields: payload.replaceAiFields }
+  );
 });
 
 // --- Register scheduled tasks before start() ---

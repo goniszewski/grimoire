@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** high
-**Status:** todo
+**Status:** done
 **Area:** daemon / pipeline / settings
 
 ## Description
@@ -27,14 +27,14 @@ manually resaving each URL.
 
 ## Acceptance Criteria
 
-- [ ] Users can re-run failed pipeline work without creating duplicate
+- [x] Users can re-run failed pipeline work without creating duplicate
       bookmarks.
-- [ ] Users can regenerate embeddings after changing embedding provider or
+- [x] Users can regenerate embeddings after changing embedding provider or
       model.
-- [ ] Reprocessing preserves manual edits by default.
-- [ ] Reprocess jobs are durable and survive daemon restart.
-- [ ] API docs and frontend types are regenerated from the source contract.
-- [ ] Focused daemon and frontend tests cover the new behavior.
+- [x] Reprocessing preserves manual edits by default.
+- [x] Reprocess jobs are durable and survive daemon restart.
+- [x] API docs and frontend types are regenerated from the source contract.
+- [x] Focused daemon and frontend tests cover the new behavior.
 
 ## Notes
 

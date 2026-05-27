@@ -77,7 +77,7 @@ tasks/
 | TASK-061 | [Packaged Upgrade Flow](done/TASK-061-packaged-upgrade-flow.md) | MVP readiness | high | done |
 | TASK-062 | [Installer Matrix Validation](done/TASK-062-installer-matrix-validation.md) | MVP readiness | high | done |
 | TASK-063 | [Homebrew Formula or Tap](todo/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | todo |
-| TASK-064 | [Library Reprocess and Re-Embed Jobs](todo/TASK-064-library-reprocess-reembed-jobs.md) | MVP readiness | high | todo |
+| TASK-064 | [Library Reprocess and Re-Embed Jobs](done/TASK-064-library-reprocess-reembed-jobs.md) | MVP readiness | high | done |
 | TASK-065 | [Pipeline Failure Recovery UX](todo/TASK-065-pipeline-failure-recovery-ux.md) | MVP readiness | high | todo |
 | TASK-066 | [In-App Encrypted Backup Verify and Restore](todo/TASK-066-in-app-encrypted-backup-verify-restore.md) | MVP readiness | medium | todo |
 | TASK-067 | [Post-Restore Restart and Recovery UX](todo/TASK-067-post-restore-restart-recovery-ux.md) | MVP readiness | medium | todo |
@@ -99,11 +99,12 @@ acceptance criteria audit, TASK-059 signed release archive packaging work, and
 TASK-060 one-command installer entry point work available from this macOS
 workspace are complete.
 
-TASK-061 packaged upgrade support and TASK-062 installer matrix validation are
-complete. TASK-063 through TASK-071 define the remaining MVP-readiness closeout
-queue. They focus on Homebrew packaging, library reprocessing and failure
-recovery, in-app encrypted backup recovery, diagnostics, local hardening,
-installed-artifact smoke testing, and final MVP release documentation alignment.
+TASK-061 packaged upgrade support, TASK-062 installer matrix validation, and
+TASK-064 library reprocess/re-embed support are complete. TASK-063 and TASK-065
+through TASK-071 define the remaining MVP-readiness closeout queue. They focus
+on Homebrew packaging, pipeline failure recovery, in-app encrypted backup
+recovery, diagnostics, local hardening, installed-artifact smoke testing, and
+final MVP release documentation alignment.
 TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
 audit. TASK-073 is in review with post-MVP multi-user direction research and a
 focused development-server Playwright smoke suite for documented business

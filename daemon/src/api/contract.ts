@@ -275,6 +275,45 @@ const schemas = {
     ["bookmarkId", "bookmarkStatus", "job"]
   ),
   BookmarkPipelineStatusResponse: envelope(ref("BookmarkPipelineStatus")),
+  ReprocessRequest: objectSchema(
+    {
+      mode: stringSchema("Reprocess mode", {
+        enum: ["selected", "failed_only", "all", "embeddings_only"],
+      }),
+      bookmark_id: stringSchema("Bookmark ID required when mode is selected"),
+      replace_ai_fields: booleanSchema(
+        "When true, allow reprocessing to update AI-derived title, category, and tags; manual notes are never overwritten"
+      ),
+    },
+    ["mode"]
+  ),
+  ReprocessBatch: objectSchema(
+    {
+      batch_id: stringSchema("Reprocess batch ID"),
+      mode: stringSchema("Accepted reprocess mode", {
+        enum: ["selected", "failed_only", "all", "embeddings_only"],
+      }),
+      requested: integerSchema("Target bookmarks considered", { minimum: 0 }),
+      enqueued: integerSchema("Jobs enqueued", { minimum: 0 }),
+      skipped: integerSchema("Bookmarks skipped because work is already queued or running", { minimum: 0 }),
+      job_ids: arrayOf(stringSchema("Queued job ID"), "Queued job IDs"),
+      status_url: nullable(stringSchema("Batch status URL when jobs were enqueued")),
+    },
+    ["batch_id", "mode", "requested", "enqueued", "skipped", "job_ids", "status_url"]
+  ),
+  ReprocessBatchResponse: envelope(ref("ReprocessBatch")),
+  ReprocessBatchStatus: objectSchema(
+    {
+      batch_id: stringSchema("Reprocess batch ID"),
+      total: integerSchema("Total jobs in the batch", { minimum: 0 }),
+      pending: integerSchema("Pending jobs", { minimum: 0 }),
+      running: integerSchema("Running jobs", { minimum: 0 }),
+      done: integerSchema("Completed jobs", { minimum: 0 }),
+      failed: integerSchema("Failed jobs", { minimum: 0 }),
+    },
+    ["batch_id", "total", "pending", "running", "done", "failed"]
+  ),
+  ReprocessBatchStatusResponse: envelope(ref("ReprocessBatchStatus")),
   SearchResultItem: objectSchema(
     {
       ...bookmarkProperties,
@@ -1007,6 +1046,37 @@ export const apiContract = {
       responses: {
         "200": jsonResponse("Bookmark pipeline status", ref("BookmarkPipelineStatusResponse")),
         "404": problemResponse("Bookmark not found"),
+      },
+    },
+    {
+      method: "POST",
+      path: "/bookmarks/reprocess",
+      tag: "Reprocess",
+      summary: "Enqueue durable reprocess or re-embed jobs for existing bookmarks.",
+      request: { body: { contentType: "application/json", schema: ref("ReprocessRequest") } },
+      responses: {
+        "202": jsonResponse("Reprocess batch accepted", ref("ReprocessBatchResponse")),
+        "400": problemResponse("Malformed JSON"),
+        "404": problemResponse("Selected bookmark not found"),
+        "422": problemResponse("Invalid reprocess request"),
+      },
+      examples: [
+        {
+          title: "Retry failed pipeline work",
+          request:
+            'curl -X POST http://127.0.0.1:3210/bookmarks/reprocess \\\n  -H "Content-Type: application/json" \\\n  -d \'{"mode":"failed_only"}\'',
+        },
+      ],
+    },
+    {
+      method: "GET",
+      path: "/reprocess/:batchId",
+      tag: "Reprocess",
+      summary: "Return progress counts for a durable reprocess batch.",
+      request: { pathParams: idParam("batchId") },
+      responses: {
+        "200": jsonResponse("Reprocess batch status", ref("ReprocessBatchStatusResponse")),
+        "404": problemResponse("Reprocess batch not found"),
       },
     },
     {

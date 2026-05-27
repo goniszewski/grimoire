@@ -21,6 +21,11 @@ export type BookmarkResponseDto = ApiDto<"BookmarkResponse">;
 export type BookmarkDetailResponseDto = ApiDto<"BookmarkDetailResponse">;
 export type BookmarkPipelineStatusResponseDto = ApiDto<"BookmarkPipelineStatusResponse">;
 export type RelatedBookmarksResponseDto = ApiDto<"RelatedBookmarksResponse">;
+export type ReprocessRequestDto = ApiDto<"ReprocessRequest">;
+export type ReprocessBatchDto = ApiDto<"ReprocessBatch">;
+export type ReprocessBatchResponseDto = ApiDto<"ReprocessBatchResponse">;
+export type ReprocessBatchStatusDto = ApiDto<"ReprocessBatchStatus">;
+export type ReprocessBatchStatusResponseDto = ApiDto<"ReprocessBatchStatusResponse">;
 
 export type SearchResponseDto = ApiDto<"SearchResponse">;
 export type CategoryRecordDto = ApiDto<"CategoryRecord">;

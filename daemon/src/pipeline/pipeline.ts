@@ -31,6 +31,10 @@ export interface PipelinePayload {
   url: string;
 }
 
+export interface PipelineOptions {
+  replaceAiFields?: boolean;
+}
+
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
 function setStatus(
@@ -101,9 +105,11 @@ function updateFts(
 
 export async function runPipeline(
   db: Database,
-  payload: PipelinePayload
+  payload: PipelinePayload,
+  options: PipelineOptions = {}
 ): Promise<void> {
   const { bookmarkId, url } = payload;
+  const preserveExistingFields = options.replaceAiFields === false;
 
   // Fetch current bookmark for fallback title
   const row = db
@@ -140,7 +146,9 @@ export async function runPipeline(
   }
 
   // Persist extraction results atomically.
-  const title = extracted.title ?? existingTitle ?? url;
+  const title = preserveExistingFields
+    ? existingTitle ?? extracted.title ?? url
+    : extracted.title ?? existingTitle ?? url;
   db.transaction(() => {
     // Build a short description excerpt from markdown for the list view.
     // This is overwritten later if LLM enrichment produces a proper summary.
@@ -150,7 +158,11 @@ export async function runPipeline(
 
     const sets: string[] = [];
     const setParams: (string | null)[] = [];
-    if (extracted.title && extracted.title !== existingTitle) {
+    if (
+      extracted.title &&
+      extracted.title !== existingTitle &&
+      (!preserveExistingFields || !existingTitle)
+    ) {
       sets.push("title = ?");
       setParams.push(extracted.title);
     }
@@ -188,6 +200,9 @@ export async function runPipeline(
         bookmarkId,
         title,
         content: extracted.markdown ?? "",
+      }, {
+        preserveCategory: preserveExistingFields,
+        preserveTags: preserveExistingFields,
       });
       log.info("Pipeline: ai_enrich done", { bookmarkId });
     } catch (err) {
@@ -278,4 +293,50 @@ export async function runPipeline(
     });
     // Non-fatal: bookmark is still usable; FTS will pick it up on next rebuild
   }
+}
+
+export async function runEmbeddingRefresh(
+  db: Database,
+  payload: Pick<PipelinePayload, "bookmarkId">
+): Promise<void> {
+  const { bookmarkId } = payload;
+  const runtimeSettings = resolveRuntimeSettings();
+  if (!runtimeSettings.embeddingConfig) {
+    throw new Error("Embedding provider is not configured");
+  }
+
+  const bookmark = db
+    .query<{ id: string; url: string; title: string | null; description: string | null }, [string]>(
+      "SELECT id, url, title, description FROM bookmarks WHERE id = ? AND is_trashed = 0"
+    )
+    .get(bookmarkId);
+  if (!bookmark) {
+    throw new Error(`Bookmark not found: ${bookmarkId}`);
+  }
+
+  const contentRow = db
+    .query<{ summary: string | null }, [string]>(
+      "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+    )
+    .get(bookmarkId);
+  const tagNames = db
+    .query<{ name: string }, [string]>(
+      `SELECT t.name FROM tags t
+       JOIN bookmark_tags bt ON bt.tag_id = t.id
+       WHERE bt.bookmark_id = ?
+       ORDER BY t.name`
+    )
+    .all(bookmarkId)
+    .map((r) => r.name);
+
+  const embedText = buildEmbedInput({
+    title: bookmark.title ?? bookmark.url,
+    summary: contentRow?.summary ?? bookmark.description,
+    tags: tagNames,
+  });
+
+  const vector = await getEmbedding(runtimeSettings.embeddingConfig, embedText);
+  const embRepo = new EmbeddingRepository(db);
+  embRepo.upsert(bookmarkId, runtimeSettings.embeddingConfig.model, vector);
+  log.info("Pipeline: embedding refresh done", { bookmarkId, dimensions: vector.length });
 }

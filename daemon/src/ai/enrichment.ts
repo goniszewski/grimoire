@@ -120,6 +120,11 @@ export interface EnrichInput {
   content: string;
 }
 
+export interface EnrichOptions {
+  preserveCategory?: boolean;
+  preserveTags?: boolean;
+}
+
 /**
  * Run the LLM enrichment stage and persist results.
  * Throws if the LLM call ultimately fails (after retries inside llm-client).
@@ -127,7 +132,8 @@ export interface EnrichInput {
 export async function enrichBookmark(
   db: Database,
   config: ProviderLlmConfig | LlmConfig,
-  input: EnrichInput
+  input: EnrichInput,
+  options: EnrichOptions = {}
 ): Promise<void> {
   const { bookmarkId, title, content } = input;
 
@@ -152,6 +158,17 @@ export async function enrichBookmark(
     confidence: result.confidence,
   });
 
+  const existingFields = db
+    .query<{ category_id: string | null; tag_count: number }, [string]>(
+      `SELECT b.category_id,
+              (SELECT COUNT(*) FROM bookmark_tags bt WHERE bt.bookmark_id = b.id) AS tag_count
+       FROM bookmarks b
+       WHERE b.id = ?`
+    )
+    .get(bookmarkId);
+  const shouldWriteCategory = !options.preserveCategory || !existingFields?.category_id;
+  const shouldWriteTags = !options.preserveTags || (existingFields?.tag_count ?? 0) === 0;
+
   // Persist atomically
   db.transaction(() => {
     // Summary → bookmark_content (full summary for search/detail view)
@@ -171,18 +188,20 @@ export async function enrichBookmark(
     }
 
     // Category
-    if (result.category) {
+    if (result.category && shouldWriteCategory) {
       const categoryId = upsertCategory(db, result.category);
       db.run("UPDATE bookmarks SET category_id = ? WHERE id = ?", [categoryId, bookmarkId]);
     }
 
     // Tags — merge with any existing tags (from import or manual)
-    for (const tagName of result.tags) {
-      const tagId = upsertTag(db, tagName);
-      db.run(
-        `INSERT OR IGNORE INTO bookmark_tags (bookmark_id, tag_id) VALUES (?, ?)`,
-        [bookmarkId, tagId]
-      );
+    if (shouldWriteTags) {
+      for (const tagName of result.tags) {
+        const tagId = upsertTag(db, tagName);
+        db.run(
+          `INSERT OR IGNORE INTO bookmark_tags (bookmark_id, tag_id) VALUES (?, ?)`,
+          [bookmarkId, tagId]
+        );
+      }
     }
 
     // Advance status

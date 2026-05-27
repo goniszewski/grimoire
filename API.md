@@ -273,6 +273,59 @@ Responses:
 | `200` | application/json | `BookmarkPipelineStatusResponse` | Bookmark pipeline status |
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 
+### Reprocess
+
+#### POST /bookmarks/reprocess
+
+Enqueue durable reprocess or re-embed jobs for existing bookmarks.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `ReprocessRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `mode` | "selected" \| "failed_only" \| "all" \| "embeddings_only" | yes | Reprocess mode |
+| `bookmark_id` | string | no | Bookmark ID required when mode is selected |
+| `replace_ai_fields` | boolean | no | When true, allow reprocessing to update AI-derived title, category, and tags; manual notes are never overwritten |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `202` | application/json | `ReprocessBatchResponse` | Reprocess batch accepted |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `404` | application/problem+json | `ProblemDetails` | Selected bookmark not found |
+| `422` | application/problem+json | `ProblemDetails` | Invalid reprocess request |
+
+Examples:
+
+**Retry failed pipeline work**
+
+```bash
+curl -X POST http://127.0.0.1:3210/bookmarks/reprocess \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"failed_only"}'
+```
+
+#### GET /reprocess/:batchId
+
+Return progress counts for a durable reprocess batch.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `batchId` | string | yes | batchId path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `ReprocessBatchStatusResponse` | Reprocess batch status |
+| `404` | application/problem+json | `ProblemDetails` | Reprocess batch not found |
+
 ### Search
 
 #### GET /search
@@ -1253,6 +1306,66 @@ Response data
 | `data.job.created_at` | string | yes | Job creation timestamp |
 | `data.job.started_at` | string \| null | yes | Job start timestamp |
 | `data.job.finished_at` | string \| null | yes | Job finish timestamp |
+
+### ReprocessRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `mode` | "selected" \| "failed_only" \| "all" \| "embeddings_only" | yes | Reprocess mode |
+| `bookmark_id` | string | no | Bookmark ID required when mode is selected |
+| `replace_ai_fields` | boolean | no | When true, allow reprocessing to update AI-derived title, category, and tags; manual notes are never overwritten |
+
+### ReprocessBatch
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `batch_id` | string | yes | Reprocess batch ID |
+| `mode` | "selected" \| "failed_only" \| "all" \| "embeddings_only" | yes | Accepted reprocess mode |
+| `requested` | integer | yes | Target bookmarks considered |
+| `enqueued` | integer | yes | Jobs enqueued |
+| `skipped` | integer | yes | Bookmarks skipped because work is already queued or running |
+| `job_ids` | array<string> | yes | Queued job IDs |
+| `status_url` | string \| null | yes | Batch status URL when jobs were enqueued |
+
+### ReprocessBatchResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | ReprocessBatch | yes |  |
+| `data.batch_id` | string | yes | Reprocess batch ID |
+| `data.mode` | "selected" \| "failed_only" \| "all" \| "embeddings_only" | yes | Accepted reprocess mode |
+| `data.requested` | integer | yes | Target bookmarks considered |
+| `data.enqueued` | integer | yes | Jobs enqueued |
+| `data.skipped` | integer | yes | Bookmarks skipped because work is already queued or running |
+| `data.job_ids` | array<string> | yes | Queued job IDs |
+| `data.status_url` | string \| null | yes | Batch status URL when jobs were enqueued |
+
+### ReprocessBatchStatus
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `batch_id` | string | yes | Reprocess batch ID |
+| `total` | integer | yes | Total jobs in the batch |
+| `pending` | integer | yes | Pending jobs |
+| `running` | integer | yes | Running jobs |
+| `done` | integer | yes | Completed jobs |
+| `failed` | integer | yes | Failed jobs |
+
+### ReprocessBatchStatusResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | ReprocessBatchStatus | yes |  |
+| `data.batch_id` | string | yes | Reprocess batch ID |
+| `data.total` | integer | yes | Total jobs in the batch |
+| `data.pending` | integer | yes | Pending jobs |
+| `data.running` | integer | yes | Running jobs |
+| `data.done` | integer | yes | Completed jobs |
+| `data.failed` | integer | yes | Failed jobs |
 
 ### SearchResultItem
 

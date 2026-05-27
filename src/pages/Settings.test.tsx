@@ -13,7 +13,9 @@ vi.mock("@/lib/api", () => ({
   DAEMON_URL: "http://127.0.0.1:3210",
   ApiError: class ApiError extends Error {},
   checkForUpdates: vi.fn(),
+  getReprocessStatus: vi.fn(),
   getSettings: vi.fn(),
+  reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
 }));
 
@@ -37,6 +39,8 @@ import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
+const mockedReprocessBookmarks = (api as unknown as { reprocessBookmarks: ReturnType<typeof vi.fn> }).reprocessBookmarks;
+const mockedGetReprocessStatus = (api as unknown as { getReprocessStatus: ReturnType<typeof vi.fn> }).getReprocessStatus;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
 const mockedUseCreateBackup = backupHooks.useCreateBackup as unknown as ReturnType<typeof vi.fn>;
 const mockedUseRestoreBackup = backupHooks.useRestoreBackup as unknown as ReturnType<typeof vi.fn>;
@@ -152,6 +156,27 @@ beforeEach(() => {
       source: "https://api.github.com/repos/goniszewski/little-imp/releases",
       channel: "beta",
       latest: null,
+    },
+  });
+  mockedReprocessBookmarks.mockResolvedValue({
+    data: {
+      batch_id: "batch-1",
+      mode: "failed_only",
+      requested: 3,
+      enqueued: 2,
+      skipped: 1,
+      job_ids: ["job-1", "job-2"],
+      status_url: "/reprocess/batch-1",
+    },
+  });
+  mockedGetReprocessStatus.mockResolvedValue({
+    data: {
+      batch_id: "batch-1",
+      total: 2,
+      pending: 1,
+      running: 0,
+      done: 1,
+      failed: 0,
     },
   });
   mockedUseBackupList.mockReturnValue({
@@ -280,6 +305,73 @@ describe("Settings backup verification", () => {
         })
       );
     });
+  });
+});
+
+describe("Settings library maintenance", () => {
+  it("queues failed-bookmark reprocessing and shows batch progress counts", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry failed" }));
+
+    await waitFor(() => {
+      expect(mockedReprocessBookmarks).toHaveBeenCalledWith({
+        mode: "failed_only",
+        replace_ai_fields: false,
+      });
+    });
+    expect(await screen.findByText("2 jobs queued")).toBeInTheDocument();
+    expect(await screen.findByText("1 pending")).toBeInTheDocument();
+    expect(screen.getByText("1 done")).toBeInTheDocument();
+  });
+
+  it("queues all-bookmark reprocessing with AI field replacement when enabled", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.click(await screen.findByLabelText("Allow AI field updates"));
+    fireEvent.click(screen.getByRole("button", { name: "Reprocess all" }));
+
+    await waitFor(() => {
+      expect(mockedReprocessBookmarks).toHaveBeenCalledWith({
+        mode: "all",
+        replace_ai_fields: true,
+      });
+    });
+  });
+
+  it("queues embedding-only refresh jobs", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Rebuild embeddings" }));
+
+    await waitFor(() => {
+      expect(mockedReprocessBookmarks).toHaveBeenCalledWith({
+        mode: "embeddings_only",
+        replace_ai_fields: false,
+      });
+    });
+  });
+
+  it("does not poll batch status when every reprocess target was skipped", async () => {
+    mockedReprocessBookmarks.mockResolvedValueOnce({
+      data: {
+        batch_id: "batch-empty",
+        mode: "failed_only",
+        requested: 1,
+        enqueued: 0,
+        skipped: 1,
+        job_ids: [],
+        status_url: null,
+      },
+    });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry failed" }));
+
+    expect(await screen.findByText("0 jobs queued")).toBeInTheDocument();
+    expect(screen.getByText("1 skipped")).toBeInTheDocument();
+    expect(mockedGetReprocessStatus).not.toHaveBeenCalled();
   });
 });
 
