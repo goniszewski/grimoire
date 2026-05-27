@@ -17,6 +17,7 @@ vi.mock("@/lib/api", () => ({
   getSettings: vi.fn(),
   reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
+  checkHealthAfterRestore: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-backup", () => ({
@@ -41,6 +42,7 @@ import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
+const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterRestore: ReturnType<typeof vi.fn> }).checkHealthAfterRestore;
 const mockedReprocessBookmarks = (api as unknown as { reprocessBookmarks: ReturnType<typeof vi.fn> }).reprocessBookmarks;
 const mockedGetReprocessStatus = (api as unknown as { getReprocessStatus: ReturnType<typeof vi.fn> }).getReprocessStatus;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
@@ -152,6 +154,7 @@ function makeWrapper() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
   mockedGetSettings.mockResolvedValue(settingsResponse());
   mockedCheckForUpdates.mockResolvedValue({
     data: {
@@ -162,6 +165,7 @@ beforeEach(() => {
       latest: null,
     },
   });
+  mockedCheckHealthAfterRestore.mockResolvedValue(false);
   mockedReprocessBookmarks.mockResolvedValue({
     data: {
       batch_id: "batch-1",
@@ -284,6 +288,54 @@ describe("Settings backup verification", () => {
         })
       );
     });
+  });
+
+  it("blocks Settings with restart and rollback guidance after restore succeeds", async () => {
+    const restartCommand = "launchctl stop com.littleimp.daemon && launchctl start com.littleimp.daemon";
+    const restoreMutate = vi.fn((_name: string, options: {
+      onSuccess: (result: {
+        restored_at: string;
+        bookmark_count: number;
+        checksum_verified: boolean;
+        rollback_path: string;
+        restart_required: boolean;
+        restart_command: string;
+        health_url: string;
+        rollback_instructions: string[];
+      }) => void;
+    }) => {
+      options.onSuccess({
+        restored_at: "2026-05-15T12:00:00.000Z",
+        bookmark_count: 3,
+        checksum_verified: true,
+        rollback_path: "/tmp/rollback",
+        restart_required: true,
+        restart_command: restartCommand,
+        health_url: "http://127.0.0.1:3210/health",
+        rollback_instructions: [
+          "If the restored library is not correct, stop littleimpd and copy /tmp/rollback/littleimp.db back to the data directory.",
+        ],
+      });
+    });
+    mockedUseRestoreBackup.mockReturnValue({ mutate: restoreMutate, isPending: false });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await screen.findByText("Recent backups");
+    fireEvent.click(screen.getByTitle("Restore this backup"));
+    fireEvent.click(await screen.findByRole("button", { name: "Restore" }));
+
+    expect(await screen.findByRole("dialog", { name: "Restart Little Imp" })).toBeInTheDocument();
+    expect(screen.getByText(restartCommand)).toBeInTheDocument();
+    expect(screen.getByText("http://127.0.0.1:3210/health")).toBeInTheDocument();
+    expect(screen.getByText(/\/tmp\/rollback\/littleimp\.db/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    await waitFor(() =>
+      expect(mockedCheckHealthAfterRestore).toHaveBeenCalledWith(
+        "2026-05-15T12:00:00.000Z",
+        "http://127.0.0.1:3210/health"
+      )
+    );
   });
 
   it("offers an encrypted package action for local backup rows", async () => {

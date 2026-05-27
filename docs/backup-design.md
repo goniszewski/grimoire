@@ -258,8 +258,11 @@ Preferred restore flow:
 Current API behavior performs restore in the daemon process, verifies the
 snapshot first, creates the rollback directory, migrates a temporary copy,
 closes the live SQLite handle, replaces the SQLite file, and returns
-`restart_required: true`. Packaged UI/CLI restore should still stop the daemon
-or enter maintenance mode before invoking replacement.
+`restart_required: true`, `restart_command`, `health_url`, and
+`rollback_instructions`. Settings stores that recovery result, blocks normal
+use, polls `/health`, and only allows the user to continue after the restarted
+daemon is healthy. Packaged UI/CLI restore should still stop the daemon or enter
+maintenance mode before invoking replacement.
 
 Release limitations:
 
@@ -489,6 +492,7 @@ Restore confirmation must communicate:
 - checksum verification is required by default
 - secrets are not restored from backup and must already exist locally or be re-entered
 - the daemon closes its database handle after restore and must be restarted before further use
+- the restart command, health URL, rollback path, and manual rollback instructions
 
 ---
 

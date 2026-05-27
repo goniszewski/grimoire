@@ -163,21 +163,32 @@ describe("littleimp backup CLI", () => {
   });
 
   it("restores a local backup through the daemon API when confirmed", async () => {
+    const restartCommand = process.platform === "darwin"
+      ? "launchctl stop com.littleimp.daemon && launchctl start com.littleimp.daemon"
+      : "systemctl --user restart littleimpd";
     const harness = makeCliHarness({
       restored_at: "2026-05-15T12:00:00.000Z",
       bookmark_count: 7,
       checksum_verified: true,
       rollback_path: "/tmp/rollback",
       restart_required: true,
+      restart_command: restartCommand,
+      health_url: "http://127.0.0.1:3210/health",
+      rollback_instructions: [
+        "If the restored library is not correct, stop littleimpd and copy /tmp/rollback/littleimp.db back to the data directory.",
+      ],
     });
 
-    const code = await harness.run(["backup", "restore", "local-snapshot", "--yes", "--json"]);
+    const code = await harness.run(["backup", "restore", "local-snapshot", "--yes"]);
 
     expect(code).toBe(0);
     expect(harness.calls[0].url).toBe("http://127.0.0.1:3210/restore");
     expect(harness.calls[0].init?.method).toBe("POST");
     expect(JSON.parse(String(harness.calls[0].init?.body))).toEqual({ name: "local-snapshot" });
-    expect(JSON.parse(harness.stdout[0]).restart_required).toBe(true);
+    expect(harness.stdout.join("\n")).toContain(`Restart command: ${restartCommand}`);
+    expect(harness.stdout.join("\n")).toContain("Health check: http://127.0.0.1:3210/health");
+    expect(harness.stdout.join("\n")).toContain("Rollback instructions:");
+    expect(harness.stdout.join("\n")).toContain("/tmp/rollback/littleimp.db");
   });
 
   it("restores a remote backup key through the daemon API when confirmed", async () => {

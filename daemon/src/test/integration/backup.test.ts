@@ -638,6 +638,9 @@ describe("Backup API", () => {
       checksum_verified: boolean;
       rollback_path: string;
       restart_required: boolean;
+      restart_command: string;
+      health_url: string;
+      rollback_instructions: string[];
     };
     expect(json.restored_at).toBeString();
     expect(json.bookmark_count).toBe(0);
@@ -645,6 +648,11 @@ describe("Backup API", () => {
     expect(json.rollback_path).toBeString();
     expect(existsSync(join(json.rollback_path, "littleimp.db"))).toBeTrue();
     expect(json.restart_required).toBeTrue();
+    expect(json.restart_command).toBeString();
+    expect(json.restart_command.length).toBeGreaterThan(0);
+    expect(json.health_url).toBe("http://127.0.0.1:3210/health");
+    expect(json.rollback_instructions.join("\n")).toContain(json.rollback_path);
+    expect(json.rollback_instructions.join("\n")).toContain("littleimp.db");
 
     // Verify the live DB file now matches the snapshot byte-for-byte
     const restoredHash = await sha256File(dbPath);

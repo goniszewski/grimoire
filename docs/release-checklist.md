@@ -100,8 +100,9 @@ Record command output, host details, and deviations in
 - Create an encrypted package from Settings, then verify it with `POST /backup/package/verify` using a fresh password entry.
 - Restore the snapshot from Settings or `POST /restore`.
 - Restore the encrypted package from Settings or `POST /restore` with `source: "encrypted_package"` and confirm wrong passwords fail before restore.
-- Confirm restore creates a rollback directory and returns `restart_required: true`.
-- Restart the daemon and confirm bookmarks and non-secret settings are restored while local secrets are preserved.
+- Confirm restore creates a rollback directory and returns `restart_required: true`, `restart_command`, `health_url`, and `rollback_instructions`.
+- In Settings, confirm the recovery screen blocks normal use until `/health` is healthy after daemon restart.
+- Restart the daemon with the reported command and confirm bookmarks and non-secret settings are restored while local secrets are preserved.
 
 ## CI And Quality Gates
 

@@ -37,6 +37,7 @@ import {
   testS3Connection,
 } from "../lib/s3.js";
 import { runMigrations } from "../db/migrations.js";
+import { localHealthUrl, restartCommandForPlatform, rollbackInstructions } from "../restore-recovery.js";
 
 interface BackupDeps {
   db: Database;
@@ -492,6 +493,17 @@ interface EncryptedBackupPackageVerificationResult {
   verified_files: string[];
   bookmark_count: number;
   created_at: string;
+}
+
+interface RestoreResult {
+  restored_at: string;
+  bookmark_count: number;
+  checksum_verified: boolean;
+  rollback_path: string;
+  restart_required: true;
+  restart_command: string;
+  health_url: string;
+  rollback_instructions: string[];
 }
 
 type BackupCreateRequest = {
@@ -1293,6 +1305,24 @@ export function createBackupRoute(deps: BackupDeps): Hono {
     };
   }
 
+  function restoreResult(
+    bookmarkCount: number,
+    checksumVerified: boolean,
+    rollbackPath: string
+  ): RestoreResult {
+    const restartCommand = restartCommandForPlatform();
+    return {
+      restored_at: new Date().toISOString(),
+      bookmark_count: bookmarkCount,
+      checksum_verified: checksumVerified,
+      rollback_path: rollbackPath,
+      restart_required: true,
+      restart_command: restartCommand,
+      health_url: localHealthUrl(Config.HOST, Config.PORT),
+      rollback_instructions: rollbackInstructions(rollbackPath, deps.dbPath, restartCommand),
+    };
+  }
+
   /**
    * POST /restore
    * Restores the database from a local backup directory or a remote S3 object.
@@ -1338,13 +1368,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
             tmpRestoreDir
           );
 
-          return c.json({
-            restored_at: new Date().toISOString(),
-            bookmark_count,
-            checksum_verified,
-            rollback_path,
-            restart_required: true,
-          });
+          return c.json(restoreResult(bookmark_count, checksum_verified, rollback_path));
         } catch (err) {
           if (err instanceof BackupPackageError || err instanceof BackupVerificationError) {
             return c.json({ error: err.message }, 422);
@@ -1424,13 +1448,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
             { allowUnsafeNoChecksum }
           );
 
-          return c.json({
-            restored_at: new Date().toISOString(),
-            bookmark_count,
-            checksum_verified,
-            rollback_path,
-            restart_required: true,
-          });
+          return c.json(restoreResult(bookmark_count, checksum_verified, rollback_path));
         } catch (err) {
           const status = (err as { status?: number }).status;
           if (status === 422) return c.json({ error: (err as Error).message }, 422);
@@ -1473,13 +1491,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
           backupPath,
           { allowUnsafeNoChecksum }
         );
-        return c.json({
-          restored_at: new Date().toISOString(),
-          bookmark_count,
-          checksum_verified,
-          rollback_path,
-          restart_required: true,
-        });
+        return c.json(restoreResult(bookmark_count, checksum_verified, rollback_path));
       } catch (err) {
         const status = (err as { status?: number }).status;
         if (status === 422) return c.json({ error: (err as Error).message }, 422);

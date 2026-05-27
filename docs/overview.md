@@ -209,7 +209,7 @@ flowchart TD
 3. Daemon writes non-secret settings, manifest, and checksums.
 4. Optional S3 upload copies the same snapshot layout to remote storage.
 5. User can verify the backup without restoring.
-6. Restore validates manifest and checksums, creates a rollback copy, replaces the database, restores non-secret settings, and requires daemon restart.
+6. Restore validates manifest and checksums, creates a rollback copy, replaces the database, restores non-secret settings, and returns restart, health, and rollback guidance.
 
 ```mermaid
 flowchart LR
@@ -438,10 +438,10 @@ erDiagram
 
 ### Backup And Restore
 
-- Restore replaces the local database and requires daemon restart.
+- Restore replaces the local database, reports the restart command and rollback instructions, and requires daemon restart.
 - Settings backups omit secrets; restore preserves the current local API keys, app lock secret, and S3 credentials.
 - Backup scheduling reads live enable/disable settings, but the scheduler interval itself is initialized at daemon startup.
-- Encrypted backup packages can be created from Settings for listed local backups; package verification and encrypted restore remain CLI workflows.
+- Encrypted backup packages can be created from Settings for listed local backups; Settings can verify or restore package files under the configured backup folder, and the CLI can verify or restore arbitrary package paths available to the user shell.
 
 ## Primary Files
 

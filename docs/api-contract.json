@@ -2731,6 +2731,22 @@
         "restart_required": {
           "type": "boolean",
           "description": "Whether daemon restart is required"
+        },
+        "restart_command": {
+          "type": "string",
+          "description": "Platform-specific command for restarting littleimpd when detectable"
+        },
+        "health_url": {
+          "type": "string",
+          "description": "Local health endpoint to poll after restarting the daemon"
+        },
+        "rollback_instructions": {
+          "type": "array",
+          "description": "Manual rollback instructions",
+          "items": {
+            "type": "string",
+            "description": "Rollback recovery instruction"
+          }
         }
       },
       "required": [
@@ -2738,7 +2754,10 @@
         "bookmark_count",
         "checksum_verified",
         "rollback_path",
-        "restart_required"
+        "restart_required",
+        "restart_command",
+        "health_url",
+        "rollback_instructions"
       ],
       "additionalProperties": false
     },

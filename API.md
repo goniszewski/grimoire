@@ -2097,6 +2097,9 @@ Response data
 | `checksum_verified` | boolean | yes | Whether checksum verification succeeded |
 | `rollback_path` | string | yes | Rollback copy directory |
 | `restart_required` | boolean | yes | Whether daemon restart is required |
+| `restart_command` | string | yes | Platform-specific command for restarting littleimpd when detectable |
+| `health_url` | string | yes | Local health endpoint to poll after restarting the daemon |
+| `rollback_instructions` | array<string> | yes | Manual rollback instructions |
 
 ### TimelineEvent
 

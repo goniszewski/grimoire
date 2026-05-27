@@ -34,6 +34,7 @@ import type {
   EncryptedBackupPackageRequestDto,
   EncryptedBackupPackageResultDto,
   EncryptedBackupPackageVerificationResultDto,
+  HealthResponseDto,
   ImportProgressEventDto,
   ImportSummaryResponseDto,
   PaginationDto,
@@ -262,11 +263,51 @@ async function apiFetch<T>(
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export async function checkHealth(): Promise<boolean> {
+  return (await fetchHealth(`${DAEMON_URL}/health`)) !== null;
+}
+
+export async function checkHealthAfterRestore(restoredAt: string, healthUrl: string): Promise<boolean> {
+  const health = await fetchHealth(healthUrl);
+  if (!health) return false;
+
+  const restoredAtMs = Date.parse(restoredAt);
+  if (!Number.isFinite(restoredAtMs)) return false;
+
+  const processStartedAtMs = Date.now() - health.uptime;
+  return processStartedAtMs > restoredAtMs;
+}
+
+async function fetchHealth(url: string): Promise<HealthResponseDto | null> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    await fetch(`${DAEMON_URL}/health`, { signal: AbortSignal.timeout(3000) });
-    return true;
+    let signal: AbortSignal | undefined;
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+      signal = AbortSignal.timeout(3000);
+    } else if (typeof AbortController !== "undefined") {
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 3000);
+      signal = controller.signal;
+    }
+    const res = await fetch(url, signal ? { signal } : undefined);
+    if (!res.ok) return null;
+    const body = await res.json() as Partial<HealthResponseDto>;
+    if (
+      body.status !== "ok" ||
+      typeof body.version !== "string" ||
+      typeof body.uptime !== "number" ||
+      !Number.isFinite(body.uptime) ||
+      body.uptime < 0 ||
+      typeof body.queueSize !== "number" ||
+      !Number.isFinite(body.queueSize) ||
+      body.queueSize < 0
+    ) {
+      return null;
+    }
+    return body as HealthResponseDto;
   } catch {
-    return false;
+    return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 
@@ -574,6 +615,9 @@ export interface ApiRestoreResult {
   checksum_verified: RestoreResultDto["checksum_verified"];
   rollback_path: RestoreResultDto["rollback_path"];
   restart_required: RestoreResultDto["restart_required"];
+  restart_command: RestoreResultDto["restart_command"];
+  health_url: RestoreResultDto["health_url"];
+  rollback_instructions: RestoreResultDto["rollback_instructions"];
 }
 
 export interface ApiBackupVerificationResult {

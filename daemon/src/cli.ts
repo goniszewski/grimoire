@@ -28,6 +28,7 @@ import {
   verifyAndExtractUpgradeArtifact,
   type InstallerRunner,
 } from "./update/upgrade.js";
+import { localHealthUrl, restartCommandForPlatform } from "./restore-recovery.js";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
 
@@ -243,12 +244,23 @@ function printRestoreResult(io: Required<Pick<CliIO, "stdout">>, result: {
   checksum_verified: boolean;
   rollback_path: string;
   restart_required: boolean;
+  restart_command?: string;
+  health_url?: string;
+  rollback_instructions?: string[];
 }): void {
   io.stdout(`Backup restored at ${result.restored_at}`);
   io.stdout(`Bookmarks: ${result.bookmark_count}`);
   io.stdout(`Rollback: ${result.rollback_path}`);
   if (result.restart_required) {
     io.stdout("Restart required: restart littleimpd before using the restored database.");
+    io.stdout(`Restart command: ${result.restart_command ?? restartCommandForPlatform()}`);
+    io.stdout(`Health check: ${result.health_url ?? localHealthUrl("127.0.0.1", 3210)}`);
+  }
+  if (result.rollback_instructions && result.rollback_instructions.length > 0) {
+    io.stdout("Rollback instructions:");
+    for (const instruction of result.rollback_instructions) {
+      io.stdout(`- ${instruction}`);
+    }
   }
 }
 

@@ -13,6 +13,7 @@ import type {
   SuggestionDto,
   TimelinePageDto,
   UpdateCheckResultDto,
+  RestoreResultDto,
 } from "../../daemon/src/api/types";
 import type {
   ApiBackupDestination,
@@ -29,6 +30,7 @@ import type {
   ApiSuggestion,
   ApiTimelineEvent,
   ApiUpdateCheckResult,
+  ApiRestoreResult,
 } from "./api";
 
 type AssertAssignable<Actual extends Expected, Expected> = true;
@@ -59,7 +61,11 @@ describe("frontend API contract types", () => {
       AssertAssignable<ApiEncryptedBackupPackageResult["encrypted"], EncryptedBackupPackageResultDto["encrypted"]>,
       AssertAssignable<ApiEncryptedBackupPackageVerificationResult["package_encrypted"], EncryptedBackupPackageVerificationResultDto["package_encrypted"]>,
       AssertAssignable<ApiUpdateCheckResult["latest"], UpdateCheckResultDto["latest"]>,
+      AssertAssignable<ApiRestoreResult["restart_command"], RestoreResultDto["restart_command"]>,
+      AssertAssignable<ApiRestoreResult["rollback_instructions"], RestoreResultDto["rollback_instructions"]>,
     ] = [
+      true,
+      true,
       true,
       true,
       true,

@@ -816,8 +816,20 @@ const schemas = {
       checksum_verified: booleanSchema("Whether checksum verification succeeded"),
       rollback_path: stringSchema("Rollback copy directory"),
       restart_required: booleanSchema("Whether daemon restart is required"),
+      restart_command: stringSchema("Platform-specific command for restarting littleimpd when detectable"),
+      health_url: stringSchema("Local health endpoint to poll after restarting the daemon"),
+      rollback_instructions: arrayOf(stringSchema("Rollback recovery instruction"), "Manual rollback instructions"),
     },
-    ["restored_at", "bookmark_count", "checksum_verified", "rollback_path", "restart_required"]
+    [
+      "restored_at",
+      "bookmark_count",
+      "checksum_verified",
+      "rollback_path",
+      "restart_required",
+      "restart_command",
+      "health_url",
+      "rollback_instructions",
+    ]
   ),
   TimelineEvent: objectSchema(
     {

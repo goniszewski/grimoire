@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   checkForUpdates,
+  checkHealthAfterRestore,
   getReprocessStatus,
   getSettings,
   reprocessBookmarks,
@@ -242,9 +243,7 @@ function formatBytes(bytes: number): string {
 }
 
 function restoreSuccessDescription(result: ApiRestoreResult): string {
-  return result.rollback_path
-    ? `Restart the daemon before using Little Imp again. Rollback: ${result.rollback_path}`
-    : "Restart the daemon before using Little Imp again.";
+  return `Restart before using Little Imp again: ${result.restart_command}`;
 }
 
 function updateCheckMessage(result: ApiUpdateCheckResult): string {
@@ -261,6 +260,126 @@ function encryptedPackageDescription(result: ApiEncryptedBackupPackageResult): s
 function reprocessQueuedDescription(result: ApiReprocessBatch): string {
   const skipped = result.skipped > 0 ? ` · ${result.skipped} skipped` : "";
   return `${result.enqueued} jobs queued${skipped}`;
+}
+
+const RESTORE_RECOVERY_STORAGE_KEY = "littleimp.restoreRecovery";
+
+function readStoredRestoreRecovery(): ApiRestoreResult | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(RESTORE_RECOVERY_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as ApiRestoreResult;
+    if (
+      typeof parsed.restored_at === "string" &&
+      typeof parsed.bookmark_count === "number" &&
+      typeof parsed.checksum_verified === "boolean" &&
+      typeof parsed.rollback_path === "string" &&
+      parsed.restart_required === true &&
+      typeof parsed.restart_command === "string" &&
+      typeof parsed.health_url === "string" &&
+      Array.isArray(parsed.rollback_instructions)
+    ) {
+      return parsed;
+    }
+    window.localStorage.removeItem(RESTORE_RECOVERY_STORAGE_KEY);
+  } catch {
+    window.localStorage.removeItem(RESTORE_RECOVERY_STORAGE_KEY);
+  }
+  return null;
+}
+
+interface RestoreRecoveryDialogProps {
+  result: ApiRestoreResult;
+  healthy: boolean;
+  checking: boolean;
+  onCheckNow: () => void;
+  onContinue: () => void;
+}
+
+function RestoreRecoveryDialog({
+  result,
+  healthy,
+  checking,
+  onCheckNow,
+  onContinue,
+}: RestoreRecoveryDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm px-4 py-6 overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="restore-recovery-title"
+        className="mx-auto max-w-2xl rounded border bg-background shadow-lg"
+      >
+        <div className="border-b px-5 py-4 space-y-1">
+          <h2 id="restore-recovery-title" className="text-base font-semibold">
+            Restart Little Imp
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Restore finished, but the current daemon process must be restarted before the restored
+            database is usable.
+          </p>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <Alert variant={healthy ? "default" : "destructive"}>
+            {healthy ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : checking ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            <AlertDescription>
+              {healthy
+                ? "Daemon health is back. The restored app is ready to use."
+                : `Waiting for ${result.health_url} to become healthy after restart.`}
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Restart command</Label>
+            <pre className="whitespace-pre-wrap break-all rounded bg-muted px-3 py-2 text-xs font-mono">
+              {result.restart_command}
+            </pre>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Health check</Label>
+              <code className="block rounded bg-muted px-3 py-2 text-xs font-mono break-all">
+                {result.health_url}
+              </code>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Rollback path</Label>
+              <code className="block rounded bg-muted px-3 py-2 text-xs font-mono break-all">
+                {result.rollback_path}
+              </code>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Rollback instructions</Label>
+            <ul className="space-y-1 rounded border bg-muted/30 px-3 py-2 text-xs">
+              {result.rollback_instructions.map((instruction) => (
+                <li key={instruction}>{instruction}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t px-5 py-4">
+          <Button variant="outline" size="sm" onClick={onCheckNow} disabled={checking}>
+            {checking && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+            Check now
+          </Button>
+          <Button size="sm" onClick={onContinue} disabled={!healthy}>
+            Continue
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface EncryptedPackageActionProps {
@@ -410,6 +529,30 @@ const Settings = () => {
     restoreEncryptedPackageMutation.isPending;
   // Separate state for the manual-path input — keeps it independent from list-row actions.
   const [manualRestoreName, setManualRestoreName] = useState<string>("");
+  const [restoreRecovery, setRestoreRecovery] = useState<ApiRestoreResult | null>(() =>
+    readStoredRestoreRecovery()
+  );
+  const restoreHealthQuery = useQuery({
+    queryKey: ["restore-recovery-health", restoreRecovery?.restored_at, restoreRecovery?.health_url],
+    queryFn: () =>
+      restoreRecovery
+        ? checkHealthAfterRestore(restoreRecovery.restored_at, restoreRecovery.health_url)
+        : Promise.resolve(false),
+    enabled: !!restoreRecovery,
+    staleTime: 0,
+    retry: false,
+    refetchInterval: (query) => {
+      return query.state.data === true ? false : 2_000;
+    },
+  });
+
+  useEffect(() => {
+    if (!restoreRecovery) {
+      window.localStorage.removeItem(RESTORE_RECOVERY_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(RESTORE_RECOVERY_STORAGE_KEY, JSON.stringify(restoreRecovery));
+  }, [restoreRecovery]);
 
   // ─── S3 Remote Backup ────────────────────────────────────────────────────────
   const [showRemote, setShowRemote] = useState(false);
@@ -646,6 +789,7 @@ const Settings = () => {
     const password = encryptedPackagePassword;
     restoreEncryptedPackageMutation.mutate({ path, password }, {
       onSuccess: (result) => {
+        setRestoreRecovery(result);
         toast.success("Encrypted package restored", {
           description: restoreSuccessDescription(result),
         });
@@ -657,6 +801,13 @@ const Settings = () => {
       onSettled: () => {
         setEncryptedPackagePassword("");
       },
+    });
+  }
+
+  function handleRestoreSuccess(result: ApiRestoreResult) {
+    setRestoreRecovery(result);
+    toast.success("Restore complete", {
+      description: restoreSuccessDescription(result),
     });
   }
 
@@ -699,6 +850,18 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {restoreRecovery && (
+        <RestoreRecoveryDialog
+          result={restoreRecovery}
+          healthy={restoreHealthQuery.data === true}
+          checking={restoreHealthQuery.isFetching}
+          onCheckNow={() => void restoreHealthQuery.refetch()}
+          onContinue={() => {
+            setRestoreRecovery(null);
+            qc.clear();
+          }}
+        />
+      )}
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-sm px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
@@ -1184,9 +1347,7 @@ const Settings = () => {
                                   onClick={() => {
                                     restoreMutation.mutate(entry.name, {
                                       onSuccess: (result) => {
-                                        toast.success("Restore complete", {
-                                          description: restoreSuccessDescription(result),
-                                        });
+                                        handleRestoreSuccess(result);
                                       },
                                       onError: (err: Error) => {
                                         toast.error("Restore failed", { description: err.message });
@@ -1246,9 +1407,7 @@ const Settings = () => {
                             onClick={() => {
                               restoreMutation.mutate(manualRestoreName, {
                                 onSuccess: (result) => {
-                                  toast.success("Restore complete", {
-                                    description: restoreSuccessDescription(result),
-                                  });
+                                  handleRestoreSuccess(result);
                                   setManualRestoreName("");
                                 },
                                 onError: (err: Error) => {
@@ -1663,6 +1822,7 @@ const Settings = () => {
                                           onClick={() => {
                                             restoreRemoteMutation.mutate(entry.name, {
                                               onSuccess: (result) => {
+                                                setRestoreRecovery(result);
                                                 toast.success("Remote restore complete", {
                                                   description: restoreSuccessDescription(result),
                                                 });

@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** medium
-**Status:** todo
+**Status:** done
 **Area:** backup / operations / frontend
 
 ## Description
@@ -25,13 +25,13 @@ clear next steps, restart guidance, health polling, and rollback instructions.
 
 ## Acceptance Criteria
 
-- [ ] Settings clearly blocks normal app interactions after restore until the
+- [x] Settings clearly blocks normal app interactions after restore until the
       daemon is restarted or healthy again.
-- [ ] CLI restore output includes the correct restart command for macOS or
+- [x] CLI restore output includes the correct restart command for macOS or
       Linux where detectable.
-- [ ] Rollback path and recovery instructions are visible after restore.
-- [ ] Health polling confirms when the restored daemon is usable.
-- [ ] Documentation matches the shipped restart and rollback behavior.
+- [x] Rollback path and recovery instructions are visible after restore.
+- [x] Health polling confirms when the restored daemon is usable.
+- [x] Documentation matches the shipped restart and rollback behavior.
 
 ## Dependencies
 

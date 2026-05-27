@@ -288,6 +288,11 @@ from `--password-file`; keep that password separately because an encrypted
 package cannot be restored without it. The `--output` file must not already
 exist; this avoids overwriting an earlier backup by accident.
 
+Every successful restore prints or returns the rollback directory, a
+platform-specific restart command, and the `/health` URL to check after
+restarting. Settings blocks the recovery screen until the daemon becomes
+healthy again.
+
 ### Update checks and manual upgrades
 
 The Settings page, daemon, and packaged `littleimp` CLI can manually check a
@@ -365,7 +370,8 @@ curl -X POST http://127.0.0.1:3210/restore \
 
 Restore verifies checksums before replacing data, creates a rollback directory
 under `DATA_DIR/restore-rollbacks/pre-restore-...`, and returns
-`restart_required: true`.
+`restart_required: true`, `restart_command`, `health_url`, and
+`rollback_instructions`.
 
 For emergency database-only recovery, stop the daemon before copying files:
 
