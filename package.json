@@ -26,6 +26,7 @@
     "package:release": "bun run scripts/package-release.ts",
     "release:validate": "bun run scripts/release-artifacts-validator.ts",
     "installer:matrix:linux": "bash scripts/validate-linux-installer-matrix.sh",
+    "test:e2e:installed": "npm run package:release && bun run scripts/installed-app-smoke.ts",
     "docker:build": "docker build -t little-imp .",
     "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp",
     "docker:up": "docker compose up -d",

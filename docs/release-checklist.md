@@ -58,6 +58,17 @@ Record command output, host details, and deviations in
 - Run `./install.sh --uninstall` and confirm application data remains unless
   `--purge` is used.
 
+## Installed-App Smoke
+
+- Run `npm run test:e2e:installed`; the command packages release artifacts
+  before running the smoke.
+- Confirm the installed-app smoke validates the packaged archive in an isolated
+  temporary home, starts the installed daemon through a controlled test process,
+  and covers save, search, import, export, Settings, backup, restore, update
+  check, daemon health, upgrade data preservation, and uninstall without purge.
+- If the smoke fails, inspect the temp root printed by the command, especially
+  `daemon.log` and `daemon.error.log`.
+
 ## Docker
 
 - Run `docker compose up -d`.
