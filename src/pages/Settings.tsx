@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   checkForUpdates,
   checkHealthAfterRestore,
+  getDiagnostics,
   getReprocessStatus,
   getSettings,
   reprocessBookmarks,
@@ -29,6 +30,7 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
+  Copy,
   Download,
   Upload,
   RotateCcw,
@@ -70,6 +72,7 @@ import {
 import type {
   ApiAiProvider,
   ApiBackupEntry,
+  ApiDiagnostics,
   ApiEmbeddingProvider,
   ApiEncryptedBackupPackageResult,
   ApiReprocessBatch,
@@ -113,6 +116,7 @@ interface EmbeddingsFormState {
 
 export const settingsKeys = {
   all: ["settings"] as const,
+  diagnostics: ["settings", "diagnostics"] as const,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -260,6 +264,15 @@ function encryptedPackageDescription(result: ApiEncryptedBackupPackageResult): s
 function reprocessQueuedDescription(result: ApiReprocessBatch): string {
   const skipped = result.skipped > 0 ? ` · ${result.skipped} skipped` : "";
   return `${result.enqueued} jobs queued${skipped}`;
+}
+
+function diagnosticsProviderLabel(provider: ApiDiagnostics["providers"]["llm"]): string {
+  const state = provider.configured ? "configured" : "not configured";
+  return provider.model ? `${provider.provider} · ${provider.model} · ${state}` : `${provider.provider} · ${state}`;
+}
+
+function diagnosticsJson(diagnostics: ApiDiagnostics): string {
+  return JSON.stringify(diagnostics, null, 2);
 }
 
 const RESTORE_RECOVERY_STORAGE_KEY = "littleimp.restoreRecovery";
@@ -476,6 +489,36 @@ const Settings = () => {
     },
   });
   const updateCheckResult = updateCheckMutation.data?.data ?? null;
+
+  // ─── Diagnostics ───────────────────────────────────────────────────────────
+  const diagnosticsQuery = useQuery({
+    queryKey: settingsKeys.diagnostics,
+    queryFn: getDiagnostics,
+  });
+  const diagnostics = diagnosticsQuery.data?.data ?? null;
+
+  async function handleCopyDiagnostics() {
+    if (!diagnostics) return;
+    try {
+      await navigator.clipboard.writeText(diagnosticsJson(diagnostics));
+      toast.success("Diagnostics copied");
+    } catch (err) {
+      toast.error("Could not copy diagnostics", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  function handleExportDiagnostics() {
+    if (!diagnostics) return;
+    const blob = new Blob([diagnosticsJson(diagnostics)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `little-imp-diagnostics-${diagnostics.generated_at.replace(/[:.]/g, "-")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   // ─── Library maintenance / reprocessing ───────────────────────────────────
   const [replaceAiFields, setReplaceAiFields] = useState(false);
@@ -1237,6 +1280,90 @@ const Settings = () => {
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <div className="border-t" />
+
+            {/* Diagnostics */}
+            <section className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold">Diagnostics</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Local support context with secrets omitted.
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyDiagnostics}
+                    disabled={!diagnostics}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />
+                    Copy diagnostics
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportDiagnostics}
+                    disabled={!diagnostics}
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Export JSON
+                  </Button>
+                </div>
+              </div>
+
+              {diagnosticsQuery.isLoading && (
+                <div className="text-xs text-muted-foreground">Loading diagnostics…</div>
+              )}
+
+              {diagnosticsQuery.isError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {diagnosticsQuery.error instanceof Error
+                      ? diagnosticsQuery.error.message
+                      : "Could not load diagnostics"}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {diagnostics && (
+                <div className="rounded border px-3 py-2 text-xs bg-muted/30 space-y-2">
+                  <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+                    <span className="text-muted-foreground">Version</span>
+                    <span className="font-mono break-all">{diagnostics.version}</span>
+                    <span className="text-muted-foreground">Install</span>
+                    <span className="font-mono break-all">
+                      {diagnostics.install.mode} · {diagnostics.platform.os}/{diagnostics.platform.arch}
+                    </span>
+                    <span className="text-muted-foreground">Daemon</span>
+                    <span>
+                      {diagnostics.daemon.status} · {diagnostics.daemon.uptime_ms}ms uptime
+                    </span>
+                    <span className="text-muted-foreground">Queue</span>
+                    <span>
+                      {diagnostics.daemon.queue.pending} pending · {diagnostics.daemon.queue.failed} failed
+                    </span>
+                    <span className="text-muted-foreground">Data</span>
+                    <span className="font-mono break-all">{diagnostics.paths.data_dir}</span>
+                    <span className="text-muted-foreground">Backup</span>
+                    <span className="font-mono break-all">
+                      {diagnostics.backup.local.path} · {diagnostics.backup.local.writable ? "writable" : "not writable"}
+                    </span>
+                    <span className="text-muted-foreground">LLM</span>
+                    <span>{diagnosticsProviderLabel(diagnostics.providers.llm)}</span>
+                    <span className="text-muted-foreground">Embeddings</span>
+                    <span>{diagnosticsProviderLabel(diagnostics.providers.embeddings)}</span>
+                    <span className="text-muted-foreground">Logs</span>
+                    <span className="font-mono break-all">
+                      {diagnostics.paths.log_files.map((entry) => entry.path).join(", ")}
+                    </span>
                   </div>
                 </div>
               )}

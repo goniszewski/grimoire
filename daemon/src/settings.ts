@@ -13,14 +13,14 @@ import { Config } from "./config.js";
 
 // ─── Config file path ─────────────────────────────────────────────────────────
 
-function getConfigDir(): string {
+export function getConfigDir(): string {
   return join(
     process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
     "littleimp"
   );
 }
 
-function getConfigFile(): string {
+export function getConfigFile(): string {
   return join(getConfigDir(), "config.json");
 }
 

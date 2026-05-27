@@ -126,6 +126,7 @@ Supported run modes:
 - Docker deployment serving both frontend and daemon API from a loopback-bound port.
 - Development with Vite frontend and a Bun daemon.
 - Manual update availability checks through Settings, `littleimp update check`, and `GET /updates/check`; the packaged CLI also supports explicit verified native upgrades with `littleimp update install`.
+- Local redacted diagnostics through Settings, `littleimp diagnostics`, and `GET /diagnostics` for support without telemetry.
 
 Integration points:
 

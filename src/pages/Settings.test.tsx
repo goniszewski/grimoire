@@ -14,6 +14,7 @@ vi.mock("@/lib/api", () => ({
   ApiError: class ApiError extends Error {},
   checkForUpdates: vi.fn(),
   getReprocessStatus: vi.fn(),
+  getDiagnostics: vi.fn(),
   getSettings: vi.fn(),
   reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
@@ -43,6 +44,7 @@ import * as backupHooks from "@/hooks/use-backup";
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
 const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterRestore: ReturnType<typeof vi.fn> }).checkHealthAfterRestore;
+const mockedGetDiagnostics = (api as unknown as { getDiagnostics: ReturnType<typeof vi.fn> }).getDiagnostics;
 const mockedReprocessBookmarks = (api as unknown as { reprocessBookmarks: ReturnType<typeof vi.fn> }).reprocessBookmarks;
 const mockedGetReprocessStatus = (api as unknown as { getReprocessStatus: ReturnType<typeof vi.fn> }).getReprocessStatus;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
@@ -156,6 +158,36 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   mockedGetSettings.mockResolvedValue(settingsResponse());
+  mockedGetDiagnostics.mockResolvedValue({
+    data: {
+      generated_at: "2026-05-27T08:00:00.000Z",
+      version: "0.1.0-beta",
+      platform: { os: "darwin", arch: "arm64", node_env: "production", host: "127.0.0.1", port: 3210 },
+      install: { mode: "native" },
+      paths: {
+        data_dir: "/Users/me/.local/share/littleimp",
+        database_path: "/Users/me/.local/share/littleimp/littleimp.db",
+        config_file: "/Users/me/.config/littleimp/config.json",
+        backup_dir: "/Users/me/.local/share/littleimp/backups",
+        log_files: [
+          { label: "daemon stdout", path: "/Users/me/.local/share/littleimp/logs/daemon.log" },
+          { label: "daemon stderr", path: "/Users/me/.local/share/littleimp/logs/daemon.error.log" },
+        ],
+      },
+      daemon: { status: "ok", uptime_ms: 1000, queue_size: 0, queue: { pending: 0, running: 0, done: 0, failed: 0 } },
+      providers: {
+        llm: { provider: "none", configured: false, model: null, base_url: null },
+        embeddings: { provider: "openai", configured: false, model: "text-embedding-3-small", base_url: "https://api.openai.com/v1" },
+      },
+      backup: {
+        local: { path: "/Users/me/.local/share/littleimp/backups", is_custom: false, writable: true },
+        schedule: { enabled: false, cron: "0 3 * * *", retention_count: 7, next_run_at: null },
+        s3: { configured: false, endpoint: "", bucket: "", region: "us-east-1", prefix: "little-imp-backups/" },
+      },
+      search: { keyword: true, semantic: false, hybrid: false },
+      omitted_secrets: ["AI provider API keys", "app lock PIN hash"],
+    },
+  });
   mockedCheckForUpdates.mockResolvedValue({
     data: {
       current_version: "0.1.0-beta",
@@ -489,6 +521,31 @@ describe("Settings library maintenance", () => {
     expect(await screen.findByText("0 jobs queued")).toBeInTheDocument();
     expect(screen.getByText("1 skipped")).toBeInTheDocument();
     expect(mockedGetReprocessStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe("Settings diagnostics", () => {
+  it("shows diagnostics and copies the redacted support bundle", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByText("Diagnostics")).toBeInTheDocument();
+    expect(screen.getByText("0.1.0-beta")).toBeInTheDocument();
+    expect(screen.getByText("native · darwin/arm64")).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/.local/share/littleimp")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy diagnostics" }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"version": "0.1.0-beta"'));
+    });
+    expect(writeText.mock.calls[0][0]).not.toContain("openai-secret");
+    expect(writeText.mock.calls[0][0]).not.toContain("s3-secret-key");
   });
 });
 

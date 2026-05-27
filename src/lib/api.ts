@@ -142,6 +142,78 @@ export interface ApiRuntimeCapabilities {
 
 export type ApiUpdateCheckResult = UpdateCheckResultDto;
 
+export interface ApiDiagnosticsProviderStatus {
+  provider: string;
+  configured: boolean;
+  model: string | null;
+  base_url: string | null;
+}
+
+export interface ApiDiagnostics {
+  generated_at: string;
+  version: string;
+  platform: {
+    os: string;
+    arch: string;
+    bun_version: string;
+    node_env: string;
+    host: string;
+    port: number;
+  };
+  install: {
+    mode: "development" | "native" | "docker";
+  };
+  paths: {
+    data_dir: string;
+    database_path: string;
+    config_file: string;
+    backup_dir: string;
+    frontend_dist: string | null;
+    log_files: Array<{ label: string; path: string }>;
+  };
+  daemon: {
+    status: "ok";
+    uptime_ms: number;
+    queue_size: number;
+    queue: {
+      pending: number;
+      running: number;
+      done: number;
+      failed: number;
+    };
+  };
+  providers: {
+    llm: ApiDiagnosticsProviderStatus;
+    embeddings: ApiDiagnosticsProviderStatus;
+  };
+  backup: {
+    local: {
+      path: string;
+      is_custom: boolean;
+      writable: boolean;
+    };
+    schedule: {
+      enabled: boolean;
+      cron: string;
+      retention_count: number;
+      next_run_at: string | null;
+    };
+    s3: {
+      configured: boolean;
+      endpoint: string;
+      bucket: string;
+      region: string;
+      prefix: string;
+    };
+  };
+  search: {
+    keyword: boolean;
+    semantic: boolean;
+    hybrid: boolean;
+  };
+  omitted_secrets: string[];
+}
+
 export interface ApiS3Config {
   endpoint: SettingsDto["backup"]["s3"]["endpoint"];
   bucket: SettingsDto["backup"]["s3"]["bucket"];
@@ -582,6 +654,10 @@ export async function updateSettings(patch: ApiSettingsPatch): Promise<{ data: A
     method: "PUT",
     body: JSON.stringify(patch),
   });
+}
+
+export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
+  return apiFetch<{ data: ApiDiagnostics }>("/diagnostics");
 }
 
 // ─── Updates ──────────────────────────────────────────────────────────────────

@@ -2973,6 +2973,397 @@
       ],
       "additionalProperties": false
     },
+    "Diagnostics": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "description": "Diagnostics generation timestamp",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "description": "Daemon package version"
+        },
+        "platform": {
+          "type": "object",
+          "properties": {
+            "os": {
+              "type": "string",
+              "description": "Operating system platform"
+            },
+            "arch": {
+              "type": "string",
+              "description": "CPU architecture"
+            },
+            "bun_version": {
+              "type": "string",
+              "description": "Bun runtime version"
+            },
+            "node_env": {
+              "type": "string",
+              "description": "Node environment"
+            },
+            "host": {
+              "type": "string",
+              "description": "Configured daemon bind host"
+            },
+            "port": {
+              "type": "integer",
+              "description": "Configured daemon port",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "os",
+            "arch",
+            "bun_version",
+            "node_env",
+            "host",
+            "port"
+          ],
+          "additionalProperties": false
+        },
+        "install": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "description": "Detected install mode",
+              "enum": [
+                "development",
+                "native",
+                "docker"
+              ]
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        "paths": {
+          "type": "object",
+          "properties": {
+            "data_dir": {
+              "type": "string",
+              "description": "Configured data directory"
+            },
+            "database_path": {
+              "type": "string",
+              "description": "SQLite database path"
+            },
+            "config_file": {
+              "type": "string",
+              "description": "Runtime settings file path"
+            },
+            "backup_dir": {
+              "type": "string",
+              "description": "Effective local backup directory"
+            },
+            "frontend_dist": {
+              "type": "string",
+              "description": "Static frontend directory when served by the daemon",
+              "nullable": true
+            },
+            "log_files": {
+              "type": "array",
+              "description": "Known local daemon log files",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Log file label"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Log file path"
+                  }
+                },
+                "required": [
+                  "label",
+                  "path"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "data_dir",
+            "database_path",
+            "config_file",
+            "backup_dir",
+            "frontend_dist",
+            "log_files"
+          ],
+          "additionalProperties": false
+        },
+        "daemon": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Daemon status",
+              "enum": [
+                "ok"
+              ]
+            },
+            "uptime_ms": {
+              "type": "integer",
+              "description": "Process uptime in milliseconds",
+              "minimum": 0
+            },
+            "queue_size": {
+              "type": "integer",
+              "description": "Pending background jobs",
+              "minimum": 0
+            },
+            "queue": {
+              "type": "object",
+              "properties": {
+                "pending": {
+                  "type": "integer",
+                  "description": "Pending jobs",
+                  "minimum": 0
+                },
+                "running": {
+                  "type": "integer",
+                  "description": "Running jobs",
+                  "minimum": 0
+                },
+                "done": {
+                  "type": "integer",
+                  "description": "Completed jobs retained in the queue table",
+                  "minimum": 0
+                },
+                "failed": {
+                  "type": "integer",
+                  "description": "Failed jobs retained in the queue table",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "pending",
+                "running",
+                "done",
+                "failed"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "status",
+            "uptime_ms",
+            "queue_size",
+            "queue"
+          ],
+          "additionalProperties": false
+        },
+        "providers": {
+          "type": "object",
+          "properties": {
+            "llm": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Selected LLM provider"
+                },
+                "configured": {
+                  "type": "boolean",
+                  "description": "Whether LLM enrichment can run with current settings"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Resolved or selected LLM model",
+                  "nullable": true
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Resolved or selected LLM base URL with credentials, query strings, and fragments removed",
+                  "format": "uri",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "provider",
+                "configured",
+                "model",
+                "base_url"
+              ],
+              "additionalProperties": false
+            },
+            "embeddings": {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Selected embedding provider"
+                },
+                "configured": {
+                  "type": "boolean",
+                  "description": "Whether embedding-backed features can run with current settings"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Resolved or selected embedding model",
+                  "nullable": true
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Resolved or selected embedding base URL with credentials, query strings, and fragments removed",
+                  "format": "uri",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "provider",
+                "configured",
+                "model",
+                "base_url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "llm",
+            "embeddings"
+          ],
+          "additionalProperties": false
+        },
+        "backup": {
+          "type": "object",
+          "properties": {
+            "local": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Effective local backup directory"
+                },
+                "is_custom": {
+                  "type": "boolean",
+                  "description": "Whether a custom backup destination is active"
+                },
+                "writable": {
+                  "type": "boolean",
+                  "description": "Whether the effective local backup directory is writable"
+                }
+              },
+              "required": [
+                "path",
+                "is_custom",
+                "writable"
+              ],
+              "additionalProperties": false
+            },
+            "schedule": {
+              "ref": "BackupSchedule"
+            },
+            "s3": {
+              "type": "object",
+              "properties": {
+                "configured": {
+                  "type": "boolean",
+                  "description": "Whether enough non-secret S3 fields and stored credentials are present"
+                },
+                "endpoint": {
+                  "type": "string",
+                  "description": "S3-compatible endpoint URL with credentials, query strings, and fragments removed; empty string for AWS",
+                  "format": "uri"
+                },
+                "bucket": {
+                  "type": "string",
+                  "description": "S3 bucket"
+                },
+                "region": {
+                  "type": "string",
+                  "description": "S3 region"
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "Object key prefix"
+                }
+              },
+              "required": [
+                "configured",
+                "endpoint",
+                "bucket",
+                "region",
+                "prefix"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "local",
+            "schedule",
+            "s3"
+          ],
+          "additionalProperties": false
+        },
+        "search": {
+          "type": "object",
+          "properties": {
+            "keyword": {
+              "type": "boolean",
+              "description": "Whether keyword search is available"
+            },
+            "semantic": {
+              "type": "boolean",
+              "description": "Whether semantic search is available"
+            },
+            "hybrid": {
+              "type": "boolean",
+              "description": "Whether hybrid search is available"
+            }
+          },
+          "required": [
+            "keyword",
+            "semantic",
+            "hybrid"
+          ],
+          "additionalProperties": false
+        },
+        "omitted_secrets": {
+          "type": "array",
+          "description": "Omitted secret classes",
+          "items": {
+            "type": "string",
+            "description": "Secret class or sensitive URL component intentionally omitted from diagnostics"
+          }
+        }
+      },
+      "required": [
+        "generated_at",
+        "version",
+        "platform",
+        "install",
+        "paths",
+        "daemon",
+        "providers",
+        "backup",
+        "search",
+        "omitted_secrets"
+      ],
+      "additionalProperties": false,
+      "description": "Redacted local diagnostics payload for user-shared support bundles"
+    },
+    "DiagnosticsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "Diagnostics"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Response data"
+    },
     "UpdateRelease": {
       "type": "object",
       "properties": {
@@ -3150,6 +3541,28 @@
           }
         }
       }
+    },
+    {
+      "method": "GET",
+      "path": "/diagnostics",
+      "tag": "System",
+      "summary": "Return a redacted local diagnostics bundle for support.",
+      "description": "Diagnostics are generated locally and omit API keys, URL credentials, query strings, PIN hashes, S3 credentials, and backup passwords.",
+      "responses": {
+        "200": {
+          "description": "Redacted diagnostics",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "DiagnosticsResponse"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Generate diagnostics",
+          "request": "curl http://127.0.0.1:3210/diagnostics"
+        }
+      ]
     },
     {
       "method": "GET",

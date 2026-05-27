@@ -891,6 +891,151 @@ const schemas = {
     },
     ["status", "version", "uptime", "queueSize"]
   ),
+  Diagnostics: objectSchema(
+    {
+      generated_at: stringSchema("Diagnostics generation timestamp", { format: "date-time" }),
+      version: stringSchema("Daemon package version"),
+      platform: objectSchema(
+        {
+          os: stringSchema("Operating system platform"),
+          arch: stringSchema("CPU architecture"),
+          bun_version: stringSchema("Bun runtime version"),
+          node_env: stringSchema("Node environment"),
+          host: stringSchema("Configured daemon bind host"),
+          port: integerSchema("Configured daemon port", { minimum: 1, maximum: 65535 }),
+        },
+        ["os", "arch", "bun_version", "node_env", "host", "port"]
+      ),
+      install: objectSchema(
+        {
+          mode: stringSchema("Detected install mode", { enum: ["development", "native", "docker"] }),
+        },
+        ["mode"]
+      ),
+      paths: objectSchema(
+        {
+          data_dir: stringSchema("Configured data directory"),
+          database_path: stringSchema("SQLite database path"),
+          config_file: stringSchema("Runtime settings file path"),
+          backup_dir: stringSchema("Effective local backup directory"),
+          frontend_dist: nullable(stringSchema("Static frontend directory when served by the daemon")),
+          log_files: arrayOf(
+            objectSchema(
+              {
+                label: stringSchema("Log file label"),
+                path: stringSchema("Log file path"),
+              },
+              ["label", "path"]
+            ),
+            "Known local daemon log files"
+          ),
+        },
+        ["data_dir", "database_path", "config_file", "backup_dir", "frontend_dist", "log_files"]
+      ),
+      daemon: objectSchema(
+        {
+          status: stringSchema("Daemon status", { enum: ["ok"] }),
+          uptime_ms: integerSchema("Process uptime in milliseconds", { minimum: 0 }),
+          queue_size: integerSchema("Pending background jobs", { minimum: 0 }),
+          queue: objectSchema(
+            {
+              pending: integerSchema("Pending jobs", { minimum: 0 }),
+              running: integerSchema("Running jobs", { minimum: 0 }),
+              done: integerSchema("Completed jobs retained in the queue table", { minimum: 0 }),
+              failed: integerSchema("Failed jobs retained in the queue table", { minimum: 0 }),
+            },
+            ["pending", "running", "done", "failed"]
+          ),
+        },
+        ["status", "uptime_ms", "queue_size", "queue"]
+      ),
+      providers: objectSchema(
+        {
+          llm: objectSchema(
+            {
+              provider: stringSchema("Selected LLM provider"),
+              configured: booleanSchema("Whether LLM enrichment can run with current settings"),
+              model: nullable(stringSchema("Resolved or selected LLM model")),
+              base_url: nullable(
+                stringSchema("Resolved or selected LLM base URL with credentials, query strings, and fragments removed", {
+                  format: "uri",
+                })
+              ),
+            },
+            ["provider", "configured", "model", "base_url"]
+          ),
+          embeddings: objectSchema(
+            {
+              provider: stringSchema("Selected embedding provider"),
+              configured: booleanSchema("Whether embedding-backed features can run with current settings"),
+              model: nullable(stringSchema("Resolved or selected embedding model")),
+              base_url: nullable(
+                stringSchema(
+                  "Resolved or selected embedding base URL with credentials, query strings, and fragments removed",
+                  { format: "uri" }
+                )
+              ),
+            },
+            ["provider", "configured", "model", "base_url"]
+          ),
+        },
+        ["llm", "embeddings"]
+      ),
+      backup: objectSchema(
+        {
+          local: objectSchema(
+            {
+              path: stringSchema("Effective local backup directory"),
+              is_custom: booleanSchema("Whether a custom backup destination is active"),
+              writable: booleanSchema("Whether the effective local backup directory is writable"),
+            },
+            ["path", "is_custom", "writable"]
+          ),
+          schedule: ref("BackupSchedule"),
+          s3: objectSchema(
+            {
+              configured: booleanSchema("Whether enough non-secret S3 fields and stored credentials are present"),
+              endpoint: stringSchema(
+                "S3-compatible endpoint URL with credentials, query strings, and fragments removed; empty string for AWS",
+                { format: "uri" }
+              ),
+              bucket: stringSchema("S3 bucket"),
+              region: stringSchema("S3 region"),
+              prefix: stringSchema("Object key prefix"),
+            },
+            ["configured", "endpoint", "bucket", "region", "prefix"]
+          ),
+        },
+        ["local", "schedule", "s3"]
+      ),
+      search: objectSchema(
+        {
+          keyword: booleanSchema("Whether keyword search is available"),
+          semantic: booleanSchema("Whether semantic search is available"),
+          hybrid: booleanSchema("Whether hybrid search is available"),
+        },
+        ["keyword", "semantic", "hybrid"]
+      ),
+      omitted_secrets: arrayOf(
+        stringSchema("Secret class or sensitive URL component intentionally omitted from diagnostics"),
+        "Omitted secret classes"
+      ),
+    },
+    [
+      "generated_at",
+      "version",
+      "platform",
+      "install",
+      "paths",
+      "daemon",
+      "providers",
+      "backup",
+      "search",
+      "omitted_secrets",
+    ],
+    "Redacted local diagnostics payload for user-shared support bundles"
+  ),
+  DiagnosticsResponse: envelope(ref("Diagnostics")),
   UpdateRelease: objectSchema(
     {
       version: stringSchema("Normalized semantic version"),
@@ -942,6 +1087,21 @@ export const apiContract = {
       tag: "System",
       summary: "Return daemon health, version, uptime, and queue size.",
       responses: { "200": jsonResponse("Daemon health", ref("HealthResponse")) },
+    },
+    {
+      method: "GET",
+      path: "/diagnostics",
+      tag: "System",
+      summary: "Return a redacted local diagnostics bundle for support.",
+      description:
+        "Diagnostics are generated locally and omit API keys, URL credentials, query strings, PIN hashes, S3 credentials, and backup passwords.",
+      responses: { "200": jsonResponse("Redacted diagnostics", ref("DiagnosticsResponse")) },
+      examples: [
+        {
+          title: "Generate diagnostics",
+          request: "curl http://127.0.0.1:3210/diagnostics",
+        },
+      ],
     },
     {
       method: "GET",

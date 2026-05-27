@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** medium
-**Status:** todo
+**Status:** done
 **Area:** operations / support / frontend / CLI
 
 ## Description
@@ -27,14 +27,25 @@ developer checkout.
 
 ## Acceptance Criteria
 
-- [ ] Users can generate diagnostics from the CLI or Settings.
-- [ ] Diagnostics include enough context to troubleshoot install, health,
+- [x] Users can generate diagnostics from the CLI or Settings.
+- [x] Diagnostics include enough context to troubleshoot install, health,
       provider, backup, and queue issues.
-- [ ] Secrets are redacted in tests and implementation.
-- [ ] Diagnostics output is deterministic enough for support and issue reports.
-- [ ] Documentation explains what is included and what is intentionally omitted.
+- [x] Secrets are redacted in tests and implementation.
+- [x] Diagnostics output is deterministic enough for support and issue reports.
+- [x] Documentation explains what is included and what is intentionally omitted.
 
 ## Notes
 
-- This task should not add telemetry. Diagnostics are generated locally and only
+- This task does not add telemetry. Diagnostics are generated locally and only
   shared if the user chooses to share them.
+- Implementation surfaces:
+  - `GET /diagnostics`
+  - `littleimp diagnostics [--json] [--daemon-url URL]`
+  - Settings > Diagnostics copy/export actions
+  - [docs/diagnostics.md](../../docs/diagnostics.md)
+
+## Verification
+
+- `bun test daemon/src/test/integration/diagnostics.test.ts daemon/src/test/cli-diagnostics.test.ts`
+- `npx vitest run src/pages/Settings.test.tsx src/lib/api-contract.test.ts`
+- `npm run check`

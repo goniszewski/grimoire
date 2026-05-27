@@ -293,6 +293,25 @@ platform-specific restart command, and the `/health` URL to check after
 restarting. Settings blocks the recovery screen until the daemon becomes
 healthy again.
 
+### Diagnostics
+
+Settings and the packaged `littleimp` CLI can generate a local diagnostics
+bundle for support. Diagnostics include version, platform, install mode, data
+paths, daemon health, queue depth, provider status, backup destination status,
+and log file locations. They omit API keys, URL credentials and query strings,
+app lock PIN hashes, S3 credentials, backup passwords, bookmark contents, notes,
+and embeddings.
+
+```sh
+littleimp diagnostics
+littleimp diagnostics --json
+
+curl http://127.0.0.1:3210/diagnostics
+```
+
+Diagnostics are not telemetry; nothing is sent unless you choose to share the
+copied or exported output. See [docs/diagnostics.md](./docs/diagnostics.md).
+
 ### Update checks and manual upgrades
 
 The Settings page, daemon, and packaged `littleimp` CLI can manually check a

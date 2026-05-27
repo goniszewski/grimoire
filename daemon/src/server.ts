@@ -7,6 +7,7 @@ import { Config } from "./config.js";
 import { log } from "./logger.js";
 import { JobQueue } from "./queue.js";
 import { createHealthRoute } from "./routes/health.js";
+import { createDiagnosticsRoute } from "./routes/diagnostics.js";
 import { createBookmarksRoute } from "./routes/bookmarks.js";
 import { createSearchRoute } from "./routes/search.js";
 import { createImportRoute } from "./routes/import.js";
@@ -91,6 +92,7 @@ export function createApp(deps: AppDeps): Hono {
 
   // Routes
   app.route("/", createHealthRoute(deps));
+  app.route("/", createDiagnosticsRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));

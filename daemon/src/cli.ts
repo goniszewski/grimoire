@@ -65,6 +65,43 @@ type BackupEntry = {
   source: "local" | "remote";
 };
 
+type DiagnosticsResponse = {
+  data: {
+    generated_at: string;
+    version: string;
+    platform: {
+      os: string;
+      arch: string;
+      node_env: string;
+      host: string;
+      port: number;
+    };
+    install: { mode: string };
+    paths: {
+      data_dir: string;
+      config_file: string;
+      backup_dir: string;
+      log_files: Array<{ label: string; path: string }>;
+    };
+    daemon: {
+      status: string;
+      uptime_ms: number;
+      queue_size: number;
+      queue: { pending: number; running: number; done: number; failed: number };
+    };
+    providers: {
+      llm: { provider: string; configured: boolean; model: string | null };
+      embeddings: { provider: string; configured: boolean; model: string | null };
+    };
+    backup: {
+      local: { path: string; is_custom: boolean; writable: boolean };
+      s3: { configured: boolean; bucket: string; region: string; prefix: string };
+    };
+    search: { keyword: boolean; semantic: boolean; hybrid: boolean };
+    omitted_secrets: string[];
+  };
+};
+
 class CliError extends Error {
   constructor(message: string, readonly code = 1) {
     super(message);
@@ -238,6 +275,26 @@ function printBackupList(io: Required<Pick<CliIO, "stdout">>, entries: BackupEnt
   }
 }
 
+function printDiagnostics(io: Required<Pick<CliIO, "stdout">>, diagnostics: DiagnosticsResponse["data"]): void {
+  io.stdout(`Little Imp ${diagnostics.version} diagnostics`);
+  io.stdout(`Generated: ${diagnostics.generated_at}`);
+  io.stdout(`Install: ${diagnostics.install.mode} on ${diagnostics.platform.os}/${diagnostics.platform.arch}`);
+  io.stdout(`Daemon: ${diagnostics.daemon.status}, uptime ${diagnostics.daemon.uptime_ms}ms`);
+  io.stdout(`Queue: ${diagnostics.daemon.queue.pending} pending`);
+  io.stdout(`Data: ${diagnostics.paths.data_dir}`);
+  io.stdout(`Config: ${diagnostics.paths.config_file}`);
+  io.stdout(
+    `Backups: ${diagnostics.backup.local.path} (${diagnostics.backup.local.writable ? "writable" : "not writable"})`
+  );
+  io.stdout(
+    `Providers: LLM ${diagnostics.providers.llm.provider} (${diagnostics.providers.llm.configured ? "configured" : "not configured"}), embeddings ${diagnostics.providers.embeddings.provider} (${diagnostics.providers.embeddings.configured ? "configured" : "not configured"})`
+  );
+  if (diagnostics.paths.log_files.length > 0) {
+    io.stdout(`Logs: ${diagnostics.paths.log_files.map((entry) => entry.path).join(", ")}`);
+  }
+  io.stdout(`Omitted: ${diagnostics.omitted_secrets.join(", ")}`);
+}
+
 function printRestoreResult(io: Required<Pick<CliIO, "stdout">>, result: {
   restored_at: string;
   bookmark_count: number;
@@ -324,6 +381,7 @@ function usage(): string {
     "  littleimp backup restore --encrypted-file FILE --yes [--json] [--daemon-url URL] [--password-file FILE]",
     "  littleimp backup verify --file <snapshot-directory> [--json]",
     "  littleimp backup verify --encrypted --file FILE [--json] [--password-file FILE]",
+    "  littleimp diagnostics [--json] [--daemon-url URL]",
     "",
     "Environment:",
     "  LITTLEIMP_DAEMON_URL  Defaults to http://127.0.0.1:3210",
@@ -748,6 +806,21 @@ async function handleBackupCommand(args: string[], io: CliRuntime): Promise<numb
   throw new CliError(`Unknown backup command: ${command}`, 2);
 }
 
+async function handleDiagnosticsCommand(args: string[], io: CliRuntime): Promise<number> {
+  const parsed = parseArgs(args, {
+    booleanFlags: ["--json"],
+    valueFlags: ["--daemon-url"],
+  });
+  assertNoPositionals(parsed, "diagnostics", "diagnostics");
+  const json = parsed.flags.has("--json");
+  const daemonUrl = getDaemonUrl(parsed, io.env);
+  const result = await requestJson<DiagnosticsResponse>(io, `${daemonUrl}/diagnostics`);
+
+  if (json) printJson(io, result);
+  else printDiagnostics(io, result.data);
+  return 0;
+}
+
 export async function runLittleImpCli(args: string[], options: CliIO = {}): Promise<number> {
   const io: CliRuntime = {
     env: options.env ?? process.env,
@@ -766,10 +839,13 @@ export async function runLittleImpCli(args: string[], options: CliIO = {}): Prom
     if (command === "update") {
       return await handleUpdateCommand(rest, io);
     }
-    if (command !== "backup") {
-      throw new CliError(`Unknown command: ${command}`, 2);
+    if (command === "backup") {
+      return await handleBackupCommand(rest, io);
     }
-    return await handleBackupCommand(rest, io);
+    if (command === "diagnostics") {
+      return await handleDiagnosticsCommand(rest, io);
+    }
+    throw new CliError(`Unknown command: ${command}`, 2);
   } catch (err) {
     if (
       err instanceof CliError ||

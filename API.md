@@ -33,6 +33,26 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `HealthResponse` | Daemon health |
 
+#### GET /diagnostics
+
+Return a redacted local diagnostics bundle for support.
+
+Diagnostics are generated locally and omit API keys, URL credentials, query strings, PIN hashes, S3 credentials, and backup passwords.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `DiagnosticsResponse` | Redacted diagnostics |
+
+Examples:
+
+**Generate diagnostics**
+
+```bash
+curl http://127.0.0.1:3210/diagnostics
+```
+
 ### Updates
 
 #### GET /updates/check
@@ -2153,6 +2173,139 @@ Response data
 | `version` | string | yes | Daemon package version |
 | `uptime` | integer | yes | Process uptime in milliseconds |
 | `queueSize` | integer | yes | Queued background jobs |
+
+### Diagnostics
+
+Redacted local diagnostics payload for user-shared support bundles
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `generated_at` | string | yes | Diagnostics generation timestamp |
+| `version` | string | yes | Daemon package version |
+| `platform` | object | yes |  |
+| `platform.os` | string | yes | Operating system platform |
+| `platform.arch` | string | yes | CPU architecture |
+| `platform.bun_version` | string | yes | Bun runtime version |
+| `platform.node_env` | string | yes | Node environment |
+| `platform.host` | string | yes | Configured daemon bind host |
+| `platform.port` | integer | yes | Configured daemon port |
+| `install` | object | yes |  |
+| `install.mode` | "development" \| "native" \| "docker" | yes | Detected install mode |
+| `paths` | object | yes |  |
+| `paths.data_dir` | string | yes | Configured data directory |
+| `paths.database_path` | string | yes | SQLite database path |
+| `paths.config_file` | string | yes | Runtime settings file path |
+| `paths.backup_dir` | string | yes | Effective local backup directory |
+| `paths.frontend_dist` | string \| null | yes | Static frontend directory when served by the daemon |
+| `paths.log_files` | array<object> | yes | Known local daemon log files |
+| `daemon` | object | yes |  |
+| `daemon.status` | "ok" | yes | Daemon status |
+| `daemon.uptime_ms` | integer | yes | Process uptime in milliseconds |
+| `daemon.queue_size` | integer | yes | Pending background jobs |
+| `daemon.queue` | object | yes |  |
+| `daemon.queue.pending` | integer | yes | Pending jobs |
+| `daemon.queue.running` | integer | yes | Running jobs |
+| `daemon.queue.done` | integer | yes | Completed jobs retained in the queue table |
+| `daemon.queue.failed` | integer | yes | Failed jobs retained in the queue table |
+| `providers` | object | yes |  |
+| `providers.llm` | object | yes |  |
+| `providers.llm.provider` | string | yes | Selected LLM provider |
+| `providers.llm.configured` | boolean | yes | Whether LLM enrichment can run with current settings |
+| `providers.llm.model` | string \| null | yes | Resolved or selected LLM model |
+| `providers.llm.base_url` | string \| null | yes | Resolved or selected LLM base URL with credentials, query strings, and fragments removed |
+| `providers.embeddings` | object | yes |  |
+| `providers.embeddings.provider` | string | yes | Selected embedding provider |
+| `providers.embeddings.configured` | boolean | yes | Whether embedding-backed features can run with current settings |
+| `providers.embeddings.model` | string \| null | yes | Resolved or selected embedding model |
+| `providers.embeddings.base_url` | string \| null | yes | Resolved or selected embedding base URL with credentials, query strings, and fragments removed |
+| `backup` | object | yes |  |
+| `backup.local` | object | yes |  |
+| `backup.local.path` | string | yes | Effective local backup directory |
+| `backup.local.is_custom` | boolean | yes | Whether a custom backup destination is active |
+| `backup.local.writable` | boolean | yes | Whether the effective local backup directory is writable |
+| `backup.schedule` | BackupSchedule | yes |  |
+| `backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
+| `backup.schedule.cron` | string | yes | Five-part cron expression |
+| `backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
+| `backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
+| `backup.s3` | object | yes |  |
+| `backup.s3.configured` | boolean | yes | Whether enough non-secret S3 fields and stored credentials are present |
+| `backup.s3.endpoint` | string | yes | S3-compatible endpoint URL with credentials, query strings, and fragments removed; empty string for AWS |
+| `backup.s3.bucket` | string | yes | S3 bucket |
+| `backup.s3.region` | string | yes | S3 region |
+| `backup.s3.prefix` | string | yes | Object key prefix |
+| `search` | object | yes |  |
+| `search.keyword` | boolean | yes | Whether keyword search is available |
+| `search.semantic` | boolean | yes | Whether semantic search is available |
+| `search.hybrid` | boolean | yes | Whether hybrid search is available |
+| `omitted_secrets` | array<string> | yes | Omitted secret classes |
+
+### DiagnosticsResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | Diagnostics | yes |  |
+| `data.generated_at` | string | yes | Diagnostics generation timestamp |
+| `data.version` | string | yes | Daemon package version |
+| `data.platform` | object | yes |  |
+| `data.platform.os` | string | yes | Operating system platform |
+| `data.platform.arch` | string | yes | CPU architecture |
+| `data.platform.bun_version` | string | yes | Bun runtime version |
+| `data.platform.node_env` | string | yes | Node environment |
+| `data.platform.host` | string | yes | Configured daemon bind host |
+| `data.platform.port` | integer | yes | Configured daemon port |
+| `data.install` | object | yes |  |
+| `data.install.mode` | "development" \| "native" \| "docker" | yes | Detected install mode |
+| `data.paths` | object | yes |  |
+| `data.paths.data_dir` | string | yes | Configured data directory |
+| `data.paths.database_path` | string | yes | SQLite database path |
+| `data.paths.config_file` | string | yes | Runtime settings file path |
+| `data.paths.backup_dir` | string | yes | Effective local backup directory |
+| `data.paths.frontend_dist` | string \| null | yes | Static frontend directory when served by the daemon |
+| `data.paths.log_files` | array<object> | yes | Known local daemon log files |
+| `data.daemon` | object | yes |  |
+| `data.daemon.status` | "ok" | yes | Daemon status |
+| `data.daemon.uptime_ms` | integer | yes | Process uptime in milliseconds |
+| `data.daemon.queue_size` | integer | yes | Pending background jobs |
+| `data.daemon.queue` | object | yes |  |
+| `data.daemon.queue.pending` | integer | yes | Pending jobs |
+| `data.daemon.queue.running` | integer | yes | Running jobs |
+| `data.daemon.queue.done` | integer | yes | Completed jobs retained in the queue table |
+| `data.daemon.queue.failed` | integer | yes | Failed jobs retained in the queue table |
+| `data.providers` | object | yes |  |
+| `data.providers.llm` | object | yes |  |
+| `data.providers.llm.provider` | string | yes | Selected LLM provider |
+| `data.providers.llm.configured` | boolean | yes | Whether LLM enrichment can run with current settings |
+| `data.providers.llm.model` | string \| null | yes | Resolved or selected LLM model |
+| `data.providers.llm.base_url` | string \| null | yes | Resolved or selected LLM base URL with credentials, query strings, and fragments removed |
+| `data.providers.embeddings` | object | yes |  |
+| `data.providers.embeddings.provider` | string | yes | Selected embedding provider |
+| `data.providers.embeddings.configured` | boolean | yes | Whether embedding-backed features can run with current settings |
+| `data.providers.embeddings.model` | string \| null | yes | Resolved or selected embedding model |
+| `data.providers.embeddings.base_url` | string \| null | yes | Resolved or selected embedding base URL with credentials, query strings, and fragments removed |
+| `data.backup` | object | yes |  |
+| `data.backup.local` | object | yes |  |
+| `data.backup.local.path` | string | yes | Effective local backup directory |
+| `data.backup.local.is_custom` | boolean | yes | Whether a custom backup destination is active |
+| `data.backup.local.writable` | boolean | yes | Whether the effective local backup directory is writable |
+| `data.backup.schedule` | BackupSchedule | yes |  |
+| `data.backup.schedule.enabled` | boolean | yes | Enable scheduled snapshots |
+| `data.backup.schedule.cron` | string | yes | Five-part cron expression |
+| `data.backup.schedule.retention_count` | integer | yes | Number of local snapshots to retain |
+| `data.backup.schedule.next_run_at` | string \| null | yes | Next scheduled run timestamp |
+| `data.backup.s3` | object | yes |  |
+| `data.backup.s3.configured` | boolean | yes | Whether enough non-secret S3 fields and stored credentials are present |
+| `data.backup.s3.endpoint` | string | yes | S3-compatible endpoint URL with credentials, query strings, and fragments removed; empty string for AWS |
+| `data.backup.s3.bucket` | string | yes | S3 bucket |
+| `data.backup.s3.region` | string | yes | S3 region |
+| `data.backup.s3.prefix` | string | yes | Object key prefix |
+| `data.search` | object | yes |  |
+| `data.search.keyword` | boolean | yes | Whether keyword search is available |
+| `data.search.semantic` | boolean | yes | Whether semantic search is available |
+| `data.search.hybrid` | boolean | yes | Whether hybrid search is available |
+| `data.omitted_secrets` | array<string> | yes | Omitted secret classes |
 
 ### UpdateRelease
 
