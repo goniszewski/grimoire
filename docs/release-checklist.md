@@ -58,6 +58,22 @@ Record command output, host details, and deviations in
 - Run `./install.sh --uninstall` and confirm application data remains unless
   `--purge` is used.
 
+## Homebrew Alternate Install
+
+- Confirm `Formula/little-imp.rb` references the current release target and the
+  published macOS and Linux archive checksums from `release/release-manifest.json`.
+- Run `npx vitest run scripts/homebrew-formula.test.ts`.
+- Register the Bun dependency tap with `brew tap oven-sh/bun`.
+- Register the checkout as a local tap with `brew tap goniszewski/little-imp "$PWD"`.
+- Run `brew audit --strict goniszewski/little-imp/little-imp`.
+- Run `brew install goniszewski/little-imp/little-imp`.
+- Confirm `littleimp --help` reports `0.1.0-beta`.
+- Start the Homebrew service with `brew services start little-imp`, then verify
+  `curl http://127.0.0.1:3210/health` reports `version: "0.1.0-beta"`.
+- Stop the Homebrew service with `brew services stop little-imp`.
+- Run `brew uninstall little-imp` and confirm
+  `$(brew --prefix)/var/little-imp` remains unless it is explicitly removed.
+
 ## Installed-App Smoke
 
 - Run `npm run test:e2e:installed`; the command packages release artifacts

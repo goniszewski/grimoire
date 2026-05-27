@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CLI, daemon API, and Settings update checks for GitHub Releases-compatible release sources.
 - Packaged `littleimp update install` flow for explicit native upgrades with archive download, local archive support, checksum/signature verification, daemon restart, health-version verification, and rollback guidance.
 - Settings backup rows can create encrypted `.littleimp-backup.enc` packages through the daemon `/backup/package` endpoint.
+- Homebrew formula for an alternate MVP install path backed by checksum-verified release archives and `brew services`.
 
 ## [0.1.0-beta] - 2026-05-14
 

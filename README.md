@@ -41,6 +41,39 @@ signature when the release publishes one, and then runs the native installer.
 If no `.asc` signature is published, it prints a checksum-only warning and does
 not claim signature verification.
 
+### Homebrew alternate install
+
+Homebrew is an alternate MVP install path for macOS and Linux users who prefer
+`brew services`. The recommended MVP path remains the one-command installer
+above because it is the cross-platform baseline.
+
+```sh
+brew tap oven-sh/bun
+brew tap goniszewski/little-imp
+brew install little-imp
+brew services start little-imp
+```
+
+The formula consumes the same release archive as the manual install path and
+Homebrew verifies the archive SHA-256 before installation. It installs the
+daemon, built frontend bundle, CLI wrappers, and service assets from the
+archive instead of rebuilding from the repository.
+
+```sh
+# Upgrade and restart the Homebrew service
+brew update
+brew upgrade little-imp
+brew services restart little-imp
+
+# Stop and remove the Homebrew-managed app files
+brew services stop little-imp
+brew uninstall little-imp
+```
+
+Data is preserved by default under `$(brew --prefix)/var/little-imp` when
+running `brew uninstall little-imp`. Remove that directory explicitly only when
+you intend to purge the Homebrew-managed database, settings, backups, and logs.
+
 ### Release archive
 
 Download the archive and matching checksum for your platform from the release:
@@ -181,6 +214,11 @@ All application data lives in `~/.local/share/littleimp/`:
 | `~/.local/share/littleimp/.env` | Install-time daemon defaults |
 | `~/.local/share/littleimp/dist/` | Built frontend served by the daemon |
 | `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
+
+Homebrew installs keep Homebrew-managed data under
+`$(brew --prefix)/var/little-imp` instead. The native installer, release
+archive installer, and source checkout installer continue to use
+`~/.local/share/littleimp/`.
 
 Runtime user settings are stored separately at `~/.config/littleimp/config.json`.
 AI and embedding execution uses those persisted settings first. Environment

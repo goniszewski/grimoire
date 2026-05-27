@@ -50,7 +50,7 @@ No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. macO
 
 The next release should focus on reducing installation friction and improving confidence around backup and operations:
 
-- Distribution polish: Homebrew formula or tap.
+- Distribution polish: finish the in-review Homebrew formula by publishing release artifacts, validating `brew install`, and publishing the tap.
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
 - Fresh host or VM installer matrix reruns before publication, especially macOS 12+ x64.
 
