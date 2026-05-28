@@ -840,6 +840,8 @@ const schemas = {
           "category_merged",
           "category_merge_suggested",
           "category_renamed",
+          "category_reparented",
+          "category_deleted",
           "duplicate_removed",
           "duplicate_flagged",
           "cluster_labeled",

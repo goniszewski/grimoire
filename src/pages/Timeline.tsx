@@ -7,8 +7,10 @@ import { useNavigate } from "react-router-dom";
 import {
   History,
   FolderPlus,
+  FolderMinus,
   GitMerge,
   PencilLine,
+  MoveRight,
   Copy,
   Tag,
   Bot,
@@ -42,6 +44,16 @@ const EVENT_CONFIG: Record<
     label: "Category renamed",
     icon: <PencilLine className="h-3.5 w-3.5" />,
     color: "text-yellow-500",
+  },
+  category_reparented: {
+    label: "Category moved",
+    icon: <MoveRight className="h-3.5 w-3.5" />,
+    color: "text-cyan-500",
+  },
+  category_deleted: {
+    label: "Category deleted",
+    icon: <FolderMinus className="h-3.5 w-3.5" />,
+    color: "text-red-500",
   },
   duplicate_removed: {
     label: "Duplicate removed",

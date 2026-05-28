@@ -166,4 +166,76 @@ describe("Categories API", () => {
     expect(Array.isArray(techNode!.children)).toBe(true);
     expect(techNode!.children.length).toBe(1);
   });
+
+  it("records manual category changes in the timeline", async () => {
+    const parentRes = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Tech" }),
+    });
+    const { data: parent } = await parentRes.json() as { data: { id: string } };
+
+    const childRes = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "TypeScript", parent_id: parent.id }),
+    });
+    const { data: child } = await childRes.json() as { data: { id: string } };
+
+    const updateRes = await app.request(`/categories/${child.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "JavaScript", parent_id: null }),
+    });
+    expect(updateRes.status).toBe(200);
+
+    const deleteRes = await app.request(`/categories/${child.id}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(204);
+
+    const timelineRes = await app.request("/timeline?limit=10");
+    expect(timelineRes.status).toBe(200);
+    const timeline = await timelineRes.json() as {
+      data: Array<{
+        type: string;
+        description: string;
+        source: string;
+        metadata: Record<string, unknown>;
+      }>;
+    };
+
+    const createdEvents = timeline.data.filter((event) => event.type === "category_created");
+    expect(createdEvents).toHaveLength(2);
+    expect(createdEvents.some((event) => event.description === `Created category "Tech"`)).toBe(true);
+
+    expect(timeline.data).toContainEqual(expect.objectContaining({
+      type: "category_renamed",
+      description: `Renamed category "TypeScript" to "JavaScript"`,
+      source: "user",
+      metadata: expect.objectContaining({
+        categoryId: child.id,
+        previousName: "TypeScript",
+        name: "JavaScript",
+      }),
+    }));
+    expect(timeline.data).toContainEqual(expect.objectContaining({
+      type: "category_reparented",
+      description: `Moved category "JavaScript" to root`,
+      source: "user",
+      metadata: expect.objectContaining({
+        categoryId: child.id,
+        previousParentId: parent.id,
+        parentId: null,
+      }),
+    }));
+    expect(timeline.data).toContainEqual(expect.objectContaining({
+      type: "category_deleted",
+      description: `Deleted category "JavaScript"`,
+      source: "user",
+      metadata: expect.objectContaining({
+        categoryId: child.id,
+        name: "JavaScript",
+        parentId: null,
+      }),
+    }));
+  });
 });

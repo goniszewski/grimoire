@@ -18,6 +18,8 @@ Implement timeline recording of all structural changes to the library (category 
 - `category_created`
 - `category_merged`
 - `category_renamed`
+- `category_reparented`
+- `category_deleted`
 - `duplicate_removed`
 - `cluster_labeled`
 
@@ -37,12 +39,6 @@ Implement timeline recording of all structural changes to the library (category 
 ## Acceptance Criteria
 
 - [x] All agent auto-actions write to timeline
-- [ ] Manual category changes also recorded
+- [x] Manual category changes also recorded
 - [x] Timeline paginated (newest first)
 - [x] Frontend timeline view reads from this endpoint
-
-## TASK-058 Audit Note
-
-Agent auto-applied duplicate removals and category merges write timeline events.
-Manual category create, rename, delete, and reparent operations are not yet
-recorded in the timeline; that follow-up is captured by TASK-072.

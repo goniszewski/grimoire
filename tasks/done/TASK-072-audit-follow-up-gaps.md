@@ -2,7 +2,7 @@
 
 **Phase:** post-MVP polish
 **Priority:** low
-**Status:** backlog
+**Status:** done
 **Area:** frontend / daemon / task-board hygiene
 
 ## Description
@@ -27,11 +27,11 @@ hidden inside completed task files.
 
 ## Acceptance Criteria
 
-- [ ] Command palette semantic-search behavior is either implemented and tested
+- [x] Command palette semantic-search behavior is either implemented and tested
       or explicitly removed from the product requirements.
-- [ ] Manual category timeline behavior is either implemented and tested or
+- [x] Manual category timeline behavior is either implemented and tested or
       explicitly removed from the product requirements.
-- [ ] `tasks/done/TASK-012-library-timeline.md` and
+- [x] `tasks/done/TASK-012-library-timeline.md` and
       `tasks/done/TASK-017-ai-palette-integration.md` no longer carry unresolved
       TASK-058 audit notes.
 
@@ -40,3 +40,12 @@ hidden inside completed task files.
 - TASK-064 and TASK-065 already cover the larger provider-change,
   reprocessing, re-embedding, and pipeline retry/recovery gaps found during the
   audit.
+- The command palette uses `mode=hybrid` for natural-language searches so
+  semantic matches supplement keyword matches, with a keyword fallback when no
+  embedding provider is configured.
+- Manual category create, rename, reparent, and delete requests write user
+  timeline events from the daemon categories route.
+- Code review follow-up fixed stale async command-palette results after closing
+  and reopening the palette while a search request is still in flight.
+- Verification passed with `npm run check`, including lint, frontend tests,
+  daemon tests, generated API docs drift checking, and production build.

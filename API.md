@@ -2126,7 +2126,7 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `id` | string | yes | Timeline event ID |
-| `type` | "category_created" \| "category_merged" \| "category_merge_suggested" \| "category_renamed" \| "duplicate_removed" \| "duplicate_flagged" \| "cluster_labeled" \| "suggestion_accepted" \| "suggestion_rejected" | yes | Timeline event type |
+| `type` | "category_created" \| "category_merged" \| "category_merge_suggested" \| "category_renamed" \| "category_reparented" \| "category_deleted" \| "duplicate_removed" \| "duplicate_flagged" \| "cluster_labeled" \| "suggestion_accepted" \| "suggestion_rejected" | yes | Timeline event type |
 | `description` | string | yes | Human-readable event description |
 | `metadata` | object | yes | Event metadata |
 | `source` | "agent" \| "user" | yes | Event source |

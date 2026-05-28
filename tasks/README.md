@@ -85,7 +85,7 @@ tasks/
 | TASK-069 | [Production Security Headers and Local Hardening](done/TASK-069-production-security-headers-local-hardening.md) | MVP readiness | medium | done |
 | TASK-070 | [Installed-App E2E Smoke Suite](done/TASK-070-installed-app-e2e-smoke-suite.md) | MVP readiness | high | done |
 | TASK-071 | [MVP Release Documentation Pass](done/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | done |
-| TASK-072 | [Audit Follow-Up Gaps](backlog/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | backlog |
+| TASK-072 | [Audit Follow-Up Gaps](done/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | done |
 | TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
 
 ## Current Status
@@ -109,10 +109,10 @@ checksum/docs coverage, and Homebrew style/audit validation; full `brew install`
 validation is gated on publishing the `v0.1.0-beta` release artifacts.
 TASK-071 is complete with final MVP release documentation alignment across
 user-facing, contributor, release-operator, roadmap, PRD, security, changelog,
-and update-system docs. TASK-072 captures non-blocking post-MVP follow-up gaps
-found during the TASK-058 audit. TASK-073 is complete with post-MVP multi-user
-direction research and a focused development-server Playwright smoke suite for
-documented business requirements.
+and update-system docs. TASK-072 is complete with hybrid command-palette search
+and user timeline events for manual category mutations. TASK-073 is complete
+with post-MVP multi-user direction research and a focused development-server
+Playwright smoke suite for documented business requirements.
 
 Completed release validation evidence:
 

@@ -1,6 +1,7 @@
 import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { CategoryRepository } from "../db/category-repository.js";
+import { TimelineRepository } from "../db/timeline-repository.js";
 
 interface CategoriesDeps {
   db: Database;
@@ -33,11 +34,18 @@ function ok<T>(c: Context, data: T, status: 200 | 201 = 200) {
 const MAX_DEPTH = 2;      // 0-indexed → max 3 levels (0, 1, 2)
 const MAX_NAME_LEN = 100;
 
+function parentDestination(repo: CategoryRepository, parentId: string | null): string {
+  if (!parentId) return "root";
+  const parent = repo.findById(parentId);
+  return parent ? `"${parent.name}"` : "unknown parent";
+}
+
 // ─── Route factory ────────────────────────────────────────────────────────────
 
 export function createCategoriesRoute(deps: CategoriesDeps): Hono {
   const router = new Hono();
   const repo = new CategoryRepository(deps.db);
+  const timelineRepo = new TimelineRepository(deps.db);
 
   // GET /categories — tree structure with bookmark counts
   router.get("/categories", (c) => {
@@ -84,7 +92,23 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
     }
 
     try {
-      const category = repo.create(name, parentId);
+      let category: ReturnType<typeof repo.create> | null = null;
+      deps.db.transaction(() => {
+        category = repo.create(name, parentId);
+        timelineRepo.insert(
+          "category_created",
+          parentId
+            ? `Created category "${category.name}" under ${parentDestination(repo, parentId)}`
+            : `Created category "${category.name}"`,
+          {
+            categoryId: category.id,
+            name: category.name,
+            parentId,
+          },
+          "user"
+        );
+      })();
+      if (!category) throw new Error("Failed to insert category");
       return ok(c, category, 201);
     } catch (err) {
       // UNIQUE constraint violation → duplicate name under the same parent
@@ -98,7 +122,8 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
   // PUT /categories/:id — rename or reparent
   router.put("/categories/:id", async (c) => {
     const id = c.req.param("id");
-    if (!repo.findById(id)) {
+    const existing = repo.findById(id);
+    if (!existing) {
       return problem(c, 404, "Not Found", "Category not found");
     }
 
@@ -149,7 +174,38 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
     }
 
     try {
-      const updated = repo.update(id, patch);
+      let updated: ReturnType<typeof repo.update> = null;
+      deps.db.transaction(() => {
+        updated = repo.update(id, patch);
+        if (!updated) return;
+
+        if ("name" in patch && patch.name !== undefined && patch.name !== existing.name) {
+          timelineRepo.insert(
+            "category_renamed",
+            `Renamed category "${existing.name}" to "${updated.name}"`,
+            {
+              categoryId: updated.id,
+              previousName: existing.name,
+              name: updated.name,
+            },
+            "user"
+          );
+        }
+
+        if ("parent_id" in patch && updated.parent_id !== existing.parent_id) {
+          timelineRepo.insert(
+            "category_reparented",
+            `Moved category "${updated.name}" to ${parentDestination(repo, updated.parent_id)}`,
+            {
+              categoryId: updated.id,
+              name: updated.name,
+              previousParentId: existing.parent_id,
+              parentId: updated.parent_id,
+            },
+            "user"
+          );
+        }
+      })();
       if (!updated) return problem(c, 404, "Not Found", "Category not found");
       return ok(c, updated);
     } catch (err) {
@@ -162,7 +218,26 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
 
   // DELETE /categories/:id — delete, reparent children, bookmarks keep their rows
   router.delete("/categories/:id", (c) => {
-    const deleted = repo.delete(c.req.param("id"));
+    const id = c.req.param("id");
+    const existing = repo.findById(id);
+    if (!existing) return problem(c, 404, "Not Found", "Category not found");
+
+    let deleted = false;
+    deps.db.transaction(() => {
+      deleted = repo.delete(id);
+      if (deleted) {
+        timelineRepo.insert(
+          "category_deleted",
+          `Deleted category "${existing.name}"`,
+          {
+            categoryId: existing.id,
+            name: existing.name,
+            parentId: existing.parent_id,
+          },
+          "user"
+        );
+      }
+    })();
     if (!deleted) return problem(c, 404, "Not Found", "Category not found");
     return c.body(null, 204);
   });

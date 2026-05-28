@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandSeparator,
 } from "@/components/ui/command";
-import { searchBookmarks, ApiBookmark } from "@/lib/api";
+import { searchBookmarks, type ApiBookmark } from "@/lib/api";
 import { Globe, Plus, Loader2 } from "lucide-react";
 
 interface AIPaletteProps {
@@ -18,41 +18,82 @@ interface AIPaletteProps {
   onAddBookmark: () => void;
 }
 
+function isEmbeddingProviderRequiredError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = "status" in err ? err.status : undefined;
+  const detail = "detail" in err ? err.detail : undefined;
+  const message = "message" in err ? err.message : undefined;
+  return (
+    status === 422 &&
+    String(detail ?? message ?? "").toLowerCase().includes("embedding provider")
+  );
+}
+
 export function AIPalette({ open, onOpenChange, onSelectBookmark, onAddBookmark }: AIPaletteProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ApiBookmark[]>([]);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchGenerationRef = useRef(0);
 
-  const runSearch = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults([]);
+  const runSearch = useCallback(async (q: string, generation: number) => {
+    const queryText = q.trim();
+    if (!queryText || generation !== searchGenerationRef.current) {
       return;
     }
     setLoading(true);
     try {
-      const res = await searchBookmarks({ q, limit: 8 });
-      setResults(res.data as unknown as ApiBookmark[]);
-    } catch {
-      setResults([]);
+      const res = await searchBookmarks({ q: queryText, mode: "hybrid", limit: 8 });
+      if (generation === searchGenerationRef.current) {
+        setResults(res.data as unknown as ApiBookmark[]);
+      }
+    } catch (err) {
+      if (isEmbeddingProviderRequiredError(err)) {
+        try {
+          const res = await searchBookmarks({ q: queryText, mode: "keyword", limit: 8 });
+          if (generation === searchGenerationRef.current) {
+            setResults(res.data as unknown as ApiBookmark[]);
+          }
+          return;
+        } catch {
+          // Fall through to the empty state below.
+        }
+      }
+      if (generation === searchGenerationRef.current) {
+        setResults([]);
+      }
     } finally {
-      setLoading(false);
+      if (generation === searchGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(query), 200);
+    const generation = ++searchGenerationRef.current;
+
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => runSearch(query, generation), 200);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      searchGenerationRef.current += 1;
     };
   }, [query, runSearch]);
 
   // Reset on close
   useEffect(() => {
     if (!open) {
+      searchGenerationRef.current += 1;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       setQuery("");
       setResults([]);
+      setLoading(false);
     }
   }, [open]);
 
