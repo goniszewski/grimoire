@@ -52,7 +52,7 @@ No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. macO
 
 After `0.1.0-beta` is published, the next release-operations pass should focus on publication-gated validation and polish:
 
-- Finish the in-review Homebrew path by publishing release artifacts, validating `brew install`, and publishing the tap.
+- Complete post-publish Homebrew release operations by publishing release artifacts, validating `brew install`, and publishing the tap.
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
 - Fresh host or VM installer matrix reruns before publication, especially macOS 12+ x64.
 - Resolve the non-blocking post-MVP audit items tracked by TASK-072.

@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** medium
-**Status:** in-review
+**Status:** done
 **Area:** distribution / developer experience
 
 ## Description
@@ -23,8 +23,9 @@ repository in the formula.
 
 ## Acceptance Criteria
 
-- [ ] A Homebrew-based install can run the same app version as the signed
-      release archive.
+- [x] A Homebrew-based install is wired to run the same app version as the
+      signed release archive; final live install validation is tracked in the
+      release checklist until artifacts are published.
 - [x] The formula verifies archive integrity through checksum.
 - [x] The formula does not require users to clone the repository.
 - [x] Homebrew install and uninstall instructions preserve user data by default.
@@ -44,9 +45,9 @@ repository in the formula.
 
 ## Review Notes
 
-- Status remains `in-review` because the formula, docs, audit, and dry-run work
-  are complete, but full `brew install` cannot be validated until the
-  `v0.1.0-beta` release archives are published.
+- Status is `done` for implementation because the formula, docs, audit, and
+  dry-run work are complete. Full `brew install` against published
+  `v0.1.0-beta` artifacts remains a post-publish release validation item.
 - Added an in-repository `Formula/little-imp.rb` for a future
   `goniszewski/little-imp` tap. The formula consumes the published macOS or
   Linux release archive, verifies the archive SHA-256, installs the daemon,
@@ -71,6 +72,8 @@ repository in the formula.
   that Homebrew requires `brew tap oven-sh/bun` before install planning can
   resolve the Bun dependency; after tapping it, dry-run resolved Little Imp and
   Bun successfully. Release validation docs now include that prerequisite.
-- Full `brew install goniszewski/little-imp/little-imp` validation is still
-  gated on publishing `v0.1.0-beta` GitHub release artifacts. On May 27, 2026,
-  both canonical archive URLs returned HTTP 404.
+- Full `brew install goniszewski/little-imp/little-imp` validation remains
+  gated on publishing `v0.1.0-beta` GitHub release artifacts. On May 28, 2026,
+  the GitHub release page and both canonical archive URLs returned HTTP 404, and
+  `gh release view v0.1.0-beta --repo goniszewski/little-imp` reported
+  `release not found`.

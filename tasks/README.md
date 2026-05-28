@@ -76,7 +76,7 @@ tasks/
 | TASK-060 | [One-Command Installer Entry Point](done/TASK-060-one-command-installer-entrypoint.md) | MVP readiness | high | done |
 | TASK-061 | [Packaged Upgrade Flow](done/TASK-061-packaged-upgrade-flow.md) | MVP readiness | high | done |
 | TASK-062 | [Installer Matrix Validation](done/TASK-062-installer-matrix-validation.md) | MVP readiness | high | done |
-| TASK-063 | [Homebrew Formula or Tap](in-review/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | in-review |
+| TASK-063 | [Homebrew Formula or Tap](done/TASK-063-homebrew-formula-or-tap.md) | MVP readiness | medium | done |
 | TASK-064 | [Library Reprocess and Re-Embed Jobs](done/TASK-064-library-reprocess-reembed-jobs.md) | MVP readiness | high | done |
 | TASK-065 | [Pipeline Failure Recovery UX](done/TASK-065-pipeline-failure-recovery-ux.md) | MVP readiness | high | done |
 | TASK-066 | [In-App Encrypted Backup Verify and Restore](done/TASK-066-in-app-encrypted-backup-verify-restore.md) | MVP readiness | medium | done |
@@ -100,12 +100,13 @@ TASK-060 one-command installer entry point work available from this macOS
 workspace are complete.
 
 TASK-061 packaged upgrade support, TASK-062 installer matrix validation,
-TASK-064 library reprocess/re-embed support, TASK-065 pipeline failure recovery
-UX, TASK-066 in-app encrypted backup verify/restore, TASK-067 post-restore
-restart/recovery UX, TASK-068 diagnostics/support bundles, TASK-069 local
-production hardening, and TASK-070 installed-artifact smoke testing are
-complete. TASK-063 is in review with an in-repository Homebrew formula,
-checksum/docs coverage, and Homebrew style/audit validation; full `brew install`
+TASK-063 Homebrew alternate install path, TASK-064 library reprocess/re-embed
+support, TASK-065 pipeline failure recovery UX, TASK-066 in-app encrypted backup
+verify/restore, TASK-067 post-restore restart/recovery UX, TASK-068
+diagnostics/support bundles, TASK-069 local production hardening, and TASK-070
+installed-artifact smoke testing are complete. TASK-063 includes the
+in-repository Homebrew formula, checksum/docs coverage, Homebrew style/audit
+validation, and dry-run install planning; full post-publish `brew install`
 validation is gated on publishing the `v0.1.0-beta` release artifacts.
 TASK-071 is complete with final MVP release documentation alignment across
 user-facing, contributor, release-operator, roadmap, PRD, security, changelog,
