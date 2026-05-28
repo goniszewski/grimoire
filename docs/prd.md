@@ -558,11 +558,20 @@ Current release target. Adds the complete local-first beta surface:
 - in-app local backup verification without restore and encrypted backup packages through Settings and the CLI
 - Docker deployment, MCP integration, packaged backup/update/upgrade CLI, signed release archive packaging, one-command release installer, Homebrew alternate formula, diagnostics, installer matrix validation, source-of-truth API docs, CI, and release checklist
 
+### Release closeout
+
+The product scope for `0.1.0-beta` is frozen. TASK-075 through TASK-084 are
+release-control gates rather than new product scope: they freeze version and
+documentation metadata, publish signed artifacts, rerun fresh-host and
+public-artifact validation, complete publication-gated Homebrew checks, smoke
+test first-user UX, rerun localhost security regressions, prepare release notes,
+and produce the final go/no-go decision package.
+
 ### Next release
 
-Focuses on post-MVP release operations and polish:
+Focuses on post-MVP operations and product polish after the `0.1.0-beta`
+release-closeout queue is complete:
 
-- publication-gated Homebrew `brew install` validation and tap publication
 - update polish beyond the explicit manual packaged upgrade flow
 - audit follow-up items that were not MVP blockers
 

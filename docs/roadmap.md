@@ -33,7 +33,15 @@ Shipped product areas:
 - Redacted diagnostics from Settings, `littleimp diagnostics`, and `GET /diagnostics` for local support bundles without telemetry.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
-## Release Blockers
+## Release Closeout Gates
+
+The product surface is implemented for `0.1.0-beta`, but the public build is
+not frozen until TASK-075 through TASK-084 are complete or explicitly deferred.
+The release-closeout queue covers final metadata freeze, signed artifact
+publication, fresh-host installer evidence, public install and upgrade checks,
+publication-gated Homebrew validation, first-user UX smoke testing,
+public-artifact installed-app E2E, final localhost security regression, release
+notes, and the go/no-go decision package.
 
 These checks are complete for the current beta validation state:
 
@@ -43,18 +51,22 @@ These checks are complete for the current beta validation state:
 - macOS native installer install, upgrade, health, uninstall, and purge smoke in an isolated temporary home.
 - Linux systemd-user installer install, upgrade, health, service enablement, user-manager restart autostart, uninstall, and purge smoke in an Ubuntu 24.04 Docker environment with systemd running as PID 1.
 - Installer matrix validation names macOS 12+ arm64, macOS 12+ x64, Ubuntu 24.04 LTS, and Debian 12 as the MVP targets, with Ubuntu and Debian packaged archive smokes passing in systemd-user containers.
-- Documentation release-target and local markdown link audits.
+- Documentation release-target and local markdown link audits, including the
+  TASK-075 release-candidate freeze pass.
 - GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
 
-No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. macOS 12+ x64 remains a manual pre-publish validation target because this workspace has no Intel Mac or x64 macOS VM.
+No product-scope blockers remain in this workspace. The remaining
+release-control gates are TASK-076 through TASK-084. macOS 12+ x64 remains a
+manual pre-publish validation target because this workspace has no Intel Mac or
+x64 macOS VM.
 
 ## Post-MVP Release Operations
 
-After `0.1.0-beta` is published, the next release-operations pass should focus on publication-gated validation and polish:
+After `0.1.0-beta` is published and the release-closeout queue is complete, the
+next release-operations pass should focus on polish that is not required for
+the MVP public build:
 
-- Complete post-publish Homebrew release operations by publishing release artifacts, validating `brew install`, and publishing the tap.
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
-- Fresh host or VM installer matrix reruns before publication, especially macOS 12+ x64.
 - Resolve the non-blocking post-MVP audit items tracked by TASK-072.
 
 ## Future Ideas

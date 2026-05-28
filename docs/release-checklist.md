@@ -142,6 +142,10 @@ After the GitHub release artifacts are published:
 - Run `npm run docs:api:check`.
 - Run a local markdown link audit for `README.md`, `CONTRIBUTING.md`,
   `tasks/README.md`, and the Markdown files under `docs/`.
-- Confirm `README.md`, `docs/roadmap.md`, `docs/prd.md`, `CHANGELOG.md`, `SECURITY.md`, and `tasks/README.md` all name `0.1.0-beta` as the current release target.
+- Confirm `README.md`, `CHANGELOG.md`, `SECURITY.md`, `tasks/README.md`,
+  `docs/roadmap.md`, `docs/prd.md`, `docs/overview.md`,
+  `docs/release-checklist.md`, and `docs/update-system.md` all name
+  `0.1.0-beta` as the current release target and `v0.1.0-beta` as the release
+  tag where tag-qualified URLs are required.
 - Confirm links in `README.md`, `CONTRIBUTING.md`, and `tasks/README.md` resolve to existing files.
 - Confirm backup, Docker, MCP, and API source-of-truth docs match the shipped routes and defaults.

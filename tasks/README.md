@@ -88,6 +88,16 @@ tasks/
 | TASK-072 | [Audit Follow-Up Gaps](done/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | done |
 | TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
 | TASK-074 | [Two-Week Engineering Presentation](done/TASK-074-two-week-engineering-presentation.md) | post-MVP polish | low | done |
+| TASK-075 | [Release Candidate Freeze and Version Audit](done/TASK-075-release-candidate-freeze-version-audit.md) | MVP release closeout | high | done |
+| TASK-076 | [Signed Release Artifact Publication](todo/TASK-076-signed-release-artifact-publication.md) | MVP release closeout | high | todo |
+| TASK-077 | [Fresh-Host Installer Matrix Evidence](todo/TASK-077-fresh-host-installer-matrix-evidence.md) | MVP release closeout | high | todo |
+| TASK-078 | [Published One-Command and CLI Upgrade Validation](todo/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | todo |
+| TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
+| TASK-080 | [MVP First-User UX Smoke Pass](todo/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | todo |
+| TASK-081 | [Public Artifact Installed-App E2E](todo/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | todo |
+| TASK-082 | [Final Localhost Security Regression Pass](todo/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | todo |
+| TASK-083 | [Release Notes and Support Readiness](todo/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | todo |
+| TASK-084 | [MVP Release Decision Package](todo/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | todo |
 
 ## Current Status
 
@@ -118,6 +128,16 @@ Playwright smoke suite for documented business requirements. TASK-074 is
 complete with a self-contained contributor engineering presentation, tracked
 implementation plan, and local static/browser/type/test verification.
 
+The MVP release-closeout queue is TASK-075 through TASK-084. These tasks do not
+add new product scope; they close the gap between the implemented app and an
+MVP-ready public build by freezing release metadata, publishing signed
+artifacts, validating fresh-host installers, validating public install/update
+paths, completing publication-gated Homebrew checks, smoke-testing first-user
+UX, extending installed-app E2E to public artifacts, rerunning localhost
+security regressions, preparing release/support notes, and producing the final
+go/no-go release decision package. TASK-075 is complete; TASK-076 through
+TASK-084 remain the active release-closeout work.
+
 Completed release validation evidence:
 
 1. `npm run check` passed locally.
@@ -131,6 +151,10 @@ Completed release validation evidence:
 9. Installer matrix validation names the exact MVP OS targets and passed the packaged Linux archive smoke on Ubuntu 24.04 LTS and Debian 12 systemd-user containers.
 10. Final MVP release documentation alignment passed generated API docs drift
     checking and local Markdown link auditing.
+11. TASK-075 release-candidate freeze verified the root and daemon package
+    versions, release-tagged installer URLs, release-facing documentation, task
+    board status, API docs drift check, and local Markdown links for the
+    `0.1.0-beta` release target.
 
 Notes:
 
@@ -138,5 +162,8 @@ Notes:
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
 - TASK-048 completed the release checklist paths available in this workspace, including a containerized Ubuntu systemd-user smoke for the Linux installer path.
 - TASK-062 documents macOS 12+ x64 as a manual pre-publish target because this workspace does not have Intel macOS hardware or an x64 macOS VM.
+- TASK-076 through TASK-084 represent the remaining release-closeout validation
+  and publication work. Several checks depend on published `v0.1.0-beta`
+  artifacts, signing keys, Homebrew tap availability, or fresh host/VM access.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
