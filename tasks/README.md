@@ -87,6 +87,7 @@ tasks/
 | TASK-071 | [MVP Release Documentation Pass](done/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | done |
 | TASK-072 | [Audit Follow-Up Gaps](done/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | done |
 | TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
+| TASK-074 | [Two-Week Engineering Presentation](done/TASK-074-two-week-engineering-presentation.md) | post-MVP polish | low | done |
 
 ## Current Status
 
@@ -113,7 +114,9 @@ user-facing, contributor, release-operator, roadmap, PRD, security, changelog,
 and update-system docs. TASK-072 is complete with hybrid command-palette search
 and user timeline events for manual category mutations. TASK-073 is complete
 with post-MVP multi-user direction research and a focused development-server
-Playwright smoke suite for documented business requirements.
+Playwright smoke suite for documented business requirements. TASK-074 is
+complete with a self-contained contributor engineering presentation, tracked
+implementation plan, and local static/browser/type/test verification.
 
 Completed release validation evidence:
 
