@@ -42,11 +42,13 @@ Implement a settings API for storing and retrieving user preferences (AI provide
 - [x] Settings persisted to config file on write
 - [x] Dedicated Settings page connects to this endpoint (supersedes the old mock PreferencesDialog AI settings)
 - [x] Test endpoint validates LLM provider is reachable
-- [ ] Changing provider clears cached enrichment job statuses
+- [~] Provider-change recovery supersedes the older idea of clearing cached
+      enrichment job statuses: users can reprocess the library, rebuild
+      embeddings, and retry failed work through TASK-064/TASK-065 flows.
 
-## TASK-058 Audit Note
+## Follow-up Closure Note
 
 Provider settings are now persisted through the dedicated Settings page and used
-by runtime AI and embedding execution. Existing bookmarks are not automatically
-reprocessed or cleared when providers change; that recovery path is tracked by
-TASK-064 and TASK-065.
+by runtime AI and embedding execution. TASK-064 and TASK-065 superseded the
+original status-clearing idea with user-triggered library reprocess, embedding
+refresh, failed-job retry, and visible failure recovery.
