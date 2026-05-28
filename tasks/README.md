@@ -82,11 +82,11 @@ tasks/
 | TASK-066 | [In-App Encrypted Backup Verify and Restore](done/TASK-066-in-app-encrypted-backup-verify-restore.md) | MVP readiness | medium | done |
 | TASK-067 | [Post-Restore Restart and Recovery UX](done/TASK-067-post-restore-restart-recovery-ux.md) | MVP readiness | medium | done |
 | TASK-068 | [Diagnostics and Support Bundle](done/TASK-068-diagnostics-support-bundle.md) | MVP readiness | medium | done |
-| TASK-069 | [Production Security Headers and Local Hardening](todo/TASK-069-production-security-headers-local-hardening.md) | MVP readiness | medium | todo |
+| TASK-069 | [Production Security Headers and Local Hardening](done/TASK-069-production-security-headers-local-hardening.md) | MVP readiness | medium | done |
 | TASK-070 | [Installed-App E2E Smoke Suite](done/TASK-070-installed-app-e2e-smoke-suite.md) | MVP readiness | high | done |
 | TASK-071 | [MVP Release Documentation Pass](todo/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | todo |
 | TASK-072 | [Audit Follow-Up Gaps](backlog/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | backlog |
-| TASK-073 | [Project Status Review Package](in-review/TASK-073-project-status-review-package.md) | MVP readiness | medium | in-review |
+| TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
 
 ## Current Status
 
@@ -102,15 +102,15 @@ workspace are complete.
 TASK-061 packaged upgrade support, TASK-062 installer matrix validation,
 TASK-064 library reprocess/re-embed support, TASK-065 pipeline failure recovery
 UX, TASK-066 in-app encrypted backup verify/restore, TASK-067 post-restore
-restart/recovery UX, TASK-068 diagnostics/support bundles, and TASK-070
-installed-artifact smoke testing are complete. TASK-063 is in review with an
-in-repository Homebrew formula, checksum/docs coverage, and Homebrew style/audit
-validation; full `brew install` validation is gated on publishing the
-`v0.1.0-beta` release artifacts. TASK-069 and TASK-071 define the remaining
-MVP-readiness closeout queue. They focus on local hardening and final MVP
-release documentation alignment.
+restart/recovery UX, TASK-068 diagnostics/support bundles, TASK-069 local
+production hardening, and TASK-070 installed-artifact smoke testing are
+complete. TASK-063 is in review with an in-repository Homebrew formula,
+checksum/docs coverage, and Homebrew style/audit validation; full `brew install`
+validation is gated on publishing the `v0.1.0-beta` release artifacts. TASK-071
+is the remaining MVP-readiness closeout task and focuses on final MVP release
+documentation alignment.
 TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
-audit. TASK-073 is in review with post-MVP multi-user direction research and a
+audit. TASK-073 is complete with post-MVP multi-user direction research and a
 focused development-server Playwright smoke suite for documented business
 requirements.
 

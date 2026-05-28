@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** medium
-**Status:** in-review
+**Status:** done
 **Area:** documentation / testing / product planning
 
 ## Description

@@ -47,9 +47,28 @@ Little Imp is designed as a local-first application that runs entirely on the us
 
 - Localhost-only native binding (`127.0.0.1:3210`)
 - Loopback-only Docker port publishing (`127.0.0.1:3210:3210`)
+- Browser requests with an `Origin` header are accepted only from configured
+  loopback origins, including the daemon's own `127.0.0.1:3210` origin and the
+  default local development origins
+- Non-loopback `CORS_ORIGINS` entries are ignored by the daemon; public access
+  must be protected before traffic reaches Little Imp
 - Private network address blocking
-- Content size limits (10MB maximum)
+- Request size limits for import and selected JSON-heavy local operations
 - Request timeout protection (20 seconds)
+
+#### Browser Response Hardening
+
+- Static frontend and API responses include conservative browser headers:
+  `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and
+  `Cross-Origin-Resource-Policy`
+- The CSP allows the shipped SPA from the daemon origin, localhost/127.0.0.1
+  daemon/API connections, HTTPS images for favicons, and the existing Google
+  font hosts
+- IPv6 loopback origins remain accepted by origin checks, but CSP connect
+  sources use browser-accepted localhost and 127.0.0.1 source forms
+- Scripts are limited to the app origin, object/embed content is blocked, and
+  other sites cannot frame the UI
 
 #### Data Protection
 
@@ -61,6 +80,14 @@ Little Imp is designed as a local-first application that runs entirely on the us
 - Diagnostics omit API keys, URL credentials and query strings, app lock PIN hashes, S3 credentials, backup package passwords, bookmark contents, notes, and embeddings
 - Safe file operations with proper error handling
 - No sensitive data in logs (API keys are masked)
+- Declared request body sizes are rejected before parsing on expensive local
+  operations such as import, backup verification, encrypted package handling,
+  restore, and library reprocessing
+- Backup, restore, verification, and encrypted-package routes validate JSON
+  object bodies and restrict user-supplied backup names and package paths to
+  safe local forms
+- Backup and restore operations use an in-process guard to prevent concurrent
+  destructive or expensive backup work
 
 ### Potential Security Risks
 
@@ -108,10 +135,13 @@ When contributing to Little Imp:
 
 - [x] Localhost-only native binding
 - [x] Loopback-only Docker port publishing
+- [x] Loopback-only browser origin handling for unsafe API requests
 - [x] Private IP blocking
 - [x] Request timeouts
 - [x] Content size limits
 - [x] Content-Type validation
+- [x] Browser security response headers
+- [x] Content Security Policy
 
 #### Input Validation
 
@@ -149,11 +179,10 @@ When contributing to Little Imp:
 Consider implementing:
 
 1. **Optional authentication** for multi-user scenarios
-2. **Content Security Policy** headers
-3. **Rate limiting** for API endpoints
-4. **Sandboxing** for content extraction
-5. **Audit logging** for security events
-6. **Vulnerability scanning** in CI/CD pipeline
+2. **Per-client rate limiting** for authenticated non-local deployment modes
+3. **Sandboxing** for content extraction
+4. **Audit logging** for security events
+5. **Vulnerability scanning** in CI/CD pipeline
 
 ## Contact
 

@@ -1345,6 +1345,9 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       } catch {
         return c.json({ error: "Request body must be valid JSON" }, 400);
       }
+      if (typeof body !== "object" || body === null || Array.isArray(body)) {
+        return c.json({ error: "Request body must be an object" }, 400);
+      }
 
       // ── Encrypted package restore ─────────────────────────────────────────────
       if (body.source === "encrypted_package") {

@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings and daemon API support encrypted package verification and restore for package files under the configured backup folder.
 - Homebrew formula for an alternate MVP install path backed by checksum-verified release archives and `brew services`.
 - Redacted local diagnostics from Settings, `littleimp diagnostics`, and `GET /diagnostics` for support bundles without telemetry.
+- Production browser hardening headers, loopback-only unsafe browser origin handling, and declared body-size guards for expensive local operations.
 
 ## [0.1.0-beta] - 2026-05-14
 
