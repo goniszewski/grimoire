@@ -84,7 +84,7 @@ tasks/
 | TASK-068 | [Diagnostics and Support Bundle](done/TASK-068-diagnostics-support-bundle.md) | MVP readiness | medium | done |
 | TASK-069 | [Production Security Headers and Local Hardening](done/TASK-069-production-security-headers-local-hardening.md) | MVP readiness | medium | done |
 | TASK-070 | [Installed-App E2E Smoke Suite](done/TASK-070-installed-app-e2e-smoke-suite.md) | MVP readiness | high | done |
-| TASK-071 | [MVP Release Documentation Pass](todo/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | todo |
+| TASK-071 | [MVP Release Documentation Pass](done/TASK-071-mvp-release-documentation-pass.md) | MVP readiness | high | done |
 | TASK-072 | [Audit Follow-Up Gaps](backlog/TASK-072-audit-follow-up-gaps.md) | post-MVP polish | low | backlog |
 | TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
 
@@ -106,13 +106,13 @@ restart/recovery UX, TASK-068 diagnostics/support bundles, TASK-069 local
 production hardening, and TASK-070 installed-artifact smoke testing are
 complete. TASK-063 is in review with an in-repository Homebrew formula,
 checksum/docs coverage, and Homebrew style/audit validation; full `brew install`
-validation is gated on publishing the `v0.1.0-beta` release artifacts. TASK-071
-is the remaining MVP-readiness closeout task and focuses on final MVP release
-documentation alignment.
-TASK-072 captures non-blocking post-MVP follow-up gaps found during the TASK-058
-audit. TASK-073 is complete with post-MVP multi-user direction research and a
-focused development-server Playwright smoke suite for documented business
-requirements.
+validation is gated on publishing the `v0.1.0-beta` release artifacts.
+TASK-071 is complete with final MVP release documentation alignment across
+user-facing, contributor, release-operator, roadmap, PRD, security, changelog,
+and update-system docs. TASK-072 captures non-blocking post-MVP follow-up gaps
+found during the TASK-058 audit. TASK-073 is complete with post-MVP multi-user
+direction research and a focused development-server Playwright smoke suite for
+documented business requirements.
 
 Completed release validation evidence:
 
@@ -125,6 +125,8 @@ Completed release validation evidence:
 7. GitHub Actions `Quality Gates` passed for the current release-validation commit, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
 8. Linux systemd user installer smoke passed in an Ubuntu 24.04 Docker environment with systemd running as PID 1 and a non-root `systemctl --user` manager.
 9. Installer matrix validation names the exact MVP OS targets and passed the packaged Linux archive smoke on Ubuntu 24.04 LTS and Debian 12 systemd-user containers.
+10. Final MVP release documentation alignment passed generated API docs drift
+    checking and local Markdown link auditing.
 
 Notes:
 

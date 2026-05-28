@@ -7,7 +7,7 @@ Date: May 2026
 
 ## Current State
 
-Little Imp is in `0.1.0-beta` release hardening. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, and run locally through the native daemon or Docker.
+Little Imp is in final `0.1.0-beta` release closeout. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, diagnose local issues, and run locally through the native daemon, Docker, release archive, one-command installer, or Homebrew alternate path.
 
 Shipped product areas:
 
@@ -29,6 +29,8 @@ Shipped product areas:
 - Explicit packaged `littleimp update install` native upgrade flow with archive download, local archive support, checksum/signature verification, daemon restart, health version verification, and rollback guidance.
 - Signed release archive packaging for macOS and Linux with built frontend assets, daemon runtime files, checksums, and signature-ready manifests.
 - One-command release installer that downloads the platform archive, verifies the published checksum, verifies detached signatures when present, and delegates to the native installer.
+- In-repository Homebrew formula for an alternate MVP install path backed by checksum-verified release archives and `brew services`.
+- Redacted diagnostics from Settings, `littleimp diagnostics`, and `GET /diagnostics` for local support bundles without telemetry.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
 ## Release Blockers
@@ -46,13 +48,14 @@ These checks are complete for the current beta validation state:
 
 No scoped `0.1.0-beta` release-checklist blockers remain in this workspace. macOS 12+ x64 remains a manual pre-publish validation target because this workspace has no Intel Mac or x64 macOS VM.
 
-## Next Release
+## Post-MVP Release Operations
 
-The next release should focus on reducing installation friction and improving confidence around backup and operations:
+After `0.1.0-beta` is published, the next release-operations pass should focus on publication-gated validation and polish:
 
-- Distribution polish: finish the in-review Homebrew formula by publishing release artifacts, validating `brew install`, and publishing the tap.
+- Finish the in-review Homebrew path by publishing release artifacts, validating `brew install`, and publishing the tap.
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
 - Fresh host or VM installer matrix reruns before publication, especially macOS 12+ x64.
+- Resolve the non-blocking post-MVP audit items tracked by TASK-072.
 
 ## Future Ideas
 
@@ -90,9 +93,12 @@ These are not part of `0.1.0-beta`:
 | Back up and restore local data | Shipped, with daemon restart required after restore |
 | Verify local backups without restoring | Shipped |
 | Create encrypted backup packages in Settings | Shipped |
+| Verify or restore encrypted backup packages | Shipped from Settings for packages under the configured backup folder; shipped from CLI for arbitrary local paths |
 | Run through Docker on localhost | Shipped |
 | Connect through MCP on localhost | Shipped |
 | Install without cloning the repository | Shipped through release archives and the one-command release installer |
+| Install through Homebrew | Alternate MVP path implemented; full install validation is gated on published release artifacts |
+| Generate local diagnostics | Shipped |
 | Sync live data across devices | Future |
 
 ## Milestone Summary

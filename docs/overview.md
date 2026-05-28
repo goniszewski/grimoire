@@ -44,6 +44,10 @@ The daemon fetches saved URLs and selects an extractor by URL and content type.
 | YouTube | oEmbed metadata plus available caption transcript |
 
 The pipeline falls back gracefully where possible. A failed fetch leaves the bookmark saved for retry. A failed extraction stores minimal title/content. Failed AI or embedding calls do not make the bookmark unusable.
+Bookmark detail exposes actionable pipeline failures, including retry and
+configuration guidance where available. Settings can enqueue failed-only,
+all-bookmark, and embeddings-only reprocess batches without creating duplicate
+bookmarks and preserves manual edits by default.
 
 ### AI Enrichment
 
@@ -122,7 +126,10 @@ For detailed backup behavior, see [backup-design.md](./backup-design.md).
 
 Supported run modes:
 
+- One-command release installation from the published archive.
+- Manual release archive installation after checksum and optional signature verification.
 - Native daemon install through `daemon/install.sh` on macOS LaunchAgent or Linux systemd user units.
+- Homebrew alternate installation through the in-repository formula and `brew services`, once release artifacts are published.
 - Docker deployment serving both frontend and daemon API from a loopback-bound port.
 - Development with Vite frontend and a Bun daemon.
 - Manual update availability checks through Settings, `littleimp update check`, and `GET /updates/check`; the packaged CLI also supports explicit verified native upgrades with `littleimp update install`.
@@ -411,7 +418,8 @@ erDiagram
 - Little Imp is single-user and local-first.
 - It is not a public hosted service and does not implement multi-user accounts.
 - Live multi-device sync is not implemented. Backups are snapshots, not replication.
-- A browser extension and install-without-clone distribution polish are future work.
+- A browser extension is future work.
+- Install without cloning is shipped through the release archive and one-command installer. The Homebrew alternate path is implemented, with full `brew install` validation gated on published release artifacts.
 
 ### Security Model
 

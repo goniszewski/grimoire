@@ -18,6 +18,7 @@ type ReleaseManifest = {
 const projectRoot = process.cwd();
 const formulaPath = join(projectRoot, "Formula", "little-imp.rb");
 const readProjectFile = (path: string) => readFileSync(join(projectRoot, path), "utf8");
+const platforms = ["macos", "linux"] as const;
 
 function packageVersion(): string {
   return (JSON.parse(readProjectFile("package.json")) as PackageJson).version;
@@ -25,6 +26,12 @@ function packageVersion(): string {
 
 function releaseManifest(): ReleaseManifest {
   return JSON.parse(readProjectFile("release/release-manifest.json")) as ReleaseManifest;
+}
+
+function formulaSnippetAfter(formula: string, expectedLine: string): string {
+  const start = formula.indexOf(expectedLine);
+  expect(start).toBeGreaterThanOrEqual(0);
+  return formula.slice(start, start + expectedLine.length + 90);
 }
 
 describe("Homebrew formula packaging", () => {
@@ -35,11 +42,16 @@ describe("Homebrew formula packaging", () => {
 
     expect(manifest.version).toBe(version);
 
-    for (const artifact of manifest.artifacts) {
-      expect(formula).toContain(
-        `https://github.com/goniszewski/little-imp/releases/download/v${version}/${artifact.archive}`
-      );
-      expect(formula).toContain(`sha256 "${artifact.sha256}"`);
+    for (const platform of platforms) {
+      const artifact = manifest.artifacts.find((item) => item.platform === platform);
+      if (!artifact) {
+        throw new Error(`Missing ${platform} artifact in release manifest`);
+      }
+
+      const releaseUrl = `https://github.com/goniszewski/little-imp/releases/download/v${version}/${artifact.archive}`;
+      const urlLine = `url "${releaseUrl}"`;
+
+      expect(formulaSnippetAfter(formula, urlLine)).toContain(`sha256 "${artifact.sha256}"`);
     }
 
     expect(formula).toContain('depends_on "oven-sh/bun/bun"');

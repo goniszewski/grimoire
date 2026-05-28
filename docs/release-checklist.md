@@ -2,7 +2,20 @@
 
 Release target: `0.1.0-beta`
 
-Use this checklist before tagging or publishing a beta build.
+Use this checklist before tagging, while publishing, and immediately after
+publishing a beta build. Items that require published GitHub release artifacts
+are called out explicitly.
+
+## Preflight
+
+- Start from a clean checkout of the release commit.
+- Confirm Bun 1.x, Node.js/npm, `curl`, `tar`, Git, a SHA-256 checksum tool,
+  and GPG are available.
+- Confirm Docker is available before running Docker and Linux matrix checks.
+- Confirm Homebrew is available before running Homebrew formula checks.
+- Install Playwright browsers with `npm run test:e2e:install` on fresh machines.
+- Record host OS, architecture, Bun, Node.js, npm, Docker, and Homebrew versions
+  alongside validation output.
 
 ## Supported Installer Matrix
 
@@ -18,7 +31,7 @@ The MVP native installer supports this exact OS matrix:
 Record command output, host details, and deviations in
 [installer-matrix-validation.md](./installer-matrix-validation.md).
 
-## Install
+## Release Artifacts And Native Install
 
 - From a clean checkout, run `npm run package:release`.
 - Confirm `release/` contains:
@@ -36,12 +49,10 @@ Record command output, host details, and deviations in
   signed artifacts.
 - Confirm root `install.sh` is executable and references the current release
   target.
-- Run the one-command installer path against the published release URL:
-  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash`.
-- Run the one-command upgrade path over an existing install:
-  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade`.
-- Run the packaged CLI upgrade path against the published release artifacts:
-  `littleimp update install --version 0.1.0-beta`.
+- Before artifacts are published, validate local archive install and upgrade by
+  extracting `release/little-imp-0.1.0-beta-PLATFORM.tar.gz`, running
+  `daemon/install.sh`, and then running `daemon/install.sh --upgrade` over the
+  existing install.
 - Run the packaged CLI local archive upgrade path against a downloaded archive
   and checksum, adding `--signature` when the detached signature is published.
 - Run clean install, health check, autostart registration, upgrade, uninstall,
@@ -53,10 +64,21 @@ Record command output, host details, and deviations in
   available architecture, then verify
   `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.
-- Run `./install.sh --upgrade` over an existing install and confirm data is
-  preserved.
-- Run `./install.sh --uninstall` and confirm application data remains unless
-  `--purge` is used.
+- Run `cd daemon && ./install.sh --upgrade` over an existing native install and
+  confirm data is preserved.
+- Run `cd daemon && ./install.sh --uninstall` and confirm application data
+  remains unless `--purge` is used.
+
+After the GitHub release artifacts are published:
+
+- Run the one-command installer path against the published release URL:
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash`.
+- Run the one-command upgrade path over an existing install:
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade`.
+- Run the packaged CLI upgrade path against the published release artifacts:
+  `littleimp update install --version 0.1.0-beta`.
+- If any post-publish installer check fails, keep the release in draft or mark
+  it pre-release until the failing path is corrected or documented.
 
 ## Homebrew Alternate Install
 
@@ -66,7 +88,11 @@ Record command output, host details, and deviations in
 - Register the Bun dependency tap with `brew tap oven-sh/bun`.
 - Register the checkout as a local tap with `brew tap goniszewski/little-imp "$PWD"`.
 - Run `brew audit --strict goniszewski/little-imp/little-imp`.
-- Run `brew install goniszewski/little-imp/little-imp`.
+- Before release artifacts are published, run
+  `brew install --dry-run goniszewski/little-imp/little-imp` and record any
+  expected 404 caused by unpublished archive URLs.
+- After release artifacts are published, run
+  `brew install goniszewski/little-imp/little-imp`.
 - Confirm `littleimp --help` reports `0.1.0-beta`.
 - Start the Homebrew service with `brew services start little-imp`, then verify
   `curl http://127.0.0.1:3210/health` reports `version: "0.1.0-beta"`.
@@ -114,6 +140,8 @@ Record command output, host details, and deviations in
 ## Documentation
 
 - Run `npm run docs:api:check`.
+- Run a local markdown link audit for `README.md`, `CONTRIBUTING.md`,
+  `tasks/README.md`, and the Markdown files under `docs/`.
 - Confirm `README.md`, `docs/roadmap.md`, `docs/prd.md`, `CHANGELOG.md`, `SECURITY.md`, and `tasks/README.md` all name `0.1.0-beta` as the current release target.
 - Confirm links in `README.md`, `CONTRIBUTING.md`, and `tasks/README.md` resolve to existing files.
 - Confirm backup, Docker, MCP, and API source-of-truth docs match the shipped routes and defaults.

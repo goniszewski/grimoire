@@ -15,14 +15,18 @@ Little Imp has two parts:
 
 ## Requirements
 
-- [Bun](https://bun.sh) 1.x or later
 - macOS 12+ or a modern Linux distribution with systemd
+- [Bun](https://bun.sh) 1.x or later
+- `curl`, `tar`, and a SHA-256 checksum tool (`shasum` or `sha256sum`)
 
 ---
 
 ## Installation
 
 ### One-command release install
+
+This is the recommended MVP install path. It installs Little Imp from the
+published release archive and does not require cloning the repository.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
@@ -74,9 +78,11 @@ Data is preserved by default under `$(brew --prefix)/var/little-imp` when
 running `brew uninstall little-imp`. Remove that directory explicitly only when
 you intend to purge the Homebrew-managed database, settings, backups, and logs.
 
-### Release archive
+### Manual release archive
 
-Download the archive and matching checksum for your platform from the release:
+Use this path when you want to inspect or mirror the archive before running the
+native installer. Download the archive and matching checksum for your platform
+from the release:
 
 ```sh
 # macOS example
@@ -96,7 +102,7 @@ or `little-imp-0.1.0-beta-linux.tar.gz.asc`, verify it before extraction:
 gpg --verify little-imp-0.1.0-beta-macos.tar.gz.asc little-imp-0.1.0-beta-macos.tar.gz
 ```
 
-### Source checkout
+### Source checkout for contributors
 
 ```sh
 # 1. Clone the repository
@@ -107,7 +113,10 @@ cd little-imp/daemon
 ./install.sh
 ```
 
-The installer will:
+Use the source checkout path for development or local packaging work. Normal
+users should prefer the one-command installer or manual release archive above.
+
+The native installer will:
 
 1. Copy daemon files to `~/.local/share/littleimp/daemon`
 2. Install daemon dependencies (production only)
@@ -213,6 +222,8 @@ All application data lives in `~/.local/share/littleimp/`:
 | `~/.local/share/littleimp/littleimp.db` | SQLite database (bookmarks, categories, embeddings) |
 | `~/.local/share/littleimp/.env` | Install-time daemon defaults |
 | `~/.local/share/littleimp/dist/` | Built frontend served by the daemon |
+| `~/.local/share/littleimp/backups/` | Local backup snapshots and encrypted packages created by Settings |
+| `~/.local/share/littleimp/restore-rollbacks/` | Pre-restore rollback copies created during restore |
 | `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
 
 Homebrew installs keep Homebrew-managed data under
@@ -311,6 +322,28 @@ curl http://127.0.0.1:3210/diagnostics
 
 Diagnostics are not telemetry; nothing is sent unless you choose to share the
 copied or exported output. See [docs/diagnostics.md](./docs/diagnostics.md).
+
+### Troubleshooting
+
+Start with diagnostics when the app is installed but not behaving as expected:
+
+```sh
+littleimp diagnostics
+curl http://127.0.0.1:3210/health
+```
+
+Common recovery checks:
+
+- If the daemon is offline, restart the LaunchAgent or systemd user service
+  using the commands in [Daemon management](#daemon-management).
+- If install or upgrade fails before the daemon starts, confirm Bun 1.x,
+  `curl`, `tar`, and a SHA-256 checksum tool are available on `PATH`.
+- If a restore succeeds but the UI stays on the recovery screen, run the
+  returned restart command and then check `/health`.
+- If a Homebrew install cannot resolve Bun, run `brew tap oven-sh/bun` before
+  `brew install little-imp`.
+- If an encrypted backup package cannot be restored, verify the password and use
+  the packaged CLI for packages outside the configured backup folder.
 
 ### Update checks and manual upgrades
 
@@ -489,7 +522,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - [API Contract](./docs/api-contract.json) - Machine-readable contract generated from `daemon/src/api/contract.ts`
 - [Contributing Guide](./CONTRIBUTING.md) - Development setup and contribution guidelines
 - [Product Requirements](./docs/prd.md) - Detailed product specifications
-- [Development Roadmap](./docs/roadmap.md) - Future development plans
+- [Development Roadmap](./docs/roadmap.md) - Shipped MVP state and future plans
 - [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
 - [Release Checklist](./docs/release-checklist.md) - Final beta validation checklist
 - [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
@@ -498,7 +531,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ## Quick Start
 
-### Option 1: Native Installation (Recommended)
+### Option 1: Release Installation (Recommended)
 
 ```bash
 # Install the current release

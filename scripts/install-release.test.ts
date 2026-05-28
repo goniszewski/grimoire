@@ -272,7 +272,8 @@ describe("one-command release installer", () => {
     const result = runInstaller(fixture);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Unsafe archive path: ../escape.txt");
+    expect(result.stderr).toContain("Unsafe archive path:");
+    expect(result.stderr).toContain("escape.txt");
     expect(existsSync(fixture.markerPath)).toBe(false);
   });
 

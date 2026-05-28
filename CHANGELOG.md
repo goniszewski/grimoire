@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Homebrew formula for an alternate MVP install path backed by checksum-verified release archives and `brew services`.
 - Redacted local diagnostics from Settings, `littleimp diagnostics`, and `GET /diagnostics` for support bundles without telemetry.
 - Production browser hardening headers, loopback-only unsafe browser origin handling, and declared body-size guards for expensive local operations.
+- Installed-artifact E2E smoke coverage for packaged archive install, daemon health, core user journeys, backup/restore, update checks, upgrade data preservation, and uninstall without purge.
+
+### Changed
+- Release documentation now leads with install-without-clone paths, separates shipped MVP behavior from post-MVP ideas, and calls out publication-gated Homebrew validation.
 
 ## [0.1.0-beta] - 2026-05-14
 

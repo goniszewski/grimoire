@@ -30,7 +30,8 @@ Current product state:
 - `0.1.0-beta` is the current release target
 - core save, extract, keyword search, semantic search, hybrid search, and review flows exist
 - local/S3-compatible backup and restore flows exist with checksum validation, rollback directory creation, and restart-required restore responses
-- Docker deployment and Streamable HTTP MCP integration are supported local-first entry points
+- Docker deployment, release archives, the one-command installer, the Homebrew alternate path, and Streamable HTTP MCP integration are supported local-first entry points
+- local diagnostics and explicit verified packaged upgrades are implemented for release operations
 
 Core promise:
 
@@ -161,8 +162,9 @@ Example failure behavior:
 
 Bookmarks are **visible and searchable immediately**.
 
-User-triggered reprocessing, re-embedding, and failed-stage retry UX are MVP
-readiness follow-ups rather than shipped `0.1.0-beta` behavior.
+User-triggered reprocessing, re-embedding, failed-only bulk retry, and
+bookmark-level failed-stage recovery are shipped `0.1.0-beta` readiness
+behavior.
 
 ---
 
@@ -554,15 +556,15 @@ Current release target. Adds the complete local-first beta surface:
 - Settings UI, first-run/degraded-mode UX, app lock, and runtime settings persistence
 - portable backup/restore, scheduled snapshots, custom destinations, and S3-compatible remote backups
 - in-app local backup verification without restore and encrypted backup packages through Settings and the CLI
-- Docker deployment, MCP integration, packaged backup/update/upgrade CLI, signed release archive packaging, one-command release installer, installer matrix validation, source-of-truth API docs, CI, and release checklist
+- Docker deployment, MCP integration, packaged backup/update/upgrade CLI, signed release archive packaging, one-command release installer, Homebrew alternate formula, diagnostics, installer matrix validation, source-of-truth API docs, CI, and release checklist
 
 ### Next release
 
-Focuses on release operations:
+Focuses on post-MVP release operations and polish:
 
-- Homebrew formula or tap
+- publication-gated Homebrew `brew install` validation and tap publication
 - update polish beyond the explicit manual packaged upgrade flow
-- final release documentation
+- audit follow-up items that were not MVP blockers
 
 ### Future
 

@@ -89,6 +89,22 @@ Little Imp is designed as a local-first application that runs entirely on the us
 - Backup and restore operations use an in-process guard to prevent concurrent
   destructive or expensive backup work
 
+#### Release Artifact Verification
+
+- The recommended one-command installer downloads the published release archive
+  for the current platform and verifies the matching SHA-256 checksum before
+  extraction.
+- Detached `.asc` signatures are verified when they are published or explicitly
+  provided. If no signature is available, the installer reports checksum-only
+  verification instead of implying a signature check happened.
+- Manual release archive installs document checksum verification before running
+  the native installer.
+- The Homebrew formula consumes the same release archives and verifies their
+  published SHA-256 checksums.
+- The packaged `littleimp update install` flow verifies checksums, verifies
+  optional detached signatures, rejects unsafe archive paths, and confirms the
+  daemon health endpoint reports the upgraded version.
+
 ### Potential Security Risks
 
 #### Local Access
@@ -116,7 +132,9 @@ When using external AI providers, API keys are stored locally. Users should ensu
 2. **Use local LLM providers** when possible to avoid sharing data externally
 3. **Secure your machine** with appropriate access controls
 4. **Review imported bookmarks** before processing
-5. **Regular backups** to protect against data loss
+5. **Use the release installer, Homebrew formula, or manual archive checksum
+   verification** instead of running unverified files
+6. **Regular backups** to protect against data loss
 
 ### Development Security Guidelines
 

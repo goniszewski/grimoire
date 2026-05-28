@@ -2,7 +2,7 @@
 
 **Phase:** MVP readiness
 **Priority:** high
-**Status:** todo
+**Status:** done
 **Area:** documentation / release
 
 ## Description
@@ -30,12 +30,12 @@ operators.
 
 ## Acceptance Criteria
 
-- [ ] User-facing docs describe installation without cloning as the primary MVP
+- [x] User-facing docs describe installation without cloning as the primary MVP
       path.
-- [ ] Upgrade, backup, restore, diagnostics, and rollback guidance are accurate.
-- [ ] Roadmap and PRD no longer describe shipped MVP readiness work as future.
-- [ ] Release checklist is executable by someone who did not implement the work.
-- [ ] Generated API docs and local documentation checks pass or any skipped
+- [x] Upgrade, backup, restore, diagnostics, and rollback guidance are accurate.
+- [x] Roadmap and PRD no longer describe shipped MVP readiness work as future.
+- [x] Release checklist is executable by someone who did not implement the work.
+- [x] Generated API docs and local documentation checks pass or any skipped
       checks are documented.
 
 ## Dependencies
@@ -46,3 +46,19 @@ operators.
 
 - Do not use this task to introduce new product behavior. It is the final
   consistency pass after implementation tasks land.
+
+## Completion Notes
+
+- Updated README, roadmap, PRD, overview, release checklist, update-system,
+  changelog, security, and contributing docs for final `0.1.0-beta`
+  documentation alignment.
+- The primary MVP install path is now the one-command release installer, with
+  manual archive installation documented for inspection/mirrors and source
+  checkout scoped to contributors.
+- Homebrew is documented as an alternate MVP path with full install validation
+  gated on published release artifacts.
+- Update docs now distinguish shipped manual update checks and verified CLI
+  upgrades from deferred automatic update-management features.
+- Release docs include backup, restore, encrypted package, diagnostics,
+  rollback, installed-app smoke, artifact, Homebrew, and Markdown/API docs
+  validation guidance.
