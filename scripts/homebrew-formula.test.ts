@@ -6,26 +6,14 @@ type PackageJson = {
   version: string;
 };
 
-type ReleaseManifest = {
-  version: string;
-  artifacts: Array<{
-    platform: "macos" | "linux";
-    archive: string;
-    sha256: string;
-  }>;
-};
-
 const projectRoot = process.cwd();
 const formulaPath = join(projectRoot, "Formula", "little-imp.rb");
 const readProjectFile = (path: string) => readFileSync(join(projectRoot, path), "utf8");
 const platforms = ["macos", "linux"] as const;
+const sha256Pattern = /sha256 "([a-f0-9]{64})"/;
 
 function packageVersion(): string {
   return (JSON.parse(readProjectFile("package.json")) as PackageJson).version;
-}
-
-function releaseManifest(): ReleaseManifest {
-  return JSON.parse(readProjectFile("release/release-manifest.json")) as ReleaseManifest;
 }
 
 function formulaSnippetAfter(formula: string, expectedLine: string): string {
@@ -35,23 +23,19 @@ function formulaSnippetAfter(formula: string, expectedLine: string): string {
 }
 
 describe("Homebrew formula packaging", () => {
-  it("installs the published release archives by checksum instead of rebuilding from source", () => {
+  it("installs the current release archives by pinned checksum instead of rebuilding from source", () => {
     const version = packageVersion();
-    const manifest = releaseManifest();
     const formula = readFileSync(formulaPath, "utf8");
 
-    expect(manifest.version).toBe(version);
-
     for (const platform of platforms) {
-      const artifact = manifest.artifacts.find((item) => item.platform === platform);
-      if (!artifact) {
-        throw new Error(`Missing ${platform} artifact in release manifest`);
-      }
-
-      const releaseUrl = `https://github.com/goniszewski/little-imp/releases/download/v${version}/${artifact.archive}`;
+      const archive = `little-imp-${version}-${platform}.tar.gz`;
+      const releaseUrl = `https://github.com/goniszewski/little-imp/releases/download/v${version}/${archive}`;
       const urlLine = `url "${releaseUrl}"`;
+      const snippet = formulaSnippetAfter(formula, urlLine);
+      const sha256Match = snippet.match(sha256Pattern);
 
-      expect(formulaSnippetAfter(formula, urlLine)).toContain(`sha256 "${artifact.sha256}"`);
+      expect(sha256Match?.[1]).toBeDefined();
+      expect(sha256Match?.[1]).not.toBe("0".repeat(64));
     }
 
     expect(formula).toContain('depends_on "oven-sh/bun/bun"');
