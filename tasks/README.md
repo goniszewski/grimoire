@@ -95,7 +95,7 @@ tasks/
 | TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
 | TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
 | TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
-| TASK-082 | [Final Localhost Security Regression Pass](todo/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | todo |
+| TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
 | TASK-083 | [Release Notes and Support Readiness](todo/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | todo |
 | TASK-084 | [MVP Release Decision Package](todo/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | todo |
 
@@ -139,8 +139,9 @@ go/no-go release decision package. TASK-075 through TASK-077 are complete;
 TASK-078 is in progress but blocked on public artifact visibility. TASK-080 is
 in progress with partial non-mutating smoke evidence. TASK-081 is complete with
 the published-artifact smoke command added and the current public visibility
-failure recorded as release-blocking evidence. TASK-079, TASK-082, TASK-083,
-and TASK-084 remain active release-closeout work.
+failure recorded as release-blocking evidence. TASK-082 is complete with final
+localhost security regression evidence. TASK-079, TASK-083, and TASK-084 remain
+active release-closeout work.
 
 Completed release validation evidence:
 
@@ -174,6 +175,14 @@ Completed release validation evidence:
     packaged artifacts; the published-artifact command stopped before
     install/runtime work because the public macOS archive URL returned
     `HTTP 404`, preserving TASK-078 as the release-blocking visibility issue.
+15. TASK-082 reran final localhost security regressions. The current source
+    daemon bound to `127.0.0.1`, Docker Compose rendered a loopback-only host
+    publish, unsafe browser origins were rejected, CSP and browser hardening
+    headers were present, private-host/update-source blocking and guarded
+    body/path handling stayed covered by daemon tests, diagnostics redaction now
+    includes explicit content/notes/embedding model/vector regression coverage,
+    and refreshed GitHub release artifacts passed checksum and GPG signature
+    validation.
 
 Notes:
 

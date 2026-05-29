@@ -265,4 +265,65 @@ describe("diagnostics endpoint", () => {
       expect(payload).not.toContain(sensitive);
     }
   });
+
+  it("does not expose bookmark content, notes, or embedding vectors", async () => {
+    const bookmarkId = "diagnostics-content-secret";
+    db.run(
+      `INSERT INTO bookmarks (id, url, domain, title, description, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'indexed')`,
+      [
+        bookmarkId,
+        "https://diagnostics-content.example.test/private",
+        "diagnostics-content.example.test",
+        "Diagnostics redaction fixture",
+        "Diagnostics bookmark description should not leak",
+        "diagnostics-user-note-secret",
+      ]
+    );
+    db.run(
+      `INSERT INTO bookmark_content (bookmark_id, raw_html, markdown, summary, author, word_count, language)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        bookmarkId,
+        "<html>diagnostics-raw-html-secret</html>",
+        "diagnostics-markdown-secret",
+        "diagnostics-summary-secret",
+        "diagnostics-author-secret",
+        7,
+        "en",
+      ]
+    );
+    db.run(
+      "INSERT INTO embeddings (bookmark_id, model, dimensions, vector) VALUES (?, ?, ?, ?)",
+      [bookmarkId, "diagnostics-embedding-model-secret", 2, new Float32Array([12345.5, -9876.25])]
+    );
+
+    const app = createApp({
+      db,
+      queue: new JobQueue(db),
+      startTime: new Date("2026-05-27T08:00:00.000Z"),
+      version: "9.9.9-test",
+      staticDir: false,
+    });
+
+    const res = await app.request("/diagnostics");
+    expect(res.status).toBe(200);
+
+    const payload = JSON.stringify(await res.json());
+    for (const sensitive of [
+      "diagnostics-content.example.test/private",
+      "Diagnostics redaction fixture",
+      "Diagnostics bookmark description should not leak",
+      "diagnostics-user-note-secret",
+      "diagnostics-raw-html-secret",
+      "diagnostics-markdown-secret",
+      "diagnostics-summary-secret",
+      "diagnostics-author-secret",
+      "diagnostics-embedding-model-secret",
+      "12345.5",
+      "-9876.25",
+    ]) {
+      expect(payload).not.toContain(sensitive);
+    }
+  });
 });
