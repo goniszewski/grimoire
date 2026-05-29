@@ -23,12 +23,31 @@ import { fileURLToPath } from "node:url";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
 export type ReleasePlatform = "macos" | "linux";
+type SmokeArtifactSource = "local" | "published";
+
+export type SignatureRunner = (
+  command: string,
+  args: string[],
+  options?: {
+    encoding?: BufferEncoding;
+    env?: NodeJS.ProcessEnv;
+  }
+) => {
+  status: number | null;
+  stdout?: string | Buffer;
+  stderr?: string | Buffer;
+  error?: Error;
+};
 
 interface CliOptions {
   archivePath?: string;
   keepTemp: boolean;
   port?: number;
   help: boolean;
+  source: SmokeArtifactSource;
+  releaseBaseUrl?: string;
+  version?: string;
+  requireSignature: boolean;
 }
 
 interface SmokeDirs {
@@ -77,6 +96,14 @@ export interface CommandResult {
   timedOut: boolean;
 }
 
+export interface PublishedReleaseArtifact {
+  archivePath: string;
+  checksumPath: string;
+  signaturePath?: string;
+  checksumVerified: true;
+  signatureVerified: boolean;
+}
+
 const DEFAULT_TIMEOUT_MS = 20_000;
 const COMMAND_TIMEOUT_MS = 15_000;
 
@@ -87,7 +114,13 @@ export function detectReleasePlatform(nodePlatform = process.platform): ReleaseP
 }
 
 export function releaseArchiveName(version: string, platform: ReleasePlatform): string {
+  assertSafeReleaseVersion(version);
   return `little-imp-${version}-${platform}.tar.gz`;
+}
+
+export function defaultPublishedReleaseBaseUrl(version: string): string {
+  assertSafeReleaseVersion(version);
+  return `https://github.com/goniszewski/little-imp/releases/download/v${version}`;
 }
 
 export function backupNameFromPath(path: string): string {
@@ -103,13 +136,35 @@ export function backupNameFromPath(path: string): string {
 }
 
 function parseArgs(args: string[]): CliOptions {
-  const options: CliOptions = { keepTemp: false, help: false };
+  const options: CliOptions = {
+    keepTemp: false,
+    help: false,
+    source: "local",
+    requireSignature: false,
+  };
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     switch (arg) {
       case "--archive":
         options.archivePath = requireValue(args, (i += 1), arg);
+        break;
+      case "--source": {
+        const source = requireValue(args, (i += 1), arg);
+        if (source !== "local" && source !== "published") {
+          throw new Error("--source must be local or published");
+        }
+        options.source = source;
+        break;
+      }
+      case "--release-base-url":
+        options.releaseBaseUrl = requireValue(args, (i += 1), arg);
+        break;
+      case "--version":
+        options.version = requireValue(args, (i += 1), arg);
+        break;
+      case "--require-signature":
+        options.requireSignature = true;
         break;
       case "--port":
         options.port = Number(requireValue(args, (i += 1), arg));
@@ -127,6 +182,16 @@ function parseArgs(args: string[]): CliOptions {
       default:
         throw new Error(`Unknown argument: ${arg}`);
     }
+  }
+
+  if (options.source === "published" && options.archivePath) {
+    throw new Error("--archive cannot be combined with --source published");
+  }
+  if (options.source === "local" && options.releaseBaseUrl) {
+    throw new Error("--release-base-url requires --source published");
+  }
+  if (options.source === "local" && options.requireSignature) {
+    throw new Error("--require-signature requires --source published");
   }
 
   return options;
@@ -147,7 +212,15 @@ function usage(): string {
     "Validates a packaged Little Imp release archive as an installed app in an isolated temp home.",
     "",
     "Options:",
+    "  --source local|published",
+    "                  Artifact source (default: local)",
     "  --archive FILE  Release archive to validate (default: release/little-imp-<version>-<platform>.tar.gz)",
+    "  --release-base-url URL",
+    "                  Published source base URL (default: GitHub release URL for --version)",
+    "  --version VERSION",
+    "                  Release version to validate (default: package.json version)",
+    "  --require-signature",
+    "                  Fail published-source validation when the .asc file is not available",
     "  --port PORT     Local daemon port (default: random available port)",
     "  --keep-temp     Keep the isolated temp home after a successful run",
     "  --help, -h      Show this help",
@@ -160,6 +233,12 @@ function readPackageVersion(projectRoot: string): string {
   };
   if (!packageJson.version) throw new Error("package.json is missing a version");
   return packageJson.version;
+}
+
+function assertSafeReleaseVersion(version: string): void {
+  if (!/^[0-9A-Za-z][0-9A-Za-z._+-]*$/.test(version)) {
+    throw new Error(`Release version contains unsupported characters: ${version}`);
+  }
 }
 
 function createSmokeDirs(): SmokeDirs {
@@ -330,6 +409,124 @@ function verifyPayloadChecksums(releaseRoot: string): void {
     const actualHash = createHash("sha256").update(readFileSync(filePath)).digest("hex");
     assert(actualHash === expectedHash.toLowerCase(), `Checksum mismatch for payload file: ${relativePath}`);
   }
+}
+
+export async function downloadPublishedReleaseArtifact(options: {
+  version: string;
+  platform: ReleasePlatform;
+  releaseBaseUrl: string;
+  downloadDir: string;
+  fetchImpl?: typeof fetch;
+  signatureRunner?: SignatureRunner;
+  requireSignature?: boolean;
+}): Promise<PublishedReleaseArtifact> {
+  const archiveName = releaseArchiveName(options.version, options.platform);
+  const baseUrl = options.releaseBaseUrl.replace(/\/+$/, "");
+  const archivePath = join(options.downloadDir, archiveName);
+  const checksumPath = `${archivePath}.sha256`;
+  const signaturePath = `${archivePath}.asc`;
+  const fetchImpl = options.fetchImpl ?? fetch;
+
+  mkdirSync(options.downloadDir, { recursive: true });
+
+  logStep(`Downloading published release artifact from ${baseUrl}`);
+  await downloadRequiredArtifact(fetchImpl, `${baseUrl}/${archiveName}`, archivePath, archiveName);
+  await downloadRequiredArtifact(fetchImpl, `${baseUrl}/${archiveName}.sha256`, checksumPath, `${archiveName}.sha256`);
+  const hasSignature = await downloadOptionalArtifact(fetchImpl, `${baseUrl}/${archiveName}.asc`, signaturePath);
+
+  logStep(`Verifying published archive checksum: ${archiveName}`);
+  verifyPublishedArtifactChecksum(archivePath, checksumPath, archiveName);
+
+  if (hasSignature) {
+    logStep(`Verifying published detached signature: ${archiveName}.asc`);
+    verifyPublishedSignature(archivePath, signaturePath, options.signatureRunner);
+  } else if (options.requireSignature) {
+    throw new Error(`Missing detached signature: ${archiveName}.asc`);
+  } else {
+    logStep(`No published detached signature found for ${archiveName}; checksum verified only`);
+  }
+
+  return {
+    archivePath,
+    checksumPath,
+    signaturePath: hasSignature ? signaturePath : undefined,
+    checksumVerified: true,
+    signatureVerified: hasSignature,
+  };
+}
+
+async function downloadRequiredArtifact(
+  fetchImpl: typeof fetch,
+  url: string,
+  outputPath: string,
+  label: string
+): Promise<void> {
+  const response = await fetchPublishedArtifact(fetchImpl, url, label);
+  if (!response.ok) {
+    throw new Error(`Could not download ${label} from ${url} (HTTP ${response.status})`);
+  }
+  writeFileSync(outputPath, new Uint8Array(await response.arrayBuffer()));
+}
+
+async function downloadOptionalArtifact(fetchImpl: typeof fetch, url: string, outputPath: string): Promise<boolean> {
+  const response = await fetchPublishedArtifact(fetchImpl, url, "detached signature");
+  if (response.status === 404) return false;
+  if (!response.ok) {
+    throw new Error(`Could not download detached signature from ${url} (HTTP ${response.status})`);
+  }
+  writeFileSync(outputPath, new Uint8Array(await response.arrayBuffer()));
+  return true;
+}
+
+async function fetchPublishedArtifact(fetchImpl: typeof fetch, url: string, label: string): Promise<Response> {
+  try {
+    return await fetchImpl(url);
+  } catch (error) {
+    throw new Error(`Could not download ${label} from ${url}: ${String(error)}`);
+  }
+}
+
+function verifyPublishedArtifactChecksum(archivePath: string, checksumPath: string, archiveName: string): void {
+  const expectedHash = expectedPublishedChecksum(checksumPath, archiveName);
+  const actualHash = createHash("sha256").update(readFileSync(archivePath)).digest("hex");
+  if (actualHash !== expectedHash) {
+    throw new Error(`Checksum mismatch for ${archiveName}`);
+  }
+}
+
+function expectedPublishedChecksum(checksumPath: string, archiveName: string): string {
+  const firstLine = readFileSync(checksumPath, "utf8").split(/\r?\n/)[0] ?? "";
+  const match = firstLine.match(/^([a-fA-F0-9]{64})\s+\*?(.+)$/);
+  if (!match || match[2] !== archiveName) {
+    throw new Error(`Checksum file is invalid for ${archiveName}`);
+  }
+  return match[1].toLowerCase();
+}
+
+function verifyPublishedSignature(
+  archivePath: string,
+  signaturePath: string,
+  runner = defaultSignatureRunner
+): void {
+  const result = runner("gpg", ["--verify", signaturePath, archivePath], {
+    encoding: "utf8",
+    env: process.env,
+  });
+
+  if (result.error) {
+    throw new Error("A detached signature was published, but gpg is not installed. Install gpg and retry.");
+  }
+  if (result.status !== 0) {
+    throw new Error(`Signature verification failed for ${basename(archivePath)}`);
+  }
+}
+
+function defaultSignatureRunner(
+  command: string,
+  args: string[],
+  options?: { encoding?: BufferEncoding; env?: NodeJS.ProcessEnv }
+): ReturnType<SignatureRunner> {
+  return spawnSync(command, args, options);
 }
 
 function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: number): void {
@@ -644,12 +841,13 @@ async function runInstalledAppSmoke(options: {
   archivePath?: string;
   keepTemp: boolean;
   port?: number;
+  source: SmokeArtifactSource;
+  releaseBaseUrl?: string;
+  version?: string;
+  requireSignature: boolean;
 }): Promise<void> {
-  const version = readPackageVersion(options.projectRoot);
+  const version = options.version ?? readPackageVersion(options.projectRoot);
   const platform = detectReleasePlatform();
-  const archivePath = resolve(
-    options.archivePath ?? join(options.projectRoot, "release", releaseArchiveName(version, platform))
-  );
   const dirs = createSmokeDirs();
   const port = await allocatePort(options.port);
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -658,6 +856,19 @@ async function runInstalledAppSmoke(options: {
   let success = false;
 
   try {
+    const archivePath =
+      options.source === "published"
+        ? (
+            await downloadPublishedReleaseArtifact({
+              version,
+              platform,
+              releaseBaseUrl: options.releaseBaseUrl ?? defaultPublishedReleaseBaseUrl(version),
+              downloadDir: join(dirs.rootDir, "published-artifacts"),
+              requireSignature: options.requireSignature,
+            })
+          ).archivePath
+        : resolve(options.archivePath ?? join(options.projectRoot, "release", releaseArchiveName(version, platform)));
+
     const releaseRoot = extractReleaseArchive(archivePath, dirs, platform);
     installRuntimeFromRelease(releaseRoot, dirs, port);
 
@@ -721,6 +932,10 @@ async function main(): Promise<void> {
     archivePath: options.archivePath,
     keepTemp: options.keepTemp,
     port: options.port,
+    source: options.source,
+    releaseBaseUrl: options.releaseBaseUrl,
+    version: options.version,
+    requireSignature: options.requireSignature,
   });
 }
 

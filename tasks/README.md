@@ -94,7 +94,7 @@ tasks/
 | TASK-078 | [Published One-Command and CLI Upgrade Validation](in-progress/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | in-progress |
 | TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
 | TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
-| TASK-081 | [Public Artifact Installed-App E2E](todo/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | todo |
+| TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
 | TASK-082 | [Final Localhost Security Regression Pass](todo/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | todo |
 | TASK-083 | [Release Notes and Support Readiness](todo/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | todo |
 | TASK-084 | [MVP Release Decision Package](todo/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | todo |
@@ -137,8 +137,10 @@ UX, extending installed-app E2E to public artifacts, rerunning localhost
 security regressions, preparing release/support notes, and producing the final
 go/no-go release decision package. TASK-075 through TASK-077 are complete;
 TASK-078 is in progress but blocked on public artifact visibility. TASK-080 is
-in progress with partial non-mutating smoke evidence. TASK-079, TASK-081,
-TASK-082, TASK-083, and TASK-084 remain active release-closeout work.
+in progress with partial non-mutating smoke evidence. TASK-081 is complete with
+the published-artifact smoke command added and the current public visibility
+failure recorded as release-blocking evidence. TASK-079, TASK-082, TASK-083,
+and TASK-084 remain active release-closeout work.
 
 Completed release validation evidence:
 
@@ -167,6 +169,11 @@ Completed release validation evidence:
     `/health` version `0.1.0-beta`, autostart, upgrade data preservation,
     uninstall data preservation, and explicit purge behavior, and recorded
     macOS arm64/x64 availability gaps in the installer matrix evidence.
+14. TASK-081 added a published-artifact installed-app smoke mode and release
+    checklist command. The local installed-app smoke passed against freshly
+    packaged artifacts; the published-artifact command stopped before
+    install/runtime work because the public macOS archive URL returned
+    `HTTP 404`, preserving TASK-078 as the release-blocking visibility issue.
 
 Notes:
 
@@ -178,13 +185,20 @@ Notes:
   authenticated GitHub release inspection sees the `v0.1.0-beta` prerelease and
   expected assets, but unauthenticated public checks for the documented
   tag-qualified installer and release archive URLs return `404` while the
-  repository is private. TASK-079 and TASK-081 share the same public artifact
-  access dependency. Several checks also depend on Homebrew tap availability.
+  repository is private. TASK-079 shares the same public artifact access
+  dependency. Several checks also depend on Homebrew tap availability.
 - TASK-080 is in progress with non-mutating mocked Playwright smoke evidence
   passing for first-run, add/search, degraded AI, import/export, Settings
   update check, backup verification, and restore flows. A real fresh-data
   browser pass is blocked in this shared workspace while the installed native
   daemon owns `127.0.0.1:3210` with existing data and the frontend API base is
   hardcoded to that port.
+- TASK-081 is complete with a documented
+  `npm run test:e2e:installed:published` command that downloads public release
+  artifacts, verifies the archive checksum and detached signature, and runs the
+  existing installed-app smoke against the verified archive. On May 29, 2026
+  the live command failed before install/runtime work because the public macOS
+  archive URL returned `HTTP 404`, so TASK-078 remains the release-blocking
+  public visibility item.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.

@@ -108,6 +108,11 @@ After the GitHub release artifacts are published:
   temporary home, starts the installed daemon through a controlled test process,
   and covers save, search, import, export, Settings, backup, restore, update
   check, daemon health, upgrade data preservation, and uninstall without purge.
+- After the GitHub release assets are publicly downloadable, run
+  `npm run test:e2e:installed:published`; the command downloads
+  `v0.1.0-beta` from the GitHub release URL, verifies the archive checksum and
+  detached signature, then runs the same installed-app smoke in an isolated
+  temporary home.
 - If the smoke fails, inspect the temp root printed by the command, especially
   `daemon.log` and `daemon.error.log`.
 
