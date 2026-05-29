@@ -91,9 +91,9 @@ tasks/
 | TASK-075 | [Release Candidate Freeze and Version Audit](done/TASK-075-release-candidate-freeze-version-audit.md) | MVP release closeout | high | done |
 | TASK-076 | [Signed Release Artifact Publication](done/TASK-076-signed-release-artifact-publication.md) | MVP release closeout | high | done |
 | TASK-077 | [Fresh-Host Installer Matrix Evidence](done/TASK-077-fresh-host-installer-matrix-evidence.md) | MVP release closeout | high | done |
-| TASK-078 | [Published One-Command and CLI Upgrade Validation](todo/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | todo |
+| TASK-078 | [Published One-Command and CLI Upgrade Validation](in-progress/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | in-progress |
 | TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
-| TASK-080 | [MVP First-User UX Smoke Pass](todo/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | todo |
+| TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
 | TASK-081 | [Public Artifact Installed-App E2E](todo/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | todo |
 | TASK-082 | [Final Localhost Security Regression Pass](todo/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | todo |
 | TASK-083 | [Release Notes and Support Readiness](todo/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | todo |
@@ -136,7 +136,9 @@ paths, completing publication-gated Homebrew checks, smoke-testing first-user
 UX, extending installed-app E2E to public artifacts, rerunning localhost
 security regressions, preparing release/support notes, and producing the final
 go/no-go release decision package. TASK-075 through TASK-077 are complete;
-TASK-078 through TASK-084 remain the active release-closeout work.
+TASK-078 is in progress but blocked on public artifact visibility. TASK-080 is
+in progress with partial non-mutating smoke evidence. TASK-079, TASK-081,
+TASK-082, TASK-083, and TASK-084 remain active release-closeout work.
 
 Completed release validation evidence:
 
@@ -172,11 +174,17 @@ Notes:
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
 - TASK-048 completed the release checklist paths available in this workspace, including a containerized Ubuntu systemd-user smoke for the Linux installer path.
 - TASK-062 documents macOS 12+ x64 as a manual pre-publish target because this workspace does not have Intel macOS hardware or an x64 macOS VM.
-- TASK-078 through TASK-084 represent the remaining release-closeout validation
-  and publication work. TASK-076 published signed `v0.1.0-beta` release
-  artifacts, but the repository is currently private, so unauthenticated
-  one-command installer, Homebrew, and public-artifact checks remain gated on
-  making the repository public or choosing an authenticated distribution path.
-  Several checks also depend on Homebrew tap availability.
+- TASK-078 is in progress and currently blocked by repository visibility:
+  authenticated GitHub release inspection sees the `v0.1.0-beta` prerelease and
+  expected assets, but unauthenticated public checks for the documented
+  tag-qualified installer and release archive URLs return `404` while the
+  repository is private. TASK-079 and TASK-081 share the same public artifact
+  access dependency. Several checks also depend on Homebrew tap availability.
+- TASK-080 is in progress with non-mutating mocked Playwright smoke evidence
+  passing for first-run, add/search, degraded AI, import/export, Settings
+  update check, backup verification, and restore flows. A real fresh-data
+  browser pass is blocked in this shared workspace while the installed native
+  daemon owns `127.0.0.1:3210` with existing data and the frontend API base is
+  hardcoded to that port.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
