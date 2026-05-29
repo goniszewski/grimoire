@@ -35,9 +35,11 @@ Shipped product areas:
 
 ## Release Closeout Gates
 
-The product surface is implemented for `0.1.0-beta`, but the public build is
-not frozen until TASK-075 through TASK-084 are complete or explicitly deferred.
-The release-closeout queue covers final metadata freeze, signed artifact
+The product surface is implemented for `0.1.0-beta`. TASK-075 through TASK-077
+and TASK-081 through TASK-084 are complete, but the public build is not ready
+for promotion until the remaining TASK-078, TASK-079, and TASK-080
+release-control blockers are completed or explicitly deferred. The
+release-closeout queue covers final metadata freeze, signed artifact
 publication, fresh-host installer evidence, public install and upgrade checks,
 publication-gated Homebrew validation, first-user UX smoke testing,
 public-artifact installed-app E2E, final localhost security regression, release
@@ -57,19 +59,26 @@ These checks are complete for the current beta validation state:
 - TASK-076 signed release artifact publication: macOS and Linux archives,
   checksum files, detached GPG signatures, and `release-manifest.json` are
   attached to the `v0.1.0-beta` GitHub prerelease.
+- TASK-084 release decision package: `docs/release-decision-v0.1.0-beta.md`
+  records the release identity, artifact inventory, validation evidence,
+  explicit skipped checks, accepted MVP limitations, and a no-go decision for
+  public promotion while public artifact URLs still return `HTTP 404`.
 
 No product-scope blockers remain in this workspace. The remaining
-release-control gates are TASK-077 through TASK-084. Public one-command
-installer, Homebrew, and public-artifact E2E checks remain gated while the
-GitHub repository is private because unauthenticated release and raw tag URLs
-return `404`. macOS 12+ x64 remains a manual pre-publish validation target
-because this workspace has no Intel Mac or x64 macOS VM.
+release-control blockers are TASK-078 public install/update validation,
+TASK-079 live Homebrew validation, and TASK-080 real fresh-data first-user UX
+smoke validation. Public one-command installer, Homebrew, and public-artifact
+E2E checks remain gated while the GitHub repository is private because
+unauthenticated release and raw tag URLs return `404`. macOS 12+ x64 remains a
+manual pre-publish validation target because this workspace has no Intel Mac or
+x64 macOS VM.
 
 ## Post-MVP Release Operations
 
-After `0.1.0-beta` is published and the release-closeout queue is complete, the
-next release-operations pass should focus on polish that is not required for
-the MVP public build:
+After `0.1.0-beta` passes the public-promotion gates and the remaining
+release-closeout blockers are completed or explicitly deferred, the next
+release-operations pass should focus on polish that is not required for the MVP
+public build:
 
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
 - Resolve the non-blocking post-MVP audit items tracked by TASK-072.

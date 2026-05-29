@@ -525,6 +525,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - [Development Roadmap](./docs/roadmap.md) - Shipped MVP state and future plans
 - [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
 - [Release Notes](./docs/release-notes-v0.1.0-beta.md) - Public beta release notes and support links
+- [Release Decision](./docs/release-decision-v0.1.0-beta.md) - Go/no-go package for the beta release
 - [Release Checklist](./docs/release-checklist.md) - Final beta validation checklist
 - [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
 - [Update System](./docs/update-system.md) - Update mechanism design and roadmap

@@ -97,7 +97,7 @@ tasks/
 | TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
 | TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
 | TASK-083 | [Release Notes and Support Readiness](done/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | done |
-| TASK-084 | [MVP Release Decision Package](todo/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | todo |
+| TASK-084 | [MVP Release Decision Package](done/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | done |
 
 ## Current Status
 
@@ -135,17 +135,15 @@ artifacts, validating fresh-host installers, validating public install/update
 paths, completing publication-gated Homebrew checks, smoke-testing first-user
 UX, extending installed-app E2E to public artifacts, rerunning localhost
 security regressions, preparing release/support notes, and producing the final
-go/no-go release decision package. TASK-075 through TASK-077 are complete;
-TASK-078 is in progress but blocked on public artifact visibility. TASK-079 is
-in progress with local formula checksum, test, audit, and dry-run evidence, but
-live Homebrew install validation remains blocked on public artifact visibility.
-TASK-080 is in progress with partial non-mutating smoke evidence. TASK-081 is
-complete with the published-artifact smoke command added and the current public
-visibility failure recorded as release-blocking evidence. TASK-082 is complete
-with final localhost security regression evidence. TASK-083 is complete with
-publish-ready release notes and support-readiness links. TASK-084 remains the
-final not-yet-started release decision package; TASK-078, TASK-079, and
-TASK-080 stay in progress for their documented blockers.
+go/no-go release decision package. TASK-075 through TASK-077 and TASK-081
+through TASK-084 are complete. TASK-078 is in progress but blocked on public
+artifact visibility. TASK-079 is in progress with local formula checksum, test,
+audit, and dry-run evidence, but live Homebrew install validation remains
+blocked on public artifact visibility. TASK-080 is in progress with partial
+non-mutating smoke evidence. TASK-084 is complete with a final no-go
+recommendation for public MVP promotion until unauthenticated artifact access
+and the dependent public validation paths are fixed or an authenticated
+distribution path is deliberately adopted.
 
 Completed release validation evidence:
 
@@ -198,6 +196,10 @@ Completed release validation evidence:
     release notes covering install paths, supported OS matrix,
     checksum/signature guidance, validation summary, known limitations,
     diagnostics posture, troubleshooting links, and security reporting guidance.
+18. TASK-084 added `docs/release-decision-v0.1.0-beta.md` with the release
+    identity, artifact inventory, checksum/signature status, validation matrix,
+    explicit skipped checks, accepted MVP limitations, and a no-go decision for
+    public promotion while public artifact URLs still return `HTTP 404`.
 
 Notes:
 
@@ -228,5 +230,9 @@ Notes:
   the live command failed before install/runtime work because the public macOS
   archive URL returned `HTTP 404`, so TASK-078 remains the release-blocking
   public visibility item.
+- TASK-084 is complete. The final release decision is no-go for public MVP
+  promotion until the public installer/archive URLs are reachable and TASK-078,
+  TASK-079, and the public-artifact smoke path are rerun successfully, or until
+  an authenticated distribution path is explicitly chosen and validated.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
