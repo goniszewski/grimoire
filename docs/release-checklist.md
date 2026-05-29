@@ -147,6 +147,13 @@ After the GitHub release artifacts are published:
 - Run `npm run docs:api:check`.
 - Run a local markdown link audit for `README.md`, `CONTRIBUTING.md`,
   `tasks/README.md`, and the Markdown files under `docs/`.
+- Confirm `docs/release-notes-v0.1.0-beta.md` includes the final user-facing
+  release notes, supported install paths, supported OS matrix, known
+  limitations, checksum/signature guidance, troubleshooting links, diagnostics
+  posture, and security reporting guidance.
+- Confirm the release notes do not claim successful public one-command,
+  Homebrew, or published-artifact validation until unauthenticated release
+  artifact downloads have passed.
 - Confirm `README.md`, `CHANGELOG.md`, `SECURITY.md`, `tasks/README.md`,
   `docs/roadmap.md`, `docs/prd.md`, `docs/overview.md`,
   `docs/release-checklist.md`, and `docs/update-system.md` all name

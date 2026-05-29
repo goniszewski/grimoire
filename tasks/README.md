@@ -96,7 +96,7 @@ tasks/
 | TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
 | TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
 | TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
-| TASK-083 | [Release Notes and Support Readiness](todo/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | todo |
+| TASK-083 | [Release Notes and Support Readiness](done/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | done |
 | TASK-084 | [MVP Release Decision Package](todo/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | todo |
 
 ## Current Status
@@ -142,8 +142,10 @@ live Homebrew install validation remains blocked on public artifact visibility.
 TASK-080 is in progress with partial non-mutating smoke evidence. TASK-081 is
 complete with the published-artifact smoke command added and the current public
 visibility failure recorded as release-blocking evidence. TASK-082 is complete
-with final localhost security regression evidence. TASK-083 and TASK-084 remain
-active release-closeout work.
+with final localhost security regression evidence. TASK-083 is complete with
+publish-ready release notes and support-readiness links. TASK-084 remains the
+final not-yet-started release decision package; TASK-078, TASK-079, and
+TASK-080 stay in progress for their documented blockers.
 
 Completed release validation evidence:
 
@@ -192,6 +194,10 @@ Completed release validation evidence:
     `brew audit --strict goniszewski/little-imp/little-imp` for the registered
     tap formula shape, and passed the registered-tap Homebrew dry-run install
     plan.
+17. TASK-083 added `docs/release-notes-v0.1.0-beta.md` with final user-facing
+    release notes covering install paths, supported OS matrix,
+    checksum/signature guidance, validation summary, known limitations,
+    diagnostics posture, troubleshooting links, and security reporting guidance.
 
 Notes:
 
