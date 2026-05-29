@@ -92,7 +92,7 @@ tasks/
 | TASK-076 | [Signed Release Artifact Publication](done/TASK-076-signed-release-artifact-publication.md) | MVP release closeout | high | done |
 | TASK-077 | [Fresh-Host Installer Matrix Evidence](done/TASK-077-fresh-host-installer-matrix-evidence.md) | MVP release closeout | high | done |
 | TASK-078 | [Published One-Command and CLI Upgrade Validation](in-progress/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | in-progress |
-| TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
+| TASK-079 | [Homebrew Tap Publication and Live Install Validation](in-progress/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | in-progress |
 | TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
 | TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
 | TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
@@ -136,11 +136,13 @@ paths, completing publication-gated Homebrew checks, smoke-testing first-user
 UX, extending installed-app E2E to public artifacts, rerunning localhost
 security regressions, preparing release/support notes, and producing the final
 go/no-go release decision package. TASK-075 through TASK-077 are complete;
-TASK-078 is in progress but blocked on public artifact visibility. TASK-080 is
-in progress with partial non-mutating smoke evidence. TASK-081 is complete with
-the published-artifact smoke command added and the current public visibility
-failure recorded as release-blocking evidence. TASK-082 is complete with final
-localhost security regression evidence. TASK-079, TASK-083, and TASK-084 remain
+TASK-078 is in progress but blocked on public artifact visibility. TASK-079 is
+in progress with local formula checksum, test, audit, and dry-run evidence, but
+live Homebrew install validation remains blocked on public artifact visibility.
+TASK-080 is in progress with partial non-mutating smoke evidence. TASK-081 is
+complete with the published-artifact smoke command added and the current public
+visibility failure recorded as release-blocking evidence. TASK-082 is complete
+with final localhost security regression evidence. TASK-083 and TASK-084 remain
 active release-closeout work.
 
 Completed release validation evidence:
@@ -183,6 +185,13 @@ Completed release validation evidence:
     includes explicit content/notes/embedding model/vector regression coverage,
     and refreshed GitHub release artifacts passed checksum and GPG signature
     validation.
+16. TASK-079 local Homebrew validation updated the in-repository formula to the
+    final signed release artifact checksums from `release/release-manifest.json`,
+    added checksum drift coverage to `scripts/homebrew-formula.test.ts`, passed
+    the focused formula test, passed `brew style Formula/little-imp.rb`, passed
+    `brew audit --strict goniszewski/little-imp/little-imp` for the registered
+    tap formula shape, and passed the registered-tap Homebrew dry-run install
+    plan.
 
 Notes:
 
@@ -196,6 +205,10 @@ Notes:
   tag-qualified installer and release archive URLs return `404` while the
   repository is private. TASK-079 shares the same public artifact access
   dependency. Several checks also depend on Homebrew tap availability.
+- TASK-079 is in progress. Formula checksum validation is now covered locally,
+  but `brew fetch --formula goniszewski/little-imp/little-imp` still returns
+  `HTTP 404` for the public macOS archive URL, so live `brew install`, service,
+  health, uninstall, and data-preservation checks remain blocked.
 - TASK-080 is in progress with non-mutating mocked Playwright smoke evidence
   passing for first-run, add/search, degraded AI, import/export, Settings
   update check, backup verification, and restore flows. A real fresh-data

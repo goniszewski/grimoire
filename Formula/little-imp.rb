@@ -7,10 +7,10 @@ class LittleImp < Formula
 
   if OS.mac?
     url "https://github.com/goniszewski/little-imp/releases/download/v0.1.0-beta/little-imp-0.1.0-beta-macos.tar.gz"
-    sha256 "eea24a405210b3f7029568871dc902dce610e449cba42bb450e5a7da5c7f831f"
+    sha256 "d27e19b85a55a0316e9e2700312e919223c1b4ce88262b74c11bd8e2f3ebaf59"
   elsif OS.linux?
     url "https://github.com/goniszewski/little-imp/releases/download/v0.1.0-beta/little-imp-0.1.0-beta-linux.tar.gz"
-    sha256 "14468694f9ecb2e19af24b02380e136a0f867fbc230c143a0a93a08dadc5183d"
+    sha256 "a1ffb52c12ed0a292ce58562ed322698b8ed43690e8260bec7dc59ea87ca8098"
   end
 
   def install

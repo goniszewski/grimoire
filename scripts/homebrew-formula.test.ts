@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -6,14 +6,72 @@ type PackageJson = {
   version: string;
 };
 
+const platforms = ["macos", "linux"] as const;
+type ReleasePlatform = (typeof platforms)[number];
+type ReleaseChecksumBaseline = Record<ReleasePlatform, string>;
+
+type ReleaseManifest = {
+  version: string;
+  artifacts: Array<{
+    platform: ReleasePlatform;
+    archive: string;
+    sha256: string;
+  }>;
+};
+
 const projectRoot = process.cwd();
 const formulaPath = join(projectRoot, "Formula", "little-imp.rb");
 const readProjectFile = (path: string) => readFileSync(join(projectRoot, path), "utf8");
-const platforms = ["macos", "linux"] as const;
 const sha256Pattern = /sha256 "([a-f0-9]{64})"/;
+const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
+  "0.1.0-beta": {
+    macos: "d27e19b85a55a0316e9e2700312e919223c1b4ce88262b74c11bd8e2f3ebaf59",
+    linux: "a1ffb52c12ed0a292ce58562ed322698b8ed43690e8260bec7dc59ea87ca8098",
+  },
+};
 
 function packageVersion(): string {
   return (JSON.parse(readProjectFile("package.json")) as PackageJson).version;
+}
+
+function releaseManifest(): ReleaseManifest | null {
+  const manifestPath = join(projectRoot, "release", "release-manifest.json");
+  if (!existsSync(manifestPath)) {
+    return null;
+  }
+
+  return JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseManifest;
+}
+
+function releaseManifestChecksums(version: string): ReleaseChecksumBaseline | null {
+  const manifest = releaseManifest();
+  if (!manifest) {
+    return null;
+  }
+
+  expect(manifest.version).toBe(version);
+  return Object.fromEntries(
+    platforms.map((platform) => {
+      const archive = `little-imp-${version}-${platform}.tar.gz`;
+      const artifact = manifest.artifacts.find(
+        (entry) => entry.platform === platform && entry.archive === archive
+      );
+      expect(artifact, `Missing ${platform} artifact in release manifest`).toBeDefined();
+      return [platform, artifact?.sha256];
+    })
+  ) as ReleaseChecksumBaseline;
+}
+
+function expectedReleaseChecksums(version: string): ReleaseChecksumBaseline {
+  const baseline = releaseChecksumBaselines[version];
+  expect(baseline, `Missing tracked Homebrew checksum baseline for ${version}`).toBeDefined();
+
+  const manifestChecksums = releaseManifestChecksums(version);
+  if (manifestChecksums) {
+    expect(manifestChecksums).toEqual(baseline);
+  }
+
+  return baseline;
 }
 
 function formulaSnippetAfter(formula: string, expectedLine: string): string {
@@ -25,6 +83,7 @@ function formulaSnippetAfter(formula: string, expectedLine: string): string {
 describe("Homebrew formula packaging", () => {
   it("installs the current release archives by pinned checksum instead of rebuilding from source", () => {
     const version = packageVersion();
+    const expectedChecksums = expectedReleaseChecksums(version);
     const formula = readFileSync(formulaPath, "utf8");
 
     for (const platform of platforms) {
@@ -35,7 +94,7 @@ describe("Homebrew formula packaging", () => {
       const sha256Match = snippet.match(sha256Pattern);
 
       expect(sha256Match?.[1]).toBeDefined();
-      expect(sha256Match?.[1]).not.toBe("0".repeat(64));
+      expect(sha256Match?.[1]).toBe(expectedChecksums[platform]);
     }
 
     expect(formula).toContain('depends_on "oven-sh/bun/bun"');
