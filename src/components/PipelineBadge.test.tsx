@@ -64,6 +64,32 @@ beforeEach(() => {
 });
 
 describe("PipelineBadge", () => {
+  it("renders AI enriched as a standalone sparkles icon with an accessible label", () => {
+    mockedGetBookmarkStatus.mockResolvedValue({
+      data: {
+        bookmarkId: "bm-1",
+        bookmarkStatus: "ai_enriched",
+        last_failure: null,
+        job: null,
+      },
+    });
+
+    renderBadge("ai_enriched");
+
+    const badge = screen.getByLabelText("AI enriched");
+    const icon = badge.querySelector("svg");
+
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveClass("h-5", "w-5", "stroke-[2.4]");
+    expect(badge).toHaveClass("h-8", "w-8", "text-pipeline-ai-enriched");
+    expect(badge.className).not.toMatch(/\brounded-full\b/);
+    expect(badge.className).not.toMatch(/\bborder\b/);
+    expect(badge.className).not.toMatch(/\bbg-pipeline-ai-enriched/);
+    expect(badge.className).not.toMatch(/\bpx-2\b/);
+    expect(badge).not.toHaveTextContent("✨");
+    expect(badge).not.toHaveTextContent("AI Enriched");
+  });
+
   it("fetches status for indexed bookmarks so later reprocess failures are visible", async () => {
     renderBadge("indexed");
 

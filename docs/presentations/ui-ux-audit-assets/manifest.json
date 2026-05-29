@@ -1,0 +1,198 @@
+{
+  "generatedAt": "2026-05-29T09:00:00.000Z",
+  "appUrl": "http://localhost:8080",
+  "screens": [
+    {
+      "slug": "library-grid-overview",
+      "title": "Library grid overview",
+      "path": "/",
+      "image": "ui-ux-audit-assets/library-grid-overview.png"
+    },
+    {
+      "slug": "library-list-overview",
+      "title": "Library list overview",
+      "path": "/",
+      "image": "ui-ux-audit-assets/library-list-overview.png"
+    },
+    {
+      "slug": "library-empty-onboarding",
+      "title": "Empty library onboarding",
+      "path": "/",
+      "image": "ui-ux-audit-assets/library-empty-onboarding.png"
+    },
+    {
+      "slug": "library-search-no-results",
+      "title": "Library search with no results",
+      "path": "/",
+      "image": "ui-ux-audit-assets/library-search-no-results.png"
+    },
+    {
+      "slug": "library-light-theme",
+      "title": "Library light theme",
+      "path": "/",
+      "image": "ui-ux-audit-assets/library-light-theme.png"
+    },
+    {
+      "slug": "bookmark-detail-standard",
+      "title": "Bookmark detail dialog",
+      "path": "/",
+      "image": "ui-ux-audit-assets/bookmark-detail-standard.png"
+    },
+    {
+      "slug": "bookmark-detail-failure-recovery",
+      "title": "Bookmark detail with pipeline recovery",
+      "path": "/",
+      "image": "ui-ux-audit-assets/bookmark-detail-failure-recovery.png"
+    },
+    {
+      "slug": "add-bookmark-dialog",
+      "title": "Add bookmark dialog",
+      "path": "/",
+      "image": "ui-ux-audit-assets/add-bookmark-dialog.png"
+    },
+    {
+      "slug": "add-bookmark-invalid-url",
+      "title": "Add bookmark validation",
+      "path": "/",
+      "image": "ui-ux-audit-assets/add-bookmark-invalid-url.png"
+    },
+    {
+      "slug": "import-bookmarks-dropzone",
+      "title": "Import bookmarks dropzone",
+      "path": "/",
+      "image": "ui-ux-audit-assets/import-bookmarks-dropzone.png"
+    },
+    {
+      "slug": "import-bookmarks-success",
+      "title": "Import bookmarks success",
+      "path": "/",
+      "image": "ui-ux-audit-assets/import-bookmarks-success.png"
+    },
+    {
+      "slug": "ai-command-palette-search-state",
+      "title": "AI command palette search state",
+      "path": "/",
+      "image": "ui-ux-audit-assets/ai-command-palette-search-state.png"
+    },
+    {
+      "slug": "date-range-picker",
+      "title": "Date range picker",
+      "path": "/",
+      "image": "ui-ux-audit-assets/date-range-picker.png"
+    },
+    {
+      "slug": "export-format-menu",
+      "title": "Export format menu",
+      "path": "/",
+      "image": "ui-ux-audit-assets/export-format-menu.png"
+    },
+    {
+      "slug": "bulk-selection-toolbar",
+      "title": "Bulk selection toolbar",
+      "path": "/",
+      "image": "ui-ux-audit-assets/bulk-selection-toolbar.png"
+    },
+    {
+      "slug": "bulk-delete-confirmation",
+      "title": "Bulk delete confirmation",
+      "path": "/",
+      "image": "ui-ux-audit-assets/bulk-delete-confirmation.png"
+    },
+    {
+      "slug": "category-management-context-menu",
+      "title": "Category management context menu",
+      "path": "/",
+      "image": "ui-ux-audit-assets/category-management-context-menu.png"
+    },
+    {
+      "slug": "preferences-dialog",
+      "title": "Preferences dialog",
+      "path": "/",
+      "image": "ui-ux-audit-assets/preferences-dialog.png"
+    },
+    {
+      "slug": "keyboard-shortcuts-dialog",
+      "title": "Keyboard shortcuts dialog",
+      "path": "/",
+      "image": "ui-ux-audit-assets/keyboard-shortcuts-dialog.png"
+    },
+    {
+      "slug": "domains-index",
+      "title": "All domains index",
+      "path": "/domains",
+      "image": "ui-ux-audit-assets/domains-index.png"
+    },
+    {
+      "slug": "timeline-activity-feed",
+      "title": "Library timeline",
+      "path": "/timeline",
+      "image": "ui-ux-audit-assets/timeline-activity-feed.png"
+    },
+    {
+      "slug": "review-queue-active",
+      "title": "Review queue with suggestions",
+      "path": "/review-queue",
+      "image": "ui-ux-audit-assets/review-queue-active.png"
+    },
+    {
+      "slug": "review-queue-cold-start",
+      "title": "Review queue cold start",
+      "path": "/review-queue",
+      "image": "ui-ux-audit-assets/review-queue-cold-start.png"
+    },
+    {
+      "slug": "archive-list",
+      "title": "Archive list",
+      "path": "/archive",
+      "image": "ui-ux-audit-assets/archive-list.png"
+    },
+    {
+      "slug": "trash-retention-list",
+      "title": "Trash retention list",
+      "path": "/trash",
+      "image": "ui-ux-audit-assets/trash-retention-list.png"
+    },
+    {
+      "slug": "settings-long-form",
+      "title": "Settings long form",
+      "path": "/settings",
+      "image": "ui-ux-audit-assets/settings-long-form.png"
+    },
+    {
+      "slug": "restore-recovery-overlay",
+      "title": "Post-restore restart overlay",
+      "path": "/settings",
+      "image": "ui-ux-audit-assets/restore-recovery-overlay.png"
+    },
+    {
+      "slug": "daemon-offline-banner",
+      "title": "Daemon offline banner",
+      "path": "/",
+      "image": "ui-ux-audit-assets/daemon-offline-banner.png"
+    },
+    {
+      "slug": "lock-screen",
+      "title": "App lock screen",
+      "path": "/",
+      "image": "ui-ux-audit-assets/lock-screen.png"
+    },
+    {
+      "slug": "mobile-library-stack",
+      "title": "Mobile library stack",
+      "path": "/",
+      "image": "ui-ux-audit-assets/mobile-library-stack.png"
+    },
+    {
+      "slug": "mobile-bookmark-detail-drawer",
+      "title": "Mobile bookmark detail drawer",
+      "path": "/",
+      "image": "ui-ux-audit-assets/mobile-bookmark-detail-drawer.png"
+    },
+    {
+      "slug": "not-found-route",
+      "title": "404 route",
+      "path": "/missing-screen",
+      "image": "ui-ux-audit-assets/not-found-route.png"
+    }
+  ]
+}

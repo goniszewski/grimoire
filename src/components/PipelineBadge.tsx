@@ -1,6 +1,6 @@
 import { PipelineStatus, PIPELINE_LABELS } from "@/types/bookmark";
 import { cn } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -69,24 +69,37 @@ export function PipelineBadge({ bookmarkId, initialStatus, className }: Pipeline
     : PIPELINE_LABELS[status];
   const failureMessage = jobError ?? lastFailure?.message ?? null;
   const isProcessing = hasActiveJob || (status !== "indexed" && !hasFailure);
-
-  const badge = (
-    <span
-      className={cn(
+  const isAiEnriched = !hasFailure && status === "ai_enriched";
+  const accessibleLabel = isAiEnriched ? "AI enriched" : undefined;
+  const badgeClassName = isAiEnriched
+    ? cn("inline-flex h-8 w-8 items-center justify-center text-pipeline-ai-enriched", className)
+    : cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium font-mono",
         hasFailure ? errorStyle : statusStyles[status],
         className
-      )}
+      );
+
+  const badge = (
+    <span
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
+      className={badgeClassName}
     >
       {hasFailure && <AlertTriangle className="h-3 w-3" />}
-      {!hasFailure && isProcessing && (
+      {!isAiEnriched && !hasFailure && isProcessing && (
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
         </span>
       )}
-      {!hasFailure && !isProcessing && <span className="inline-flex h-1.5 w-1.5 rounded-full bg-current" />}
-      {hasFailure ? `Failed: ${failureLabel}` : PIPELINE_LABELS[status]}
+      {!isAiEnriched && !hasFailure && !isProcessing && <span className="inline-flex h-1.5 w-1.5 rounded-full bg-current" />}
+      {hasFailure ? (
+        `Failed: ${failureLabel}`
+      ) : isAiEnriched ? (
+        <Sparkles className="h-5 w-5 stroke-[2.4]" aria-hidden="true" />
+      ) : (
+        PIPELINE_LABELS[status]
+      )}
     </span>
   );
 
