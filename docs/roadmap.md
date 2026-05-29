@@ -54,11 +54,16 @@ These checks are complete for the current beta validation state:
 - Documentation release-target and local markdown link audits, including the
   TASK-075 release-candidate freeze pass.
 - GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
+- TASK-076 signed release artifact publication: macOS and Linux archives,
+  checksum files, detached GPG signatures, and `release-manifest.json` are
+  attached to the `v0.1.0-beta` GitHub prerelease.
 
 No product-scope blockers remain in this workspace. The remaining
-release-control gates are TASK-076 through TASK-084. macOS 12+ x64 remains a
-manual pre-publish validation target because this workspace has no Intel Mac or
-x64 macOS VM.
+release-control gates are TASK-077 through TASK-084. Public one-command
+installer, Homebrew, and public-artifact E2E checks remain gated while the
+GitHub repository is private because unauthenticated release and raw tag URLs
+return `404`. macOS 12+ x64 remains a manual pre-publish validation target
+because this workspace has no Intel Mac or x64 macOS VM.
 
 ## Post-MVP Release Operations
 
@@ -109,7 +114,7 @@ These are not part of `0.1.0-beta`:
 | Run through Docker on localhost | Shipped |
 | Connect through MCP on localhost | Shipped |
 | Install without cloning the repository | Shipped through release archives and the one-command release installer |
-| Install through Homebrew | Alternate MVP path implemented; full install validation is gated on published release artifacts |
+| Install through Homebrew | Alternate MVP path implemented; full install validation is gated on publicly reachable release artifacts |
 | Generate local diagnostics | Shipped |
 | Sync live data across devices | Future |
 

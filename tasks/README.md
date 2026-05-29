@@ -89,7 +89,7 @@ tasks/
 | TASK-073 | [Project Status Review Package](done/TASK-073-project-status-review-package.md) | MVP readiness | medium | done |
 | TASK-074 | [Two-Week Engineering Presentation](done/TASK-074-two-week-engineering-presentation.md) | post-MVP polish | low | done |
 | TASK-075 | [Release Candidate Freeze and Version Audit](done/TASK-075-release-candidate-freeze-version-audit.md) | MVP release closeout | high | done |
-| TASK-076 | [Signed Release Artifact Publication](todo/TASK-076-signed-release-artifact-publication.md) | MVP release closeout | high | todo |
+| TASK-076 | [Signed Release Artifact Publication](done/TASK-076-signed-release-artifact-publication.md) | MVP release closeout | high | done |
 | TASK-077 | [Fresh-Host Installer Matrix Evidence](todo/TASK-077-fresh-host-installer-matrix-evidence.md) | MVP release closeout | high | todo |
 | TASK-078 | [Published One-Command and CLI Upgrade Validation](todo/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | todo |
 | TASK-079 | [Homebrew Tap Publication and Live Install Validation](todo/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | todo |
@@ -118,7 +118,7 @@ diagnostics/support bundles, TASK-069 local production hardening, and TASK-070
 installed-artifact smoke testing are complete. TASK-063 includes the
 in-repository Homebrew formula, checksum/docs coverage, Homebrew style/audit
 validation, and dry-run install planning; full post-publish `brew install`
-validation is gated on publishing the `v0.1.0-beta` release artifacts.
+validation is gated on public access to the `v0.1.0-beta` release artifacts.
 TASK-071 is complete with final MVP release documentation alignment across
 user-facing, contributor, release-operator, roadmap, PRD, security, changelog,
 and update-system docs. TASK-072 is complete with hybrid command-palette search
@@ -135,8 +135,8 @@ artifacts, validating fresh-host installers, validating public install/update
 paths, completing publication-gated Homebrew checks, smoke-testing first-user
 UX, extending installed-app E2E to public artifacts, rerunning localhost
 security regressions, preparing release/support notes, and producing the final
-go/no-go release decision package. TASK-075 is complete; TASK-076 through
-TASK-084 remain the active release-closeout work.
+go/no-go release decision package. TASK-075 and TASK-076 are complete; TASK-077
+through TASK-084 remain the active release-closeout work.
 
 Completed release validation evidence:
 
@@ -155,6 +155,11 @@ Completed release validation evidence:
     versions, release-tagged installer URLs, release-facing documentation, task
     board status, API docs drift check, and local Markdown links for the
     `0.1.0-beta` release target.
+12. TASK-076 generated signed macOS and Linux release archives, verified
+    checksums and detached GPG signatures, passed
+    `npm run release:validate -- --require-signatures`, and published
+    `v0.1.0-beta` as a GitHub prerelease with archives, checksum files,
+    signatures, and `release-manifest.json` attached.
 
 Notes:
 
@@ -162,8 +167,12 @@ Notes:
 - TASK-047 was the final consistency pass after the implementation-facing hardening tasks landed.
 - TASK-048 completed the release checklist paths available in this workspace, including a containerized Ubuntu systemd-user smoke for the Linux installer path.
 - TASK-062 documents macOS 12+ x64 as a manual pre-publish target because this workspace does not have Intel macOS hardware or an x64 macOS VM.
-- TASK-076 through TASK-084 represent the remaining release-closeout validation
-  and publication work. Several checks depend on published `v0.1.0-beta`
-  artifacts, signing keys, Homebrew tap availability, or fresh host/VM access.
+- TASK-077 through TASK-084 represent the remaining release-closeout validation
+  and publication work. TASK-076 published signed `v0.1.0-beta` release
+  artifacts, but the repository is currently private, so unauthenticated
+  one-command installer, Homebrew, and public-artifact checks remain gated on
+  making the repository public or choosing an authenticated distribution path.
+  Several checks also depend on Homebrew tap availability or fresh host/VM
+  access.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.
