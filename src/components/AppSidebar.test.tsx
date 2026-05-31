@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import React from "react";
 
 // ─── Mock heavy deps ──────────────────────────────────────────────────────────
@@ -13,6 +13,21 @@ vi.mock("@/components/ui/sidebar", () => ({
   SidebarGroupContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SidebarGroupLabel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SidebarMenu: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul>,
+  SidebarMenuAction: ({
+    children,
+    onClick,
+    "aria-label": ariaLabel,
+    title,
+  }: {
+    children: React.ReactNode;
+    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+    "aria-label"?: string;
+    title?: string;
+  }) => (
+    <button aria-label={ariaLabel} title={title} onClick={onClick}>
+      {children}
+    </button>
+  ),
   SidebarMenuButton: ({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) => (
     <button onClick={onClick} className={className}>{children}</button>
   ),
@@ -91,6 +106,23 @@ function makeWrapper() {
   return ({ children }: { children: React.ReactNode }) => (
     <MemoryRouter>
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    </MemoryRouter>
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
+
+function makeWrapperWithLocation() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }: { children: React.ReactNode }) => (
+    <MemoryRouter initialEntries={["/"]}>
+      <QueryClientProvider client={qc}>
+        {children}
+        <LocationProbe />
+      </QueryClientProvider>
     </MemoryRouter>
   );
 }
@@ -190,6 +222,14 @@ describe("AppSidebar — renders category tree", () => {
     });
     fireEvent.click(screen.getByText("Technology"));
     expect(onSelectCategory).toHaveBeenCalledWith("Technology", "cat-1");
+  });
+
+  it("navigates to a stable category detail route from the sidebar", () => {
+    render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapperWithLocation() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Technology category" }));
+
+    expect(screen.getByTestId("location")).toHaveTextContent("/categories/cat-1");
   });
 
   it("uses category ids to select duplicate category names independently", () => {

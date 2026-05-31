@@ -10,6 +10,7 @@ import ReviewQueue from "./pages/ReviewQueue";
 import Archive from "./pages/Archive";
 import Trash from "./pages/Trash";
 import Settings from "./pages/Settings";
+import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/archive" element={<Archive />} />
           <Route path="/trash" element={<Trash />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/categories/:id" element={<CategoryDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

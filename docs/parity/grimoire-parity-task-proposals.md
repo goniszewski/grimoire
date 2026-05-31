@@ -40,7 +40,7 @@ Suggested values:
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
 | PAR-014 | Render category navigation from the full `/categories` tree so empty categories and hierarchy are visible, not only categories from loaded bookmarks. | High | Approved | Done | Done: `TASK-095`. |
-| PAR-015 | Add a dedicated category detail page with category metadata, child categories, and paginated bookmark list. | Medium | Approved | Not started | Backlog: `TASK-096`. |
+| PAR-015 | Add a dedicated category detail page with category metadata, child categories, and paginated bookmark list. | Medium | Approved | Done | Done: `TASK-096`. |
 | PAR-016 | Add optional category fields from Grimoire parity: color, icon, description, slug, archived, and public visibility after product approval. | Medium | Approved | Not started | Backlog: `TASK-097`. |
 | PAR-017 | Add a dedicated tag management surface for listing, creating, deleting, and browsing tags outside bookmark detail. | High | Approved | Not started | Backlog: `TASK-098`. |
 | PAR-018 | Add tag detail pages with tag metadata and paginated bookmark lists. | Medium | Approved | Not started | Backlog: `TASK-099`. |

@@ -22,6 +22,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
@@ -70,6 +71,7 @@ interface DraggableCategoryProps {
   selectedCategory: string | null;
   selectedCategoryId?: string | null;
   onSelectCategory: (category: string | null, categoryId?: string | null) => void;
+  onOpenCategory: (categoryId: string) => void;
   onStartRename: (cat: UICategory) => void;
   onStartMove: (cat: UICategory) => void;
   onStartDelete: (cat: UICategory) => void;
@@ -98,6 +100,7 @@ function DraggableCategory({
   selectedCategory,
   selectedCategoryId,
   onSelectCategory,
+  onOpenCategory,
   onStartRename,
   onStartMove,
   onStartDelete,
@@ -155,7 +158,7 @@ function DraggableCategory({
             onClick={() => onSelectCategory(selected ? null : cat.name, selected ? null : cat.id)}
             className={cn(
               selected && "bg-accent text-accent-foreground",
-              !collapsed && "pl-6"
+              !collapsed && "pl-6 pr-8"
             )}
             tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
           >
@@ -170,6 +173,19 @@ function DraggableCategory({
               </>
             )}
           </SidebarMenuButton>
+          {!collapsed && (
+            <SidebarMenuAction
+              showOnHover
+              aria-label={`Open ${cat.name} category`}
+              title={`Open ${cat.name} category`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenCategory(cat.id);
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </SidebarMenuAction>
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -300,6 +316,10 @@ export function AppSidebar({
     if (!categoryId) return false;
     if (selectedCategoryId) return selectedCategoryId === categoryId;
     return selectedCategory === findApiCatById(categoryId)?.name;
+  }
+
+  function openCategoryDetail(categoryId: string) {
+    navigate(`/categories/${categoryId}`);
   }
 
   const createCategoryMutation = useMutation({
@@ -610,6 +630,7 @@ export function AppSidebar({
                           selectedCategory={selectedCategory}
                           selectedCategoryId={selectedCategoryId}
                           onSelectCategory={onSelectCategory}
+                          onOpenCategory={openCategoryDetail}
                           onStartRename={startRename}
                           onStartMove={startMove}
                           onStartDelete={startDelete}
