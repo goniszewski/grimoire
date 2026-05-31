@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grimoire Parity Scope And Non-Goals - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --orange: #c2410c;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.2rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+ul { padding-left: 20px; }
+code {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.summary-panel {
+  min-width: 0;
+  border-left: 4px solid var(--green);
+  padding: 0 0 0 14px;
+}
+.summary-panel + .summary-panel {
+  border-left-color: var(--orange);
+}
+.summary-panel h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.summary-panel p { margin: 0; }
+details {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 32px 0;
+  }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Grimoire Parity Scope And Non-Goals</h1>
+      <div class="meta-row">
+        <span>2026-05-31</span>
+        <span>TASK-085</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-scope-map.svg" alt="Visual map of TASK-085 in-scope and out-of-scope Grimoire parity decisions">
+      <figcaption>After: the parity batch is framed as local-first, single-user, loopback-first, and local-integrations-only.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The parity report still described several Grimoire server features as missing or pending decisions even after the worksheet had refined the current batch scope.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Without explicit non-goals, release and roadmap readers could interpret the Grimoire parity batch as a promise to add multi-user accounts, public-server deployment, endpoint aliases, or browser-extension capture.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Locked the parity report around a local-first, single-user, loopback-first, local-integration scope.</li>
+        <li>Added a non-goals table with rationales and concrete reconsideration triggers.</li>
+        <li>Updated roadmap, release notes, release decision, and release checklist language to prevent overbroad parity claims.</li>
+        <li>Moved TASK-085 to done and aligned the task board and parity worksheet status.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <div class="summary-grid">
+        <div class="summary-panel">
+          <h3>In Scope</h3>
+          <p>Local integration security, API examples, bookmark read-later/open metrics, category/tag parity, import/export hardening, pagination, filters, and scale checks.</p>
+        </div>
+        <div class="summary-panel">
+          <h3>Out Of Scope</h3>
+          <p>Multi-user/server mode, public-network exposure, Grimoire endpoint aliases, browser-extension/bookmarklet capture, importance ratings, and direct Grimoire backup import.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Checked the report for stale pending-decision language after the edit.</li>
+        <li>Reviewed roadmap and release docs for unsupported Grimoire parity implications.</li>
+        <li><code>npm run docs:api:check</code> passed.</li>
+        <li><code>npm run check</code> passed during final review.</li>
+        <li>A local link check over the edited markdown and task-report pages passed.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The task is documentation-only. No daemon route, frontend UI, schema, migration, installer, or release artifact behavior changed.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>docs/roadmap.md</code></li>
+        <li><code>docs/release-notes-v0.1.0-beta.md</code></li>
+        <li><code>docs/release-decision-v0.1.0-beta.md</code></li>
+        <li><code>docs/release-checklist.md</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>tasks/done/TASK-085-grimoire-parity-scope-and-non-goals.md</code></li>
+        <li><code>docs/task-reports/2026/05/2026-05-31-task-085-grimoire-parity-scope/index.html</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

@@ -106,6 +106,11 @@ as local-first, single-user software:
 - The app is single-user and local-first; multi-user support, multi-device sync,
   browser extension capture, optional authentication, and public-network
   deployment modes are post-MVP work.
+- The Grimoire parity follow-up batch is scoped to local-first, single-user,
+  loopback-first, local-integration compatibility. It does not include
+  multi-user accounts/admin, public-server mode, Grimoire endpoint aliases,
+  browser-extension/bookmarklet capture, or direct Grimoire/PocketBase backup
+  import.
 - Update checks and installs are explicit and user-controlled. Automatic update
   checks, background notifications, one-click in-app install, and automatic
   rollback are not shipped.

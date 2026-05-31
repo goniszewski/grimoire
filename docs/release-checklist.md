@@ -161,3 +161,8 @@ After the GitHub release artifacts are published:
   tag where tag-qualified URLs are required.
 - Confirm links in `README.md`, `CONTRIBUTING.md`, and `tasks/README.md` resolve to existing files.
 - Confirm backup, Docker, MCP, and API source-of-truth docs match the shipped routes and defaults.
+- Confirm any Grimoire parity release notes or roadmap updates describe the
+  current batch as local-first, single-user, loopback-first, and
+  local-integrations-only, and do not claim multi-user/server parity, endpoint
+  aliases, browser-extension/bookmarklet capture, or direct Grimoire backup
+  import unless those decisions are explicitly reopened and validated.

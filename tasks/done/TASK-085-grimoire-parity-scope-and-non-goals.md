@@ -2,7 +2,7 @@
 
 **Phase:** Grimoire parity
 **Priority:** critical
-**Status:** backlog
+**Status:** done
 **Area:** documentation / product
 **Source:** PAR-002
 **Labels:** grimoire-parity, parity-decision, docs
@@ -27,15 +27,15 @@ release planning.
 
 ## Acceptance Criteria
 
-- [ ] Parity docs list explicit non-goals with rationale.
-- [ ] Current parity scope is explicitly local-first and single-user.
-- [ ] Deferred multi-user/server behavior is not described as current batch or
+- [x] Parity docs list explicit non-goals with rationale.
+- [x] Current parity scope is explicitly local-first and single-user.
+- [x] Deferred multi-user/server behavior is not described as current batch or
       release scope.
-- [ ] Rejected integration aliases and extension smoke tests are documented as
+- [x] Rejected integration aliases and extension smoke tests are documented as
       intentional omissions.
-- [ ] One-click browser extension/bookmarklet capture is documented as deferred.
-- [ ] Roadmap and release docs no longer imply unsupported Grimoire parity.
-- [ ] Any future reconsideration criteria are concrete.
+- [x] One-click browser extension/bookmarklet capture is documented as deferred.
+- [x] Roadmap and release docs no longer imply unsupported Grimoire parity.
+- [x] Any future reconsideration criteria are concrete.
 
 ## Dependencies
 
@@ -48,3 +48,17 @@ release planning.
   language where the decision is deliberate.
 - A future multi-user/server mode should be treated as a new product decision,
   not as unfinished work inside this parity batch.
+
+## Work Notes
+
+- May 31, 2026: Started as the next actionable task after TASK-078 and
+  TASK-079 remained blocked on public artifact visibility and TASK-080 remained
+  blocked on the shared native daemon environment.
+- May 31, 2026: Updated the parity report, roadmap, release notes, release
+  decision, release checklist, task report index, and task board. Verification
+  passed with `npm run docs:api:check` and a local link check over the edited
+  markdown/report pages. Moved to in-review for owner review rather than done.
+- May 31, 2026: Review pass fixed task-board status wording and made the
+  export parity note more concrete. Final verification passed with
+  `npm run check`, `git diff --check`, and a local documentation link check.
+  Moved to done at owner request.

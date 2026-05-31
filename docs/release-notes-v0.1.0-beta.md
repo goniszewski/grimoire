@@ -152,6 +152,11 @@ be promoted.
   encrypted package files stored elsewhere.
 - Multi-device sync, browser extension capture, multi-user support, optional
   authentication, and public-network deployment modes are post-MVP work.
+- Grimoire parity follow-up work is scoped to local-first, single-user,
+  loopback-first, local-integration compatibility. It does not include
+  multi-user accounts/admin, public-server mode, Grimoire endpoint aliases,
+  browser-extension/bookmarklet capture, or direct Grimoire/PocketBase backup
+  import in the current batch.
 
 ## Support And Troubleshooting
 

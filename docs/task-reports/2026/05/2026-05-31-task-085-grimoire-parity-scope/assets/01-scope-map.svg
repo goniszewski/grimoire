@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-085 Grimoire parity scope map</title>
+  <desc id="desc">A visual summary showing the current parity batch in scope and intentional non-goals outside the batch.</desc>
+  <rect width="1200" height="620" fill="#f7f7fa"/>
+  <rect x="48" y="42" width="1104" height="536" rx="24" fill="#ffffff" stroke="#dedfec" stroke-width="2"/>
+  <text x="90" y="106" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800">TASK-085: Grimoire Parity Scope</text>
+  <text x="90" y="146" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">Current batch is local-first, single-user, loopback-first, and local-integrations-only.</text>
+
+  <rect x="90" y="196" width="468" height="288" rx="14" fill="#eef8f2" stroke="#15803d" stroke-width="2"/>
+  <text x="122" y="242" fill="#14532d" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">In Scope</text>
+  <text x="122" y="290" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Local integration auth and origin policy</text>
+  <text x="122" y="330" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- API examples and OpenAPI output</text>
+  <text x="122" y="370" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Read-later and open metrics</text>
+  <text x="122" y="410" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Category, tag, import, export parity</text>
+  <text x="122" y="450" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Pagination, filters, aggregate counts</text>
+
+  <rect x="642" y="196" width="468" height="288" rx="14" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+  <text x="674" y="242" fill="#7c2d12" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Intentional Non-Goals</text>
+  <text x="674" y="290" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Multi-user accounts and admin roles</text>
+  <text x="674" y="330" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Public-server deployment mode</text>
+  <text x="674" y="370" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Grimoire endpoint aliases</text>
+  <text x="674" y="410" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Browser extension or bookmarklet capture</text>
+  <text x="674" y="450" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="22">- Direct Grimoire backup import</text>
+
+  <rect x="90" y="514" width="1020" height="34" rx="17" fill="#e0f2fe"/>
+  <text x="118" y="537" fill="#075985" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Future reconsideration requires a new product decision, threat model, and release gates.</text>
+</svg>

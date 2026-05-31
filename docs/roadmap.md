@@ -83,14 +83,53 @@ public build:
 - Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
 - Resolve the non-blocking post-MVP audit items tracked by TASK-072.
 
+## Grimoire Parity Scope
+
+The current Grimoire parity batch is a local-first Little Imp compatibility
+pass, not a full Grimoire server-mode clone. The batch is locked as
+local-first, single-user, loopback-first, and local-integrations-only.
+
+In scope:
+
+- local integration security boundaries, token auth, origin policy, API
+  examples, and OpenAPI-compatible output;
+- bookmark read-later state, open metrics, richer detail metadata/content, and
+  regression coverage for supported bookmark mutations;
+- category and tag navigation, management, detail pages, metadata, and
+  regression coverage;
+- browser/Netscape import review, folder preservation, duplicate handling,
+  remapping, result reports, export parity fields, and import/export
+  regression tests;
+- explicit library pagination, server-driven sorting, approved filters, saved
+  view preferences, aggregate counts, and large-library verification.
+
+Intentional non-goals for this batch:
+
+- multi-user accounts, signup, login, sessions, admin roles, account profiles,
+  and per-user backup scoping;
+- public-server or non-loopback deployment mode;
+- Grimoire-compatible endpoint aliases or adapter routes;
+- browser-extension/bookmarklet one-click capture and extension smoke tests;
+- bookmark importance ratings;
+- direct Grimoire/PocketBase backup import tooling.
+
+Future reconsideration requires a new product decision rather than treating the
+non-goal as unfinished parity work. Public-network or multi-user modes need
+their own threat model, auth/session model, data-scoping design, backup
+implications, diagnostics posture, and release gates before implementation.
+
 ## Future Ideas
 
 These are not part of `0.1.0-beta`:
 
-- Browser extension for one-click saves.
+- Browser extension or bookmarklet for one-click saves, after local
+  integration auth and origin policy are stable.
 - Multi-device sync of live data.
-- Multi-user or public-network deployment mode, tracked as post-MVP direction research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
+- Multi-user or public-network deployment mode, tracked as post-MVP direction
+  research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
 - Optional authentication/rate limiting for non-local deployments.
+- Direct Grimoire/PocketBase backup import tooling after browser/Netscape
+  import and JSON/CSV export parity are stable.
 - Plugin system.
 - GitHub Issues extractor.
 - Provider-specific consumer cloud APIs for Google Drive, Dropbox, OneDrive, or iCloud beyond normal synced folders.
@@ -156,3 +195,4 @@ These are not part of `0.1.0-beta`:
 | 12 | Cloud backup scope | S3-compatible storage is the first remote target. Cloud-synced folders are supported as local destinations. |
 | 13 | Docker network model | Docker binds the host port to `127.0.0.1`; container-internal `HOST=0.0.0.0` only enables Docker forwarding. |
 | 14 | API documentation | `daemon/src/api/contract.ts` is the source of truth; `API.md` and `docs/api-contract.json` are generated artifacts. |
+| 15 | Grimoire parity mode | The current parity batch is local-first, single-user, loopback-first, and local-integrations-only. Multi-user/server mode, endpoint aliases, and browser-extension/bookmarklet capture are deferred or rejected as documented in the parity report. |

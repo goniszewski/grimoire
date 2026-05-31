@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Little Imp Task Reports</title>
+<title>May 2026 Little Imp Task Reports</title>
 <style>
 :root {
   --bg: #f7f7fa;
@@ -25,10 +25,16 @@ body {
 }
 a { color: inherit; }
 .page {
-  width: min(1180px, calc(100vw - 40px));
+  width: min(1120px, calc(100vw - 40px));
   margin: 0 auto;
-  padding: 64px 0;
+  padding: 56px 0;
 }
+.breadcrumbs {
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
 .eyebrow {
   margin: 0 0 8px;
   color: var(--violet);
@@ -38,21 +44,20 @@ a { color: inherit; }
 }
 h1 {
   margin: 0;
-  font-size: clamp(2.4rem, 6vw, 5rem);
-  line-height: .96;
+  font-size: clamp(2.2rem, 6vw, 4.4rem);
+  line-height: 1;
   letter-spacing: 0;
 }
 .lede {
-  max-width: 760px;
-  margin: 18px 0 0;
+  max-width: 720px;
+  margin: 16px 0 0;
   color: var(--muted);
-  font-size: 1.05rem;
   line-height: 1.55;
 }
 .section-title {
-  margin: 42px 0 14px;
-  font-size: 1rem;
+  margin: 40px 0 14px;
   color: var(--muted);
+  font-size: 1rem;
   text-transform: uppercase;
 }
 .grid {
@@ -63,7 +68,7 @@ h1 {
 .card {
   display: grid;
   gap: 12px;
-  min-height: 150px;
+  min-height: 180px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -71,9 +76,19 @@ h1 {
   text-decoration: none;
   box-shadow: var(--shadow);
 }
-.card:hover {
-  border-color: var(--violet);
-  transform: translateY(-1px);
+.card:hover { border-color: var(--blue); }
+.thumb {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+  aspect-ratio: 16 / 8;
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .card h2 {
   margin: 0;
@@ -97,22 +112,9 @@ h1 {
   font-size: .78rem;
   font-weight: 700;
 }
-.progress {
-  height: 5px;
-  margin-top: 28px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #eceef5;
-}
-.progress span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, var(--violet), var(--blue), var(--green));
-}
 @media (max-width: 640px) {
   .page {
-    width: min(100% - 28px, 1180px);
+    width: min(100% - 28px, 1120px);
     padding: 36px 0;
   }
 }
@@ -120,17 +122,23 @@ h1 {
 </head>
 <body>
 <main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../index.html">Task Reports</a> / <a href="../index.html">2026</a>
+  </nav>
+
   <header>
-    <p class="eyebrow">Little Imp</p>
-    <h1>Task Reports</h1>
-    <p class="lede">A visual changelog for meaningful tasks: before state, problem, changes, result, screenshots, and verification notes.</p>
-    <div class="progress" aria-hidden="true"><span></span></div>
+    <p class="eyebrow">Little Imp Task Reports</p>
+    <h1>May 2026</h1>
+    <p class="lede">Monthly archive of task reports for visible product, release, and documentation changes.</p>
   </header>
 
-  <section aria-labelledby="latest-reports">
-    <h2 class="section-title" id="latest-reports">Latest Reports</h2>
+  <section aria-labelledby="reports">
+    <h2 class="section-title" id="reports">Reports</h2>
     <div class="grid">
-      <a class="card" href="2026/05/2026-05-31-task-085-grimoire-parity-scope/index.html">
+      <a class="card" href="2026-05-31-task-085-grimoire-parity-scope/index.html">
+        <div class="thumb">
+          <img src="2026-05-31-task-085-grimoire-parity-scope/assets/01-scope-map.svg" alt="Scope map for TASK-085 Grimoire parity non-goals">
+        </div>
         <p class="meta">May 31, 2026 · TASK-085</p>
         <h2>Grimoire Parity Scope And Non-Goals</h2>
         <p>Locked the parity batch as local-first, single-user, loopback-first, and local-integrations-only.</p>
@@ -139,28 +147,6 @@ h1 {
           <span class="pill">Parity</span>
           <span class="pill">Product</span>
         </div>
-      </a>
-    </div>
-  </section>
-
-  <section aria-labelledby="years">
-    <h2 class="section-title" id="years">Years</h2>
-    <div class="grid">
-      <a class="card" href="2026/index.html">
-        <p class="meta">Archive</p>
-        <h2>2026</h2>
-        <p>Release closeout, documentation alignment, and Grimoire parity planning reports.</p>
-      </a>
-    </div>
-  </section>
-
-  <section aria-labelledby="workflow">
-    <h2 class="section-title" id="workflow">Workflow</h2>
-    <div class="grid">
-      <a class="card" href="INSTRUCTION.md">
-        <p class="meta">Instructions</p>
-        <h2>Report Instructions</h2>
-        <p>Use this guide to create report directories, screenshots, report pages, and parent index links.</p>
       </a>
     </div>
   </section>
