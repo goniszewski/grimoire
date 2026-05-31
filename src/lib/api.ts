@@ -120,8 +120,25 @@ export interface ApiBookmark {
   tags: BookmarkDto["tags"];
 }
 
+export interface ApiBookmarkMediaItem {
+  id: string;
+  kind: "favicon" | "screenshot" | "image";
+  url: string;
+  source_url: string;
+  media_type: string;
+  size_bytes: number;
+  alt: string | null;
+}
+
+export interface ApiBookmarkMediaSet {
+  favicon: ApiBookmarkMediaItem | null;
+  screenshot: ApiBookmarkMediaItem | null;
+  images: ApiBookmarkMediaItem[];
+}
+
 export type ApiBookmarkWithContent = ApiBookmark & {
   content: BookmarkDetailDto["content"];
+  media: ApiBookmarkMediaSet;
 };
 export interface ApiBookmarkOpenMetrics {
   id: string;

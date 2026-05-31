@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookmark Media Handling And Preview - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 56px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: clamp(22px, 4vw, 40px);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.meta-row span, .pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b1020;
+}
+.hero-shot img,
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+figcaption {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: .9rem;
+  background: #fff;
+}
+section { margin-top: 24px; }
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+ul { padding-left: 20px; }
+code {
+  border-radius: 5px;
+  background: #f1f3f8;
+  padding: 2px 5px;
+}
+details {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b1020;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1080px);
+    padding: 36px 0;
+  }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Bookmark Media Handling And Preview</h1>
+      <div class="meta-row">
+        <span>May 31, 2026</span>
+        <span>TASK-093</span>
+        <span>Done</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/02-after-main.png" alt="Bookmark detail dialog showing local cached favicon, page preview, and extracted image media">
+      <figcaption>After: bookmark detail renders daemon-served local media without hotlinking remote image assets.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Bookmark rows already had favicon and screenshot fields, but the pipeline did not populate local media cache records and the UI fell back to a remote Google favicon service.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Media previews needed to respect Little Imp's local-first posture: no browser hotlinking, explicit cache limits, safe public-only media fetches, and graceful handling when cache files are missing after restore.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added `bookmark_media` metadata, bounded cache files under `media-cache/`, and daemon serving at `/media/bookmarks/:bookmarkId/:mediaId`.</li>
+        <li>Extracted favicon, page-preview, and article-image candidates during ingestion, with redirect, private-host, non-SVG image, duplicate-final-URL, count, per-file, and total-cache limits.</li>
+        <li>Added bookmark detail media data to the API contract and frontend rendering with local fallback favicons and missing-file hide behavior.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Bookmark details now show available cached favicon, page preview, and extracted images from the local daemon. Normal backups keep media files out of the portable payload, and permanent delete purges cache files for the deleted bookmark.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test src/test/bookmark-media.test.ts</code></li>
+        <li><code>npm run test -- src/hooks/use-bookmarks.test.ts src/components/BookmarkDetailContent.test.tsx src/components/BookmarkDetail.test.tsx</code></li>
+        <li><code>bun run check</code> in `daemon/`</li>
+        <li><code>npm run type-check:frontend</code></li>
+        <li><code>npm run docs:api</code> and screenshot pass against daemon-served frontend</li>
+        <li><code>npm run check</code>, <code>npm run test:e2e</code>, and <code>git diff --check</code> after review hardening</li>
+      </ul>
+    </section>
+
+    <details open>
+      <summary>Additional Screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/02-after-main.png" alt="Desktop bookmark detail dialog with media preview grid">
+          <figcaption>Desktop detail dialog with local media.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/03-after-mobile.png" alt="Narrow bookmark detail drawer with media preview section">
+          <figcaption>Narrow drawer keeps the media section readable.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/media/bookmark-media.ts</code></li>
+        <li><code>daemon/src/routes/media.ts</code></li>
+        <li><code>daemon/src/db/migrations/0014_bookmark_media.sql</code></li>
+        <li><code>daemon/src/pipeline/pipeline.ts</code></li>
+        <li><code>src/components/BookmarkDetailContent.tsx</code></li>
+        <li><code>src/lib/media-url.ts</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

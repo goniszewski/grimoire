@@ -31,7 +31,10 @@ vi.mock("@/components/ui/drawer", () => ({
 
 vi.mock("./BookmarkDetailContent", () => ({
   BookmarkDetailContent: ({ bookmark }: { bookmark: UIBookmark & { content?: { markdown: string | null } | null } }) => (
-    <div data-testid="detail-content">{bookmark.content?.markdown ?? "no detail content"}</div>
+    <div data-testid="detail-content">
+      <span>{bookmark.content?.markdown ?? "no detail content"}</span>
+      <span>{bookmark.media?.screenshot?.url ?? "no media"}</span>
+    </div>
   ),
 }));
 
@@ -113,6 +116,19 @@ describe("BookmarkDetail", () => {
           language: "en",
           extracted_at: "2024-01-15T10:05:00Z",
         },
+        media: {
+          favicon: null,
+          screenshot: {
+            id: "media-preview",
+            kind: "screenshot",
+            url: "http://127.0.0.1:3210/media/bookmarks/bm-1/preview",
+            source_url: "https://example.com/preview.png",
+            media_type: "image/png",
+            size_bytes: 2048,
+            alt: "Page preview",
+          },
+          images: [],
+        },
       },
     });
 
@@ -132,6 +148,7 @@ describe("BookmarkDetail", () => {
 
     await waitFor(() => expect(api.getBookmark).toHaveBeenCalledWith("bm-1"));
     expect(await screen.findByTestId("detail-content")).toHaveTextContent("Readable detail body");
+    expect(screen.getByTestId("detail-content")).toHaveTextContent("/media/bookmarks/bm-1/preview");
   });
 
   it("calls onUpdateField when the editable title is changed and confirmed", async () => {

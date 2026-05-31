@@ -23,6 +23,7 @@ import { createBackupRoute } from "./routes/backup.js";
 import { createMcpRoute } from "./routes/mcp.js";
 import { createUpdatesRoute } from "./routes/updates.js";
 import { createReprocessRoute } from "./routes/reprocess.js";
+import { createMediaRoute } from "./routes/media.js";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -32,6 +33,7 @@ export interface AppDeps {
   startTime: Date;
   version: string;
   staticDir?: string | false;
+  dataDir?: string;
 }
 
 const IMPORT_MAX_BYTES = 10 * 1024 * 1024;
@@ -236,7 +238,8 @@ export function createApp(deps: AppDeps): Hono {
   // Routes
   app.route("/", createHealthRoute(deps));
   app.route("/", createDiagnosticsRoute(deps));
-  app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
+  app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createCategoriesRoute({ db: deps.db }));

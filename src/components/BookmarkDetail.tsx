@@ -19,6 +19,11 @@ import { BookmarkDetailContent } from "./BookmarkDetailContent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Check, X } from "lucide-react";
+import {
+  generatedFavicon,
+  normaliseBookmarkMediaSet,
+  normaliseDaemonMediaUrl,
+} from "@/lib/media-url";
 
 interface BookmarkDetailProps {
   bookmark: Bookmark | null;
@@ -71,13 +76,20 @@ export function BookmarkDetail({
 
   if (!bookmark) return null;
 
-  const detailContent = detailQuery.data?.data.content;
+  const detailData = detailQuery.data?.data;
+  const detailContent = detailData?.content;
+  const detailMedia = normaliseBookmarkMediaSet(detailData?.media);
   const bookmarkWithDetail: Bookmark =
-    detailContent !== undefined
+    detailData !== undefined
       ? {
           ...bookmark,
           summary: detailContent?.summary ?? bookmark.summary,
+          favicon:
+            normaliseDaemonMediaUrl(detailData.favicon_url) ??
+            detailMedia?.favicon?.url ??
+            generatedFavicon(bookmark.domain),
           content: detailContent,
+          media: detailMedia,
         }
       : bookmark;
 
@@ -92,14 +104,14 @@ export function BookmarkDetail({
     <div className="flex flex-col gap-1.5 text-left">
       <div className="flex items-center gap-2">
         <img
-          src={bookmark.favicon}
+          src={bookmarkWithDetail.favicon}
           alt=""
           className="h-5 w-5 rounded-sm"
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
         />
-        <span className="text-xs text-muted-foreground font-mono">{bookmark.domain}</span>
+        <span className="text-xs text-muted-foreground font-mono">{bookmarkWithDetail.domain}</span>
       </div>
     </div>
   );

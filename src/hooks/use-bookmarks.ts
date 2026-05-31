@@ -15,6 +15,11 @@ import {
   ApiBookmarkWithContent,
   ApiCategory,
 } from "@/lib/api";
+import {
+  generatedFavicon,
+  normaliseBookmarkMediaSet,
+  normaliseDaemonMediaUrl,
+} from "@/lib/media-url";
 
 export type SearchMode = "keyword" | "semantic" | "hybrid";
 
@@ -53,6 +58,7 @@ export interface UIBookmark {
   last_opened_at: string | null;
   notes: string | null;
   content?: ApiBookmarkWithContent["content"];
+  media?: ApiBookmarkWithContent["media"];
 }
 
 export interface UICategory {
@@ -99,6 +105,7 @@ type BookmarkForUi = {
   last_opened_at: ApiBookmark["last_opened_at"];
   notes: ApiBookmark["notes"];
   content?: ApiBookmarkWithContent["content"];
+  media?: ApiBookmarkWithContent["media"];
 };
 
 function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBookmark {
@@ -109,7 +116,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     rawTitle: bm.title,
     summary: bm.description ?? "",
     domain: bm.domain,
-    favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
+    favicon: normaliseDaemonMediaUrl(bm.favicon_url) ?? generatedFavicon(bm.domain),
     tags: bm.tags,
     category: bm.category_id ? (categoryMap.get(bm.category_id) ?? "Uncategorized") : "Uncategorized",
     category_id: bm.category_id,
@@ -124,6 +131,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     last_opened_at: bm.last_opened_at,
     notes: bm.notes,
     content: bm.content,
+    media: normaliseBookmarkMediaSet(bm.media),
   };
 }
 

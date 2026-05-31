@@ -52,7 +52,7 @@ const AGENT_INTERVAL_MS = parseInt(process.env.AGENT_INTERVAL_MS ?? "", 10) || 2
 const agent = new OrganizationAgent(db);
 scheduler.register("organization-agent", AGENT_INTERVAL_MS, () => agent.run());
 
-const bookmarkRepo = new BookmarkRepository(db);
+const bookmarkRepo = new BookmarkRepository(db, { dataDir: Config.DATA_DIR });
 const PURGE_INTERVAL_MS = parseInt(process.env.PURGE_INTERVAL_MS ?? "", 10) || 24 * 60 * 60_000; // default: daily
 scheduler.register("trash-purge", PURGE_INTERVAL_MS, () => {
   const count = bookmarkRepo.purgeExpired(30);

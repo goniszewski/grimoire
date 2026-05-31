@@ -16,6 +16,8 @@ export type PipelineFailureStage =
   | "embed"
   | "index";
 
+export type BookmarkMediaKind = "favicon" | "screenshot" | "image";
+
 export type SuggestionStatus = "pending" | "accepted" | "rejected";
 
 export interface BookmarkRow {
@@ -51,6 +53,19 @@ export interface BookmarkContentRow {
   word_count: number | null;
   language: string | null;
   extracted_at: string;
+}
+
+export interface BookmarkMediaRow {
+  id: string;
+  bookmark_id: string;
+  kind: BookmarkMediaKind;
+  source_url: string;
+  cache_path: string;
+  media_type: string;
+  size_bytes: number;
+  alt: string | null;
+  display_order: number;
+  created_at: string;
 }
 
 export interface TagRow {

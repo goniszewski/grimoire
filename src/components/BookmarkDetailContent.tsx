@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock, FileText, Info } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock, FileText, Info, Images } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { openBookmarkExternal, recordBookmarkOpenExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { format } from "date-fns";
@@ -57,6 +57,7 @@ export function BookmarkDetailContent({
   const [categoryInput, setCategoryInput] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [hiddenMediaIds, setHiddenMediaIds] = useState<Set<string>>(new Set());
   const [openMetrics, setOpenMetrics] = useState({
     opened_count: bookmark.opened_count,
     last_opened_at: bookmark.last_opened_at,
@@ -72,6 +73,13 @@ export function BookmarkDetailContent({
     content?.language ||
     content?.extracted_at
   );
+  const media = bookmark.media;
+  const mediaImages = [
+    ...(media?.screenshot ? [media.screenshot] : []),
+    ...(media?.images ?? []),
+  ].filter((item) => !hiddenMediaIds.has(item.id));
+  const faviconMedia = media?.favicon && !hiddenMediaIds.has(media.favicon.id) ? media.favicon : null;
+  const hasMedia = Boolean(faviconMedia || mediaImages.length > 0);
 
   const formatDateOnly = (value: string) => {
     const date = new Date(value);
@@ -88,6 +96,7 @@ export function BookmarkDetailContent({
       opened_count: bookmark.opened_count,
       last_opened_at: bookmark.last_opened_at,
     });
+    setHiddenMediaIds(new Set());
   }, [bookmark.id, bookmark.opened_count, bookmark.last_opened_at]);
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -143,6 +152,42 @@ export function BookmarkDetailContent({
       </div>
 
       <PipelineRecoveryPanel bookmarkId={bookmark.id} />
+
+      {hasMedia && (
+        <div className="space-y-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <Images className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Media</span>
+          </div>
+          <div className={faviconMedia ? "grid grid-cols-[auto,1fr] gap-2" : "grid grid-cols-1 gap-2"}>
+            {faviconMedia && (
+              <div className="flex h-12 w-12 items-center justify-center rounded-md border bg-muted/20">
+                <img
+                  src={faviconMedia.url}
+                  alt=""
+                  className="h-7 w-7 rounded-sm object-contain"
+                  onError={() => setHiddenMediaIds((ids) => new Set(ids).add(faviconMedia.id))}
+                />
+              </div>
+            )}
+            {mediaImages.length > 0 && (
+              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                {mediaImages.map((item) => (
+                  <div key={item.id} className="min-w-0 overflow-hidden rounded-md border bg-muted/20">
+                    <img
+                      src={item.url}
+                      alt={item.alt || (item.kind === "screenshot" ? `${bookmark.title} preview` : "Extracted image")}
+                      className="aspect-video w-full object-cover"
+                      loading="lazy"
+                      onError={() => setHiddenMediaIds((ids) => new Set(ids).add(item.id))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="group/summary">

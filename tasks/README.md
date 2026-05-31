@@ -106,7 +106,7 @@ tasks/
 | TASK-090 | [Bookmark Importance Rating (Rejected)](backlog/TASK-090-bookmark-importance-rating.md) | Grimoire parity | medium | rejected |
 | TASK-091 | [Bookmark Open Metrics](done/TASK-091-bookmark-open-metrics.md) | Grimoire parity | medium | done |
 | TASK-092 | [Bookmark Detail Metadata And Content Sections](done/TASK-092-bookmark-detail-metadata-content.md) | Grimoire parity | high | done |
-| TASK-093 | [Bookmark Media Handling And Preview](backlog/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | backlog |
+| TASK-093 | [Bookmark Media Handling And Preview](done/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | done |
 | TASK-094 | [Bookmark Mutation And Detail Regression Tests](done/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | done |
 | TASK-095 | [Sidebar Categories From Full Tree](done/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | done |
 | TASK-096 | [Category Detail Page](done/TASK-096-category-detail-page.md) | Grimoire parity | medium | done |
@@ -204,7 +204,11 @@ invalidation. TASK-091 is complete with open-metric persistence, API/export
 fields, shared frontend open tracking, generated docs, visual reporting, review
 hardening for native external-link behavior and visible metric refresh, and
 full local verification. TASK-092 is complete with bookmark detail metadata and
-extracted content sections, TASK-094 is complete with bookmark mutation/detail
+extracted content sections. TASK-093 is complete with local bounded media
+caching, daemon-served favicon/page-preview/extracted-image paths, local-only UI
+fallbacks, private-redirect and SVG cache hardening, duplicate final URL
+deduping, permanent-delete cache purging, generated API docs, visual reporting,
+and focused/full daemon/frontend verification. TASK-094 is complete with bookmark mutation/detail
 regression coverage, and TASK-095 is complete with full-tree sidebar category
 navigation for empty and nested categories. TASK-096 is complete with a
 stable category detail route, metadata and child-category rendering,

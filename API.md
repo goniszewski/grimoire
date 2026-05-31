@@ -150,6 +150,26 @@ Responses:
 | `200` | application/json | `BookmarkDetailResponse` | Bookmark detail |
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 
+#### GET /media/bookmarks/:bookmarkId/:mediaId
+
+Serve one cached local bookmark media file.
+
+Media files are served from the local cache only. Missing files, trashed bookmarks, and unknown media IDs return 404.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmarkId` | string | yes | Bookmark ID |
+| `mediaId` | string | yes | Media cache record ID |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | image/* | - | Cached non-SVG image media file |
+| `404` | application/problem+json | `ProblemDetails` | Media not found |
+
 #### PUT /bookmarks/:id
 
 Patch bookmark fields, tags, archive state, read state, and notes.
@@ -1239,8 +1259,8 @@ Legacy JSON error response
 | `description` | string \| null | yes | Page description |
 | `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
 | `category_id` | string \| null | yes | Assigned category ID |
-| `favicon_url` | string \| null | yes | Favicon URL |
-| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `screenshot_url` | string \| null | yes | Cached page preview media path or URL |
 | `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
@@ -1268,6 +1288,44 @@ Legacy JSON error response
 | `language` | string \| null | yes | Detected language |
 | `extracted_at` | string | yes | Extraction timestamp |
 
+### BookmarkMedia
+
+Cached local media item
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Media cache record ID |
+| `kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `url` | string | yes | Local daemon media path |
+| `source_url` | string | yes | Original media source URL |
+| `media_type` | string | yes | Cached non-SVG image MIME type |
+| `size_bytes` | integer | yes | Cached media byte size |
+| `alt` | string \| null | yes | Image alt text or preview label |
+
+### BookmarkMediaSet
+
+Cached local media available for a bookmark
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `favicon` | BookmarkMedia \| null | yes |  |
+| `favicon.id` | string | yes | Media cache record ID |
+| `favicon.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `favicon.url` | string | yes | Local daemon media path |
+| `favicon.source_url` | string | yes | Original media source URL |
+| `favicon.media_type` | string | yes | Cached non-SVG image MIME type |
+| `favicon.size_bytes` | integer | yes | Cached media byte size |
+| `favicon.alt` | string \| null | yes | Image alt text or preview label |
+| `screenshot` | BookmarkMedia \| null | yes |  |
+| `screenshot.id` | string | yes | Media cache record ID |
+| `screenshot.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `screenshot.url` | string | yes | Local daemon media path |
+| `screenshot.source_url` | string | yes | Original media source URL |
+| `screenshot.media_type` | string | yes | Cached non-SVG image MIME type |
+| `screenshot.size_bytes` | integer | yes | Cached media byte size |
+| `screenshot.alt` | string \| null | yes | Image alt text or preview label |
+| `images` | array<BookmarkMedia> | yes | Cached extracted images |
+
 ### BookmarkDetail
 
 Bookmark with extracted content
@@ -1281,8 +1339,8 @@ Bookmark with extracted content
 | `description` | string \| null | yes | Page description |
 | `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
 | `category_id` | string \| null | yes | Assigned category ID |
-| `favicon_url` | string \| null | yes | Favicon URL |
-| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `screenshot_url` | string \| null | yes | Cached page preview media path or URL |
 | `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
@@ -1305,6 +1363,24 @@ Bookmark with extracted content
 | `content.word_count` | integer \| null | yes | Estimated word count |
 | `content.language` | string \| null | yes | Detected language |
 | `content.extracted_at` | string | yes | Extraction timestamp |
+| `media` | BookmarkMediaSet | yes |  |
+| `media.favicon` | BookmarkMedia \| null | yes |  |
+| `media.favicon.id` | string | yes | Media cache record ID |
+| `media.favicon.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `media.favicon.url` | string | yes | Local daemon media path |
+| `media.favicon.source_url` | string | yes | Original media source URL |
+| `media.favicon.media_type` | string | yes | Cached non-SVG image MIME type |
+| `media.favicon.size_bytes` | integer | yes | Cached media byte size |
+| `media.favicon.alt` | string \| null | yes | Image alt text or preview label |
+| `media.screenshot` | BookmarkMedia \| null | yes |  |
+| `media.screenshot.id` | string | yes | Media cache record ID |
+| `media.screenshot.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `media.screenshot.url` | string | yes | Local daemon media path |
+| `media.screenshot.source_url` | string | yes | Original media source URL |
+| `media.screenshot.media_type` | string | yes | Cached non-SVG image MIME type |
+| `media.screenshot.size_bytes` | integer | yes | Cached media byte size |
+| `media.screenshot.alt` | string \| null | yes | Image alt text or preview label |
+| `media.images` | array<BookmarkMedia> | yes | Cached extracted images |
 
 ### BookmarkDetailResponse
 
@@ -1320,8 +1396,8 @@ Single bookmark response
 | `data.description` | string \| null | yes | Page description |
 | `data.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
 | `data.category_id` | string \| null | yes | Assigned category ID |
-| `data.favicon_url` | string \| null | yes | Favicon URL |
-| `data.screenshot_url` | string \| null | yes | Screenshot URL |
+| `data.favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `data.screenshot_url` | string \| null | yes | Cached page preview media path or URL |
 | `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
@@ -1344,6 +1420,24 @@ Single bookmark response
 | `data.content.word_count` | integer \| null | yes | Estimated word count |
 | `data.content.language` | string \| null | yes | Detected language |
 | `data.content.extracted_at` | string | yes | Extraction timestamp |
+| `data.media` | BookmarkMediaSet | yes |  |
+| `data.media.favicon` | BookmarkMedia \| null | yes |  |
+| `data.media.favicon.id` | string | yes | Media cache record ID |
+| `data.media.favicon.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `data.media.favicon.url` | string | yes | Local daemon media path |
+| `data.media.favicon.source_url` | string | yes | Original media source URL |
+| `data.media.favicon.media_type` | string | yes | Cached non-SVG image MIME type |
+| `data.media.favicon.size_bytes` | integer | yes | Cached media byte size |
+| `data.media.favicon.alt` | string \| null | yes | Image alt text or preview label |
+| `data.media.screenshot` | BookmarkMedia \| null | yes |  |
+| `data.media.screenshot.id` | string | yes | Media cache record ID |
+| `data.media.screenshot.kind` | "favicon" \| "screenshot" \| "image" | yes | Media kind |
+| `data.media.screenshot.url` | string | yes | Local daemon media path |
+| `data.media.screenshot.source_url` | string | yes | Original media source URL |
+| `data.media.screenshot.media_type` | string | yes | Cached non-SVG image MIME type |
+| `data.media.screenshot.size_bytes` | integer | yes | Cached media byte size |
+| `data.media.screenshot.alt` | string \| null | yes | Image alt text or preview label |
+| `data.media.images` | array<BookmarkMedia> | yes | Cached extracted images |
 
 ### BookmarkResponse
 
@@ -1359,8 +1453,8 @@ Single bookmark response
 | `data.description` | string \| null | yes | Page description |
 | `data.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
 | `data.category_id` | string \| null | yes | Assigned category ID |
-| `data.favicon_url` | string \| null | yes | Favicon URL |
-| `data.screenshot_url` | string \| null | yes | Screenshot URL |
+| `data.favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `data.screenshot_url` | string \| null | yes | Cached page preview media path or URL |
 | `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
@@ -1556,8 +1650,8 @@ Bookmark search hit
 | `description` | string \| null | yes | Page description |
 | `status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
 | `category_id` | string \| null | yes | Assigned category ID |
-| `favicon_url` | string \| null | yes | Favicon URL |
-| `screenshot_url` | string \| null | yes | Screenshot URL |
+| `favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `screenshot_url` | string \| null | yes | Cached page preview media path or URL |
 | `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |

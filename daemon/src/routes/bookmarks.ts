@@ -9,10 +9,13 @@ import { isPrivateHost } from "../lib/network.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
 import { JobStatus } from "../types/job.js";
 import { dismissPipelineFailure, getPipelineFailure } from "../pipeline/failures.js";
+import { Config } from "../config.js";
+import { listBookmarkMedia } from "../media/bookmark-media.js";
 
 interface BookmarksDeps {
   db: Database;
   queue: JobQueue;
+  dataDir?: string;
 }
 
 // ─── RFC 7807 problem helper ──────────────────────────────────────────────────
@@ -95,7 +98,7 @@ function ok<T>(c: Context, data: T, status: 200 | 201 = 200) {
 
 export function createBookmarksRoute(deps: BookmarksDeps): Hono {
   const router = new Hono();
-  const repo = new BookmarkRepository(deps.db);
+  const repo = new BookmarkRepository(deps.db, { dataDir: deps.dataDir ?? Config.DATA_DIR });
   const searchRepo = new SearchRepository(deps.db);
 
   // POST /bookmarks — ingest a URL
@@ -194,7 +197,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
   router.get("/bookmarks/:id", (c) => {
     const bm = repo.findByIdWithContent(c.req.param("id"));
     if (!bm) return problem(c, 404, "Not Found", "Bookmark not found");
-    return ok(c, bm);
+    return ok(c, { ...bm, media: listBookmarkMedia(deps.db, bm.id) });
   });
 
   // PUT /bookmarks/:id — update title, tags, category

@@ -18,6 +18,7 @@
 
 import { Database } from "bun:sqlite";
 import { log } from "../logger.js";
+import { Config } from "../config.js";
 import { fetchPage } from "./fetcher.js";
 import { extractContent } from "./extractor.js";
 import { enrichBookmark } from "../ai/enrichment.js";
@@ -30,6 +31,10 @@ import {
   errorMessage,
   recordPipelineFailure,
 } from "./failures.js";
+import {
+  cacheBookmarkMedia,
+  extractBookmarkMediaCandidates,
+} from "../media/bookmark-media.js";
 
 export interface PipelinePayload {
   bookmarkId: string;
@@ -210,6 +215,24 @@ export async function runPipeline(
     });
     setStatus(db, bookmarkId, "extracted");
   })();
+
+  try {
+    const mediaCandidates = extractBookmarkMediaCandidates(
+      fetched.finalUrl || url,
+      extracted.rawHtml ?? fetched.html ?? ""
+    );
+    await cacheBookmarkMedia(db, {
+      bookmarkId,
+      dataDir: Config.DATA_DIR,
+      candidates: mediaCandidates,
+    });
+  } catch (err) {
+    log.warn("Pipeline: media cache skipped", {
+      bookmarkId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   log.info("Pipeline: extract done", { bookmarkId, wordCount: extracted.wordCount });
 
   const runtimeSettings = resolveRuntimeSettings();

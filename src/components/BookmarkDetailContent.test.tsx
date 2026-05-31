@@ -223,6 +223,56 @@ describe("BookmarkDetailContent — rendering", () => {
     expect(screen.queryByRole("img", { name: "tracking pixel" })).not.toBeInTheDocument();
   });
 
+  it("renders cached bookmark media from local daemon paths", () => {
+    render(
+      <BookmarkDetailContent
+        {...defaultProps(makeBookmark({
+          media: {
+            favicon: {
+              id: "media-favicon",
+              kind: "favicon",
+              url: "http://127.0.0.1:3210/media/bookmarks/bm-1/favicon",
+              source_url: "https://example.com/favicon.ico",
+              media_type: "image/x-icon",
+              size_bytes: 128,
+              alt: null,
+            },
+            screenshot: {
+              id: "media-preview",
+              kind: "screenshot",
+              url: "http://127.0.0.1:3210/media/bookmarks/bm-1/preview",
+              source_url: "https://example.com/preview.png",
+              media_type: "image/png",
+              size_bytes: 2048,
+              alt: "Page preview",
+            },
+            images: [
+              {
+                id: "media-image",
+                kind: "image",
+                url: "http://127.0.0.1:3210/media/bookmarks/bm-1/image",
+                source_url: "https://example.com/diagram.png",
+                media_type: "image/png",
+                size_bytes: 1024,
+                alt: "Architecture diagram",
+              },
+            ],
+          },
+        }))}
+      />
+    );
+
+    expect(screen.getByText("Media")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Page preview" })).toHaveAttribute(
+      "src",
+      "http://127.0.0.1:3210/media/bookmarks/bm-1/preview"
+    );
+    expect(screen.getByRole("img", { name: "Architecture diagram" })).toHaveAttribute(
+      "src",
+      "http://127.0.0.1:3210/media/bookmarks/bm-1/image"
+    );
+  });
+
   it("opens extracted markdown links as safe external links", () => {
     const bookmark = {
       ...makeBookmark(),

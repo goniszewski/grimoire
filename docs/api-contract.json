@@ -128,14 +128,12 @@
         },
         "favicon_url": {
           "type": "string",
-          "description": "Favicon URL",
-          "format": "uri",
+          "description": "Cached favicon media path or URL",
           "nullable": true
         },
         "screenshot_url": {
           "type": "string",
-          "description": "Screenshot URL",
-          "format": "uri",
+          "description": "Cached page preview media path or URL",
           "nullable": true
         },
         "is_pinned": {
@@ -305,6 +303,85 @@
       ],
       "additionalProperties": false
     },
+    "BookmarkMedia": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Media cache record ID"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Media kind",
+          "enum": [
+            "favicon",
+            "screenshot",
+            "image"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "Local daemon media path"
+        },
+        "source_url": {
+          "type": "string",
+          "description": "Original media source URL",
+          "format": "uri"
+        },
+        "media_type": {
+          "type": "string",
+          "description": "Cached non-SVG image MIME type"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "description": "Cached media byte size",
+          "minimum": 0
+        },
+        "alt": {
+          "type": "string",
+          "description": "Image alt text or preview label",
+          "nullable": true
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "url",
+        "source_url",
+        "media_type",
+        "size_bytes",
+        "alt"
+      ],
+      "additionalProperties": false,
+      "description": "Cached local media item"
+    },
+    "BookmarkMediaSet": {
+      "type": "object",
+      "properties": {
+        "favicon": {
+          "ref": "BookmarkMedia",
+          "nullable": true
+        },
+        "screenshot": {
+          "ref": "BookmarkMedia",
+          "nullable": true
+        },
+        "images": {
+          "type": "array",
+          "description": "Cached extracted images",
+          "items": {
+            "ref": "BookmarkMedia"
+          }
+        }
+      },
+      "required": [
+        "favicon",
+        "screenshot",
+        "images"
+      ],
+      "additionalProperties": false,
+      "description": "Cached local media available for a bookmark"
+    },
     "BookmarkDetail": {
       "type": "object",
       "properties": {
@@ -349,14 +426,12 @@
         },
         "favicon_url": {
           "type": "string",
-          "description": "Favicon URL",
-          "format": "uri",
+          "description": "Cached favicon media path or URL",
           "nullable": true
         },
         "screenshot_url": {
           "type": "string",
-          "description": "Screenshot URL",
-          "format": "uri",
+          "description": "Cached page preview media path or URL",
           "nullable": true
         },
         "is_pinned": {
@@ -440,6 +515,9 @@
         "content": {
           "ref": "BookmarkContent",
           "nullable": true
+        },
+        "media": {
+          "ref": "BookmarkMediaSet"
         }
       },
       "required": [
@@ -464,7 +542,8 @@
         "created_at",
         "updated_at",
         "tags",
-        "content"
+        "content",
+        "media"
       ],
       "additionalProperties": false,
       "description": "Bookmark with extracted content"
@@ -965,14 +1044,12 @@
         },
         "favicon_url": {
           "type": "string",
-          "description": "Favicon URL",
-          "format": "uri",
+          "description": "Cached favicon media path or URL",
           "nullable": true
         },
         "screenshot_url": {
           "type": "string",
-          "description": "Screenshot URL",
-          "format": "uri",
+          "description": "Cached page preview media path or URL",
           "nullable": true
         },
         "is_pinned": {
@@ -4109,6 +4186,46 @@
         },
         "404": {
           "description": "Bookmark not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/media/bookmarks/:bookmarkId/:mediaId",
+      "tag": "Bookmarks",
+      "summary": "Serve one cached local bookmark media file.",
+      "description": "Media files are served from the local cache only. Missing files, trashed bookmarks, and unknown media IDs return 404.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "bookmarkId": {
+              "type": "string",
+              "description": "Bookmark ID"
+            },
+            "mediaId": {
+              "type": "string",
+              "description": "Media cache record ID"
+            }
+          },
+          "required": [
+            "bookmarkId",
+            "mediaId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Cached non-SVG image media file",
+          "contentType": "image/*"
+        },
+        "404": {
+          "description": "Media not found",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

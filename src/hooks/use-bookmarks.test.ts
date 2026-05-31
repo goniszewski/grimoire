@@ -71,6 +71,7 @@ function makeWrapper() {
 // ─── Mock API module ──────────────────────────────────────────────────────────
 
 vi.mock("@/lib/api", () => ({
+  DAEMON_URL: "http://127.0.0.1:3210",
   listBookmarks: vi.fn(),
   searchBookmarks: vi.fn(),
   getRelatedBookmarks: vi.fn(),
@@ -219,14 +220,25 @@ describe("useBookmarks — data normalisation", () => {
     await waitFor(() => expect(result.current.bookmarks[0].category).toBe("Tech"));
   });
 
-  it("uses fallback favicon when favicon_url is null", async () => {
+  it("uses a local generated fallback favicon when favicon_url is null", async () => {
     const bm = makeApiBookmark({ favicon_url: null, domain: "example.com" });
     mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.bookmarks[0].favicon).toContain("example.com");
+    expect(result.current.bookmarks[0].favicon).toMatch(/^data:image\/svg\+xml,/);
+    expect(result.current.bookmarks[0].favicon).not.toContain("google.com");
+  });
+
+  it("normalises local daemon media paths for cached favicons", async () => {
+    const bm = makeApiBookmark({ favicon_url: "/media/bookmarks/bm-1/icon" });
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.bookmarks[0].favicon).toBe("http://127.0.0.1:3210/media/bookmarks/bm-1/icon");
   });
 });
 

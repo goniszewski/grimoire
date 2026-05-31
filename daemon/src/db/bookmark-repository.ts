@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { BookmarkRow, BookmarkContentRow, TagRow, JobRow } from "./types.js";
+import { deleteBookmarkMediaCacheSync } from "../media/bookmark-media.js";
 
 // ─── Query result shapes ──────────────────────────────────────────────────────
 
@@ -60,7 +61,10 @@ export interface ListResult {
 // ─── Repository ───────────────────────────────────────────────────────────────
 
 export class BookmarkRepository {
-  constructor(private db: Database) {}
+  constructor(
+    private db: Database,
+    private options: { dataDir?: string } = {}
+  ) {}
 
   /** Create a new bookmark record. Returns the inserted row. */
   create(url: string, title?: string): BookmarkRow {
@@ -390,6 +394,14 @@ export class BookmarkRepository {
 
   /** Hard-delete a trashed bookmark immediately. Only operates on bookmarks already in trash. */
   permanentDelete(id: string): boolean {
+    const trashed = this.db
+      .query<{ id: string }, [string]>("SELECT id FROM bookmarks WHERE id = ? AND is_trashed = 1")
+      .get(id);
+    if (!trashed) return false;
+
+    if (this.options.dataDir) {
+      deleteBookmarkMediaCacheSync(this.db, this.options.dataDir, [id]);
+    }
     const info = this.db.run("DELETE FROM bookmarks WHERE id = ? AND is_trashed = 1", [id]);
     return info.changes > 0;
   }
@@ -433,6 +445,20 @@ export class BookmarkRepository {
   purgeExpired(days = 30): number {
     if (days < 1) throw new Error("days must be at least 1");
     const modifier = `-${days} days`;
+    const expiredIds = this.options.dataDir
+      ? this.db
+          .query<{ id: string }, [string]>(
+            `SELECT id FROM bookmarks
+             WHERE is_trashed = 1
+               AND trashed_at IS NOT NULL
+               AND trashed_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', ?)`
+          )
+          .all(modifier)
+          .map((row) => row.id)
+      : [];
+    if (this.options.dataDir && expiredIds.length > 0) {
+      deleteBookmarkMediaCacheSync(this.db, this.options.dataDir, expiredIds);
+    }
     const info = this.db.run(
       `DELETE FROM bookmarks
        WHERE is_trashed = 1

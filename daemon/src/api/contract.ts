@@ -139,8 +139,8 @@ const bookmarkProperties = {
     enum: ["saved", "fetched", "extracted", "ai_enriched", "indexed"],
   }),
   category_id: nullable(stringSchema("Assigned category ID")),
-  favicon_url: nullable(stringSchema("Favicon URL", { format: "uri" })),
-  screenshot_url: nullable(stringSchema("Screenshot URL", { format: "uri" })),
+  favicon_url: nullable(stringSchema("Cached favicon media path or URL")),
+  screenshot_url: nullable(stringSchema("Cached page preview media path or URL")),
   is_pinned: integerSchema("Pinned flag, 0 or 1; maps Grimoire starred/favorite state", { enum: [0, 1] }),
   is_archived: integerSchema("Archived flag, 0 or 1", { enum: [0, 1] }),
   is_trashed: integerSchema("Trash flag, 0 or 1", { enum: [0, 1] }),
@@ -232,12 +232,35 @@ const schemas = {
       "extracted_at",
     ]
   ),
+  BookmarkMedia: objectSchema(
+    {
+      id: stringSchema("Media cache record ID"),
+      kind: stringSchema("Media kind", { enum: ["favicon", "screenshot", "image"] }),
+      url: stringSchema("Local daemon media path"),
+      source_url: stringSchema("Original media source URL", { format: "uri" }),
+      media_type: stringSchema("Cached non-SVG image MIME type"),
+      size_bytes: integerSchema("Cached media byte size", { minimum: 0 }),
+      alt: nullable(stringSchema("Image alt text or preview label")),
+    },
+    ["id", "kind", "url", "source_url", "media_type", "size_bytes", "alt"],
+    "Cached local media item"
+  ),
+  BookmarkMediaSet: objectSchema(
+    {
+      favicon: nullable(ref("BookmarkMedia")),
+      screenshot: nullable(ref("BookmarkMedia")),
+      images: arrayOf(ref("BookmarkMedia"), "Cached extracted images"),
+    },
+    ["favicon", "screenshot", "images"],
+    "Cached local media available for a bookmark"
+  ),
   BookmarkDetail: objectSchema(
     {
       ...bookmarkProperties,
       content: nullable(ref("BookmarkContent")),
+      media: ref("BookmarkMediaSet"),
     },
-    [...bookmarkRequired, "content"],
+    [...bookmarkRequired, "content", "media"],
     "Bookmark with extracted content"
   ),
   BookmarkDetailResponse: envelope(ref("BookmarkDetail"), "Single bookmark response"),
@@ -1228,6 +1251,30 @@ export const apiContract = {
       responses: {
         "200": jsonResponse("Bookmark detail", ref("BookmarkDetailResponse")),
         "404": problemResponse("Bookmark not found"),
+      },
+    },
+    {
+      method: "GET",
+      path: "/media/bookmarks/:bookmarkId/:mediaId",
+      tag: "Bookmarks",
+      summary: "Serve one cached local bookmark media file.",
+      description:
+        "Media files are served from the local cache only. Missing files, trashed bookmarks, and unknown media IDs return 404.",
+      request: {
+        pathParams: objectSchema(
+          {
+            bookmarkId: stringSchema("Bookmark ID"),
+            mediaId: stringSchema("Media cache record ID"),
+          },
+          ["bookmarkId", "mediaId"]
+        ),
+      },
+      responses: {
+        "200": {
+          description: "Cached non-SVG image media file",
+          contentType: "image/*",
+        },
+        "404": problemResponse("Media not found"),
       },
     },
     {
