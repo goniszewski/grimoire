@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { PipelineRecoveryPanel } from "./PipelineRecoveryPanel";
@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { openBookmarkExternal, recordBookmarkOpenExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 
@@ -53,6 +54,18 @@ export function BookmarkDetailContent({
   const [summaryInput, setSummaryInput] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [openMetrics, setOpenMetrics] = useState({
+    opened_count: bookmark.opened_count,
+    last_opened_at: bookmark.last_opened_at,
+  });
+  const openedLabel = openMetrics.opened_count === 1 ? "Opened 1 time" : `Opened ${openMetrics.opened_count} times`;
+
+  useEffect(() => {
+    setOpenMetrics({
+      opened_count: bookmark.opened_count,
+      last_opened_at: bookmark.last_opened_at,
+    });
+  }, [bookmark.id, bookmark.opened_count, bookmark.last_opened_at]);
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && tagInput.trim()) {
@@ -100,6 +113,14 @@ export function BookmarkDetailContent({
       onUpdateNotes(bookmark.id, trimmed);
     }
     setEditingNotes(false);
+  };
+
+  const handleRecordedOpen = (metrics: RecordedOpenMetrics) => {
+    setOpenMetrics((current) =>
+      metrics.opened_count >= current.opened_count
+        ? { opened_count: metrics.opened_count, last_opened_at: metrics.last_opened_at }
+        : current
+    );
   };
 
   return (
@@ -289,6 +310,7 @@ export function BookmarkDetailContent({
                 href={bookmark.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
                 className="hover:text-foreground font-mono truncate"
               >
                 {bookmark.url}
@@ -308,6 +330,18 @@ export function BookmarkDetailContent({
           <Calendar className="h-3 w-3" />
           {format(new Date(bookmark.savedAt), "MMM d, yyyy 'at' h:mm a")}
         </div>
+        {openMetrics.opened_count > 0 && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ExternalLink className="h-3 w-3" />
+            {openedLabel}
+          </div>
+        )}
+        {openMetrics.last_opened_at && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Clock className="h-3 w-3" />
+            Last opened {format(new Date(openMetrics.last_opened_at), "MMM d, yyyy 'at' h:mm a")}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -324,7 +358,12 @@ export function BookmarkDetailContent({
           Copy URL
         </Button>
         <Button variant="outline" size="sm" asChild>
-          <a href={bookmark.url} target="_blank" rel="noopener noreferrer">
+          <a
+            href={bookmark.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
+          >
             <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
             Open
           </a>
@@ -437,6 +476,23 @@ export function BookmarkDetailContent({
                 <span className="text-[10px] text-muted-foreground font-mono ml-auto shrink-0">
                   {rb.domain}
                 </span>
+                {rb.opened_count > 0 && (
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {rb.opened_count}x
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  title="Open bookmark"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openBookmarkExternal(rb);
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
               </div>
             ))}
           </div>

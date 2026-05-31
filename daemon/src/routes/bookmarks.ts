@@ -277,6 +277,13 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     return ok(c, updated);
   });
 
+  // POST /bookmarks/:id/open — record a user-triggered external open
+  router.post("/bookmarks/:id/open", (c) => {
+    const opened = repo.recordOpen(c.req.param("id"));
+    if (!opened) return problem(c, 404, "Not Found", "Bookmark not found");
+    return ok(c, opened);
+  });
+
   // DELETE /bookmarks/:id — soft delete (moves to trash)
   router.delete("/bookmarks/:id", (c) => {
     const deleted = repo.softDelete(c.req.param("id"));

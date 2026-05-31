@@ -120,6 +120,48 @@ describe("Bookmarks API", () => {
     expect(filtered.data.every((b) => b.read_later === 1)).toBe(true);
   });
 
+  it("POST /bookmarks/:id/open increments opened_count on every user open", async () => {
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/open-metrics" }),
+    });
+    const { data: bm } = await createRes.json() as {
+      data: { id: string; opened_count: number; last_opened_at: string | null };
+    };
+
+    expect(bm.opened_count).toBe(0);
+    expect(bm.last_opened_at).toBeNull();
+
+    const firstOpenRes = await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
+    expect(firstOpenRes.status).toBe(200);
+    const firstOpen = await firstOpenRes.json() as {
+      data: { opened_count: number; last_opened_at: string | null };
+    };
+    expect(firstOpen.data.opened_count).toBe(1);
+    expect(Date.parse(firstOpen.data.last_opened_at ?? "")).not.toBeNaN();
+
+    const secondOpenRes = await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
+    expect(secondOpenRes.status).toBe(200);
+    const secondOpen = await secondOpenRes.json() as {
+      data: { opened_count: number; last_opened_at: string | null };
+    };
+    expect(secondOpen.data.opened_count).toBe(2);
+
+    const detailRes = await app.request(`/bookmarks/${bm.id}`);
+    const detail = await detailRes.json() as {
+      data: { opened_count: number; last_opened_at: string | null };
+    };
+    expect(detail.data.opened_count).toBe(2);
+    expect(detail.data.last_opened_at).toBe(secondOpen.data.last_opened_at);
+  });
+
+  it("POST /bookmarks/:id/open returns 404 for missing bookmarks", async () => {
+    const res = await app.request("/bookmarks/does-not-exist/open", { method: "POST" });
+
+    expect(res.status).toBe(404);
+  });
+
   it("GET /export includes pinned/starred mapping and read_later state", async () => {
     const createRes = await app.request("/bookmarks", {
       method: "POST",
@@ -133,20 +175,31 @@ describe("Bookmarks API", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_pinned: 1, read_later: 1 }),
     });
+    await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
 
     const jsonRes = await app.request("/export?format=json");
     expect(jsonRes.status).toBe(200);
-    const exported = await jsonRes.json() as Array<{ id: string; is_pinned: 0 | 1; read_later: 0 | 1 }>;
+    const exported = await jsonRes.json() as Array<{
+      id: string;
+      is_pinned: 0 | 1;
+      read_later: 0 | 1;
+      opened_count: number;
+      last_opened_at: string | null;
+    }>;
     expect(exported.find((row) => row.id === bm.id)).toMatchObject({
       is_pinned: 1,
       read_later: 1,
+      opened_count: 1,
     });
+    expect(exported.find((row) => row.id === bm.id)?.last_opened_at).not.toBeNull();
 
     const csvRes = await app.request("/export?format=csv");
     expect(csvRes.status).toBe(200);
     const csv = await csvRes.text();
     expect(csv.split("\n")[0]).toContain("is_pinned");
     expect(csv.split("\n")[0]).toContain("read_later");
+    expect(csv.split("\n")[0]).toContain("opened_count");
+    expect(csv.split("\n")[0]).toContain("last_opened_at");
   });
 
   it("GET /export rejects invalid read_later filters", async () => {

@@ -30,6 +30,8 @@ function makeApiBookmark(overrides: Partial<ApiBookmark> = {}): ApiBookmark {
     trashed_at: null,
     read_later: 0,
     read_at: null,
+    opened_count: 0,
+    last_opened_at: null,
     notes: null,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",

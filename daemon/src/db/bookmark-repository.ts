@@ -34,6 +34,8 @@ export interface ExportBookmarkRow {
   domain: string;
   is_pinned: 0 | 1;
   read_later: 0 | 1;
+  opened_count: number;
+  last_opened_at: string | null;
   created_at: string;
 }
 
@@ -269,6 +271,8 @@ export class BookmarkRepository {
       domain: r.domain,
       is_pinned: r.is_pinned,
       read_later: r.read_later,
+      opened_count: r.opened_count,
+      last_opened_at: r.last_opened_at,
       created_at: r.created_at,
     }));
   }
@@ -340,6 +344,22 @@ export class BookmarkRepository {
     })();
 
     return this.findById(id);
+  }
+
+  /** Record a user-triggered open. Includes archived and trashed bookmarks so every visible open action is counted. */
+  recordOpen(id: string): BookmarkWithTags | null {
+    const updated = this.db
+      .query<BookmarkRow, [string]>(
+        `UPDATE bookmarks
+         SET opened_count = opened_count + 1,
+             last_opened_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+         WHERE id = ?
+         RETURNING *`
+      )
+      .get(id);
+
+    if (!updated) return null;
+    return { ...updated, tags: this.getTagNames(id) };
   }
 
   /** Soft delete: mark as trashed (hidden from all views, including archive). */

@@ -135,7 +135,7 @@ test.describe("Core bookmark journey", () => {
     await expect(page.getByText("Introduction | Playwright")).toBeVisible({ timeout: 5_000 });
     await page.getByText("Introduction | Playwright").first().click();
 
-    // Detail panel/drawer should open — the URL link is a unique detail indicator
+    // Detail panel/drawer should open; the URL link is a unique detail indicator.
     await expect(page.getByRole("link", { name: /playwright\.dev\/docs\/intro/ })).toBeVisible({ timeout: 3_000 });
   });
 

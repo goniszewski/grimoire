@@ -25,6 +25,7 @@ import {
 import { ArrowLeft, Trash2, ArchiveRestore, ExternalLink, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow, differenceInDays, addDays, parseISO } from "date-fns";
+import { openBookmarkExternal } from "@/lib/bookmark-open";
 
 const RETENTION_DAYS = 30;
 
@@ -221,7 +222,7 @@ const Trash = () => {
                       size="icon"
                       className="h-6 w-6"
                       title="Open"
-                      onClick={() => window.open(bm.url, "_blank", "noopener,noreferrer")}
+                      onClick={() => openBookmarkExternal(bm)}
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>

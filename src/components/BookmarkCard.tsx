@@ -16,8 +16,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { openBookmarkExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { formatDistanceToNow } from "date-fns";
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 type StatusCallback = (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
 
@@ -42,10 +43,21 @@ interface BookmarkCardProps {
 export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onReadLater, onClearReadLater, onArchive, onMarkRead, onMarkUnread, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
+  const [openMetrics, setOpenMetrics] = useState({
+    opened_count: bookmark.opened_count,
+    last_opened_at: bookmark.last_opened_at,
+  });
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontalSwipe = useRef<boolean | null>(null);
   const threshold = 100;
+
+  useEffect(() => {
+    setOpenMetrics({
+      opened_count: bookmark.opened_count,
+      last_opened_at: bookmark.last_opened_at,
+    });
+  }, [bookmark.id, bookmark.opened_count, bookmark.last_opened_at]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -95,9 +107,17 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
     e.stopPropagation();
   };
 
+  const handleRecordedOpen = useCallback((metrics: RecordedOpenMetrics) => {
+    setOpenMetrics((current) =>
+      metrics.opened_count >= current.opened_count
+        ? { opened_count: metrics.opened_count, last_opened_at: metrics.last_opened_at }
+        : current
+    );
+  }, []);
+
   const handleExternal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(bookmark.url, "_blank", "noopener,noreferrer");
+    openBookmarkExternal(bookmark, handleRecordedOpen);
   };
 
   const handlePin = (e: React.MouseEvent) => {
@@ -155,6 +175,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
 
   const deleteRevealed = swipeX <= -threshold;
   const editRevealed = swipeX >= threshold;
+  const openedText = openMetrics.opened_count > 0 ? `opened ${openMetrics.opened_count}x` : null;
 
   return (
     <div className="relative overflow-hidden rounded-lg">
@@ -217,7 +238,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 hidden md:inline-flex">Read Later</Badge>
             )}
             <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
-              {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
+              {openedText ?? formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
             </span>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               {(onPin || onUnpin) && (
@@ -240,10 +261,10 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                   {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                 </Button>
               )}
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy} title="Copy URL">
                 <Copy className="h-3 w-3" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal} title="Open bookmark">
                 <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
@@ -327,6 +348,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
             <div className="flex items-center justify-between mt-auto pt-1">
               <span className="text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
+                {openedText ? ` · ${openedText}` : ""}
               </span>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {(onPin || onUnpin) && (
@@ -349,10 +371,10 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                     {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy} title="Copy URL">
                   <Copy className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal} title="Open bookmark">
                   <ExternalLink className="h-3 w-3" />
                 </Button>
                 <AlertDialog>

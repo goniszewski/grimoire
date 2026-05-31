@@ -6,7 +6,20 @@ interface ExportDeps {
   db: Database;
 }
 
-const CSV_HEADERS = ["id", "url", "title", "summary", "tags", "category", "domain", "is_pinned", "read_later", "created_at"];
+const CSV_HEADERS = [
+  "id",
+  "url",
+  "title",
+  "summary",
+  "tags",
+  "category",
+  "domain",
+  "is_pinned",
+  "read_later",
+  "opened_count",
+  "last_opened_at",
+  "created_at",
+];
 
 function escapeCSV(v: string | null | undefined): string {
   const s = (v ?? "").replace(/\r/g, " ");
@@ -81,6 +94,8 @@ export function createExportRoute(deps: ExportDeps): Hono {
           escapeCSV(r.domain),
           escapeCSV(String(r.is_pinned)),
           escapeCSV(String(r.read_later)),
+          escapeCSV(String(r.opened_count)),
+          escapeCSV(r.last_opened_at),
           escapeCSV(r.created_at),
         ].join(",")
       );

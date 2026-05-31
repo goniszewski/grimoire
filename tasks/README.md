@@ -104,7 +104,7 @@ tasks/
 | TASK-088 | [Recurring Parity Release Checklist](done/TASK-088-recurring-parity-release-checklist.md) | Grimoire parity | medium | done |
 | TASK-089 | [Read Later Bookmark Flag](done/TASK-089-read-later-bookmark-flag.md) | Grimoire parity | high | done |
 | TASK-090 | [Bookmark Importance Rating (Rejected)](backlog/TASK-090-bookmark-importance-rating.md) | Grimoire parity | medium | rejected |
-| TASK-091 | [Bookmark Open Metrics](backlog/TASK-091-bookmark-open-metrics.md) | Grimoire parity | medium | backlog |
+| TASK-091 | [Bookmark Open Metrics](done/TASK-091-bookmark-open-metrics.md) | Grimoire parity | medium | done |
 | TASK-092 | [Bookmark Detail Metadata And Content Sections](backlog/TASK-092-bookmark-detail-metadata-content.md) | Grimoire parity | high | backlog |
 | TASK-093 | [Bookmark Media Handling And Preview](backlog/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | backlog |
 | TASK-094 | [Bookmark Mutation And Detail Regression Tests](backlog/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | backlog |
@@ -200,7 +200,10 @@ integrations, and their required verification signals. TASK-089 is complete
 after adding first-class read-later persistence, API/list/search/export
 filters, frontend badges and controls, filtered exports, generated docs, visual
 reporting, e2e coverage, and review hardening for validation and cache
-invalidation.
+invalidation. TASK-091 is complete with open-metric persistence, API/export
+fields, shared frontend open tracking, generated docs, visual reporting, review
+hardening for native external-link behavior and visible metric refresh, and
+full local verification.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

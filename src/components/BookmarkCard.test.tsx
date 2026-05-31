@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BookmarkCard } from "./BookmarkCard";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
@@ -42,6 +42,8 @@ function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
     is_archived: 0,
     read_later: 0,
     read_at: null,
+    opened_count: 0,
+    last_opened_at: null,
     notes: null,
     ...overrides,
   };
@@ -121,6 +123,10 @@ describe("BookmarkCard — rendering", () => {
 });
 
 describe("BookmarkCard — actions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("calls onClick with the bookmark when the card is clicked", async () => {
     const onClick = vi.fn();
     render(
@@ -235,6 +241,50 @@ describe("BookmarkCard — actions", () => {
     );
     fireEvent.click(screen.getByTitle("Clear read later"));
     expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
+  });
+
+  it("tracks external opens and opens the bookmark in a new tab", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "bm-1", opened_count: 1, last_opened_at: "2024-01-16T10:00:00Z" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    render(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
+    fireEvent.click(screen.getByTitle("Open bookmark"));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "https://example.com/article",
+      "_blank",
+      "noopener,noreferrer"
+    );
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:3210/bookmarks/bm-1/open",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(await screen.findByText(/opened 1x/)).toBeInTheDocument();
+  });
+
+  it("does not track copy-url actions as opens", () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn() },
+    });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "bm-1" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    render(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
+    fireEvent.click(screen.getByTitle("Copy URL"));
+
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 

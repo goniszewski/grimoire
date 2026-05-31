@@ -110,6 +110,8 @@ export interface ApiBookmark {
   trashed_at: BookmarkDto["trashed_at"];
   read_later: BookmarkDto["read_later"];
   read_at: BookmarkDto["read_at"];
+  opened_count: BookmarkDto["opened_count"];
+  last_opened_at: BookmarkDto["last_opened_at"];
   notes: BookmarkDto["notes"];
   created_at: BookmarkDto["created_at"];
   updated_at: BookmarkDto["updated_at"];
@@ -119,6 +121,11 @@ export interface ApiBookmark {
 export type ApiBookmarkWithContent = ApiBookmark & {
   content: BookmarkDetailDto["content"];
 };
+export interface ApiBookmarkOpenMetrics {
+  id: string;
+  opened_count: number;
+  last_opened_at: string | null;
+}
 export interface ApiCategory {
   id: CategoryNodeDto["id"];
   name: CategoryNodeDto["name"];
@@ -466,6 +473,10 @@ export async function updateBookmark(
     method: "PUT",
     body: JSON.stringify(patch),
   });
+}
+
+export async function recordBookmarkOpen(id: string): Promise<{ data: ApiBookmarkOpenMetrics }> {
+  return apiFetch<{ data: ApiBookmarkOpenMetrics }>(`/bookmarks/${id}/open`, { method: "POST" });
 }
 
 export async function deleteBookmark(id: string): Promise<void> {

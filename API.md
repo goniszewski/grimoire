@@ -184,6 +184,23 @@ Responses:
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 | `422` | application/problem+json | `ProblemDetails` | Invalid patch field |
 
+#### POST /bookmarks/:id/open
+
+Record a user-triggered external open for a bookmark.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkResponse` | Updated bookmark open metrics |
+| `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+
 #### DELETE /bookmarks/:id
 
 Soft-delete a bookmark by moving it to trash.
@@ -1215,6 +1232,8 @@ Legacy JSON error response
 | `trashed_at` | string \| null | yes | Trash timestamp |
 | `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
+| `opened_count` | integer | yes | Number of user-triggered opens |
+| `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
@@ -1255,6 +1274,8 @@ Bookmark with extracted content
 | `trashed_at` | string \| null | yes | Trash timestamp |
 | `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
+| `opened_count` | integer | yes | Number of user-triggered opens |
+| `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
@@ -1292,6 +1313,8 @@ Single bookmark response
 | `data.trashed_at` | string \| null | yes | Trash timestamp |
 | `data.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `data.read_at` | string \| null | yes | Read timestamp |
+| `data.opened_count` | integer | yes | Number of user-triggered opens |
+| `data.last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `data.notes` | string \| null | yes | Personal notes |
 | `data.created_at` | string | yes | Creation timestamp |
 | `data.updated_at` | string | yes | Update timestamp |
@@ -1329,6 +1352,8 @@ Single bookmark response
 | `data.trashed_at` | string \| null | yes | Trash timestamp |
 | `data.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `data.read_at` | string \| null | yes | Read timestamp |
+| `data.opened_count` | integer | yes | Number of user-triggered opens |
+| `data.last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `data.notes` | string \| null | yes | Personal notes |
 | `data.created_at` | string | yes | Creation timestamp |
 | `data.updated_at` | string | yes | Update timestamp |
@@ -1524,6 +1549,8 @@ Bookmark search hit
 | `trashed_at` | string \| null | yes | Trash timestamp |
 | `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
+| `opened_count` | integer | yes | Number of user-triggered opens |
+| `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
@@ -2377,6 +2404,8 @@ Response data
 | `domain` | string | yes | Domain |
 | `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
+| `opened_count` | integer | yes | Number of user-triggered opens |
+| `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `created_at` | string | yes | Creation timestamp |
 
 ### McpErrorResponse

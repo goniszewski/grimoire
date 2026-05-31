@@ -34,6 +34,8 @@ export interface BookmarkRow {
   trashed_at: string | null;
   read_later: 0 | 1;
   read_at: string | null;
+  opened_count: number;
+  last_opened_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

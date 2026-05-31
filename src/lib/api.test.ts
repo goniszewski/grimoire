@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkHealth, checkHealthAfterRestore, resolveDaemonUrl } from "./api";
+import { checkHealth, checkHealthAfterRestore, recordBookmarkOpen, resolveDaemonUrl } from "./api";
 
 describe("daemon URL resolution", () => {
   it("defaults to the packaged daemon URL when no override is configured", () => {
@@ -70,5 +70,38 @@ describe("daemon health API", () => {
     });
 
     await expect(checkHealthAfterRestore(restoredAt, "http://127.0.0.1:3210/health")).resolves.toBe(false);
+  });
+});
+
+describe("bookmark open metrics API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("records a user-triggered bookmark open through the daemon endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "bm-1",
+            opened_count: 3,
+            last_opened_at: "2026-05-31T12:00:00Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    const result = await recordBookmarkOpen("bm-1");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/bookmarks/bm-1/open",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(result.data.opened_count).toBe(3);
+    expect(result.data.last_opened_at).toBe("2026-05-31T12:00:00Z");
   });
 });

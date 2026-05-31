@@ -47,6 +47,8 @@ export interface UIBookmark {
   is_archived: 0 | 1;
   read_later: 0 | 1;
   read_at: string | null;
+  opened_count: number;
+  last_opened_at: string | null;
   notes: string | null;
 }
 
@@ -82,6 +84,8 @@ type BookmarkForUi = {
   is_archived: ApiBookmark["is_archived"];
   read_later: ApiBookmark["read_later"];
   read_at: ApiBookmark["read_at"];
+  opened_count: ApiBookmark["opened_count"];
+  last_opened_at: ApiBookmark["last_opened_at"];
   notes: ApiBookmark["notes"];
 };
 
@@ -104,6 +108,8 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     is_archived: bm.is_archived,
     read_later: bm.read_later,
     read_at: bm.read_at,
+    opened_count: bm.opened_count,
+    last_opened_at: bm.last_opened_at,
     notes: bm.notes,
   };
 }

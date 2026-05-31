@@ -11,6 +11,7 @@ import { ArrowLeft, Archive as ArchiveIcon, Search, ArchiveRestore, ExternalLink
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { formatDistanceToNow } from "date-fns";
+import { openBookmarkExternal } from "@/lib/bookmark-open";
 
 const archiveQueryKey = bookmarkKeys.archive;
 
@@ -44,6 +45,8 @@ const Archive = () => {
       is_archived: bm.is_archived,
       read_later: bm.read_later,
       read_at: bm.read_at,
+      opened_count: bm.opened_count,
+      last_opened_at: bm.last_opened_at,
       notes: bm.notes,
     }));
   }, [archivedRows]);
@@ -161,6 +164,7 @@ const Archive = () => {
                 ))}
                 <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
                   {formatDistanceToNow(new Date(bm.savedAt), { addSuffix: true })}
+                  {bm.opened_count > 0 ? ` · opened ${bm.opened_count}x` : ""}
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <Button
@@ -177,7 +181,7 @@ const Archive = () => {
                     size="icon"
                     className="h-6 w-6"
                     title="Open"
-                    onClick={() => window.open(bm.url, "_blank", "noopener,noreferrer")}
+                    onClick={() => openBookmarkExternal(bm)}
                   >
                     <ExternalLink className="h-3 w-3" />
                   </Button>

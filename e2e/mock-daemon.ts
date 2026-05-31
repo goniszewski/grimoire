@@ -31,6 +31,8 @@ type MutableBookmark = {
   trashed_at: string | null;
   read_later: 0 | 1;
   read_at: string | null;
+  opened_count: number;
+  last_opened_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -53,6 +55,8 @@ type BookmarkSeed = Readonly<{
   trashed_at: string | null;
   read_later: 0 | 1;
   read_at: string | null;
+  opened_count: number;
+  last_opened_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -110,6 +114,8 @@ function cloneBookmark(bookmark: BookmarkSeed): MutableBookmark {
     trashed_at: bookmark.trashed_at,
     read_later: bookmark.read_later,
     read_at: bookmark.read_at,
+    opened_count: bookmark.opened_count,
+    last_opened_at: bookmark.last_opened_at,
     notes: bookmark.notes,
     created_at: bookmark.created_at,
     updated_at: bookmark.updated_at,
@@ -296,6 +302,13 @@ async function handleBookmarkRoute(route: Route, state: MockDaemonState, url: UR
     return fulfillJson(route, { data: bookmark });
   }
 
+  if (bookmark && pathname.endsWith("/open") && method === "POST") {
+    bookmark.opened_count += 1;
+    bookmark.last_opened_at = now();
+    bookmark.updated_at = now();
+    return fulfillJson(route, { data: bookmark });
+  }
+
   if (bookmark && method === "DELETE") {
     bookmark.is_trashed = 1;
     bookmark.trashed_at = now();
@@ -357,12 +370,14 @@ async function handleExport(route: Route, state: MockDaemonState, url: URL) {
 
   if (format === "csv") {
     const body = [
-      "url,title,read_later",
+      "url,title,read_later,opened_count,last_opened_at",
       ...rows.map((bookmark) =>
         [
           csvField(bookmark.url),
           csvField(bookmark.title),
           csvField(bookmark.read_later),
+          csvField(bookmark.opened_count),
+          csvField(bookmark.last_opened_at),
         ].join(",")
       ),
     ].join("\n");

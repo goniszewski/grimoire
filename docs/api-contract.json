@@ -182,6 +182,17 @@
           "format": "date-time",
           "nullable": true
         },
+        "opened_count": {
+          "type": "integer",
+          "description": "Number of user-triggered opens",
+          "minimum": 0
+        },
+        "last_opened_at": {
+          "type": "string",
+          "description": "Most recent user-triggered open timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
         "notes": {
           "type": "string",
           "description": "Personal notes",
@@ -222,6 +233,8 @@
         "trashed_at",
         "read_later",
         "read_at",
+        "opened_count",
+        "last_opened_at",
         "notes",
         "created_at",
         "updated_at",
@@ -390,6 +403,17 @@
           "format": "date-time",
           "nullable": true
         },
+        "opened_count": {
+          "type": "integer",
+          "description": "Number of user-triggered opens",
+          "minimum": 0
+        },
+        "last_opened_at": {
+          "type": "string",
+          "description": "Most recent user-triggered open timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
         "notes": {
           "type": "string",
           "description": "Personal notes",
@@ -434,6 +458,8 @@
         "trashed_at",
         "read_later",
         "read_at",
+        "opened_count",
+        "last_opened_at",
         "notes",
         "created_at",
         "updated_at",
@@ -993,6 +1019,17 @@
           "format": "date-time",
           "nullable": true
         },
+        "opened_count": {
+          "type": "integer",
+          "description": "Number of user-triggered opens",
+          "minimum": 0
+        },
+        "last_opened_at": {
+          "type": "string",
+          "description": "Most recent user-triggered open timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
         "notes": {
           "type": "string",
           "description": "Personal notes",
@@ -1043,6 +1080,8 @@
         "trashed_at",
         "read_later",
         "read_at",
+        "opened_count",
+        "last_opened_at",
         "notes",
         "created_at",
         "updated_at",
@@ -3543,6 +3582,17 @@
             1
           ]
         },
+        "opened_count": {
+          "type": "integer",
+          "description": "Number of user-triggered opens",
+          "minimum": 0
+        },
+        "last_opened_at": {
+          "type": "string",
+          "description": "Most recent user-triggered open timestamp",
+          "format": "date-time",
+          "nullable": true
+        },
         "created_at": {
           "type": "string",
           "description": "Creation timestamp",
@@ -3559,6 +3609,8 @@
         "domain",
         "is_pinned",
         "read_later",
+        "opened_count",
+        "last_opened_at",
         "created_at"
       ],
       "additionalProperties": false
@@ -3882,6 +3934,43 @@
         },
         "422": {
           "description": "Invalid patch field",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/bookmarks/:id/open",
+      "tag": "Bookmarks",
+      "summary": "Record a user-triggered external open for a bookmark.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated bookmark open metrics",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkResponse"
+          }
+        },
+        "404": {
+          "description": "Bookmark not found",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

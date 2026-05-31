@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BookmarkDetailContent } from "./BookmarkDetailContent";
@@ -46,6 +46,8 @@ function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
     is_archived: 0,
     read_later: 0,
     read_at: null,
+    opened_count: 0,
+    last_opened_at: null,
     notes: null,
     ...overrides,
   };
@@ -108,9 +110,12 @@ describe("BookmarkDetailContent — rendering", () => {
     expect(screen.getByText("Tech")).toBeInTheDocument();
   });
 
-  it("renders the URL", () => {
+  it("renders the URL as a native external link", () => {
     render(<BookmarkDetailContent {...defaultProps(makeBookmark())} />);
-    expect(screen.getByText("https://example.com/article")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "https://example.com/article" });
+    expect(link).toHaveAttribute("href", "https://example.com/article");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("renders related bookmarks when provided", () => {
@@ -300,6 +305,10 @@ describe("BookmarkDetailContent — tags", () => {
 // ─── Action buttons ───────────────────────────────────────────────────────────
 
 describe("BookmarkDetailContent — actions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("calls onPin when Pin button is clicked on an unpinned bookmark", () => {
     const onPin = vi.fn();
     render(
@@ -387,6 +396,52 @@ describe("BookmarkDetailContent — actions", () => {
     );
     fireEvent.click(screen.getByText("Clear read later"));
     expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
+  });
+
+  it("tracks the Open action and keeps it as a native external link", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "bm-1", opened_count: 1, last_opened_at: "2024-01-16T10:00:00Z" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    render(<BookmarkDetailContent {...defaultProps(makeBookmark())} />);
+    const openLink = screen.getByRole("link", { name: "Open" });
+    expect(openLink).toHaveAttribute("href", "https://example.com/article");
+    expect(openLink).toHaveAttribute("target", "_blank");
+
+    fireEvent.click(openLink);
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:3210/bookmarks/bm-1/open",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(await screen.findByText("Opened 1 time")).toBeInTheDocument();
+    expect(await screen.findByText(/Last opened/)).toBeInTheDocument();
+  });
+
+  it("tracks clicks on the URL link without replacing native link behavior", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "bm-1", opened_count: 1, last_opened_at: "2024-01-16T10:00:00Z" } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    render(<BookmarkDetailContent {...defaultProps(makeBookmark())} />);
+    fireEvent.click(screen.getByRole("link", { name: "https://example.com/article" }));
+
+    expect(openSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "http://127.0.0.1:3210/bookmarks/bm-1/open",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(await screen.findByText("Opened 1 time")).toBeInTheDocument();
   });
 
   it("calls onSelectRelated when a related bookmark is clicked", () => {

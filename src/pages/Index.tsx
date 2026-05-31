@@ -210,6 +210,8 @@ const Index = () => {
       is_archived: bm.is_archived,
       read_later: bm.read_later,
       read_at: bm.read_at,
+      opened_count: bm.opened_count,
+      last_opened_at: bm.last_opened_at,
       notes: bm.notes,
     };
     handleOpenDetail(uiBm);
