@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock, FileText, Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { openBookmarkExternal, recordBookmarkOpenExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { format } from "date-fns";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 
 interface BookmarkDetailContentProps {
   bookmark: Bookmark;
@@ -28,6 +28,15 @@ interface BookmarkDetailContentProps {
   relatedBookmarks: Bookmark[];
   onSelectRelated: (bookmark: Bookmark) => void;
 }
+
+const extractedMarkdownComponents: Components = {
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
+  img: () => null,
+};
 
 export function BookmarkDetailContent({
   bookmark,
@@ -59,6 +68,26 @@ export function BookmarkDetailContent({
     last_opened_at: bookmark.last_opened_at,
   });
   const openedLabel = openMetrics.opened_count === 1 ? "Opened 1 time" : `Opened ${openMetrics.opened_count} times`;
+  const content = bookmark.content ?? null;
+  const extractedMarkdown = content?.markdown?.trim() ?? "";
+  const hasExtractedContent = extractedMarkdown.length > 0;
+  const hasSourceDetails = Boolean(
+    content?.author ||
+    content?.published_at ||
+    (typeof content?.word_count === "number" && content.word_count > 0) ||
+    content?.language ||
+    content?.extracted_at
+  );
+
+  const formatDateOnly = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : format(date, "MMM d, yyyy");
+  };
+
+  const formatDateTime = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : format(date, "MMM d, yyyy 'at' h:mm a");
+  };
 
   useEffect(() => {
     setOpenMetrics({
@@ -173,6 +202,59 @@ export function BookmarkDetailContent({
           </div>
         )}
       </div>
+
+      {hasSourceDetails && content && (
+        <div className="space-y-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Source Details</span>
+          </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {content.author && (
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">Author</dt>
+                <dd className="truncate font-medium text-foreground">{content.author}</dd>
+              </div>
+            )}
+            {content.published_at && (
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">Published</dt>
+                <dd className="truncate font-medium text-foreground">{formatDateOnly(content.published_at)}</dd>
+              </div>
+            )}
+            {typeof content.word_count === "number" && content.word_count > 0 && (
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">Length</dt>
+                <dd className="truncate font-medium text-foreground">{content.word_count.toLocaleString()} words</dd>
+              </div>
+            )}
+            {content.language && (
+              <div className="min-w-0">
+                <dt className="text-muted-foreground">Language</dt>
+                <dd className="truncate font-medium text-foreground">{content.language}</dd>
+              </div>
+            )}
+            {content.extracted_at && (
+              <div className="min-w-0 sm:col-span-2">
+                <dt className="text-muted-foreground">Extracted</dt>
+                <dd className="truncate font-medium text-foreground">{formatDateTime(content.extracted_at)}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
+      {hasExtractedContent && (
+        <div className="space-y-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Extracted Content</span>
+          </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none max-h-[28rem] overflow-y-auto rounded-md border bg-muted/20 px-3 py-2 text-sm">
+            <ReactMarkdown components={extractedMarkdownComponents}>{extractedMarkdown}</ReactMarkdown>
+          </div>
+        </div>
+      )}
 
 
       {/* Personal Notes */}

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "bun:test";
+import type { Database } from "bun:sqlite";
 import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
@@ -6,9 +7,10 @@ import { makeTestDb } from "../helpers/db.js";
 describe("Bookmarks API", () => {
   let app: ReturnType<typeof createApp>;
   let queue: JobQueue;
+  let db: Database;
 
   beforeEach(() => {
-    const db = makeTestDb();
+    db = makeTestDb();
     queue = new JobQueue();
     app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test" });
   });
@@ -225,6 +227,57 @@ describe("Bookmarks API", () => {
     const json = await res.json() as { data: { id: string; content: unknown } };
     expect(json.data.id).toBe(created.id);
     expect("content" in json.data).toBe(true);
+  });
+
+  it("GET /bookmarks/:id returns populated extracted content metadata", async () => {
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/detail-content" }),
+    });
+    const { data: created } = await createRes.json() as { data: { id: string } };
+
+    db.run(
+      `INSERT INTO bookmark_content (
+         bookmark_id, raw_html, markdown, summary, author, published_at, word_count, language
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        created.id,
+        "<article>Readable article body.</article>",
+        "## Extracted notes\n\nReadable article body.",
+        "A short extracted summary",
+        "Ada Lovelace",
+        "2024-01-12T09:00:00Z",
+        1284,
+        "en",
+      ]
+    );
+
+    const res = await app.request(`/bookmarks/${created.id}`);
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        content: {
+          markdown: string | null;
+          summary: string | null;
+          author: string | null;
+          published_at: string | null;
+          word_count: number | null;
+          language: string | null;
+          extracted_at: string;
+        } | null;
+      };
+    };
+
+    expect(json.data.content).toMatchObject({
+      markdown: "## Extracted notes\n\nReadable article body.",
+      summary: "A short extracted summary",
+      author: "Ada Lovelace",
+      published_at: "2024-01-12T09:00:00Z",
+      word_count: 1284,
+      language: "en",
+    });
+    expect(Date.parse(json.data.content?.extracted_at ?? "")).not.toBeNaN();
   });
 
   it("GET /bookmarks/:id returns 404 for unknown id", async () => {

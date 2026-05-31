@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BookmarkDetailContent } from "./BookmarkDetailContent";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
+import type React from "react";
 import type { ComponentProps } from "react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -22,7 +23,38 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("react-markdown", () => ({
-  default: ({ children }: { children: string }) => <div data-testid="markdown">{children}</div>,
+  default: ({
+    children,
+    components = {},
+  }: {
+    children: string;
+    components?: {
+      a?: (props: { href?: string; children?: string }) => React.ReactNode;
+      img?: (props: { alt?: string; src?: string }) => React.ReactNode;
+    };
+  }) => {
+    const image = children.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+    if (image) {
+      const Img = components.img;
+      return (
+        <div data-testid="markdown">
+          {Img ? <Img alt={image[1]} src={image[2]} /> : <img alt={image[1]} src={image[2]} />}
+        </div>
+      );
+    }
+
+    const link = children.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (link) {
+      const Link = components.a;
+      return (
+        <div data-testid="markdown">
+          {Link ? <Link href={link[2]}>{link[1]}</Link> : <a href={link[2]}>{link[1]}</a>}
+        </div>
+      );
+    }
+
+    return <div data-testid="markdown">{children}</div>;
+  },
 }));
 
 // ─── Test data ────────────────────────────────────────────────────────────────
@@ -131,6 +163,88 @@ describe("BookmarkDetailContent — rendering", () => {
   it("renders a Read Later badge when read_later is set", () => {
     render(<BookmarkDetailContent {...defaultProps(makeBookmark({ read_later: 1 }))} />);
     expect(screen.getByText("Read Later")).toBeInTheDocument();
+  });
+
+  it("renders extracted content and available source metadata", () => {
+    const bookmark = {
+      ...makeBookmark(),
+      content: {
+        bookmark_id: "bm-1",
+        raw_html: null,
+        markdown: "## Extracted notes\n\nReadable article body.",
+        summary: "A short summary of the article",
+        author: "Ada Lovelace",
+        published_at: "2024-01-12T09:00:00Z",
+        word_count: 1284,
+        language: "en",
+        extracted_at: "2024-01-15T10:05:00Z",
+      },
+    };
+
+    render(<BookmarkDetailContent {...defaultProps(bookmark)} />);
+
+    expect(screen.getByText("Source Details")).toBeInTheDocument();
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.getByText("Jan 12, 2024")).toBeInTheDocument();
+    expect(screen.getByText("1,284 words")).toBeInTheDocument();
+    expect(screen.getByText("en")).toBeInTheDocument();
+    expect(screen.getByText("Extracted Content")).toBeInTheDocument();
+    expect(screen.getByText(/Readable article body/)).toBeInTheDocument();
+  });
+
+  it("keeps missing extracted metadata quiet", () => {
+    render(<BookmarkDetailContent {...defaultProps(makeBookmark())} />);
+
+    expect(screen.queryByText("Source Details")).not.toBeInTheDocument();
+    expect(screen.queryByText("Extracted Content")).not.toBeInTheDocument();
+    expect(screen.queryByText("Author")).not.toBeInTheDocument();
+    expect(screen.queryByText("Published")).not.toBeInTheDocument();
+    expect(screen.queryByText("Language")).not.toBeInTheDocument();
+  });
+
+  it("does not hotlink remote images from extracted markdown", () => {
+    const bookmark = {
+      ...makeBookmark(),
+      content: {
+        bookmark_id: "bm-1",
+        raw_html: null,
+        markdown: "![tracking pixel](https://cdn.example.com/pixel.png)",
+        summary: null,
+        author: null,
+        published_at: null,
+        word_count: null,
+        language: null,
+        extracted_at: "2024-01-15T10:05:00Z",
+      },
+    };
+
+    render(<BookmarkDetailContent {...defaultProps(bookmark)} />);
+
+    expect(screen.queryByRole("img", { name: "tracking pixel" })).not.toBeInTheDocument();
+  });
+
+  it("opens extracted markdown links as safe external links", () => {
+    const bookmark = {
+      ...makeBookmark(),
+      content: {
+        bookmark_id: "bm-1",
+        raw_html: null,
+        markdown: "[Read docs](https://example.com/docs)",
+        summary: null,
+        author: null,
+        published_at: null,
+        word_count: null,
+        language: null,
+        extracted_at: "2024-01-15T10:05:00Z",
+      },
+    };
+
+    render(<BookmarkDetailContent {...defaultProps(bookmark)} />);
+
+    const link = screen.getByRole("link", { name: "Read docs" });
+    expect(link).toHaveAttribute("href", "https://example.com/docs");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 });
 

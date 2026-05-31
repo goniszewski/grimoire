@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
+import { getBookmark } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -58,8 +60,26 @@ export function BookmarkDetail({
   const isMobile = useIsMobile();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
+  const bookmarkId = bookmark?.id ?? null;
+
+  const detailQuery = useQuery({
+    queryKey: ["bookmark-detail", bookmarkId],
+    queryFn: () => getBookmark(bookmarkId!),
+    enabled: open && !!bookmarkId,
+    staleTime: 10_000,
+  });
 
   if (!bookmark) return null;
+
+  const detailContent = detailQuery.data?.data.content;
+  const bookmarkWithDetail: Bookmark =
+    detailContent !== undefined
+      ? {
+          ...bookmark,
+          summary: detailContent?.summary ?? bookmark.summary,
+          content: detailContent,
+        }
+      : bookmark;
 
   const handleTitleSubmit = () => {
     if (titleInput.trim() && titleInput.trim() !== bookmark.title) {
@@ -116,7 +136,7 @@ export function BookmarkDetail({
 
   const content = (
     <BookmarkDetailContent
-      bookmark={bookmark}
+      bookmark={bookmarkWithDetail}
       onUpdateTags={onUpdateTags}
       onUpdateCategory={onUpdateCategory}
       onUpdateField={onUpdateField}

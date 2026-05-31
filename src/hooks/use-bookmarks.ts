@@ -11,6 +11,7 @@ import {
   listCategories,
   listDomains,
   ApiBookmark,
+  ApiBookmarkWithContent,
   ApiCategory,
 } from "@/lib/api";
 
@@ -50,6 +51,7 @@ export interface UIBookmark {
   opened_count: number;
   last_opened_at: string | null;
   notes: string | null;
+  content?: ApiBookmarkWithContent["content"];
 }
 
 export interface UICategory {
@@ -87,6 +89,7 @@ type BookmarkForUi = {
   opened_count: ApiBookmark["opened_count"];
   last_opened_at: ApiBookmark["last_opened_at"];
   notes: ApiBookmark["notes"];
+  content?: ApiBookmarkWithContent["content"];
 };
 
 function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBookmark {
@@ -111,6 +114,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     opened_count: bm.opened_count,
     last_opened_at: bm.last_opened_at,
     notes: bm.notes,
+    content: bm.content,
   };
 }
 
