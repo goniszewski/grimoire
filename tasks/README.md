@@ -98,6 +98,42 @@ tasks/
 | TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
 | TASK-083 | [Release Notes and Support Readiness](done/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | done |
 | TASK-084 | [MVP Release Decision Package](done/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | done |
+| TASK-085 | [Grimoire Parity Scope And Non-Goals](backlog/TASK-085-grimoire-parity-scope-and-non-goals.md) | Grimoire parity | critical | backlog |
+| TASK-086 | [Parity Task Conversion Criteria And Labels](done/TASK-086-parity-task-conversion-criteria-labels.md) | Grimoire parity | high | done |
+| TASK-087 | [Daemon Network Exposure Security Boundaries](backlog/TASK-087-daemon-network-exposure-security-boundaries.md) | Grimoire parity | critical | backlog |
+| TASK-088 | [Recurring Parity Release Checklist](backlog/TASK-088-recurring-parity-release-checklist.md) | Grimoire parity | medium | backlog |
+| TASK-089 | [Read Later Bookmark Flag](backlog/TASK-089-read-later-bookmark-flag.md) | Grimoire parity | high | backlog |
+| TASK-090 | [Bookmark Importance Rating (Rejected)](backlog/TASK-090-bookmark-importance-rating.md) | Grimoire parity | medium | rejected |
+| TASK-091 | [Bookmark Open Metrics](backlog/TASK-091-bookmark-open-metrics.md) | Grimoire parity | medium | backlog |
+| TASK-092 | [Bookmark Detail Metadata And Content Sections](backlog/TASK-092-bookmark-detail-metadata-content.md) | Grimoire parity | high | backlog |
+| TASK-093 | [Bookmark Media Handling And Preview](backlog/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | backlog |
+| TASK-094 | [Bookmark Mutation And Detail Regression Tests](backlog/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-095 | [Sidebar Categories From Full Tree](backlog/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | backlog |
+| TASK-096 | [Category Detail Page](backlog/TASK-096-category-detail-page.md) | Grimoire parity | medium | backlog |
+| TASK-097 | [Category Metadata Fields](backlog/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | backlog |
+| TASK-098 | [Tag Management Surface](backlog/TASK-098-tag-management-surface.md) | Grimoire parity | high | backlog |
+| TASK-099 | [Tag Detail Pages](backlog/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | backlog |
+| TASK-100 | [Tag Rename API And UI](backlog/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | backlog |
+| TASK-101 | [Category And Tag Regression Tests](backlog/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-102 | [Integration Token Authentication](backlog/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | backlog |
+| TASK-103 | [Human Readable API Examples](backlog/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | backlog |
+| TASK-104 | [OpenAPI Contract Output](backlog/TASK-104-openapi-contract-output.md) | Grimoire parity | high | backlog |
+| TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
+| TASK-106 | [Integration CORS And Origin Controls](backlog/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | backlog |
+| TASK-107 | [Preserve Import Folder Hierarchy](backlog/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | backlog |
+| TASK-108 | [Pre Import Review](backlog/TASK-108-pre-import-review.md) | Grimoire parity | high | backlog |
+| TASK-109 | [Import Category And Tag Remapping](backlog/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | backlog |
+| TASK-110 | [Import Result Report](backlog/TASK-110-import-result-report.md) | Grimoire parity | medium | backlog |
+| TASK-111 | [Export Parity Fields](backlog/TASK-111-export-parity-fields.md) | Grimoire parity | medium | backlog |
+| TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
+| TASK-113 | [Import Export Regression Tests](backlog/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-114 | [Library Pagination](backlog/TASK-114-library-pagination.md) | Grimoire parity | high | backlog |
+| TASK-115 | [Server Driven Sorting](backlog/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | backlog |
+| TASK-116 | [Library Parity Filters](backlog/TASK-116-library-parity-filters.md) | Grimoire parity | high | backlog |
+| TASK-117 | [Persist Library View Preferences](backlog/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | backlog |
+| TASK-118 | [Aggregate Count Endpoints](backlog/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | backlog |
+| TASK-119 | [Large Library Performance Tests](backlog/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | backlog |
+| TASK-120 | [Import Duplicate Handling Policy](backlog/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | backlog |
 
 ## Current Status
 
@@ -144,6 +180,19 @@ non-mutating smoke evidence. TASK-084 is complete with a final no-go
 recommendation for public MVP promotion until unauthenticated artifact access
 and the dependent public validation paths are fixed or an authenticated
 distribution path is deliberately adopted.
+
+The Grimoire parity backlog is now represented by TASK-085 through TASK-120,
+converted from approved and refined rows in
+`docs/parity/grimoire-parity-task-proposals.md`. The current parity batch is
+local-first, single-user, loopback-first, and local-integrations-only. It covers
+explicit non-goals, security boundaries, pragmatic local integration token auth,
+bookmark read-later/open-metric parity, category/tag parity, import/export
+workflow hardening, explicit pagination/filtering, aggregate counts, and
+large-library verification. TASK-086 is complete as the conversion record.
+Bookmark importance is rejected for this batch, one-click browser capture is
+deferred, future Grimoire backup import is deferred, multi-user/server account
+parity remains deferred, and Grimoire endpoint aliases plus browser extension
+smoke tests remain rejected for the current parity batch.
 
 Completed release validation evidence:
 
