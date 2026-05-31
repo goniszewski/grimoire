@@ -36,9 +36,9 @@ Shipped product areas:
 ## Release Closeout Gates
 
 The product surface is implemented for `0.1.0-beta`. TASK-075 through TASK-077
-and TASK-081 through TASK-084 are complete, but the public build is not ready
-for promotion until the remaining TASK-078, TASK-079, and TASK-080
-release-control blockers are completed or explicitly deferred. The
+and TASK-080 through TASK-084 now have release-closeout evidence, but the
+public build is not ready for promotion until the remaining TASK-078 and
+TASK-079 release-control blockers are completed or explicitly deferred. The
 release-closeout queue covers final metadata freeze, signed artifact
 publication, fresh-host installer evidence, public install and upgrade checks,
 publication-gated Homebrew validation, first-user UX smoke testing,
@@ -65,13 +65,14 @@ These checks are complete for the current beta validation state:
   public promotion while public artifact URLs still return `HTTP 404`.
 
 No product-scope blockers remain in this workspace. The remaining
-release-control blockers are TASK-078 public install/update validation,
-TASK-079 live Homebrew validation, and TASK-080 real fresh-data first-user UX
-smoke validation. Public one-command installer, Homebrew, and public-artifact
-E2E checks remain gated while the GitHub repository is private because
-unauthenticated release and raw tag URLs return `404`. macOS 12+ x64 remains a
-manual pre-publish validation target because this workspace has no Intel Mac or
-x64 macOS VM.
+release-control blockers are TASK-078 public install/update validation and
+TASK-079 live Homebrew validation. TASK-080 is complete after a May 31, 2026
+real fresh-data first-user UX smoke pass against an isolated daemon and a
+loopback-only frontend API override. Public one-command installer, Homebrew,
+and public-artifact E2E checks remain gated while the GitHub repository is
+private because unauthenticated release and raw tag URLs return `404`. macOS
+12+ x64 remains a manual pre-publish validation target because this workspace
+has no Intel Mac or x64 macOS VM.
 
 ## Post-MVP Release Operations
 

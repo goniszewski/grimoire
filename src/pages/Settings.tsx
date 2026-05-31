@@ -1392,6 +1392,7 @@ const Settings = () => {
                           toast.success("Backup created", {
                             description: `${formatBytes(result.size_bytes)} · ${result.bookmark_count} bookmarks`,
                           });
+                          void qc.invalidateQueries({ queryKey: settingsKeys.diagnostics });
                         },
                         onError: (err: Error) => {
                           toast.error("Backup failed", { description: err.message });

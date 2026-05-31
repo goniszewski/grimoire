@@ -1,5 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkHealth, checkHealthAfterRestore } from "./api";
+import { checkHealth, checkHealthAfterRestore, resolveDaemonUrl } from "./api";
+
+describe("daemon URL resolution", () => {
+  it("defaults to the packaged daemon URL when no override is configured", () => {
+    expect(resolveDaemonUrl()).toBe("http://127.0.0.1:3210");
+  });
+
+  it("accepts a loopback override and removes trailing slashes", () => {
+    expect(resolveDaemonUrl("http://127.0.0.1:3220///")).toBe("http://127.0.0.1:3220");
+    expect(resolveDaemonUrl("http://localhost:3220/")).toBe("http://localhost:3220");
+  });
+
+  it("rejects non-loopback daemon URL overrides", () => {
+    expect(() => resolveDaemonUrl("https://example.com:3220")).toThrow(
+      "VITE_DAEMON_URL must point to localhost, 127.0.0.1, or ::1"
+    );
+  });
+});
 
 describe("daemon health API", () => {
   afterEach(() => {

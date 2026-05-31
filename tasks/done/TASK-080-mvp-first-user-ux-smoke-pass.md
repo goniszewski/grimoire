@@ -2,7 +2,7 @@
 
 **Phase:** MVP release closeout
 **Priority:** medium
-**Status:** in-progress
+**Status:** done
 **Area:** QA / frontend / product
 
 ## Description
@@ -26,14 +26,14 @@ are unlikely to notice.
 
 ## Acceptance Criteria
 
-- [ ] Fresh-user flow has no dead ends for core save, search, import, and
+- [x] Fresh-user flow has no dead ends for core save, search, import, and
       backup/restore journeys.
-- [ ] Degraded AI and embeddings states are understandable and non-blocking.
-- [ ] Recovery and restart instructions are clear during restore and update
+- [x] Degraded AI and embeddings states are understandable and non-blocking.
+- [x] Recovery and restart instructions are clear during restore and update
       flows.
-- [ ] Diagnostics and update-check copy do not overclaim telemetry, signing, or
+- [x] Diagnostics and update-check copy do not overclaim telemetry, signing, or
       automatic update behavior.
-- [ ] Findings are fixed, captured as follow-up tasks, or documented as
+- [x] Findings are fixed, captured as follow-up tasks, or documented as
       acceptable MVP limitations.
 
 ## Dependencies
@@ -85,9 +85,35 @@ are unlikely to notice.
   web server. This did not fail the smoke, but should remain a maintenance
   follow-up rather than an MVP UX blocker.
 
-## Remaining Blocker
+## Resolved Blocker
 
-- The acceptance criteria still require a real fresh local data directory or
-  isolated install. That pass is not complete because the shared workspace has
-  an active native daemon on `127.0.0.1:3210` with existing data, and the
-  frontend cannot target an alternate daemon port without code changes.
+- Resolved on May 31, 2026 by adding a loopback-only `VITE_DAEMON_URL`
+  frontend override for local smoke runs. The production default remains
+  `http://127.0.0.1:3210`, but a fresh isolated daemon can now run on another
+  loopback port without stopping the installed daemon.
+
+## May 31, 2026 Completion Notes
+
+- Confirmed TASK-078 and the live-install portion of TASK-079 remain blocked:
+  unauthenticated requests to the tag-qualified installer URL and both
+  published archive URLs still return `404`.
+- Added `resolveDaemonUrl()` in `src/lib/api.ts` so local smoke runs can point
+  the frontend at a loopback-only alternate daemon URL through
+  `VITE_DAEMON_URL`. Non-loopback overrides are rejected.
+- Ran a real fresh-data smoke using:
+  - isolated daemon:
+    `DATA_DIR=/tmp/little-imp-task080.xVuUTo/data PORT=3220 HOST=127.0.0.1 CORS_ORIGINS=http://127.0.0.1:8080,http://localhost:8080 bun run start`;
+  - frontend:
+    `VITE_DAEMON_URL=http://127.0.0.1:3220 npm run dev -- --host 127.0.0.1 --port 8080`.
+- Verified first-user add/search/detail with `https://example.com/`, degraded
+  AI/embedding states, real import through `POST /import`, backup
+  create/verify, encrypted package create/verify, restore guidance, daemon
+  restart detection, diagnostics, and update-check messaging.
+- Fixed stale Settings diagnostics after backup creation by invalidating the
+  diagnostics query when a backup is created.
+- Fixed update-check failure copy so publication-gated GitHub release checks
+  show the sanitized source URL and HTTP status instead of only `Not Found`.
+- Captured the visual evidence in
+  `docs/task-reports/2026/05/2026-05-31-task-080-first-user-ux-smoke-pass/index.html`.
+- Reviewed and moved to `done` on May 31, 2026 after code, documentation, and
+  release-board consistency fixes.

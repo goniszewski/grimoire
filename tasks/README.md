@@ -93,7 +93,7 @@ tasks/
 | TASK-077 | [Fresh-Host Installer Matrix Evidence](done/TASK-077-fresh-host-installer-matrix-evidence.md) | MVP release closeout | high | done |
 | TASK-078 | [Published One-Command and CLI Upgrade Validation](in-progress/TASK-078-published-one-command-cli-upgrade-validation.md) | MVP release closeout | high | in-progress |
 | TASK-079 | [Homebrew Tap Publication and Live Install Validation](in-progress/TASK-079-homebrew-tap-publication-live-install-validation.md) | MVP release closeout | medium | in-progress |
-| TASK-080 | [MVP First-User UX Smoke Pass](in-progress/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | in-progress |
+| TASK-080 | [MVP First-User UX Smoke Pass](done/TASK-080-mvp-first-user-ux-smoke-pass.md) | MVP release closeout | medium | done |
 | TASK-081 | [Public Artifact Installed-App E2E](done/TASK-081-public-artifact-installed-app-e2e.md) | MVP release closeout | high | done |
 | TASK-082 | [Final Localhost Security Regression Pass](done/TASK-082-final-localhost-security-regression-pass.md) | MVP release closeout | high | done |
 | TASK-083 | [Release Notes and Support Readiness](done/TASK-083-release-notes-support-readiness.md) | MVP release closeout | medium | done |
@@ -175,11 +175,11 @@ go/no-go release decision package. TASK-075 through TASK-077 and TASK-081
 through TASK-084 are complete. TASK-078 is in progress but blocked on public
 artifact visibility. TASK-079 is in progress with local formula checksum, test,
 audit, and dry-run evidence, but live Homebrew install validation remains
-blocked on public artifact visibility. TASK-080 is in progress with partial
-non-mutating smoke evidence. TASK-084 is complete with a final no-go
-recommendation for public MVP promotion until unauthenticated artifact access
-and the dependent public validation paths are fixed or an authenticated
-distribution path is deliberately adopted.
+blocked on public artifact visibility. TASK-080 is complete after a real
+fresh-data smoke pass with an isolated loopback daemon. TASK-084 is complete
+with a final no-go recommendation for public MVP promotion until
+unauthenticated artifact access and the dependent public validation paths are
+fixed or an authenticated distribution path is deliberately adopted.
 
 The Grimoire parity workstream is now represented by TASK-085 through TASK-120,
 converted from approved and refined rows in
@@ -278,12 +278,12 @@ Notes:
   but `brew fetch --formula goniszewski/little-imp/little-imp` still returns
   `HTTP 404` for the public macOS archive URL, so live `brew install`, service,
   health, uninstall, and data-preservation checks remain blocked.
-- TASK-080 is in progress with non-mutating mocked Playwright smoke evidence
-  passing for first-run, add/search, degraded AI, import/export, Settings
-  update check, backup verification, and restore flows. A real fresh-data
-  browser pass is blocked in this shared workspace while the installed native
-  daemon owns `127.0.0.1:3210` with existing data and the frontend API base is
-  hardcoded to that port.
+- TASK-080 is complete after adding a loopback-only `VITE_DAEMON_URL`
+  override for isolated smoke runs. The real fresh-data pass covered
+  add/search/detail, degraded AI and embedding states, import, backup
+  create/verify, encrypted package create/verify, restore recovery, diagnostics,
+  and publication-gated update-check messaging without stopping the installed
+  daemon on `127.0.0.1:3210`.
 - TASK-081 is complete with a documented
   `npm run test:e2e:installed:published` command that downloads public release
   artifacts, verifies the archive checksum and detached signature, and runs the

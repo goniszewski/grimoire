@@ -128,4 +128,57 @@ describe("Updates API", () => {
     const problem = await res.json() as { detail?: string };
     expect(problem.detail).toContain("private or loopback");
   });
+
+  it("GET /updates/check includes the source and HTTP status when the release source fails", async () => {
+    const source = "https://updates.example.test/releases";
+    globalThis.fetch = (async (url, init) => {
+      calls.push({ url: String(url), init });
+      return releasesResponse({ message: "Not Found" }, 404);
+    }) as typeof fetch;
+
+    const res = await app.request(`/updates/check?source=${encodeURIComponent(source)}`);
+
+    expect(res.status).toBe(502);
+    expect(calls).toHaveLength(1);
+    const problem = await res.json() as { detail?: string };
+    expect(problem.detail).toBe(`Update source ${source} returned 404: Not Found`);
+  });
+
+  it("GET /updates/check redacts source credentials and query strings from failures", async () => {
+    const source = "https://reader:secret@updates.example.test/releases?token=private#details";
+    globalThis.fetch = (async (url, init) => {
+      calls.push({ url: String(url), init });
+      return releasesResponse({ message: "Not Found" }, 404);
+    }) as typeof fetch;
+
+    const res = await app.request(`/updates/check?source=${encodeURIComponent(source)}`);
+
+    expect(res.status).toBe(502);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe(source);
+    const problem = await res.json() as { detail?: string };
+    expect(problem.detail).toBe("Update source https://updates.example.test/releases returned 404: Not Found");
+    expect(problem.detail).not.toContain("secret");
+    expect(problem.detail).not.toContain("token=private");
+  });
+
+  it("GET /updates/check redacts source secrets from fetch exceptions", async () => {
+    const source = "https://reader:secret@updates.example.test/releases?token=private#details";
+    globalThis.fetch = (async (url, init): Promise<Response> => {
+      calls.push({ url: String(url), init });
+      throw new Error(`fetch failed for ${source}`);
+    }) as typeof fetch;
+
+    const res = await app.request(`/updates/check?source=${encodeURIComponent(source)}`);
+
+    expect(res.status).toBe(502);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe(source);
+    const problem = await res.json() as { detail?: string };
+    expect(problem.detail).toBe(
+      "Could not check updates at https://updates.example.test/releases: fetch failed for https://updates.example.test/releases"
+    );
+    expect(problem.detail).not.toContain("secret");
+    expect(problem.detail).not.toContain("token=private");
+  });
 });

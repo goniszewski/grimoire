@@ -302,6 +302,43 @@ describe("Settings update checks", () => {
 });
 
 describe("Settings backup verification", () => {
+  it("refreshes diagnostics after creating a backup", async () => {
+    const createMutate = vi.fn((
+      _variables: undefined,
+      options: {
+        onSuccess: (result: {
+          name: string;
+          path: string;
+          size_bytes: number;
+          bookmark_count: number;
+          created_at: string;
+        }) => void;
+      }
+    ) => {
+      options.onSuccess({
+        name: "2026-05-31T11-30-20-798Z",
+        path: "/tmp/backups/2026-05-31T11-30-20-798Z",
+        size_bytes: 2048,
+        bookmark_count: 1,
+        created_at: "2026-05-31T11:30:20.798Z",
+      });
+    });
+    mockedUseCreateBackup.mockReturnValue({ mutate: createMutate, isPending: false });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await screen.findByText("Diagnostics");
+    await waitFor(() => {
+      expect(mockedGetDiagnostics).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create backup now" }));
+
+    await waitFor(() => {
+      expect(mockedGetDiagnostics).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("offers a verify action for local backup rows", async () => {
     const verifyMutate = vi.fn();
     mockedUseVerifyBackup.mockReturnValue({ mutate: verifyMutate, isPending: false });

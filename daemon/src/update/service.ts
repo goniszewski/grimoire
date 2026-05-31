@@ -78,6 +78,47 @@ export function resolveUpdateSource(
   return resolved;
 }
 
+function displayUpdateSource(source: string): string {
+  try {
+    const url = new URL(source);
+    url.username = "";
+    url.password = "";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "configured update source";
+  }
+}
+
+function redactUpdateErrorMessage(err: unknown, source: string): string {
+  let message = err instanceof Error && err.message ? err.message : String(err);
+  const safeSource = displayUpdateSource(source);
+  const sensitiveValues = new Set<string>([source]);
+
+  try {
+    const url = new URL(source);
+    sensitiveValues.add(url.toString());
+    if (url.username) sensitiveValues.add(url.username);
+    if (url.password) sensitiveValues.add(url.password);
+    if (url.search) sensitiveValues.add(url.search);
+    if (url.hash) sensitiveValues.add(url.hash);
+  } catch {
+    // Invalid sources are rejected before fetch; keep a conservative fallback.
+  }
+
+  const sortedSensitiveValues = [...sensitiveValues]
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length);
+
+  for (const sensitive of sortedSensitiveValues) {
+    const replacement = sensitive === source ? safeSource : "[redacted]";
+    message = message.split(sensitive).join(replacement);
+  }
+
+  return message.trim() || "fetch failed";
+}
+
 export function parseVersion(raw: string): ParsedVersion | null {
   const normalized = raw.trim().replace(/^v/i, "").split("+", 1)[0];
   const match = normalized.match(
@@ -175,7 +216,9 @@ export async function fetchUpdateReleases(
       },
     });
   } catch (err) {
-    throw new UpdateCheckError(`Could not check updates at ${source}: ${String(err)}`);
+    throw new UpdateCheckError(
+      `Could not check updates at ${displayUpdateSource(source)}: ${redactUpdateErrorMessage(err, source)}`
+    );
   }
 
   const text = await res.text();
@@ -193,7 +236,7 @@ export async function fetchUpdateReleases(
       typeof payload === "object" && payload !== null && "message" in payload && typeof payload.message === "string"
         ? payload.message
         : `Update check failed with status ${res.status}`;
-    throw new UpdateCheckError(message);
+    throw new UpdateCheckError(`Update source ${displayUpdateSource(source)} returned ${res.status}: ${message}`);
   }
 
   if (!Array.isArray(payload)) {

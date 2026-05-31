@@ -14,6 +14,11 @@ the GitHub repository is private.
 Keep the GitHub release as a prerelease until the public distribution path is
 reachable and the publication-gated validation tasks pass.
 
+May 31, 2026 update: TASK-080 is complete after a real fresh-data
+first-user UX smoke pass against an isolated daemon using a loopback-only
+frontend API override. The no-go recommendation remains because public
+distribution artifacts are still the gating release risk.
+
 ## Release Identity
 
 | Field | Value |
@@ -58,7 +63,7 @@ TASK-082:
 |---|---|---|
 | CI | GitHub Actions `Quality Gates` succeeded for the last pushed `develop` head before the TASK-084 docs edits, `2bec19077d5a063caec31bfc9e3fa3d52cfce8e4`: <https://github.com/goniszewski/little-imp/actions/runs/26633769194>. The TASK-084 documentation edits are covered by local documentation verification in the task note. | Passed for the pushed release-control head |
 | Local quality gates | `npm run check` passed in TASK-083, including lint, frontend and daemon type-checks, frontend tests, daemon tests, API docs drift check, and production build. Earlier release-closeout checks also passed `npm run test:e2e`. | Passed |
-| Playwright and first-run UX | `npm run test:e2e` passed. TASK-080 passed mocked first-run, add/search, degraded AI, import/export, backup verification, restore, and update-check flows with `npx playwright test e2e/first-run.spec.ts e2e/business-requirements.spec.ts --reporter=list` at 11/11 tests. | Partially passed; real fresh-data UX pass remains blocked |
+| Playwright and first-run UX | `npm run test:e2e` passed. TASK-080 passed mocked first-run, add/search, degraded AI, import/export, backup verification, restore, and update-check flows with `npx playwright test e2e/first-run.spec.ts e2e/business-requirements.spec.ts --reporter=list` at 11/11 tests. On May 31, 2026, TASK-080 also completed the real fresh-data first-user UX smoke against an isolated daemon using a loopback-only frontend API override. | Passed; TASK-080 complete |
 | Daemon tests | TASK-082 reran `npm run test:daemon` and focused integration tests for security hardening, updates, fetch safety, diagnostics, backup, import, reprocess, backup packages, CLI update, and restore recovery. | Passed |
 | Release artifacts | TASK-076 generated signed macOS and Linux archives, checksums, detached signatures, and `release-manifest.json`; TASK-082 revalidated refreshed GitHub release artifacts. | Passed for authenticated/local artifacts |
 | Public one-command install and CLI update | TASK-078 confirmed authenticated release assets exist, but unauthenticated raw installer and release archive URLs return `404`; install, `--upgrade`, and `littleimp update install --version 0.1.0-beta` cannot complete from the documented public URLs. | Blocked |
@@ -87,9 +92,6 @@ These are explicit and should not be represented as completed release evidence:
 - Live Homebrew `brew install`, service start, `/health`, service stop,
   uninstall, and Homebrew data-preservation checks are blocked because Homebrew
   cannot fetch the public release archive while it returns `404`.
-- The real fresh-data first-user browser smoke is blocked in this shared
-  workspace because an installed native daemon owns `127.0.0.1:3210` with
-  existing data and the frontend API base is hardcoded to that port.
 - macOS arm64 fresh release-path install was not rerun on May 29 because no
   separate test user or Apple Silicon VM was available and mutating the active
   LaunchAgent would affect the current user service.
@@ -147,9 +149,7 @@ a public installable release. It is a release blocker.
 4. Rerun `npm run test:e2e:installed:published` so the public-asset smoke
    downloads, verifies, installs, and exercises the release archive users will
    fetch.
-5. Complete TASK-080 in a fresh-data browser environment, or explicitly defer
-   the real fresh-data pass with a release-owner decision.
-6. Decide whether macOS x64 remains a documented manual validation gap for the
+5. Decide whether macOS x64 remains a documented manual validation gap for the
    beta or must be validated before public promotion.
 
 ## Final Decision
@@ -160,5 +160,6 @@ The release candidate is ready for continued prerelease validation, but public
 promotion must wait until unauthenticated distribution access is fixed or an
 authenticated distribution path is deliberately adopted and validated. TASK-078
 is the primary release-blocking follow-up. TASK-079 and TASK-081 are blocked by
-the same public artifact visibility issue, and TASK-080 remains an environment
-gap that should be resolved or explicitly accepted before announcement.
+the same public artifact visibility issue. TASK-080 has complete fresh-data
+first-user UX evidence and is no longer an environment gap for the release
+decision.

@@ -1,5 +1,5 @@
 /**
- * API client for the littleimpd daemon at http://127.0.0.1:3210
+ * API client for the local littleimpd daemon.
  */
 
 import type {
@@ -55,7 +55,40 @@ import type {
   UpdateCheckResultDto,
 } from "../../daemon/src/api/types";
 
-export const DAEMON_URL = "http://127.0.0.1:3210";
+const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
+
+function isLoopbackHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
+export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): string {
+  const trimmedUrl = rawUrl?.trim();
+  if (!trimmedUrl) return DEFAULT_DAEMON_URL;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmedUrl);
+  } catch {
+    throw new Error("VITE_DAEMON_URL must be a valid http:// or https:// URL");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("VITE_DAEMON_URL must be a valid http:// or https:// URL");
+  }
+
+  if (!isLoopbackHostname(parsed.hostname)) {
+    throw new Error("VITE_DAEMON_URL must point to localhost, 127.0.0.1, or ::1");
+  }
+
+  return parsed.origin;
+}
+
+export const DAEMON_URL = resolveDaemonUrl();
 
 // ─── API types (derived from daemon-owned contract) ──────────────────────────
 
