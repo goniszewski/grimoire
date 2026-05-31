@@ -16,4 +16,11 @@ describe("buildExportUrl", () => {
     expect(url.searchParams.get("format")).toBe("csv");
     expect(url.searchParams.get("read_later")).toBe("false");
   });
+
+  it("includes category IDs in export URLs", () => {
+    const url = new URL(buildExportUrl("json", { category: "Notes", category_id: "cat-two" }));
+
+    expect(url.searchParams.get("category")).toBe("Notes");
+    expect(url.searchParams.get("category_id")).toBe("cat-two");
+  });
 });

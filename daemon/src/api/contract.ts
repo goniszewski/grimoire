@@ -120,6 +120,7 @@ const pagingQuery = objectSchema({
 const bookmarkFilters = {
   tag: stringSchema("Filter by tag name"),
   domain: stringSchema("Filter by exact domain"),
+  category_id: stringSchema("Filter by exact category ID; takes precedence over category"),
   category: stringSchema("Filter by category name"),
   date_from: stringSchema("Inclusive ISO date or date-time lower bound"),
   date_to: stringSchema("Inclusive ISO date or date-time upper bound"),

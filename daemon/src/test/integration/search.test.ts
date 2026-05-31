@@ -69,6 +69,39 @@ describe("Search API", () => {
     expect(json.data.every((b) => b.read_later === 1)).toBe(true);
   });
 
+  it("GET /search filters by category_id when duplicate category names exist", async () => {
+    const repo = new BookmarkRepository(db);
+    const parentA = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Personal")!;
+    const parentB = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Work")!;
+    const notesA = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentA.id)!;
+    const notesB = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentB.id)!;
+    const personal = repo.create("https://example.com/personal-search-notes", "Shared Notes");
+    const work = repo.create("https://example.com/work-search-notes", "Shared Notes");
+    repo.update(personal.id, { category_id: notesA.id });
+    repo.update(work.id, { category_id: notesB.id });
+
+    const params = new URLSearchParams({
+      q: "Shared",
+      mode: "keyword",
+      category: "Notes",
+      category_id: notesB.id,
+    });
+    const res = await app.request(`/search?${params.toString()}`);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: Array<{ id: string; category_id: string | null }> };
+
+    expect(json.data.map((b) => b.id)).toEqual([work.id]);
+    expect(json.data[0].category_id).toBe(notesB.id);
+  });
+
   it("GET /search?mode=invalid returns 422", async () => {
     const res = await app.request("/search?q=hello&mode=invalid");
     expect(res.status).toBe(422);

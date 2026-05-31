@@ -37,7 +37,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
   const router = new Hono();
   const repo = new SearchRepository(deps.db);
 
-  // GET /search?q=&mode=keyword|semantic|hybrid&tag=&domain=&category=&date_from=&date_to=&limit=&offset=
+  // GET /search?q=&mode=keyword|semantic|hybrid&tag=&domain=&category_id=&category=&date_from=&date_to=&limit=&offset=
   router.get("/search", async (c: Context) => {
     const q = c.req.query("q") ?? undefined;
     const rawMode = c.req.query("mode") ?? "keyword";
@@ -69,6 +69,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         mode,
         tag: c.req.query("tag") ?? undefined,
         domain: c.req.query("domain") ?? undefined,
+        category_id: c.req.query("category_id") ?? undefined,
         category: c.req.query("category") ?? undefined,
         date_from: c.req.query("date_from") ?? undefined,
         date_to: c.req.query("date_to") ?? undefined,

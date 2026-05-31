@@ -3792,6 +3792,10 @@
               "type": "string",
               "description": "Filter by exact domain"
             },
+            "category_id": {
+              "type": "string",
+              "description": "Filter by exact category ID; takes precedence over category"
+            },
             "category": {
               "type": "string",
               "description": "Filter by category name"
@@ -4396,6 +4400,10 @@
             "domain": {
               "type": "string",
               "description": "Filter by exact domain"
+            },
+            "category_id": {
+              "type": "string",
+              "description": "Filter by exact category ID; takes precedence over category"
             },
             "category": {
               "type": "string",
@@ -5689,6 +5697,10 @@
             "domain": {
               "type": "string",
               "description": "Filter by exact domain"
+            },
+            "category_id": {
+              "type": "string",
+              "description": "Filter by exact category ID; takes precedence over category"
             },
             "category": {
               "type": "string",

@@ -108,7 +108,7 @@ tasks/
 | TASK-092 | [Bookmark Detail Metadata And Content Sections](done/TASK-092-bookmark-detail-metadata-content.md) | Grimoire parity | high | done |
 | TASK-093 | [Bookmark Media Handling And Preview](backlog/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | backlog |
 | TASK-094 | [Bookmark Mutation And Detail Regression Tests](done/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | done |
-| TASK-095 | [Sidebar Categories From Full Tree](backlog/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | backlog |
+| TASK-095 | [Sidebar Categories From Full Tree](done/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | done |
 | TASK-096 | [Category Detail Page](backlog/TASK-096-category-detail-page.md) | Grimoire parity | medium | backlog |
 | TASK-097 | [Category Metadata Fields](backlog/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | backlog |
 | TASK-098 | [Tag Management Surface](backlog/TASK-098-tag-management-surface.md) | Grimoire parity | high | backlog |
@@ -203,7 +203,10 @@ reporting, e2e coverage, and review hardening for validation and cache
 invalidation. TASK-091 is complete with open-metric persistence, API/export
 fields, shared frontend open tracking, generated docs, visual reporting, review
 hardening for native external-link behavior and visible metric refresh, and
-full local verification.
+full local verification. TASK-092 is complete with bookmark detail metadata and
+extracted content sections, TASK-094 is complete with bookmark mutation/detail
+regression coverage, and TASK-095 is complete with full-tree sidebar category
+navigation for empty and nested categories.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

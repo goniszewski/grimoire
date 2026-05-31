@@ -16,6 +16,7 @@ export interface ListBookmarksOptions {
   offset: number;
   tag?: string;
   domain?: string;
+  category_id?: string;
   category?: string;
   date_from?: string;
   date_to?: string;
@@ -42,6 +43,7 @@ export interface ExportBookmarkRow {
 export interface FilterOptions {
   tag?: string;
   domain?: string;
+  category_id?: string;
   category?: string;
   date_from?: string;
   date_to?: string;
@@ -128,7 +130,10 @@ export class BookmarkRepository {
       conditions.push("b.domain = ?");
       params.push(opts.domain);
     }
-    if (opts.category) {
+    if (opts.category_id) {
+      conditions.push("b.category_id = ?");
+      params.push(opts.category_id);
+    } else if (opts.category) {
       conditions.push(
         "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
       );
@@ -206,7 +211,10 @@ export class BookmarkRepository {
       conditions.push("b.domain = ?");
       params.push(filters.domain);
     }
-    if (filters.category) {
+    if (filters.category_id) {
+      conditions.push("b.category_id = ?");
+      params.push(filters.category_id);
+    } else if (filters.category) {
       conditions.push(
         "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
       );

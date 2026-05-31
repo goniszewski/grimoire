@@ -274,6 +274,53 @@ describe("Bookmarks API", () => {
     expect(filtered.data.every((b) => b.read_later === 1)).toBe(true);
   });
 
+  it("GET /bookmarks filters by category_id when duplicate category names exist", async () => {
+    const parentA = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Personal")!;
+    const parentB = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Work")!;
+    const notesA = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentA.id)!;
+    const notesB = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentB.id)!;
+
+    const personalRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/personal-notes" }),
+    });
+    const workRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/work-notes" }),
+    });
+    const { data: personal } = await personalRes.json() as { data: { id: string } };
+    const { data: work } = await workRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${personal.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_id: notesA.id }),
+    });
+    await app.request(`/bookmarks/${work.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_id: notesB.id }),
+    });
+
+    const params = new URLSearchParams({ category: "Notes", category_id: notesB.id });
+    const res = await app.request(`/bookmarks?${params.toString()}`);
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: Array<{ id: string; category_id: string | null }> };
+
+    expect(json.data.map((b) => b.id)).toEqual([work.id]);
+    expect(json.data[0].category_id).toBe(notesB.id);
+  });
+
   it("POST /bookmarks/:id/open increments opened_count on every user open", async () => {
     const createRes = await app.request("/bookmarks", {
       method: "POST",
@@ -362,6 +409,53 @@ describe("Bookmarks API", () => {
     expect(res.status).toBe(422);
     const json = await res.json() as { error: string };
     expect(json.error).toContain("read_later");
+  });
+
+  it("GET /export filters by category_id when category names are duplicated", async () => {
+    const parentA = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Archive")!;
+    const parentB = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Project")!;
+    const notesA = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentA.id)!;
+    const notesB = db
+      .query<{ id: string }, [string, string]>("INSERT INTO categories (name, parent_id) VALUES (?, ?) RETURNING id")
+      .get("Notes", parentB.id)!;
+
+    const archivedRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/archive-notes" }),
+    });
+    const projectRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/project-notes" }),
+    });
+    const { data: archived } = await archivedRes.json() as { data: { id: string } };
+    const { data: project } = await projectRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${archived.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_id: notesA.id }),
+    });
+    await app.request(`/bookmarks/${project.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_id: notesB.id }),
+    });
+
+    const params = new URLSearchParams({ format: "json", category: "Notes", category_id: notesB.id });
+    const res = await app.request(`/export?${params.toString()}`);
+    expect(res.status).toBe(200);
+    const rows = await res.json() as Array<{ id: string; category: string | null }>;
+
+    expect(rows.map((row) => row.id)).toEqual([project.id]);
+    expect(rows[0].category).toBe("Notes");
   });
 
   // ─── GET /bookmarks/:id ───────────────────────────────────────────────────

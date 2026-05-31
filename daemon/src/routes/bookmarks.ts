@@ -171,6 +171,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       offset,
       tag: c.req.query("tag") ?? undefined,
       domain: c.req.query("domain") ?? undefined,
+      category_id: c.req.query("category_id") ?? undefined,
       category: c.req.query("category") ?? undefined,
       date_from: c.req.query("date_from") ?? undefined,
       date_to: c.req.query("date_to") ?? undefined,

@@ -58,6 +58,8 @@ export interface UICategory {
   id: string;
   name: string;
   count: number;
+  parentId: string | null;
+  depth: number;
 }
 
 export interface UITagCount {
@@ -118,6 +120,19 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
   };
 }
 
+function toUICategories(categories: ApiCategory[], depth = 0): UICategory[] {
+  return categories.flatMap((category) => [
+    {
+      id: category.id,
+      name: category.name,
+      count: category.bookmark_count,
+      parentId: category.parent_id,
+      depth,
+    },
+    ...toUICategories(category.children ?? [], depth + 1),
+  ]);
+}
+
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const bookmarkKeys = {
@@ -142,6 +157,7 @@ export function useBookmarks() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>("keyword");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [readLaterOnly, setReadLaterOnly] = useState(false);
@@ -176,6 +192,27 @@ export function useBookmarks() {
     return m;
   }, [categoriesQuery.data]);
 
+  const selectCategory = useCallback((category: string | null, categoryId?: string | null) => {
+    setSelectedCategory(category);
+    if (!category) {
+      setSelectedCategoryId(null);
+      return;
+    }
+
+    if (categoryId !== undefined) {
+      setSelectedCategoryId(categoryId);
+      return;
+    }
+
+    for (const [id, name] of categoryMap) {
+      if (name === category) {
+        setSelectedCategoryId(id);
+        return;
+      }
+    }
+    setSelectedCategoryId(null);
+  }, [categoryMap]);
+
   // ─── Domains (from API) ───────────────────────────────────────────────────
   const domainsQuery = useQuery({
     queryKey: bookmarkKeys.domains,
@@ -186,25 +223,17 @@ export function useBookmarks() {
     staleTime: 30_000,
   });
 
-  // ─── Resolve category_id for filters ──────────────────────────────────────
-  const categoryIdForFilter = useMemo<string | undefined>(() => {
-    if (!selectedCategory) return undefined;
-    for (const [id, name] of categoryMap) {
-      if (name === selectedCategory) return id;
-    }
-    return undefined;
-  }, [selectedCategory, categoryMap]);
-
   // ─── Bookmarks list (no search) ───────────────────────────────────────────
   const listParams = useMemo(() => ({
     limit: 200,
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
-    category: categoryIdForFilter,
+    category_id: selectedCategoryId ?? undefined,
+    category: selectedCategory ?? undefined,
     date_from: dateRange.from?.toISOString().slice(0, 10),
     date_to: dateRange.to?.toISOString().slice(0, 10),
     read_later: readLaterOnly ? true : undefined,
-  }), [selectedTag, selectedDomain, categoryIdForFilter, dateRange, readLaterOnly]);
+  }), [selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateRange, readLaterOnly]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -220,12 +249,13 @@ export function useBookmarks() {
     mode: searchMode,
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
-    category: categoryIdForFilter,
+    category_id: selectedCategoryId ?? undefined,
+    category: selectedCategory ?? undefined,
     date_from: dateRange.from?.toISOString().slice(0, 10),
     date_to: dateRange.to?.toISOString().slice(0, 10),
     read_later: readLaterOnly ? true : undefined,
     limit: 200,
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, categoryIdForFilter, dateRange, readLaterOnly]);
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateRange, readLaterOnly]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -267,17 +297,10 @@ export function useBookmarks() {
   );
 
   // ─── Sidebar aggregates ───────────────────────────────────────────────────
-  const categories = useMemo<UICategory[]>(() => {
-    const countMap = new Map<string, number>();
-    const idMap = new Map<string, string>();
-    bookmarks.forEach((b) => {
-      countMap.set(b.category, (countMap.get(b.category) ?? 0) + 1);
-      if (b.category_id) idMap.set(b.category, b.category_id);
-    });
-    return Array.from(countMap.entries())
-      .map(([name, count]) => ({ id: idMap.get(name) ?? "", name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [bookmarks]);
+  const categories = useMemo<UICategory[]>(
+    () => toUICategories(categoriesQuery.data ?? []),
+    [categoriesQuery.data]
+  );
 
   const tags = useMemo<UITagCount[]>(() => {
     const map = new Map<string, number>();
@@ -479,6 +502,8 @@ export function useBookmarks() {
     filteredBookmarks,
     recentBookmarks,
     categories,
+    categoriesLoading: categoriesQuery.isLoading,
+    categoriesError: categoriesQuery.isError,
     tags,
     domains,
     searchQuery,
@@ -486,7 +511,8 @@ export function useBookmarks() {
     searchMode,
     setSearchMode,
     selectedCategory,
-    setSelectedCategory,
+    selectedCategoryId,
+    setSelectedCategory: selectCategory,
     selectedTag,
     setSelectedTag,
     selectedDomain,

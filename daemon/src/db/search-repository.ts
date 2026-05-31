@@ -13,6 +13,7 @@ export interface SearchOptions {
   mode?: SearchMode;
   tag?: string;
   domain?: string;
+  category_id?: string;
   category?: string;
   date_from?: string;
   date_to?: string;
@@ -98,7 +99,7 @@ export class SearchRepository {
   // ─── Keyword (FTS5) search — synchronous ──────────────────────────────────
 
   keywordSearch(opts: SearchOptions): SearchResult {
-    const { q, tag, domain, category, date_from, date_to, limit, offset } = opts;
+    const { q, tag, domain, category_id, category, date_from, date_to, limit, offset } = opts;
     const hasQuery = typeof q === "string" && q.trim().length > 0;
 
     // ── Build bookmark filter conditions ──────────────────────────────────────
@@ -115,7 +116,10 @@ export class SearchRepository {
       conditions.push("b.domain = ?");
       filterParams.push(domain);
     }
-    if (category) {
+    if (category_id) {
+      conditions.push("b.category_id = ?");
+      filterParams.push(category_id);
+    } else if (category) {
       conditions.push(
         "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
       );
@@ -418,7 +422,10 @@ export class SearchRepository {
       params.push(opts.tag);
     }
     if (opts.domain) { conditions.push("b.domain = ?"); params.push(opts.domain); }
-    if (opts.category) {
+    if (opts.category_id) {
+      conditions.push("b.category_id = ?");
+      params.push(opts.category_id);
+    } else if (opts.category) {
       conditions.push("b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)");
       params.push(opts.category);
     }

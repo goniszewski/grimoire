@@ -431,6 +431,7 @@ export interface ListBookmarksParams {
   offset?: number;
   tag?: string;
   domain?: string;
+  category_id?: string;
   category?: string;
   date_from?: string;
   date_to?: string;
@@ -445,6 +446,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   if (params.offset != null) q.set("offset", String(params.offset));
   if (params.tag) q.set("tag", params.tag);
   if (params.domain) q.set("domain", params.domain);
+  if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
@@ -535,6 +537,7 @@ export interface SearchParams {
   mode?: SearchResponseDto["meta"]["mode"];
   tag?: string;
   domain?: string;
+  category_id?: string;
   category?: string;
   date_from?: string;
   date_to?: string;
@@ -548,6 +551,7 @@ export async function searchBookmarks(params: SearchParams): Promise<SearchRespo
   if (params.mode) q.set("mode", params.mode);
   if (params.tag) q.set("tag", params.tag);
   if (params.domain) q.set("domain", params.domain);
+  if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);

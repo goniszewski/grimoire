@@ -239,9 +239,12 @@ const Index = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar
           categories={store.categories}
+          categoriesLoading={store.categoriesLoading}
+          categoriesError={store.categoriesError}
           tags={store.tags}
           domains={store.domains}
           selectedCategory={store.selectedCategory}
+          selectedCategoryId={store.selectedCategoryId}
           selectedTag={store.selectedTag}
           selectedDomain={store.selectedDomain}
           onSelectCategory={store.setSelectedCategory}
@@ -270,6 +273,7 @@ const Index = () => {
                 showLabel={showButtonLabels}
                 filters={{
                   tag: store.selectedTag ?? undefined,
+                  category_id: store.selectedCategoryId ?? undefined,
                   category: store.selectedCategory ?? undefined,
                   domain: store.selectedDomain ?? undefined,
                   date_from: store.dateRange.from?.toISOString().slice(0, 10),

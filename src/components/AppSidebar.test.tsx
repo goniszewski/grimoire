@@ -96,8 +96,8 @@ function makeWrapper() {
 }
 
 const categories: UICategory[] = [
-  { id: "cat-1", name: "Technology", count: 10 },
-  { id: "cat-2", name: "Science", count: 5 },
+  { id: "cat-1", name: "Technology", count: 10, parentId: null, depth: 0 },
+  { id: "cat-2", name: "Science", count: 5, parentId: null, depth: 0 },
 ];
 
 const tags: TagCount[] = [
@@ -143,6 +143,33 @@ describe("AppSidebar — renders category tree", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
   });
 
+  it("renders empty nested categories with hierarchy metadata", () => {
+    const categoryTree = [
+      { id: "cat-research", name: "Research", count: 0, parentId: null, depth: 0 },
+      { id: "cat-ai", name: "AI Papers", count: 0, parentId: "cat-research", depth: 1 },
+    ] as UICategory[];
+
+    render(<AppSidebar {...defaultProps} categories={categoryTree} />, { wrapper: makeWrapper() });
+
+    expect(screen.getByText("Research")).toBeInTheDocument();
+    expect(screen.getByText("AI Papers")).toBeInTheDocument();
+    expect(screen.getAllByText("0")).toHaveLength(2);
+    expect(screen.getByText("AI Papers").closest("[data-category-id]")).toHaveAttribute("data-depth", "1");
+  });
+
+  it("renders category loading, empty, and error states", () => {
+    const { rerender } = render(<AppSidebar {...defaultProps} categories={[]} categoriesLoading />, {
+      wrapper: makeWrapper(),
+    });
+    expect(screen.getByText("Loading categories...")).toBeInTheDocument();
+
+    rerender(<AppSidebar {...defaultProps} categories={[]} />);
+    expect(screen.getByText("No categories yet")).toBeInTheDocument();
+
+    rerender(<AppSidebar {...defaultProps} categories={[]} categoriesError />);
+    expect(screen.getByText("Categories unavailable")).toBeInTheDocument();
+  });
+
   it("renders 'All' entry with total count", () => {
     render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapper() });
     expect(screen.getByText("All")).toBeInTheDocument();
@@ -162,7 +189,33 @@ describe("AppSidebar — renders category tree", () => {
       wrapper: makeWrapper(),
     });
     fireEvent.click(screen.getByText("Technology"));
-    expect(onSelectCategory).toHaveBeenCalledWith("Technology");
+    expect(onSelectCategory).toHaveBeenCalledWith("Technology", "cat-1");
+  });
+
+  it("uses category ids to select duplicate category names independently", () => {
+    const onSelectCategory = vi.fn();
+    const duplicateCategories: UICategory[] = [
+      { id: "root-notes", name: "Notes", count: 1, parentId: null, depth: 0 },
+      { id: "child-notes", name: "Notes", count: 2, parentId: "root-notes", depth: 1 },
+    ];
+
+    render(
+      <AppSidebar
+        {...defaultProps}
+        categories={duplicateCategories}
+        selectedCategory="Notes"
+        selectedCategoryId="child-notes"
+        onSelectCategory={onSelectCategory}
+      />,
+      { wrapper: makeWrapper() }
+    );
+
+    const categoryRows = screen.getAllByText("Notes").map((node) => node.closest("[data-category-id]"));
+    expect(categoryRows[0]?.querySelector("button")).not.toHaveClass("bg-accent");
+    expect(categoryRows[1]?.querySelector("button")).toHaveClass("bg-accent");
+
+    fireEvent.click(screen.getAllByText("Notes")[0]);
+    expect(onSelectCategory).toHaveBeenCalledWith("Notes", "root-notes");
   });
 
   it("calls onSelectTag when tag badge is clicked", () => {
@@ -200,6 +253,32 @@ describe("AppSidebar — delete category", () => {
       });
     }
   });
+
+  it("does not clear a duplicate-name selection when deleting a different category id", async () => {
+    const onSelectCategory = vi.fn();
+    const duplicateCategories: UICategory[] = [
+      { id: "root-notes", name: "Notes", count: 1, parentId: null, depth: 0 },
+      { id: "child-notes", name: "Notes", count: 2, parentId: "root-notes", depth: 1 },
+    ];
+    mockResolved(api.deleteCategory, { data: null });
+
+    render(
+      <AppSidebar
+        {...defaultProps}
+        categories={duplicateCategories}
+        selectedCategory="Notes"
+        selectedCategoryId="child-notes"
+        onSelectCategory={onSelectCategory}
+      />,
+      { wrapper: makeWrapper() }
+    );
+
+    fireEvent.click(screen.getAllByRole("menuitem").find((el) => el.textContent?.includes("Delete"))!);
+    fireEvent.click(screen.getByTestId("alert-action"));
+
+    await waitFor(() => expect(api.deleteCategory).toHaveBeenCalledWith("root-notes"));
+    expect(onSelectCategory).not.toHaveBeenCalled();
+  });
 });
 
 describe("AppSidebar — rename category", () => {
@@ -235,5 +314,35 @@ describe("AppSidebar — rename category", () => {
         await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("cat-1", { name: "New Name" }));
       }
     }
+  });
+
+  it("does not retarget a duplicate-name selection when renaming a different category id", async () => {
+    const onSelectCategory = vi.fn();
+    const duplicateCategories: UICategory[] = [
+      { id: "root-notes", name: "Notes", count: 1, parentId: null, depth: 0 },
+      { id: "child-notes", name: "Notes", count: 2, parentId: "root-notes", depth: 1 },
+    ];
+    mockResolved(api.updateCategory, {
+      data: { id: "root-notes", name: "Renamed Notes", parent_id: null, created_at: "", updated_at: "" },
+    });
+
+    render(
+      <AppSidebar
+        {...defaultProps}
+        categories={duplicateCategories}
+        selectedCategory="Notes"
+        selectedCategoryId="child-notes"
+        onSelectCategory={onSelectCategory}
+      />,
+      { wrapper: makeWrapper() }
+    );
+
+    fireEvent.click(screen.getAllByRole("menuitem").find((el) => el.textContent?.includes("Rename"))!);
+    const input = await screen.findByRole("textbox");
+    fireEvent.change(input, { target: { value: "Renamed Notes" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("root-notes", { name: "Renamed Notes" }));
+    expect(onSelectCategory).not.toHaveBeenCalled();
   });
 });

@@ -409,4 +409,88 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
     const react = result.current.tags.find((t) => t.tag === "react");
     expect(react?.count).toBe(1);
   });
+
+  it("builds category navigation from the full category tree, including empty nested categories", async () => {
+    mockedListCategories.mockResolvedValue(categoryTreeResponse([
+      makeApiCategory({
+        id: "cat-research",
+        name: "Research",
+        bookmark_count: 0,
+        children: [
+          makeApiCategory({
+            id: "cat-ai",
+            name: "AI Papers",
+            parent_id: "cat-research",
+            bookmark_count: 0,
+          }),
+        ],
+      }),
+      makeApiCategory({
+        id: "cat-tools",
+        name: "Tools",
+        bookmark_count: 1,
+      }),
+    ]));
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([
+      makeApiBookmark({ id: "bm-tools", category_id: "cat-tools" }),
+    ]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    expect(result.current.categories).toEqual([
+      { id: "cat-research", name: "Research", count: 0, parentId: null, depth: 0 },
+      { id: "cat-ai", name: "AI Papers", count: 0, parentId: "cat-research", depth: 1 },
+      { id: "cat-tools", name: "Tools", count: 1, parentId: null, depth: 0 },
+    ]);
+  });
+
+  it("sends selected category IDs to list and search filters", async () => {
+    mockedListCategories.mockResolvedValue(categoryTreeResponse([
+      makeApiCategory({ id: "cat-research", name: "Research" }),
+    ]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSelectedCategory("Research"));
+
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        category: "Research",
+        category_id: "cat-research",
+      }))
+    );
+
+    act(() => result.current.setSearchQuery("vector"));
+
+    await waitFor(
+      () => expect(mockedSearchBookmarks).toHaveBeenCalledWith(expect.objectContaining({
+        category: "Research",
+        category_id: "cat-research",
+      })),
+      { timeout: 2000 }
+    );
+  });
+
+  it("tracks selected category id separately from the category-name filter", async () => {
+    mockedListCategories.mockResolvedValue(categoryTreeResponse([
+      makeApiCategory({ id: "cat-one", name: "Notes" }),
+      makeApiCategory({ id: "cat-two", name: "Notes" }),
+    ]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSelectedCategory("Notes", "cat-two"));
+
+    expect(result.current.selectedCategory).toBe("Notes");
+    expect(result.current.selectedCategoryId).toBe("cat-two");
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        category: "Notes",
+        category_id: "cat-two",
+      }))
+    );
+  });
 });

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, type CSSProperties } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listSuggestions, createCategory, updateCategory, deleteCategory, listCategories, type ApiCategory } from "@/lib/api";
 import { suggestionKeys } from "@/hooks/use-suggestions";
@@ -68,7 +68,8 @@ interface DraggableCategoryProps {
   cat: UICategory;
   collapsed: boolean;
   selectedCategory: string | null;
-  onSelectCategory: (category: string | null) => void;
+  selectedCategoryId?: string | null;
+  onSelectCategory: (category: string | null, categoryId?: string | null) => void;
   onStartRename: (cat: UICategory) => void;
   onStartMove: (cat: UICategory) => void;
   onStartDelete: (cat: UICategory) => void;
@@ -77,10 +78,25 @@ interface DraggableCategoryProps {
   isDraggingAny: boolean;
 }
 
+function categoryIndentStyle(cat: UICategory, collapsed: boolean): CSSProperties | undefined {
+  const depth = cat.depth ?? 0;
+  if (collapsed || depth <= 0) return undefined;
+  return { paddingLeft: `${depth * 0.75}rem` };
+}
+
+function isCategorySelected(
+  cat: UICategory,
+  selectedCategory: string | null,
+  selectedCategoryId?: string | null
+): boolean {
+  return selectedCategoryId ? selectedCategoryId === cat.id : selectedCategory === cat.name;
+}
+
 function DraggableCategory({
   cat,
   collapsed,
   selectedCategory,
+  selectedCategoryId,
   onSelectCategory,
   onStartRename,
   onStartMove,
@@ -89,6 +105,7 @@ function DraggableCategory({
   isDropTarget,
   isDraggingAny,
 }: DraggableCategoryProps) {
+  const selected = isCategorySelected(cat, selectedCategory, selectedCategoryId);
   const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
     id: cat.id,
     disabled: collapsed,
@@ -105,6 +122,9 @@ function DraggableCategory({
       <ContextMenuTrigger asChild>
         <div
           ref={setRef}
+          data-category-id={cat.id}
+          data-depth={cat.depth ?? 0}
+          style={categoryIndentStyle(cat, collapsed)}
           className={cn(
             "group relative flex items-center rounded-md transition-colors",
             isDragging && "opacity-40",
@@ -132,9 +152,9 @@ function DraggableCategory({
             </span>
           )}
           <SidebarMenuButton
-            onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
+            onClick={() => onSelectCategory(selected ? null : cat.name, selected ? null : cat.id)}
             className={cn(
-              selectedCategory === cat.name && "bg-accent text-accent-foreground",
+              selected && "bg-accent text-accent-foreground",
               !collapsed && "pl-6"
             )}
             tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
@@ -189,12 +209,15 @@ function RootDropZone({ isOver }: { isOver: boolean }) {
 
 interface AppSidebarProps {
   categories: UICategory[];
+  categoriesLoading?: boolean;
+  categoriesError?: boolean;
   tags: TagCount[];
   domains: DomainCount[];
   selectedCategory: string | null;
+  selectedCategoryId?: string | null;
   selectedTag: string | null;
   selectedDomain: string | null;
-  onSelectCategory: (category: string | null) => void;
+  onSelectCategory: (category: string | null, categoryId?: string | null) => void;
   onSelectTag: (tag: string | null) => void;
   onSelectDomain: (domain: string | null) => void;
   totalCount: number;
@@ -202,9 +225,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({
   categories,
+  categoriesLoading = false,
+  categoriesError = false,
   tags,
   domains,
   selectedCategory,
+  selectedCategoryId,
   selectedTag,
   selectedDomain,
   onSelectCategory,
@@ -270,6 +296,12 @@ export function AppSidebar({
     return flatApiCategories.find((c) => c.id === id);
   }
 
+  function isSelectedCategoryId(categoryId: string | null): boolean {
+    if (!categoryId) return false;
+    if (selectedCategoryId) return selectedCategoryId === categoryId;
+    return selectedCategory === findApiCatById(categoryId)?.name;
+  }
+
   const createCategoryMutation = useMutation({
     mutationFn: (name: string) => createCategory(name),
     onSuccess: () => {
@@ -287,8 +319,8 @@ export function AppSidebar({
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-      if (selectedCategory === findApiCatById(renamingCategoryId ?? "")?.name) {
-        onSelectCategory(res.data.name);
+      if (isSelectedCategoryId(renamingCategoryId)) {
+        onSelectCategory(res.data.name, res.data.id);
       }
       setRenamingCategoryId(null);
       setRenameValue("");
@@ -303,7 +335,7 @@ export function AppSidebar({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-      if (selectedCategory === findApiCatById(deletingCategoryId ?? "")?.name) {
+      if (isSelectedCategoryId(deletingCategoryId)) {
         onSelectCategory(null);
       }
       setDeletingCategoryId(null);
@@ -518,69 +550,100 @@ export function AppSidebar({
                   {/* Invisible droppable that covers the "All" item for root-level drops */}
                   {draggingId && !collapsed && <RootDropZone isOver={dragOverId === "__root__"} />}
                 </SidebarMenuItem>
-                {categories.map((cat) => (
-                  <SidebarMenuItem key={cat.name}>
-                    {renamingCategoryId === cat.id && !collapsed ? (
-                      <div className="flex items-center gap-1 px-2 py-1">
-                        <input
-                          ref={renameInputRef}
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onKeyDown={handleRenameKeyDown}
-                          onBlur={commitRename}
-                          maxLength={100}
-                          disabled={renameMutation.isPending}
-                          className="flex-1 text-xs bg-transparent border-b border-border outline-none py-0.5"
-                        />
-                        <button
-                          onClick={commitRename}
-                          disabled={!renameValue.trim() || renameMutation.isPending}
-                          className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                          title="Confirm"
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => { setRenamingCategoryId(null); setRenameValue(""); }}
-                          className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          title="Cancel"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : cat.id ? (
-                      <DraggableCategory
-                        cat={cat}
-                        collapsed={collapsed}
-                        selectedCategory={selectedCategory}
-                        onSelectCategory={onSelectCategory}
-                        onStartRename={startRename}
-                        onStartMove={startMove}
-                        onStartDelete={startDelete}
-                        isDragging={draggingId === cat.id}
-                        isDropTarget={dragOverId === cat.id && draggingId !== cat.id}
-                        isDraggingAny={!!draggingId}
-                      />
-                    ) : (
-                      <SidebarMenuButton
-                        onClick={() => onSelectCategory(selectedCategory === cat.name ? null : cat.name)}
-                        className={cn(selectedCategory === cat.name && "bg-accent text-accent-foreground")}
-                        tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
-                      >
-                        {collapsed ? (
-                          <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
-                        ) : (
-                          <>
-                            <span className="text-xs truncate">{cat.name}</span>
-                            <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
-                              {cat.count}
-                            </Badge>
-                          </>
-                        )}
-                      </SidebarMenuButton>
-                    )}
+                {!collapsed && categoriesLoading && (
+                  <SidebarMenuItem>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">Loading categories...</div>
                   </SidebarMenuItem>
-                ))}
+                )}
+                {!collapsed && !categoriesLoading && categoriesError && (
+                  <SidebarMenuItem>
+                    <div className="px-2 py-1.5 text-xs text-destructive">Categories unavailable</div>
+                  </SidebarMenuItem>
+                )}
+                {!collapsed && !categoriesLoading && !categoriesError && categories.length === 0 && !addingCategory && (
+                  <SidebarMenuItem>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories yet</div>
+                  </SidebarMenuItem>
+                )}
+                {!categoriesLoading && !categoriesError && categories.map((cat) => {
+                  const selected = isCategorySelected(cat, selectedCategory, selectedCategoryId);
+
+                  return (
+                    <SidebarMenuItem key={cat.id || cat.name}>
+                      {renamingCategoryId === cat.id && !collapsed ? (
+                        <div
+                          className="flex items-center gap-1 px-2 py-1"
+                          data-category-id={cat.id}
+                          data-depth={cat.depth ?? 0}
+                          style={categoryIndentStyle(cat, collapsed)}
+                        >
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={handleRenameKeyDown}
+                            onBlur={commitRename}
+                            maxLength={100}
+                            disabled={renameMutation.isPending}
+                            className="flex-1 text-xs bg-transparent border-b border-border outline-none py-0.5"
+                          />
+                          <button
+                            onClick={commitRename}
+                            disabled={!renameValue.trim() || renameMutation.isPending}
+                            className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                            title="Confirm"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => { setRenamingCategoryId(null); setRenameValue(""); }}
+                            className="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : cat.id ? (
+                        <DraggableCategory
+                          cat={cat}
+                          collapsed={collapsed}
+                          selectedCategory={selectedCategory}
+                          selectedCategoryId={selectedCategoryId}
+                          onSelectCategory={onSelectCategory}
+                          onStartRename={startRename}
+                          onStartMove={startMove}
+                          onStartDelete={startDelete}
+                          isDragging={draggingId === cat.id}
+                          isDropTarget={dragOverId === cat.id && draggingId !== cat.id}
+                          isDraggingAny={!!draggingId}
+                        />
+                      ) : (
+                        <div
+                          data-category-id={cat.id || cat.name}
+                          data-depth={cat.depth ?? 0}
+                          style={categoryIndentStyle(cat, collapsed)}
+                        >
+                          <SidebarMenuButton
+                            onClick={() => onSelectCategory(selected ? null : cat.name, selected ? null : cat.id)}
+                            className={cn(selected && "bg-accent text-accent-foreground")}
+                            tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
+                          >
+                            {collapsed ? (
+                              <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
+                            ) : (
+                              <>
+                                <span className="text-xs truncate">{cat.name}</span>
+                                <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
+                                  {cat.count}
+                                </Badge>
+                              </>
+                            )}
+                          </SidebarMenuButton>
+                        </div>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
                 {!collapsed && addingCategory && (
                   <SidebarMenuItem>
                     <div className="flex items-center gap-1 px-2 py-1">

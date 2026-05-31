@@ -118,6 +118,7 @@ Query parameters:
 |---|---|---:|---|
 | `tag` | string | no | Filter by tag name |
 | `domain` | string | no | Filter by exact domain |
+| `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
@@ -414,6 +415,7 @@ Query parameters:
 | `mode` | "keyword" \| "semantic" \| "hybrid" | no | Search mode |
 | `tag` | string | no | Filter by tag name |
 | `domain` | string | no | Filter by exact domain |
+| `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
@@ -1144,6 +1146,7 @@ Query parameters:
 | `format` | "json" \| "csv" | no | Export format |
 | `tag` | string | no | Filter by tag name |
 | `domain` | string | no | Filter by exact domain |
+| `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
