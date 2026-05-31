@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkHealth, checkHealthAfterRestore, recordBookmarkOpen, resolveDaemonUrl, updateBookmark } from "./api";
+import {
+  checkHealth,
+  checkHealthAfterRestore,
+  createTag,
+  deleteTag,
+  recordBookmarkOpen,
+  resolveDaemonUrl,
+  updateBookmark,
+} from "./api";
 
 describe("daemon URL resolution", () => {
   it("defaults to the packaged daemon URL when no override is configured", () => {
@@ -147,6 +155,52 @@ describe("bookmark mutation API", () => {
           notes: null,
         }),
       })
+    );
+  });
+});
+
+describe("tag management API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("creates tags through the daemon endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "tag-1",
+            name: "typescript",
+            created_at: "2026-05-31T12:00:00Z",
+          },
+        }),
+        {
+          status: 201,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    const result = await createTag("typescript");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/tags",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ name: "typescript" }),
+      })
+    );
+    expect(result.data.name).toBe("typescript");
+  });
+
+  it("deletes tags through the daemon endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+
+    await deleteTag("tag-1");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/tags/tag-1",
+      expect.objectContaining({ method: "DELETE" })
     );
   });
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAppLock } from "@/hooks/use-app-lock";
 import { LockScreen } from "@/components/LockScreen";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -42,6 +43,7 @@ import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const store = useBookmarks();
+  const [searchParams] = useSearchParams();
   const { online, isChecking: daemonChecking } = useDaemonStatus();
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -55,6 +57,8 @@ const Index = () => {
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
   const appLock = useAppLock();
   const { aiEnabled, isLoading: settingsLoading } = useSettings();
+  const requestedTag = searchParams.get("tag");
+  const { addBookmark, setSelectedTag } = store;
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -67,6 +71,10 @@ const Index = () => {
       document.documentElement.classList.add("dark");
     }
   }, []);
+
+  useEffect(() => {
+    setSelectedTag(requestedTag?.trim() || null);
+  }, [requestedTag, setSelectedTag]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -98,7 +106,7 @@ const Index = () => {
         const url = new URL(text);
         if (url.protocol === "http:" || url.protocol === "https:") {
           e.preventDefault();
-          store.addBookmark(text);
+          addBookmark(text);
           toast({ title: "Bookmark added", description: text });
         }
       } catch {
@@ -107,7 +115,7 @@ const Index = () => {
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [store.addBookmark]);
+  }, [addBookmark]);
 
   const handleDelete = (id: string) => {
     const deleted = store.deleteBookmark(id);

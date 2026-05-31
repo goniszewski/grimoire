@@ -854,9 +854,22 @@ export function AppSidebar({
 
           {/* Tags */}
           <SidebarGroup>
-            <SidebarGroupLabel>
-              <Hash className="h-3.5 w-3.5 mr-1.5" />
-              {!collapsed && "Tags"}
+            <SidebarGroupLabel className="flex items-center justify-between">
+              <span className="flex items-center">
+                <Hash className="h-3.5 w-3.5 mr-1.5" />
+                {!collapsed && "Tags"}
+              </span>
+              {!collapsed && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/tags")}
+                  className="ml-auto h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  title="Manage tags"
+                  aria-label="Manage tags"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              )}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               {!collapsed ? (

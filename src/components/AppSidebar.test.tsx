@@ -268,6 +268,14 @@ describe("AppSidebar — renders category tree", () => {
     fireEvent.click(typescriptBadge!);
     expect(onSelectTag).toHaveBeenCalled();
   });
+
+  it("navigates to the tag management surface from the sidebar", () => {
+    render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapperWithLocation() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Manage tags" }));
+
+    expect(screen.getByTestId("location")).toHaveTextContent("/tags");
+  });
 });
 
 describe("AppSidebar — delete category", () => {

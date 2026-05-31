@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tag Management Surface - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --accent: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --red: #dc2626;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 42px);
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.15rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #11131c;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.summary-panel {
+  min-width: 0;
+  border-left: 4px solid var(--accent);
+  padding-left: 14px;
+}
+.summary-panel + .summary-panel { border-left-color: var(--green); }
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #11131c;
+}
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.shot-grid figcaption {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+ul { padding-left: 20px; }
+code {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+details {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1080px);
+    padding: 32px 0;
+  }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Tag Management Surface</h1>
+      <div class="meta-row">
+        <span>May 31, 2026</span>
+        <span>TASK-098</span>
+        <span>In review</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-tags-desktop.png" alt="Little Imp tag management page listing tags with counts, create controls, view links, and delete actions">
+      <figcaption>After: tags now have a dedicated management surface backed by the daemon tag list.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Tags were only visible in the sidebar and bookmark detail controls. Sidebar counts were derived from the currently loaded bookmark page, so they could miss tags outside the active result set.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>TASK-098 needed a first-class place to list, create, delete, and browse tags without waiting for tag detail pages. Counts also needed to come from the daemon aggregate instead of the visible bookmark page.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added typed frontend helpers for <code>POST /tags</code> and <code>DELETE /tags/:id</code>.</li>
+        <li>Changed library sidebar tag counts to use <code>GET /tags</code> so counts are page-independent active-library totals.</li>
+        <li>Added a sidebar manage action that opens the new <code>/tags</code> route.</li>
+        <li>Added a dedicated tag management page with loading, empty, error, create, delete-confirmation, and count states.</li>
+        <li>Linked each tag to a filtered library view through <code>/?tag=&lt;name&gt;</code> and hydrated that filter on the library page.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <div class="summary-grid">
+        <div class="summary-panel">
+          <h3>Management</h3>
+          <p>Users can manage tags outside bookmark detail, with validation and a confirmation step before detaching a tag from active, archived, or trashed bookmarks.</p>
+        </div>
+        <div class="summary-panel">
+          <h3>Browsing</h3>
+          <p>Tag rows and sidebar badges now lead users back to the library with the selected tag applied as a real filter.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>npx vitest run src/lib/api.test.ts src/hooks/use-bookmarks.test.ts src/components/AppSidebar.test.tsx src/pages/Tags.test.tsx</code></li>
+        <li><code>cd daemon &amp;&amp; bun test src/test/integration/tags.test.ts</code></li>
+        <li><code>npm run lint</code></li>
+        <li><code>npm run test</code></li>
+        <li><code>npm run type-check</code></li>
+        <li><code>npm run build</code></li>
+        <li><code>npm run test:e2e</code></li>
+        <li>Browser-verified <code>/tags</code>, delete confirmation, mobile layout, and <code>/?tag=typescript</code> filtering against an isolated loopback daemon.</li>
+      </ul>
+    </section>
+
+    <details open>
+      <summary>Additional Screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/02-delete-confirmation.png" alt="Tag delete confirmation dialog explaining that bookmarks are not deleted">
+          <figcaption>Delete confirmation: tag removal is explicit and explains active bookmark impact.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/03-after-tags-mobile.png" alt="Narrow mobile tag management page with stacked create controls and tag action rows">
+          <figcaption>Mobile: create controls and tag rows stack without clipped text.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/04-filtered-library.png" alt="Little Imp library filtered by the typescript tag from the tag management page">
+          <figcaption>Filtered library: the tag link applies <code>#typescript</code> and returns two matching bookmarks.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>src/pages/Tags.tsx</code></li>
+        <li><code>src/pages/Tags.test.tsx</code></li>
+        <li><code>src/lib/api.ts</code></li>
+        <li><code>src/lib/api.test.ts</code></li>
+        <li><code>src/hooks/use-bookmarks.ts</code></li>
+        <li><code>src/hooks/use-bookmarks.test.ts</code></li>
+        <li><code>src/components/AppSidebar.tsx</code></li>
+        <li><code>src/components/AppSidebar.test.tsx</code></li>
+        <li><code>src/pages/Index.tsx</code></li>
+        <li><code>e2e/business-requirements.spec.ts</code></li>
+        <li><code>src/App.tsx</code></li>
+        <li><code>tasks/in-review/TASK-098-tag-management-surface.md</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

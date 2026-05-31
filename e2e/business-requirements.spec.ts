@@ -100,6 +100,30 @@ test.describe("Documented business requirements smoke", () => {
       .toContainEqual({ format: "json", read_later: "true" });
   });
 
+  test("clears a URL-provided tag filter when the tag query is removed", async ({ page }) => {
+    await installMockDaemon(page, {
+      bookmarks: [
+        makeApiBookmark({
+          id: "bm-tag-filter-1",
+          title: "Tagged Resource",
+          tags: ["testing"],
+        }),
+      ],
+    });
+
+    await page.goto("/?tag=testing");
+
+    await expect(page.getByText("Tagged Resource")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("#testing")).toBeVisible();
+
+    await page.evaluate(() => {
+      window.history.pushState(null, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    await expect(page.getByText("#testing")).toBeHidden();
+  });
+
   test("covers settings, update checks, backup verification, and restore", async ({ page }) => {
     const daemon = await installMockDaemon(page, {
       bookmarks: [makeApiBookmark({ id: "bm-settings-1" })],

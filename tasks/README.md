@@ -111,7 +111,7 @@ tasks/
 | TASK-095 | [Sidebar Categories From Full Tree](done/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | done |
 | TASK-096 | [Category Detail Page](done/TASK-096-category-detail-page.md) | Grimoire parity | medium | done |
 | TASK-097 | [Category Metadata Fields](in-review/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | in-review |
-| TASK-098 | [Tag Management Surface](backlog/TASK-098-tag-management-surface.md) | Grimoire parity | high | backlog |
+| TASK-098 | [Tag Management Surface](in-review/TASK-098-tag-management-surface.md) | Grimoire parity | high | in-review |
 | TASK-099 | [Tag Detail Pages](backlog/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | backlog |
 | TASK-100 | [Tag Rename API And UI](backlog/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | backlog |
 | TASK-101 | [Category And Tag Regression Tests](backlog/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | backlog |
@@ -211,7 +211,10 @@ stable category detail route, metadata and child-category rendering,
 category-scoped daemon pagination, sidebar route navigation, focused frontend
 tests, e2e coverage, and visual reporting. TASK-097 is in review with local
 category metadata persistence, validation, generated API docs, category detail
-rendering/editing, focused tests, and visual reporting.
+rendering/editing, focused tests, and visual reporting. TASK-098 is in review
+with a dedicated tag management page, API-backed active tag counts, create and
+delete flows, sidebar navigation, filtered-library tag links, focused frontend
+tests, daemon tag route coverage, and visual reporting.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

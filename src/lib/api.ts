@@ -50,6 +50,8 @@ import type {
   SuggestionDto,
   SuggestionsResponseDto,
   TagListResponseDto,
+  TagRequestDto,
+  TagResponseDto,
   TimelinePageDto,
   UpdateCheckResponseDto,
   UpdateCheckResultDto,
@@ -155,7 +157,24 @@ export interface ApiCategoryRecord {
   created_at: CategoryRecordDto["created_at"];
   updated_at: CategoryRecordDto["updated_at"];
 }
-export type ApiTag = TagListResponseDto["data"][number];
+type ApiTagDto = TagListResponseDto["data"][number];
+type ApiTagRecordDto = TagResponseDto["data"];
+
+export interface ApiTag {
+  id: ApiTagDto["id"];
+  name: ApiTagDto["name"];
+  created_at: ApiTagDto["created_at"];
+  bookmark_count: ApiTagDto["bookmark_count"];
+}
+
+export interface ApiTagRecord {
+  id: ApiTagRecordDto["id"];
+  name: ApiTagRecordDto["name"];
+  created_at: ApiTagRecordDto["created_at"];
+}
+
+export type ApiTagListResponse = Simplify<{ data: ApiTag[] }>;
+export type ApiTagResponse = Simplify<{ data: ApiTagRecord }>;
 export type PipelineStatus = BookmarkPipelineStatusResponseDto["data"];
 export type Pagination = PaginationDto;
 
@@ -606,8 +625,19 @@ export async function deleteCategory(id: string): Promise<void> {
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
-export async function listTags(): Promise<TagListResponseDto> {
-  return apiFetch<TagListResponseDto>("/tags");
+export async function listTags(): Promise<ApiTagListResponse> {
+  return apiFetch<ApiTagListResponse>("/tags");
+}
+
+export async function createTag(name: string): Promise<ApiTagResponse> {
+  return apiFetch<ApiTagResponse>("/tags", {
+    method: "POST",
+    body: JSON.stringify({ name } satisfies TagRequestDto),
+  });
+}
+
+export async function deleteTag(id: string): Promise<void> {
+  await apiFetch<void>(`/tags/${id}`, { method: "DELETE" });
 }
 
 // ─── Import ───────────────────────────────────────────────────────────────────

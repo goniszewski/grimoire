@@ -10,6 +10,7 @@ import {
   restoreBookmark as apiRestoreBookmark,
   listCategories,
   listDomains,
+  listTags,
   ApiBookmark,
   ApiBookmarkWithContent,
   ApiCategory,
@@ -235,6 +236,16 @@ export function useBookmarks() {
     staleTime: 30_000,
   });
 
+  // ─── Tags (from API) ──────────────────────────────────────────────────────
+  const tagsQuery = useQuery({
+    queryKey: bookmarkKeys.tags,
+    queryFn: async () => {
+      const res = await listTags();
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+
   // ─── Bookmarks list (no search) ───────────────────────────────────────────
   const listParams = useMemo(() => ({
     limit: 200,
@@ -315,12 +326,10 @@ export function useBookmarks() {
   );
 
   const tags = useMemo<UITagCount[]>(() => {
-    const map = new Map<string, number>();
-    bookmarks.forEach((b) => b.tags.forEach((t) => map.set(t, (map.get(t) ?? 0) + 1)));
-    return Array.from(map.entries())
-      .map(([tag, count]) => ({ tag, count }))
+    return (tagsQuery.data ?? [])
+      .map((tag) => ({ tag: tag.name, count: tag.bookmark_count }))
       .sort((a, b) => b.count - a.count);
-  }, [bookmarks]);
+  }, [tagsQuery.data]);
 
   const domainRows = domainsQuery.data as unknown as Array<{ domain: string; count: number }> | undefined;
   const domains = useMemo<UIDomainCount[]>(() => {
@@ -338,6 +347,7 @@ export function useBookmarks() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     },
   });
 
@@ -355,6 +365,7 @@ export function useBookmarks() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     },
   });
 
@@ -439,6 +450,7 @@ export function useBookmarks() {
     await apiRestoreBookmark(id);
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
     qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
+    qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
   }, [qc]);
 
   const updateBookmarkTags = useCallback((id: string, tags: string[]) => {
@@ -466,8 +478,10 @@ export function useBookmarks() {
 
   const importBookmarks = useCallback(() => {
     // Import is handled via the ImportDialog which calls importBookmarksFile directly
-    // After import completes, we just need to refresh
+    // After import completes, refresh the library and aggregate views.
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+    qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
+    qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
   }, [qc]);
 
   const pinBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {

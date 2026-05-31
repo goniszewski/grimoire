@@ -7,6 +7,7 @@ import type {
   ApiBookmark,
   ApiCategory,
   ApiDomain,
+  ApiTag,
   ListBookmarksParams,
   SearchParams,
 } from "@/lib/api";
@@ -79,6 +80,7 @@ vi.mock("@/lib/api", () => ({
   restoreBookmark: vi.fn(),
   listCategories: vi.fn(),
   listDomains: vi.fn(),
+  listTags: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -92,6 +94,7 @@ type Pagination = {
 type BookmarkListResponse = { data: ApiBookmark[]; pagination: Pagination };
 type CategoryTreeResponse = { data: ApiCategory[] };
 type DomainListResponse = { data: ApiDomain[] };
+type TagListResponse = { data: ApiTag[] };
 type SearchHit = ApiBookmark & { snippet: string | null; rank: number | null };
 type SearchResponse = {
   data: SearchHit[];
@@ -106,6 +109,7 @@ type MockedAsyncFn<Args extends unknown[], Result> = ((...args: Args) => Promise
 const mockedListBookmarks = api.listBookmarks as unknown as MockedAsyncFn<[ListBookmarksParams?], BookmarkListResponse>;
 const mockedListCategories = api.listCategories as unknown as MockedAsyncFn<[], CategoryTreeResponse>;
 const mockedListDomains = api.listDomains as unknown as MockedAsyncFn<[], DomainListResponse>;
+const mockedListTags = api.listTags as unknown as MockedAsyncFn<[], TagListResponse>;
 const mockedSearchBookmarks = api.searchBookmarks as unknown as MockedAsyncFn<[SearchParams], SearchResponse>;
 const mockedUpdateBookmark = api.updateBookmark as unknown as MockedAsyncFn<[string, Record<string, unknown>], { data: ApiBookmark }>;
 
@@ -133,6 +137,10 @@ function domainListResponse(data: ApiDomain[] = []): DomainListResponse {
   return { data };
 }
 
+function tagListResponse(data: ApiTag[] = []): TagListResponse {
+  return { data };
+}
+
 function searchResponse(data: SearchResponse["data"] = []): SearchResponse {
   return {
     data,
@@ -145,6 +153,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedListCategories.mockResolvedValue(categoryTreeResponse([]));
   mockedListDomains.mockResolvedValue(domainListResponse());
+  mockedListTags.mockResolvedValue(tagListResponse());
   mockedListBookmarks.mockResolvedValue(bookmarkListResponse([]));
   mockedSearchBookmarks.mockResolvedValue(searchResponse());
   mockedUpdateBookmark.mockResolvedValue({ data: makeApiBookmark() });
@@ -402,18 +411,51 @@ describe("useBookmarks — recentBookmarks", () => {
 });
 
 describe("useBookmarks — tag / category / domain aggregates", () => {
-  it("builds tag counts from loaded bookmarks", async () => {
+  it("uses daemon tag counts independent of the loaded bookmark page", async () => {
     const bm1 = makeApiBookmark({ id: "a", tags: ["ts", "react"] });
     const bm2 = makeApiBookmark({ id: "b", tags: ["ts"] });
     mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bm1, bm2]));
+    mockedListTags.mockResolvedValue(tagListResponse([
+      {
+        id: "tag-typescript",
+        name: "typescript",
+        created_at: "2026-05-31T12:00:00Z",
+        bookmark_count: 42,
+      },
+      {
+        id: "tag-react",
+        name: "react",
+        created_at: "2026-05-31T12:00:00Z",
+        bookmark_count: 12,
+      },
+    ]));
 
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
 
-    const ts = result.current.tags.find((t) => t.tag === "ts");
-    expect(ts?.count).toBe(2);
+    expect(result.current.tags).toEqual([
+      { tag: "typescript", count: 42 },
+      { tag: "react", count: 12 },
+    ]);
+    expect(result.current.tags.some((t) => t.tag === "ts")).toBe(false);
+  });
+
+  it("keeps full tag counts available when the current bookmark page is empty", async () => {
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([]));
+    mockedListTags.mockResolvedValue(tagListResponse([
+      {
+        id: "tag-react",
+        name: "react",
+        created_at: "2026-05-31T12:00:00Z",
+        bookmark_count: 7,
+      },
+    ]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
     const react = result.current.tags.find((t) => t.tag === "react");
-    expect(react?.count).toBe(1);
+    expect(react?.count).toBe(7);
   });
 
   it("builds category navigation from the full category tree, including empty nested categories", async () => {
@@ -534,5 +576,18 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
         category_id: "cat-two",
       }))
     );
+  });
+
+  it("refreshes tag and domain aggregates after an import completes", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    const tagCallsBeforeImport = mockedListTags.mock.calls.length;
+    const domainCallsBeforeImport = mockedListDomains.mock.calls.length;
+
+    act(() => result.current.importBookmarks());
+
+    await waitFor(() => expect(mockedListTags.mock.calls.length).toBeGreaterThan(tagCallsBeforeImport));
+    await waitFor(() => expect(mockedListDomains.mock.calls.length).toBeGreaterThan(domainCallsBeforeImport));
   });
 });
