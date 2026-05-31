@@ -130,6 +130,12 @@ export interface ApiCategory {
   id: CategoryNodeDto["id"];
   name: CategoryNodeDto["name"];
   parent_id: CategoryNodeDto["parent_id"];
+  color: CategoryNodeDto["color"];
+  icon: CategoryNodeDto["icon"];
+  description: CategoryNodeDto["description"];
+  slug: CategoryNodeDto["slug"];
+  is_archived: CategoryNodeDto["is_archived"];
+  is_public: CategoryNodeDto["is_public"];
   created_at: CategoryNodeDto["created_at"];
   updated_at: CategoryNodeDto["updated_at"];
   bookmark_count: CategoryNodeDto["bookmark_count"];
@@ -140,6 +146,12 @@ export interface ApiCategoryRecord {
   id: CategoryRecordDto["id"];
   name: CategoryRecordDto["name"];
   parent_id: CategoryRecordDto["parent_id"];
+  color: CategoryRecordDto["color"];
+  icon: CategoryRecordDto["icon"];
+  description: CategoryRecordDto["description"];
+  slug: CategoryRecordDto["slug"];
+  is_archived: CategoryRecordDto["is_archived"];
+  is_public: CategoryRecordDto["is_public"];
   created_at: CategoryRecordDto["created_at"];
   updated_at: CategoryRecordDto["updated_at"];
 }
@@ -567,16 +579,20 @@ export async function listCategories(): Promise<CategoryTreeResponseDto> {
   return apiFetch<CategoryTreeResponseDto>("/categories");
 }
 
-export async function createCategory(name: string, parent_id?: string | null): Promise<CategoryResponseDto> {
+export async function createCategory(
+  name: string,
+  parent_id?: string | null,
+  metadata: Omit<Partial<CategoryRecordDto>, "id" | "name" | "parent_id" | "created_at" | "updated_at"> = {}
+): Promise<CategoryResponseDto> {
   return apiFetch<CategoryResponseDto>("/categories", {
     method: "POST",
-    body: JSON.stringify({ name, parent_id: parent_id ?? null }),
+    body: JSON.stringify({ name, parent_id: parent_id ?? null, ...metadata }),
   });
 }
 
 export async function updateCategory(
   id: string,
-  patch: { name?: string; parent_id?: string | null }
+  patch: Omit<Partial<CategoryRecordDto>, "id" | "created_at" | "updated_at">
 ): Promise<CategoryResponseDto> {
   return apiFetch<CategoryResponseDto>(`/categories/${id}`, {
     method: "PUT",

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Category Metadata Fields - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --accent: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 42px);
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.15rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #11131c;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.summary-panel {
+  min-width: 0;
+  border-left: 4px solid var(--accent);
+  padding-left: 14px;
+}
+.summary-panel + .summary-panel {
+  border-left-color: var(--green);
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #11131c;
+}
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.shot-grid figcaption {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+ul { padding-left: 20px; }
+code {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+details {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1080px);
+    padding: 32px 0;
+  }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Category Metadata Fields</h1>
+      <div class="meta-row">
+        <span>May 31, 2026</span>
+        <span>TASK-097</span>
+        <span>In review</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-desktop.png" alt="Little Imp category detail page showing category color, icon, description, slug, active state, and public metadata badge">
+      <figcaption>After: category detail pages now render local metadata beside the existing hierarchy and bookmark list.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Categories persisted only a name, parent, timestamps, and bookmark count. The detail page could show hierarchy and scoped bookmarks, but it had no place to store or edit color, icon, description, slug, archived state, or public visibility metadata.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>TASK-097 needed Grimoire parity metadata without changing Little Imp's loopback-only, local-first security posture. The public visibility field had to remain ordinary local metadata, not a sharing feature or network exposure switch.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added append-only migration <code>0013_category_metadata.sql</code> with category color, icon, description, slug, archived flag, and public flag columns.</li>
+        <li>Added unique slug persistence, repository create/update support, and category tree response propagation.</li>
+        <li>Added daemon request validation for hex colors, icon tokens, slugs, and 0/1 metadata flags.</li>
+        <li>Updated the daemon-owned API contract plus generated <code>API.md</code> and <code>docs/api-contract.json</code>.</li>
+        <li>Extended frontend API/category types and sidebar category rows to carry color and icon metadata.</li>
+        <li>Added category detail rendering for description, slug, color, icon, active/archived state, and public/private state.</li>
+        <li>Added a compact category metadata editor on the detail page with color, icon, slug, description, archived, and public controls.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <div class="summary-grid">
+        <div class="summary-panel">
+          <h3>Metadata</h3>
+          <p>Category metadata now survives create/update flows and is visible in the detail surface without adding clutter to library browsing.</p>
+        </div>
+        <div class="summary-panel">
+          <h3>Visibility</h3>
+          <p>The public flag is stored and displayed as local metadata only. No route, bind address, CORS behavior, or sharing behavior changes were added.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test daemon/src/test/category-repository.test.ts daemon/src/test/integration/categories.test.ts</code> passed.</li>
+        <li><code>npx vitest run src/pages/CategoryDetail.test.tsx</code> passed.</li>
+        <li><code>npm run docs:api</code> regenerated the API contract and markdown docs.</li>
+        <li><code>npm run docs:api:check</code>, <code>npm run lint</code>, <code>npm run type-check</code>, <code>npm test</code>, <code>npm run test:daemon</code>, and <code>npm run build</code> passed.</li>
+        <li><code>npm run test:e2e</code> passed with 19 tests after restarting Playwright with its own mock-daemon dev server.</li>
+        <li>Browser visual verification used an isolated seeded daemon on <code>127.0.0.1:33210</code> and Vite on <code>127.0.0.1:8080</code>.</li>
+        <li>Desktop view, edit form, and mobile/narrow state were captured and inspected for text fit and overlap.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Additional Screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/02-edit-form-desktop.png" alt="Category metadata edit form with color toggle, color swatch, icon, slug, description, archived switch, and public switch">
+          <figcaption>Edit form: metadata controls fit inside the detail page, preserve unset color state, and keep save/cancel actions visible.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/03-after-mobile.png" alt="Mobile-width category detail page showing category metadata stacked without overlap">
+          <figcaption>Mobile: metadata, actions, child categories, and bookmarks stack cleanly in a narrow viewport.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The metadata fields are intentionally scoped to category storage and category API responses. Archived category state does not hide bookmarks or categories yet, and public visibility does not publish data. Future behavior can be added behind separate task-specific requirements.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/db/migrations/0013_category_metadata.sql</code></li>
+        <li><code>daemon/src/db/types.ts</code></li>
+        <li><code>daemon/src/db/category-repository.ts</code></li>
+        <li><code>daemon/src/routes/categories.ts</code></li>
+        <li><code>daemon/src/api/contract.ts</code></li>
+        <li><code>src/lib/api.ts</code></li>
+        <li><code>src/hooks/use-bookmarks.ts</code></li>
+        <li><code>src/components/AppSidebar.tsx</code></li>
+        <li><code>src/pages/CategoryDetail.tsx</code></li>
+        <li><code>API.md</code></li>
+        <li><code>docs/api-contract.json</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

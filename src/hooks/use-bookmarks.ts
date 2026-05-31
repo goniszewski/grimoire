@@ -60,6 +60,12 @@ export interface UICategory {
   count: number;
   parentId: string | null;
   depth: number;
+  color?: string | null;
+  icon?: string | null;
+  description?: string | null;
+  slug?: string | null;
+  is_archived?: 0 | 1;
+  is_public?: 0 | 1;
 }
 
 export interface UITagCount {
@@ -128,6 +134,12 @@ function toUICategories(categories: ApiCategory[], depth = 0): UICategory[] {
       count: category.bookmark_count,
       parentId: category.parent_id,
       depth,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      slug: category.slug,
+      is_archived: category.is_archived,
+      is_public: category.is_public,
     },
     ...toUICategories(category.children ?? [], depth + 1),
   ]);

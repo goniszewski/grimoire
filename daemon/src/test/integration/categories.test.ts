@@ -27,6 +27,54 @@ describe("Categories API", () => {
     expect(json.data.id).toBeString();
   });
 
+  it("POST /categories persists optional metadata fields", async () => {
+    const res = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "AI Research",
+        color: "#2563eb",
+        icon: "brain",
+        description: "Machine learning papers and agent notes",
+        slug: "ai-research",
+        is_archived: 1,
+        is_public: 1,
+      }),
+    });
+    expect(res.status).toBe(201);
+    const json = await res.json() as {
+      data: {
+        name: string;
+        color: string | null;
+        icon: string | null;
+        description: string | null;
+        slug: string | null;
+        is_archived: 0 | 1;
+        is_public: 0 | 1;
+      };
+    };
+    expect(json.data).toMatchObject({
+      name: "AI Research",
+      color: "#2563eb",
+      icon: "brain",
+      description: "Machine learning papers and agent notes",
+      slug: "ai-research",
+      is_archived: 1,
+      is_public: 1,
+    });
+
+    const listRes = await app.request("/categories");
+    const listJson = await listRes.json() as { data: Array<typeof json.data> };
+    expect(listJson.data[0]).toMatchObject({
+      color: "#2563eb",
+      icon: "brain",
+      description: "Machine learning papers and agent notes",
+      slug: "ai-research",
+      is_archived: 1,
+      is_public: 1,
+    });
+  });
+
   it("POST /categories creates a child category at depth 1", async () => {
     const parentRes = await app.request("/categories", {
       method: "POST",
@@ -78,6 +126,111 @@ describe("Categories API", () => {
     expect(updateRes.status).toBe(200);
     const json = await updateRes.json() as { data: { name: string } };
     expect(json.data.name).toBe("Technology");
+  });
+
+  it("PUT /categories/:id updates and clears metadata fields", async () => {
+    const createRes = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Research",
+        color: "#2563eb",
+        icon: "brain",
+        description: "Initial notes",
+        slug: "research",
+        is_archived: 0,
+        is_public: 0,
+      }),
+    });
+    const { data: cat } = await createRes.json() as { data: { id: string } };
+
+    const updateRes = await app.request(`/categories/${cat.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        color: null,
+        icon: null,
+        description: "Updated notes",
+        slug: "research-updated",
+        is_archived: 1,
+        is_public: 1,
+      }),
+    });
+
+    expect(updateRes.status).toBe(200);
+    const json = await updateRes.json() as {
+      data: {
+        color: string | null;
+        icon: string | null;
+        description: string | null;
+        slug: string | null;
+        is_archived: 0 | 1;
+        is_public: 0 | 1;
+      };
+    };
+    expect(json.data).toMatchObject({
+      color: null,
+      icon: null,
+      description: "Updated notes",
+      slug: "research-updated",
+      is_archived: 1,
+      is_public: 1,
+    });
+  });
+
+  it("validates category metadata fields", async () => {
+    const badColor = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Bad Color", color: "blue" }),
+    });
+    expect(badColor.status).toBe(422);
+
+    const badVisibility = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Bad Visibility", is_public: 2 }),
+    });
+    expect(badVisibility.status).toBe(422);
+  });
+
+  it("rejects duplicate category slugs", async () => {
+    await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Research", slug: "research" }),
+    });
+
+    const duplicate = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Research Copy", slug: "research" }),
+    });
+
+    expect(duplicate.status).toBe(409);
+  });
+
+  it("rejects non-object JSON category request bodies", async () => {
+    const postRes = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "null",
+    });
+    expect(postRes.status).toBe(422);
+
+    const createRes = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Research" }),
+    });
+    const { data: cat } = await createRes.json() as { data: { id: string } };
+
+    const putRes = await app.request(`/categories/${cat.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: "null",
+    });
+    expect(putRes.status).toBe(422);
   });
 
   it("PUT /categories/:id reparents to root with parent_id: null", async () => {

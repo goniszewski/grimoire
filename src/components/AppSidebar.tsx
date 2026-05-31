@@ -166,6 +166,18 @@ function DraggableCategory({
               <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
             ) : (
               <>
+                {cat.color && (
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                )}
+                {cat.icon && (
+                  <span aria-hidden="true" className="max-w-8 shrink-0 truncate text-[9px] font-mono uppercase text-muted-foreground">
+                    {cat.icon.slice(0, 2)}
+                  </span>
+                )}
                 <span className="text-xs truncate">{cat.name}</span>
                 <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
                   {cat.count}
@@ -653,6 +665,18 @@ export function AppSidebar({
                               <span className="text-[10px] font-bold uppercase shrink-0">{cat.name.slice(0, 2)}</span>
                             ) : (
                               <>
+                                {cat.color && (
+                                  <span
+                                    aria-hidden="true"
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-border"
+                                    style={{ backgroundColor: cat.color }}
+                                  />
+                                )}
+                                {cat.icon && (
+                                  <span aria-hidden="true" className="max-w-8 shrink-0 truncate text-[9px] font-mono uppercase text-muted-foreground">
+                                    {cat.icon.slice(0, 2)}
+                                  </span>
+                                )}
                                 <span className="text-xs truncate">{cat.name}</span>
                                 <Badge variant="secondary" className="ml-auto text-[10px] h-4 px-1.5 font-mono">
                                   {cat.count}

@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { CategoryRow } from "./types.js";
+import type { CategoryRow } from "./types.js";
 
 // ─── Shapes ───────────────────────────────────────────────────────────────────
 
@@ -9,6 +9,15 @@ export interface CategoryWithCount extends CategoryRow {
 
 export interface CategoryNode extends CategoryWithCount {
   children: CategoryNode[];
+}
+
+export interface CategoryMetadataPatch {
+  color?: string | null;
+  icon?: string | null;
+  description?: string | null;
+  slug?: string | null;
+  is_archived?: 0 | 1;
+  is_public?: 0 | 1;
 }
 
 // ─── Repository ───────────────────────────────────────────────────────────────
@@ -87,22 +96,31 @@ export class CategoryRepository {
     return false;
   }
 
-  create(name: string, parentId?: string | null): CategoryRow {
+  create(name: string, parentId?: string | null, metadata: CategoryMetadataPatch = {}): CategoryRow {
     const row = this.db
-      .query<CategoryRow, [string, string | null]>(
-        `INSERT INTO categories (name, parent_id)
-         VALUES (?, ?)
+      .query<CategoryRow, [string, string | null, string | null, string | null, string | null, string | null, 0 | 1, 0 | 1]>(
+        `INSERT INTO categories (name, parent_id, color, icon, description, slug, is_archived, is_public)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          RETURNING *`
       )
-      .get(name.trim(), parentId ?? null);
+      .get(
+        name.trim(),
+        parentId ?? null,
+        metadata.color ?? null,
+        metadata.icon ?? null,
+        metadata.description ?? null,
+        metadata.slug ?? null,
+        metadata.is_archived ?? 0,
+        metadata.is_public ?? 0
+      );
 
     if (!row) throw new Error("Failed to insert category");
     return row;
   }
 
-  update(id: string, patch: { name?: string; parent_id?: string | null }): CategoryRow | null {
+  update(id: string, patch: { name?: string; parent_id?: string | null } & CategoryMetadataPatch): CategoryRow | null {
     const sets: string[] = [];
-    const params: (string | null)[] = [];
+    const params: (string | number | null)[] = [];
 
     if ("name" in patch && patch.name !== undefined) {
       sets.push("name = ?");
@@ -111,6 +129,30 @@ export class CategoryRepository {
     if ("parent_id" in patch) {
       sets.push("parent_id = ?");
       params.push(patch.parent_id ?? null);
+    }
+    if ("color" in patch) {
+      sets.push("color = ?");
+      params.push(patch.color ?? null);
+    }
+    if ("icon" in patch) {
+      sets.push("icon = ?");
+      params.push(patch.icon ?? null);
+    }
+    if ("description" in patch) {
+      sets.push("description = ?");
+      params.push(patch.description ?? null);
+    }
+    if ("slug" in patch) {
+      sets.push("slug = ?");
+      params.push(patch.slug ?? null);
+    }
+    if ("is_archived" in patch && patch.is_archived !== undefined) {
+      sets.push("is_archived = ?");
+      params.push(patch.is_archived);
+    }
+    if ("is_public" in patch && patch.is_public !== undefined) {
+      sets.push("is_public = ?");
+      params.push(patch.is_public);
     }
 
     if (sets.length === 0) return this.findById(id);

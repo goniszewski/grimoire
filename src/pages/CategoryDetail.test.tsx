@@ -9,6 +9,7 @@ import type { ApiBookmark, ApiCategory, ListBookmarksParams } from "@/lib/api";
 vi.mock("@/lib/api", () => ({
   listBookmarks: vi.fn(),
   listCategories: vi.fn(),
+  updateCategory: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -55,6 +56,12 @@ function makeApiCategory(overrides: Partial<ApiCategory> = {}): ApiCategory {
     id: "cat-ai",
     name: "AI",
     parent_id: "cat-research",
+    color: null,
+    icon: null,
+    description: null,
+    slug: null,
+    is_archived: 0,
+    is_public: 0,
     created_at: "2026-04-01T10:00:00Z",
     updated_at: "2026-05-01T10:00:00Z",
     bookmark_count: 22,
@@ -92,9 +99,20 @@ describe("CategoryDetail", () => {
           id: "cat-research",
           name: "Research",
           parent_id: null,
+          color: "#2563eb",
+          icon: "brain",
+          description: "Research inbox",
+          slug: "research",
+          is_public: 1,
           bookmark_count: 3,
           children: [
             makeApiCategory({
+              color: "#7c3aed",
+              icon: "sparkles",
+              description: "Machine learning papers and agent notes",
+              slug: "ai-research",
+              is_archived: 1,
+              is_public: 1,
               children: [
                 makeApiCategory({
                   id: "cat-agents",
@@ -127,6 +145,10 @@ describe("CategoryDetail", () => {
     expect(await screen.findByRole("heading", { name: "AI" })).toBeInTheDocument();
     expect(screen.getByText("Research")).toBeInTheDocument();
     expect(screen.getByText("Agents")).toBeInTheDocument();
+    expect(screen.getByText("Machine learning papers and agent notes")).toBeInTheDocument();
+    expect(screen.getByText("ai-research")).toBeInTheDocument();
+    expect(screen.getAllByText("Archived").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Public").length).toBeGreaterThan(0);
     expect(screen.getByText("22 bookmarks")).toBeInTheDocument();
     expect(screen.getByText("Created Apr 1, 2026")).toBeInTheDocument();
     expect(screen.getByText("Updated May 1, 2026")).toBeInTheDocument();
@@ -138,6 +160,109 @@ describe("CategoryDetail", () => {
       limit: 20,
       offset: 0,
     } satisfies ListBookmarksParams);
+  });
+
+  it("edits category metadata from the detail page", async () => {
+    mockedListCategories.mockResolvedValue({
+      data: [
+        makeApiCategory({
+          color: "#2563eb",
+          icon: "brain",
+          description: "Machine learning papers",
+          slug: "ai-research",
+          is_archived: 0,
+          is_public: 1,
+        }),
+      ],
+    });
+    mockedListBookmarks.mockResolvedValue(
+      bookmarkResponse([], {
+        total: 0,
+        limit: 20,
+        offset: 0,
+        has_more: false,
+      })
+    );
+    (api.updateCategory as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: makeApiCategory({
+        color: "#16a34a",
+        icon: "sparkles",
+        description: "Updated research notes",
+        slug: "ai-updated",
+        is_archived: 0,
+        is_public: 1,
+      }),
+    });
+
+    renderCategoryDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit metadata" }));
+    fireEvent.change(screen.getByLabelText("Color"), { target: { value: "#16a34a" } });
+    fireEvent.change(screen.getByLabelText("Icon"), { target: { value: "sparkles" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "ai-updated" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Updated research notes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save metadata" }));
+
+    await waitFor(() =>
+      expect(api.updateCategory).toHaveBeenCalledWith("cat-ai", {
+        color: "#16a34a",
+        icon: "sparkles",
+        description: "Updated research notes",
+        slug: "ai-updated",
+        is_archived: 0,
+        is_public: 1,
+      })
+    );
+  });
+
+  it("keeps color unset when editing other metadata on an uncolored category", async () => {
+    mockedListCategories.mockResolvedValue({
+      data: [
+        makeApiCategory({
+          color: null,
+          icon: null,
+          description: null,
+          slug: null,
+          is_archived: 0,
+          is_public: 0,
+        }),
+      ],
+    });
+    mockedListBookmarks.mockResolvedValue(
+      bookmarkResponse([], {
+        total: 0,
+        limit: 20,
+        offset: 0,
+        has_more: false,
+      })
+    );
+    (api.updateCategory as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: makeApiCategory({
+        color: null,
+        icon: "sparkles",
+        description: null,
+        slug: null,
+        is_archived: 0,
+        is_public: 0,
+      }),
+    });
+
+    renderCategoryDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit metadata" }));
+    fireEvent.change(screen.getByLabelText("Icon"), { target: { value: "sparkles" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save metadata" }));
+
+    await waitFor(() =>
+      expect(api.updateCategory).toHaveBeenCalledWith("cat-ai", {
+        color: null,
+        icon: "sparkles",
+        description: null,
+        slug: null,
+        is_archived: 0,
+        is_public: 0,
+      })
+    );
   });
 
   it("uses daemon pagination when moving between category bookmark pages", async () => {

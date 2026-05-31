@@ -63,6 +63,12 @@ export interface CategoryRow {
   id: string;
   name: string;
   parent_id: string | null;
+  color: string | null;
+  icon: string | null;
+  description: string | null;
+  slug: string | null;
+  is_archived: 0 | 1;
+  is_public: 0 | 1;
   created_at: string;
   updated_at: string;
 }

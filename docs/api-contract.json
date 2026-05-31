@@ -1147,6 +1147,48 @@
           "description": "Parent category ID",
           "nullable": true
         },
+        "color": {
+          "type": "string",
+          "description": "Optional category hex color",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "nullable": true
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optional lowercase icon token",
+          "maxLength": 40,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional category description",
+          "maxLength": 500,
+          "nullable": true
+        },
+        "slug": {
+          "type": "string",
+          "description": "Optional category slug",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "nullable": true
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived metadata flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_public": {
+          "type": "integer",
+          "description": "Public visibility metadata flag, 0 or 1; local metadata only and does not expose data",
+          "enum": [
+            0,
+            1
+          ]
+        },
         "created_at": {
           "type": "string",
           "description": "Creation timestamp",
@@ -1162,6 +1204,12 @@
         "id",
         "name",
         "parent_id",
+        "color",
+        "icon",
+        "description",
+        "slug",
+        "is_archived",
+        "is_public",
         "created_at",
         "updated_at"
       ],
@@ -1184,6 +1232,48 @@
           "description": "Parent category ID",
           "nullable": true
         },
+        "color": {
+          "type": "string",
+          "description": "Optional category hex color",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "nullable": true
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optional lowercase icon token",
+          "maxLength": 40,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional category description",
+          "maxLength": 500,
+          "nullable": true
+        },
+        "slug": {
+          "type": "string",
+          "description": "Optional category slug",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "nullable": true
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived metadata flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_public": {
+          "type": "integer",
+          "description": "Public visibility metadata flag, 0 or 1; local metadata only and does not expose data",
+          "enum": [
+            0,
+            1
+          ]
+        },
         "created_at": {
           "type": "string",
           "description": "Creation timestamp",
@@ -1204,6 +1294,12 @@
         "id",
         "name",
         "parent_id",
+        "color",
+        "icon",
+        "description",
+        "slug",
+        "is_archived",
+        "is_public",
         "created_at",
         "updated_at",
         "bookmark_count"
@@ -1226,6 +1322,48 @@
           "type": "string",
           "description": "Parent category ID",
           "nullable": true
+        },
+        "color": {
+          "type": "string",
+          "description": "Optional category hex color",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "nullable": true
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optional lowercase icon token",
+          "maxLength": 40,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional category description",
+          "maxLength": 500,
+          "nullable": true
+        },
+        "slug": {
+          "type": "string",
+          "description": "Optional category slug",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "nullable": true
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived metadata flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_public": {
+          "type": "integer",
+          "description": "Public visibility metadata flag, 0 or 1; local metadata only and does not expose data",
+          "enum": [
+            0,
+            1
+          ]
         },
         "created_at": {
           "type": "string",
@@ -1254,6 +1392,12 @@
         "id",
         "name",
         "parent_id",
+        "color",
+        "icon",
+        "description",
+        "slug",
+        "is_archived",
+        "is_public",
         "created_at",
         "updated_at",
         "bookmark_count",
@@ -1273,6 +1417,48 @@
           "type": "string",
           "description": "Parent category ID",
           "nullable": true
+        },
+        "color": {
+          "type": "string",
+          "description": "Optional category hex color",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "nullable": true
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optional lowercase icon token",
+          "maxLength": 40,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional category description",
+          "maxLength": 500,
+          "nullable": true
+        },
+        "slug": {
+          "type": "string",
+          "description": "Optional category slug",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "nullable": true
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived metadata flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_public": {
+          "type": "integer",
+          "description": "Public visibility metadata flag, 0 or 1; local metadata only and does not expose data",
+          "enum": [
+            0,
+            1
+          ]
         }
       },
       "required": [
@@ -1292,6 +1478,48 @@
           "type": "string",
           "description": "Parent category ID",
           "nullable": true
+        },
+        "color": {
+          "type": "string",
+          "description": "Optional category hex color",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "nullable": true
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optional lowercase icon token",
+          "maxLength": 40,
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "nullable": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional category description",
+          "maxLength": 500,
+          "nullable": true
+        },
+        "slug": {
+          "type": "string",
+          "description": "Optional category slug",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "nullable": true
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived metadata flag, 0 or 1",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "is_public": {
+          "type": "integer",
+          "description": "Public visibility metadata flag, 0 or 1; local metadata only and does not expose data",
+          "enum": [
+            0,
+            1
+          ]
         }
       },
       "required": [],

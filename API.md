@@ -456,6 +456,12 @@ Request body:
 |---|---|---:|---|
 | `name` | string | yes | Category name |
 | `parent_id` | string \| null | no | Parent category ID |
+| `color` | string \| null | no | Optional category hex color |
+| `icon` | string \| null | no | Optional lowercase icon token |
+| `description` | string \| null | no | Optional category description |
+| `slug` | string \| null | no | Optional category slug |
+| `is_archived` | 0 \| 1 | no | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | no | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 
 Responses:
 
@@ -485,6 +491,12 @@ Request body:
 |---|---|---:|---|
 | `name` | string | no | Category name |
 | `parent_id` | string \| null | no | Parent category ID |
+| `color` | string \| null | no | Optional category hex color |
+| `icon` | string \| null | no | Optional lowercase icon token |
+| `description` | string \| null | no | Optional category description |
+| `slug` | string \| null | no | Optional category slug |
+| `is_archived` | 0 \| 1 | no | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | no | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 
 Responses:
 
@@ -1583,6 +1595,12 @@ Category row returned by create and update endpoints
 | `id` | string | yes | Category ID |
 | `name` | string | yes | Category name |
 | `parent_id` | string \| null | yes | Parent category ID |
+| `color` | string \| null | yes | Optional category hex color |
+| `icon` | string \| null | yes | Optional lowercase icon token |
+| `description` | string \| null | yes | Optional category description |
+| `slug` | string \| null | yes | Optional category slug |
+| `is_archived` | 0 \| 1 | yes | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | yes | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
 
@@ -1595,6 +1613,12 @@ Category row with active bookmark count returned by category listings
 | `id` | string | yes | Category ID |
 | `name` | string | yes | Category name |
 | `parent_id` | string \| null | yes | Parent category ID |
+| `color` | string \| null | yes | Optional category hex color |
+| `icon` | string \| null | yes | Optional lowercase icon token |
+| `description` | string \| null | yes | Optional category description |
+| `slug` | string \| null | yes | Optional category slug |
+| `is_archived` | 0 \| 1 | yes | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | yes | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
 | `bookmark_count` | integer | yes | Active bookmark count |
@@ -1606,6 +1630,12 @@ Category row with active bookmark count returned by category listings
 | `id` | string | yes | Category ID |
 | `name` | string | yes | Category name |
 | `parent_id` | string \| null | yes | Parent category ID |
+| `color` | string \| null | yes | Optional category hex color |
+| `icon` | string \| null | yes | Optional lowercase icon token |
+| `description` | string \| null | yes | Optional category description |
+| `slug` | string \| null | yes | Optional category slug |
+| `is_archived` | 0 \| 1 | yes | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | yes | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 | `created_at` | string | yes | Creation timestamp |
 | `updated_at` | string | yes | Update timestamp |
 | `bookmark_count` | integer | yes | Active bookmark count |
@@ -1617,6 +1647,12 @@ Category row with active bookmark count returned by category listings
 |---|---|---:|---|
 | `name` | string | yes | Category name |
 | `parent_id` | string \| null | no | Parent category ID |
+| `color` | string \| null | no | Optional category hex color |
+| `icon` | string \| null | no | Optional lowercase icon token |
+| `description` | string \| null | no | Optional category description |
+| `slug` | string \| null | no | Optional category slug |
+| `is_archived` | 0 \| 1 | no | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | no | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 
 ### CategoryPatchRequest
 
@@ -1624,6 +1660,12 @@ Category row with active bookmark count returned by category listings
 |---|---|---:|---|
 | `name` | string | no | Category name |
 | `parent_id` | string \| null | no | Parent category ID |
+| `color` | string \| null | no | Optional category hex color |
+| `icon` | string \| null | no | Optional lowercase icon token |
+| `description` | string \| null | no | Optional category description |
+| `slug` | string \| null | no | Optional category slug |
+| `is_archived` | 0 \| 1 | no | Archived metadata flag, 0 or 1 |
+| `is_public` | 0 \| 1 | no | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 
 ### CategoryTreeResponse
 
@@ -1643,6 +1685,12 @@ Response data
 | `data.id` | string | yes | Category ID |
 | `data.name` | string | yes | Category name |
 | `data.parent_id` | string \| null | yes | Parent category ID |
+| `data.color` | string \| null | yes | Optional category hex color |
+| `data.icon` | string \| null | yes | Optional lowercase icon token |
+| `data.description` | string \| null | yes | Optional category description |
+| `data.slug` | string \| null | yes | Optional category slug |
+| `data.is_archived` | 0 \| 1 | yes | Archived metadata flag, 0 or 1 |
+| `data.is_public` | 0 \| 1 | yes | Public visibility metadata flag, 0 or 1; local metadata only and does not expose data |
 | `data.created_at` | string | yes | Creation timestamp |
 | `data.updated_at` | string | yes | Update timestamp |
 

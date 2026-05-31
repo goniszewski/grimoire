@@ -110,7 +110,7 @@ tasks/
 | TASK-094 | [Bookmark Mutation And Detail Regression Tests](done/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | done |
 | TASK-095 | [Sidebar Categories From Full Tree](done/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | done |
 | TASK-096 | [Category Detail Page](done/TASK-096-category-detail-page.md) | Grimoire parity | medium | done |
-| TASK-097 | [Category Metadata Fields](backlog/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | backlog |
+| TASK-097 | [Category Metadata Fields](in-review/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | in-review |
 | TASK-098 | [Tag Management Surface](backlog/TASK-098-tag-management-surface.md) | Grimoire parity | high | backlog |
 | TASK-099 | [Tag Detail Pages](backlog/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | backlog |
 | TASK-100 | [Tag Rename API And UI](backlog/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | backlog |
@@ -209,7 +209,9 @@ regression coverage, and TASK-095 is complete with full-tree sidebar category
 navigation for empty and nested categories. TASK-096 is complete with a
 stable category detail route, metadata and child-category rendering,
 category-scoped daemon pagination, sidebar route navigation, focused frontend
-tests, e2e coverage, and visual reporting.
+tests, e2e coverage, and visual reporting. TASK-097 is in review with local
+category metadata persistence, validation, generated API docs, category detail
+rendering/editing, focused tests, and visual reporting.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

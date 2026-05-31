@@ -21,6 +21,35 @@ describe("CategoryRepository", () => {
     expect(cat.id).toBeString();
   });
 
+  it("creates category metadata and returns it from the tree", () => {
+    const cat = repo.create("AI Research", null, {
+      color: "#2563eb",
+      icon: "brain",
+      description: "Machine learning papers and agent notes",
+      slug: "ai-research",
+      is_archived: 1,
+      is_public: 1,
+    });
+
+    expect(cat.color).toBe("#2563eb");
+    expect(cat.icon).toBe("brain");
+    expect(cat.description).toBe("Machine learning papers and agent notes");
+    expect(cat.slug).toBe("ai-research");
+    expect(cat.is_archived).toBe(1);
+    expect(cat.is_public).toBe(1);
+
+    const tree = repo.listTree();
+    expect(tree[0]).toMatchObject({
+      id: cat.id,
+      color: "#2563eb",
+      icon: "brain",
+      description: "Machine learning papers and agent notes",
+      slug: "ai-research",
+      is_archived: 1,
+      is_public: 1,
+    });
+  });
+
   it("trims whitespace from category name", () => {
     const cat = repo.create("  Dev  ");
     expect(cat.name).toBe("Dev");
@@ -91,6 +120,35 @@ describe("CategoryRepository", () => {
     const cat = repo.create("Old Name");
     const updated = repo.update(cat.id, { name: "New Name" });
     expect(updated!.name).toBe("New Name");
+  });
+
+  it("updates and clears category metadata", () => {
+    const cat = repo.create("Reference", null, {
+      color: "#0f766e",
+      icon: "book-open",
+      description: "Reference material",
+      slug: "reference",
+      is_archived: 0,
+      is_public: 0,
+    });
+
+    const updated = repo.update(cat.id, {
+      color: null,
+      icon: null,
+      description: "Updated reference material",
+      slug: "reference-updated",
+      is_archived: 1,
+      is_public: 1,
+    });
+
+    expect(updated).toMatchObject({
+      color: null,
+      icon: null,
+      description: "Updated reference material",
+      slug: "reference-updated",
+      is_archived: 1,
+      is_public: 1,
+    });
   });
 
   it("update with no fields returns the current category unchanged", () => {
