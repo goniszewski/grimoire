@@ -19,8 +19,13 @@ import { toast } from "@/hooks/use-toast";
 import { openBookmarkExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 
 type StatusCallback = (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+
+function tagHref(tag: string): string {
+  return `/tags/${encodeURIComponent(tag)}`;
+}
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -232,7 +237,17 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
             <span className="text-xs text-muted-foreground font-mono shrink-0 hidden sm:inline">{bookmark.domain}</span>
             <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
             {bookmark.tags.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono hidden md:inline-flex">{tag}</Badge>
+              <Link
+                key={tag}
+                to={tagHref(tag)}
+                className="hidden md:inline-flex"
+                aria-label={`Open #${tag} tag`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
+                  {tag}
+                </Badge>
+              </Link>
             ))}
             {!!bookmark.read_later && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 hidden md:inline-flex">Read Later</Badge>
@@ -319,13 +334,19 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                   </Badge>
                 )}
                 {bookmark.tags.slice(0, 4).map((tag) => (
-                  <Badge
+                  <Link
                     key={tag}
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 h-5 font-mono"
+                    to={tagHref(tag)}
+                    aria-label={`Open #${tag} tag`}
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    {tag}
-                  </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0 h-5 font-mono"
+                    >
+                      {tag}
+                    </Badge>
+                  </Link>
                 ))}
                 {bookmark.tags.length > 4 && (
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">

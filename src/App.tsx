@@ -12,6 +12,7 @@ import Trash from "./pages/Trash";
 import Settings from "./pages/Settings";
 import CategoryDetail from "./pages/CategoryDetail";
 import Tags from "./pages/Tags";
+import TagDetail from "./pages/TagDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/categories/:id" element={<CategoryDetail />} />
           <Route path="/tags" element={<Tags />} />
+          <Route path="/tags/:tag" element={<TagDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -33,10 +33,13 @@ browsing tags outside bookmark detail.
 
 ## Work Notes
 
-- May 31, 2026: Added a dedicated `/tags` management page backed by the existing daemon tag endpoints. The page lists API-backed active tag counts, creates normalized tags, confirms delete-before-detach behavior, and links each tag to a filtered library view.
+- May 31, 2026: Added a dedicated `/tags` management page backed by the existing daemon tag endpoints. The page lists API-backed active tag counts, creates normalized tags, confirms delete-before-detach behavior, and links each tag into browsing flows.
 - Added typed frontend `createTag` and `deleteTag` API helpers and switched sidebar tag aggregates to use `GET /tags` counts instead of recomputing from the currently loaded bookmark page.
 - Added sidebar navigation to the tag management surface and URL tag-filter hydration for `/?tag=<name>` links.
 - Added focused frontend coverage for API helpers, API-backed tag counts, sidebar navigation, URL tag-filter clearing, import aggregate refreshes, and the tag page create/delete/list flows. Existing daemon tag integration coverage verifies list/create/delete route behavior.
 - Visual verification used an isolated loopback daemon on port `33210` and Vite on port `8080`; screenshots are recorded in `docs/task-reports/2026/05/2026-05-31-task-098-tag-management-surface/`.
 - May 31, 2026 review: Fixed stale tag filters when the `tag` URL query is removed, refreshed tag/domain aggregates after imports, aligned frontend tag API types with the daemon contract, and invalidated archive/trash/search caches after tag deletion.
 - Verification after review: `npm run check`, `npm run test:e2e`, and `git diff --check` passed. `npm run check` still reports existing Fast Refresh lint warnings and Vite chunk-size guidance, with no errors.
+- TASK-099 follow-up changed tag management row navigation from direct filtered
+  library links to stable tag detail routes. The tag detail page keeps the
+  filtered-library action available.

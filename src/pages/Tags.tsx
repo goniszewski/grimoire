@@ -207,7 +207,7 @@ const Tags = () => {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Button asChild variant="outline" size="sm">
-                    <Link to={`/?tag=${encodeURIComponent(tag.name)}`} aria-label={`View #${tag.name} in library`}>
+                    <Link to={`/tags/${encodeURIComponent(tag.name)}`} aria-label={`Open #${tag.name} tag`}>
                       <Search className="h-3.5 w-3.5" />
                       View
                     </Link>

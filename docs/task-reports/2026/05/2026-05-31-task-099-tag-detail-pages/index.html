@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tag Management Surface - Little Imp Task Report</title>
+<title>Tag Detail Pages - Little Imp Task Report</title>
 <style>
 :root {
   --bg: #f7f7fa;
@@ -14,7 +14,6 @@
   --accent: #7c3aed;
   --blue: #0f7fbf;
   --green: #15803d;
-  --red: #dc2626;
   --shadow: 0 18px 45px rgba(30, 32, 50, .08);
 }
 * { box-sizing: border-box; }
@@ -170,37 +169,37 @@ summary {
 
     <header>
       <p class="eyebrow">Little Imp Task Report</p>
-      <h1>Tag Management Surface</h1>
+      <h1>Tag Detail Pages</h1>
       <div class="meta-row">
         <span>May 31, 2026</span>
-        <span>TASK-098</span>
-        <span>In review</span>
+        <span>TASK-099</span>
+        <span>Completed</span>
       </div>
     </header>
 
     <figure class="hero-shot">
-      <img src="assets/01-after-tags-desktop.png" alt="Little Imp tag management page listing tags with counts, create controls, view links, and delete actions">
-      <figcaption>After: tags now have a dedicated management surface backed by the daemon tag list.</figcaption>
+      <img src="assets/01-after-desktop.png" alt="Little Imp tag detail page showing metadata, action buttons, pagination, and scoped bookmarks for the typescript tag">
+      <figcaption>After: each tag now has a stable detail route with metadata and daemon-paginated bookmarks.</figcaption>
     </figure>
 
     <section>
       <h2>Before</h2>
-      <p>Tags were only visible in the sidebar and bookmark detail controls. Sidebar counts were derived from the currently loaded bookmark page, so they could miss tags outside the active result set.</p>
+      <p>Tags had a management page and library filter links, but there was no stable route for a tag itself. Bookmark tag chips were static labels rather than navigation targets.</p>
     </section>
 
     <section>
       <h2>Problem</h2>
-      <p>TASK-098 needed a first-class place to list, create, delete, and browse tags without waiting for tag detail pages. Counts also needed to come from the daemon aggregate instead of the visible bookmark page.</p>
+      <p>TASK-099 needed a first-class <code>/tags/:tag</code> view so users can open a tag, see its active count and created metadata, and browse matching bookmarks without relying only on the main library filter.</p>
     </section>
 
     <section>
       <h2>Changes Added</h2>
       <ul>
-        <li>Added typed frontend helpers for <code>POST /tags</code> and <code>DELETE /tags/:id</code>.</li>
-        <li>Changed library sidebar tag counts to use <code>GET /tags</code> so counts are page-independent active-library totals.</li>
-        <li>Added a sidebar manage action that opens the new <code>/tags</code> route.</li>
-        <li>Added a dedicated tag management page with loading, empty, error, create, delete-confirmation, and count states.</li>
-        <li>Linked each tag into browsing flows; TASK-099 later promoted row navigation to stable tag detail pages while keeping the filtered library action available from each detail page.</li>
+        <li>Added the <code>/tags/:tag</code> route and a dedicated tag detail page.</li>
+        <li>Loaded tag metadata from <code>GET /tags</code> and scoped bookmarks from <code>GET /bookmarks?tag=&amp;limit=&amp;offset=</code>.</li>
+        <li>Added loading, unavailable, missing-tag, empty-bookmark, and paginated-list states.</li>
+        <li>Changed tag management rows to open tag detail pages.</li>
+        <li>Changed bookmark card tag chips into stable links to their tag detail pages.</li>
       </ul>
     </section>
 
@@ -208,12 +207,12 @@ summary {
       <h2>Result</h2>
       <div class="summary-grid">
         <div class="summary-panel">
-          <h3>Management</h3>
-          <p>Users can manage tags outside bookmark detail, with validation and a confirmation step before detaching a tag from active, archived, or trashed bookmarks.</p>
+          <h3>Browsing</h3>
+          <p>Users can open <code>/tags/typescript</code>, jump back to the filtered library, or return to tag management from one focused surface.</p>
         </div>
         <div class="summary-panel">
-          <h3>Browsing</h3>
-          <p>Tag browsing now has a stable progression from management to detail pages, with a filtered library action available when users want to search within a tag.</p>
+          <h3>Pagination</h3>
+          <p>The bookmark list uses daemon pagination and resets offset per tag so scoped lists stay consistent as users move through pages.</p>
         </div>
       </div>
     </section>
@@ -221,31 +220,25 @@ summary {
     <section>
       <h2>Verification</h2>
       <ul>
-        <li><code>npx vitest run src/lib/api.test.ts src/hooks/use-bookmarks.test.ts src/components/AppSidebar.test.tsx src/pages/Tags.test.tsx</code></li>
-        <li><code>cd daemon &amp;&amp; bun test src/test/integration/tags.test.ts</code></li>
-        <li><code>npm run lint</code></li>
-        <li><code>npm run test</code></li>
+        <li><code>npm run test -- src/pages/TagDetail.test.tsx src/pages/Tags.test.tsx src/components/BookmarkCard.test.tsx</code></li>
+        <li><code>npm run lint</code> passed with existing Fast Refresh warnings only.</li>
         <li><code>npm run type-check</code></li>
-        <li><code>npm run build</code></li>
+        <li><code>npm run build</code> passed with the existing Vite chunk-size warning.</li>
         <li><code>npm run test:e2e</code></li>
-        <li>Browser-verified <code>/tags</code>, delete confirmation, mobile layout, and <code>/?tag=typescript</code> filtering against an isolated loopback daemon.</li>
+        <li>Visual desktop and narrow checks passed against an isolated loopback daemon and Vite dev server; browser console error log count was zero.</li>
       </ul>
     </section>
 
-    <details open>
+    <details>
       <summary>Additional Screenshots</summary>
       <div class="shot-grid">
         <figure>
-          <img src="assets/02-delete-confirmation.png" alt="Tag delete confirmation dialog explaining that bookmarks are not deleted">
-          <figcaption>Delete confirmation: tag removal is explicit and explains active bookmark impact.</figcaption>
+          <img src="assets/01-after-desktop.png" alt="Desktop tag detail page for the typescript tag">
+          <figcaption>Desktop: metadata cards, scoped bookmarks, and disabled pagination controls for a three-item tag.</figcaption>
         </figure>
         <figure>
-          <img src="assets/03-after-tags-mobile.png" alt="Narrow mobile tag management page with stacked create controls and tag action rows">
-          <figcaption>Mobile: create controls and tag rows stack without clipped text.</figcaption>
-        </figure>
-        <figure>
-          <img src="assets/04-filtered-library.png" alt="Little Imp library filtered by the typescript tag from the tag management page">
-          <figcaption>Filtered library: the tag link applies <code>#typescript</code> and returns two matching bookmarks.</figcaption>
+          <img src="assets/02-after-mobile.png" alt="Narrow tag detail page for the typescript tag">
+          <figcaption>Narrow: actions, metadata cards, pagination, and bookmark rows stay stacked and readable.</figcaption>
         </figure>
       </div>
     </details>
@@ -253,18 +246,22 @@ summary {
     <details>
       <summary>Files Changed</summary>
       <ul>
+        <li><code>src/App.tsx</code></li>
+        <li><code>src/pages/TagDetail.tsx</code></li>
+        <li><code>src/pages/TagDetail.test.tsx</code></li>
         <li><code>src/pages/Tags.tsx</code></li>
         <li><code>src/pages/Tags.test.tsx</code></li>
-        <li><code>src/lib/api.ts</code></li>
-        <li><code>src/lib/api.test.ts</code></li>
-        <li><code>src/hooks/use-bookmarks.ts</code></li>
-        <li><code>src/hooks/use-bookmarks.test.ts</code></li>
-        <li><code>src/components/AppSidebar.tsx</code></li>
-        <li><code>src/components/AppSidebar.test.tsx</code></li>
-        <li><code>src/pages/Index.tsx</code></li>
-        <li><code>e2e/business-requirements.spec.ts</code></li>
-        <li><code>src/App.tsx</code></li>
+        <li><code>src/components/BookmarkCard.tsx</code></li>
+        <li><code>src/components/BookmarkCard.test.tsx</code></li>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>docs/task-reports/index.html</code></li>
+        <li><code>docs/task-reports/2026/index.html</code></li>
+        <li><code>docs/task-reports/2026/05/index.html</code></li>
+        <li><code>docs/task-reports/2026/05/2026-05-31-task-098-tag-management-surface/index.html</code></li>
+        <li><code>tasks/README.md</code></li>
         <li><code>tasks/in-review/TASK-098-tag-management-surface.md</code></li>
+        <li><code>tasks/done/TASK-099-tag-detail-pages.md</code></li>
       </ul>
     </details>
   </article>

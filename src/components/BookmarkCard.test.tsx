@@ -1,9 +1,10 @@
 import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { BookmarkCard } from "./BookmarkCard";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactElement } from "react";
 
 // ─── Minimal mocks for deps that hit the DOM ──────────────────────────────────
 
@@ -54,40 +55,48 @@ type BookmarkCardProps = ComponentProps<typeof BookmarkCard>;
 type StatusCallback = NonNullable<BookmarkCardProps["onPin"]>;
 const noopStatus: StatusCallback = () => {};
 
+function renderCard(element: ReactElement) {
+  return render(<MemoryRouter>{element}</MemoryRouter>);
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("BookmarkCard — rendering", () => {
   it("renders the title", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />
     );
     expect(screen.getByText("Test Article")).toBeInTheDocument();
   });
 
   it("renders the domain", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />
     );
     expect(screen.getByText("example.com")).toBeInTheDocument();
   });
 
   it("renders tags as badges", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />
     );
     expect(screen.getByText("typescript")).toBeInTheDocument();
     expect(screen.getByText("testing")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open #typescript tag" })).toHaveAttribute(
+      "href",
+      "/tags/typescript"
+    );
   });
 
   it("renders pipeline badge with correct status", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark({ status: "fetched" })} onDelete={noop} onClick={noop} />
     );
     expect(screen.getByTestId("pipeline-badge")).toHaveTextContent("fetched");
   });
 
   it("shows read indicator (BookOpen icon title) when read_at is set", () => {
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: "2024-01-16T00:00:00Z" })}
         onDelete={noop}
@@ -102,7 +111,7 @@ describe("BookmarkCard — rendering", () => {
   });
 
   it("shows 'Mark read' button when read_at is null", () => {
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: null })}
         onDelete={noop}
@@ -115,7 +124,7 @@ describe("BookmarkCard — rendering", () => {
   });
 
   it("shows a Read Later badge when read_later is set", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark({ read_later: 1 })} onDelete={noop} onClick={noop} />
     );
     expect(screen.getByText("Read Later")).toBeInTheDocument();
@@ -129,7 +138,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onClick with the bookmark when the card is clicked", async () => {
     const onClick = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={onClick} />
     );
     // Click the card body (h3 title area)
@@ -139,7 +148,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onPin when pin button is clicked and bookmark is not pinned", async () => {
     const onPin = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ is_pinned: 0 })}
         onDelete={noop}
@@ -155,7 +164,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onUnpin when pin button is clicked and bookmark is already pinned", async () => {
     const onUnpin = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ is_pinned: 1 })}
         onDelete={noop}
@@ -171,7 +180,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onArchive when archive button is clicked", () => {
     const onArchive = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark()}
         onDelete={noop}
@@ -185,7 +194,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onMarkRead when mark-read button clicked and bookmark is unread", () => {
     const onMarkRead = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: null })}
         onDelete={noop}
@@ -200,7 +209,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onMarkUnread when mark-read button clicked and bookmark is read", () => {
     const onMarkUnread = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: "2024-01-16T00:00:00Z" })}
         onDelete={noop}
@@ -215,7 +224,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onReadLater when read-later button is clicked and bookmark is not marked", () => {
     const onReadLater = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_later: 0 })}
         onDelete={noop}
@@ -230,7 +239,7 @@ describe("BookmarkCard — actions", () => {
 
   it("calls onClearReadLater when read-later button is clicked and bookmark is already marked", () => {
     const onClearReadLater = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_later: 1 })}
         onDelete={noop}
@@ -252,7 +261,7 @@ describe("BookmarkCard — actions", () => {
     );
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
 
-    render(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
     fireEvent.click(screen.getByTitle("Open bookmark"));
 
     expect(openSpy).toHaveBeenCalledWith(
@@ -281,7 +290,7 @@ describe("BookmarkCard — actions", () => {
       })
     );
 
-    render(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
     fireEvent.click(screen.getByTitle("Copy URL"));
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -290,14 +299,14 @@ describe("BookmarkCard — actions", () => {
 
 describe("BookmarkCard — compact mode", () => {
   it("renders title in compact layout", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} compact />
     );
     expect(screen.getByText("Test Article")).toBeInTheDocument();
   });
 
   it("renders domain in compact layout", () => {
-    render(
+    renderCard(
       <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} compact />
     );
     expect(screen.getByText("example.com")).toBeInTheDocument();
@@ -307,7 +316,7 @@ describe("BookmarkCard — compact mode", () => {
 describe("BookmarkCard — selection mode", () => {
   it("calls onToggleSelect when card is clicked in selection mode", () => {
     const onToggleSelect = vi.fn();
-    render(
+    renderCard(
       <BookmarkCard
         bookmark={makeBookmark()}
         onDelete={noop}
@@ -325,7 +334,7 @@ describe("BookmarkCard — selection mode", () => {
 describe("BookmarkCard — overflow tags", () => {
   it("shows +N badge when there are more than 4 tags", () => {
     const bookmark = makeBookmark({ tags: ["a", "b", "c", "d", "e", "f"] });
-    render(<BookmarkCard bookmark={bookmark} onDelete={noop} onClick={noop} />);
+    renderCard(<BookmarkCard bookmark={bookmark} onDelete={noop} onClick={noop} />);
     expect(screen.getByText("+2")).toBeInTheDocument();
   });
 });

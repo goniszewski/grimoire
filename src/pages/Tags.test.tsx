@@ -64,7 +64,7 @@ beforeEach(() => {
 });
 
 describe("Tags page", () => {
-  it("lists tags with active bookmark counts and library links", async () => {
+  it("lists tags with active bookmark counts and detail links", async () => {
     mockedListTags.mockResolvedValue({
       data: [
         makeTag(),
@@ -79,9 +79,9 @@ describe("Tags page", () => {
     expect(screen.getByText("42 bookmarks")).toBeInTheDocument();
     expect(screen.getByText("react")).toBeInTheDocument();
     expect(screen.getByText("12 bookmarks")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View #typescript in library" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open #typescript tag" })).toHaveAttribute(
       "href",
-      "/?tag=typescript"
+      "/tags/typescript"
     );
   });
 
