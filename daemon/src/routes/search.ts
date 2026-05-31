@@ -13,6 +13,13 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   return isNaN(n) ? fallback : Math.max(n, min);
 }
 
+function parseBooleanFlagParam(val: string | null | undefined): 0 | 1 | undefined | "invalid" {
+  if (val === undefined || val === null || val === "") return undefined;
+  if (val === "true" || val === "1") return 1;
+  if (val === "false" || val === "0") return 0;
+  return "invalid";
+}
+
 function problem(c: Context, status: 400 | 422, title: string, detail?: string) {
   return c.json(
     {
@@ -36,10 +43,14 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     const rawMode = c.req.query("mode") ?? "keyword";
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
     const offset = parseIntParam(c.req.query("offset"), 0);
+    const readLater = parseBooleanFlagParam(c.req.query("read_later"));
 
     const validModes: SearchMode[] = ["keyword", "semantic", "hybrid"];
     if (!validModes.includes(rawMode as SearchMode)) {
       return problem(c, 422, "Unprocessable Entity", `mode must be one of: ${validModes.join(", ")}`);
+    }
+    if (readLater === "invalid") {
+      return problem(c, 422, "Unprocessable Entity", "`read_later` must be true, false, 1, or 0");
     }
     const mode = rawMode as SearchMode;
 
@@ -61,6 +72,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         category: c.req.query("category") ?? undefined,
         date_from: c.req.query("date_from") ?? undefined,
         date_to: c.req.query("date_to") ?? undefined,
+        read_later: readLater,
         limit,
         offset,
         embeddingConfig: embeddingConfig ?? undefined,

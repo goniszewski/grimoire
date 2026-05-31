@@ -45,6 +45,7 @@ export interface UIBookmark {
   category_id: string | null;
   is_pinned: 0 | 1;
   is_archived: 0 | 1;
+  read_later: 0 | 1;
   read_at: string | null;
   notes: string | null;
 }
@@ -79,6 +80,7 @@ type BookmarkForUi = {
   updated_at: ApiBookmark["updated_at"];
   is_pinned: ApiBookmark["is_pinned"];
   is_archived: ApiBookmark["is_archived"];
+  read_later: ApiBookmark["read_later"];
   read_at: ApiBookmark["read_at"];
   notes: ApiBookmark["notes"];
 };
@@ -100,6 +102,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     updatedAt: bm.updated_at,
     is_pinned: bm.is_pinned,
     is_archived: bm.is_archived,
+    read_later: bm.read_later,
     read_at: bm.read_at,
     notes: bm.notes,
   };
@@ -131,6 +134,7 @@ export function useBookmarks() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [readLaterOnly, setReadLaterOnly] = useState(false);
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
@@ -189,7 +193,8 @@ export function useBookmarks() {
     category: categoryIdForFilter,
     date_from: dateRange.from?.toISOString().slice(0, 10),
     date_to: dateRange.to?.toISOString().slice(0, 10),
-  }), [selectedTag, selectedDomain, categoryIdForFilter, dateRange]);
+    read_later: readLaterOnly ? true : undefined,
+  }), [selectedTag, selectedDomain, categoryIdForFilter, dateRange, readLaterOnly]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -208,8 +213,9 @@ export function useBookmarks() {
     category: categoryIdForFilter,
     date_from: dateRange.from?.toISOString().slice(0, 10),
     date_to: dateRange.to?.toISOString().slice(0, 10),
+    read_later: readLaterOnly ? true : undefined,
     limit: 200,
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, categoryIdForFilter, dateRange]);
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, categoryIdForFilter, dateRange, readLaterOnly]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -318,13 +324,54 @@ export function useBookmarks() {
         category_id?: string | null;
         tags?: string[];
         is_pinned?: 0 | 1;
+        read_later?: 0 | 1;
         is_archived?: 0 | 1;
         read_at?: string | null;
         notes?: string | null;
       };
     }) => updateBookmark(id, patch),
+    onMutate: async ({ id, patch }) => {
+      await Promise.all([
+        qc.cancelQueries({ queryKey: bookmarkKeys.lists() }),
+        qc.cancelQueries({ queryKey: ["search"] }),
+      ]);
+
+      const listSnapshots = qc.getQueriesData<{ data: ApiBookmark[] }>({ queryKey: bookmarkKeys.lists() });
+      const searchSnapshots = qc.getQueriesData<{ data: ApiBookmark[] }>({ queryKey: ["search"] });
+
+      const applyPatch = (old: { data: ApiBookmark[] } | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.map((bookmark) =>
+            bookmark.id === id
+              ? {
+                  ...bookmark,
+                  ...patch,
+                  updated_at: new Date().toISOString(),
+                }
+              : bookmark
+          ),
+        };
+      };
+
+      for (const [key, value] of [...listSnapshots, ...searchSnapshots]) {
+        qc.setQueryData(key, applyPatch(value));
+      }
+
+      return { listSnapshots, searchSnapshots };
+    },
+    onError: (_error, _variables, context) => {
+      for (const [key, value] of context?.listSnapshots ?? []) {
+        qc.setQueryData(key, value);
+      }
+      for (const [key, value] of context?.searchSnapshots ?? []) {
+        qc.setQueryData(key, value);
+      }
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: ["search"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.archive });
       qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
       qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
@@ -386,6 +433,14 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { is_pinned: 0 } }, callbacks);
   }, [updateBookmarkMutation]);
 
+  const markReadLater = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { read_later: 1 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
+  const clearReadLater = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
+    updateBookmarkMutation.mutate({ id, patch: { read_later: 0 } }, callbacks);
+  }, [updateBookmarkMutation]);
+
   const archiveBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
     updateBookmarkMutation.mutate({ id, patch: { is_archived: 1 } }, callbacks);
   }, [updateBookmarkMutation]);
@@ -426,6 +481,8 @@ export function useBookmarks() {
     setSelectedTag,
     selectedDomain,
     setSelectedDomain,
+    readLaterOnly,
+    setReadLaterOnly,
     dateRange,
     setDateRange,
     sortBy,
@@ -439,6 +496,8 @@ export function useBookmarks() {
     importBookmarks,
     pinBookmark,
     unpinBookmark,
+    markReadLater,
+    clearReadLater,
     archiveBookmark,
     unarchiveBookmark,
     markAsRead,

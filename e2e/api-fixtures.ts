@@ -22,6 +22,7 @@ export function makeApiBookmark(overrides: Partial<BookmarkDto> = {}): BookmarkD
     is_archived: 0,
     is_trashed: 0,
     trashed_at: null,
+    read_later: 0,
     read_at: null,
     notes: null,
     created_at: new Date().toISOString(),

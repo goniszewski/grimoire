@@ -72,6 +72,91 @@ describe("Bookmarks API", () => {
     expect(json.pagination).toBeDefined();
   });
 
+  it("PUT /bookmarks/:id updates read_later without changing pinned state", async () => {
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+
+    const res = await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ read_later: 1 }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: { read_later: 0 | 1; is_pinned: 0 | 1 } };
+    expect(json.data.read_later).toBe(1);
+    expect(json.data.is_pinned).toBe(0);
+  });
+
+  it("GET /bookmarks filters by read_later", async () => {
+    const readLaterRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/read-later" }),
+    });
+    const normalRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/normal" }),
+    });
+    const { data: readLater } = await readLaterRes.json() as { data: { id: string } };
+    const { data: normal } = await normalRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${readLater.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ read_later: 1 }),
+    });
+
+    const filteredRes = await app.request("/bookmarks?read_later=true");
+    expect(filteredRes.status).toBe(200);
+    const filtered = await filteredRes.json() as { data: Array<{ id: string; read_later: 0 | 1 }> };
+    expect(filtered.data.map((b) => b.id)).toContain(readLater.id);
+    expect(filtered.data.map((b) => b.id)).not.toContain(normal.id);
+    expect(filtered.data.every((b) => b.read_later === 1)).toBe(true);
+  });
+
+  it("GET /export includes pinned/starred mapping and read_later state", async () => {
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/exported" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_pinned: 1, read_later: 1 }),
+    });
+
+    const jsonRes = await app.request("/export?format=json");
+    expect(jsonRes.status).toBe(200);
+    const exported = await jsonRes.json() as Array<{ id: string; is_pinned: 0 | 1; read_later: 0 | 1 }>;
+    expect(exported.find((row) => row.id === bm.id)).toMatchObject({
+      is_pinned: 1,
+      read_later: 1,
+    });
+
+    const csvRes = await app.request("/export?format=csv");
+    expect(csvRes.status).toBe(200);
+    const csv = await csvRes.text();
+    expect(csv.split("\n")[0]).toContain("is_pinned");
+    expect(csv.split("\n")[0]).toContain("read_later");
+  });
+
+  it("GET /export rejects invalid read_later filters", async () => {
+    const res = await app.request("/export?read_later=maybe");
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { error: string };
+    expect(json.error).toContain("read_later");
+  });
+
   // ─── GET /bookmarks/:id ───────────────────────────────────────────────────
 
   it("GET /bookmarks/:id returns the bookmark with content field", async () => {

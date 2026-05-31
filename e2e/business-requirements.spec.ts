@@ -62,6 +62,44 @@ test.describe("Documented business requirements smoke", () => {
     await expect.poll(() => daemon.requests.exportFormats).toContain("json");
   });
 
+  test("filters and exports read-later bookmarks", async ({ page }) => {
+    const daemon = await installMockDaemon(page, {
+      bookmarks: [
+        makeApiBookmark({
+          id: "bm-read-later-1",
+          url: "https://example.com/read-later",
+          domain: "example.com",
+          title: "Saved For Later",
+          read_later: 1,
+        }),
+        makeApiBookmark({
+          id: "bm-normal-1",
+          url: "https://example.com/reference",
+          domain: "example.com",
+          title: "Immediate Reference",
+          read_later: 0,
+        }),
+      ],
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByText("Saved For Later")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Immediate Reference")).toBeVisible();
+
+    await page.getByRole("button", { name: /^Read Later$/ }).click();
+
+    await expect(page.getByText("Saved For Later")).toBeVisible();
+    await expect(page.getByText("Immediate Reference")).toBeHidden();
+
+    await page.getByRole("button", { name: /^Export$/ }).click();
+    await page.getByRole("menuitem", { name: /export as json/i }).click();
+
+    await expect
+      .poll(() => daemon.requests.exportRequests)
+      .toContainEqual({ format: "json", read_later: "true" });
+  });
+
   test("covers settings, update checks, backup verification, and restore", async ({ page }) => {
     const daemon = await installMockDaemon(page, {
       bookmarks: [makeApiBookmark({ id: "bm-settings-1" })],

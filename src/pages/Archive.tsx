@@ -42,6 +42,7 @@ const Archive = () => {
       updatedAt: bm.updated_at,
       is_pinned: bm.is_pinned,
       is_archived: bm.is_archived,
+      read_later: bm.read_later,
       read_at: bm.read_at,
       notes: bm.notes,
     }));

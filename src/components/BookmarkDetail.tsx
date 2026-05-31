@@ -28,6 +28,8 @@ interface BookmarkDetailProps {
   onUpdateNotes: (id: string, notes: string | null) => void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onClearReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onMarkRead?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onMarkUnread?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -45,6 +47,8 @@ export function BookmarkDetail({
   onUpdateNotes,
   onPin,
   onUnpin,
+  onReadLater,
+  onClearReadLater,
   onArchive,
   onMarkRead,
   onMarkUnread,
@@ -119,6 +123,8 @@ export function BookmarkDetail({
       onUpdateNotes={onUpdateNotes}
       onPin={onPin}
       onUnpin={onUnpin}
+      onReadLater={onReadLater}
+      onClearReadLater={onClearReadLater}
       onArchive={onArchive}
       onMarkRead={onMarkRead}
       onMarkUnread={onMarkUnread}

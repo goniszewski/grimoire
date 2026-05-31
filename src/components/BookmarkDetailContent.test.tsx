@@ -44,6 +44,7 @@ function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
     updatedAt: "2024-01-15T10:00:00Z",
     is_pinned: 0,
     is_archived: 0,
+    read_later: 0,
     read_at: null,
     notes: null,
     ...overrides,
@@ -120,6 +121,11 @@ describe("BookmarkDetailContent — rendering", () => {
       />
     );
     expect(screen.getByText("Related Article")).toBeInTheDocument();
+  });
+
+  it("renders a Read Later badge when read_later is set", () => {
+    render(<BookmarkDetailContent {...defaultProps(makeBookmark({ read_later: 1 }))} />);
+    expect(screen.getByText("Read Later")).toBeInTheDocument();
   });
 });
 
@@ -359,6 +365,28 @@ describe("BookmarkDetailContent — actions", () => {
     );
     fireEvent.click(screen.getByText("Mark unread"));
     expect(onMarkUnread).toHaveBeenCalledWith("bm-1", expect.any(Object));
+  });
+
+  it("calls onReadLater when Read later button is clicked on an unmarked bookmark", () => {
+    const onReadLater = vi.fn();
+    render(
+      <BookmarkDetailContent
+        {...defaultProps(makeBookmark({ read_later: 0 }), { onReadLater, onClearReadLater: noopStatus })}
+      />
+    );
+    fireEvent.click(screen.getByText("Read later"));
+    expect(onReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
+  });
+
+  it("calls onClearReadLater when Clear read later button is clicked on a marked bookmark", () => {
+    const onClearReadLater = vi.fn();
+    render(
+      <BookmarkDetailContent
+        {...defaultProps(makeBookmark({ read_later: 1 }), { onReadLater: noopStatus, onClearReadLater })}
+      />
+    );
+    fireEvent.click(screen.getByText("Clear read later"));
+    expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
   it("calls onSelectRelated when a related bookmark is clicked", () => {

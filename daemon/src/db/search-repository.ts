@@ -16,6 +16,7 @@ export interface SearchOptions {
   category?: string;
   date_from?: string;
   date_to?: string;
+  read_later?: 0 | 1;
   limit: number;
   offset: number;
   /** Required for semantic/hybrid modes. */
@@ -129,6 +130,10 @@ export class SearchRepository {
       // Normalize date-only strings to end-of-day to include all bookmarks on that day,
       // consistent with BookmarkRepository.list() behaviour.
       filterParams.push(date_to.length === 10 ? `${date_to}T23:59:59Z` : date_to);
+    }
+    if (opts.read_later !== undefined) {
+      conditions.push("b.read_later = ?");
+      filterParams.push(opts.read_later);
     }
 
     const where = `WHERE ${conditions.join(" AND ")}`;
@@ -419,6 +424,7 @@ export class SearchRepository {
     }
     if (opts.date_from) { conditions.push("b.created_at >= ?"); params.push(opts.date_from); }
     if (opts.date_to)   { conditions.push("b.created_at <= ?"); params.push(opts.date_to.length === 10 ? `${opts.date_to}T23:59:59Z` : opts.date_to); }
+    if (opts.read_later !== undefined) { conditions.push("b.read_later = ?"); params.push(opts.read_later); }
 
     const rows = this.db
       .query<{ id: string }, (string | number)[]>(

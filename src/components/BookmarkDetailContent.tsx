@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen } from "lucide-react";
+import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +19,8 @@ interface BookmarkDetailContentProps {
   onUpdateNotes: (id: string, notes: string | null) => void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
+  onClearReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onArchive?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onMarkRead?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onMarkUnread?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -34,6 +36,8 @@ export function BookmarkDetailContent({
   onUpdateNotes,
   onPin,
   onUnpin,
+  onReadLater,
+  onClearReadLater,
   onArchive,
   onMarkRead,
   onMarkUnread,
@@ -103,6 +107,14 @@ export function BookmarkDetailContent({
 
       <div className="flex items-center gap-2">
         <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
+        {!!bookmark.read_later && (
+          <Badge
+            variant="outline"
+            className="text-xs font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+          >
+            Read Later
+          </Badge>
+        )}
       </div>
 
       <PipelineRecoveryPanel bookmarkId={bookmark.id} />
@@ -337,6 +349,28 @@ export function BookmarkDetailContent({
           >
             {bookmark.is_pinned ? <PinOff className="h-3.5 w-3.5 mr-1.5" /> : <Pin className="h-3.5 w-3.5 mr-1.5" />}
             {bookmark.is_pinned ? "Unpin" : "Pin"}
+          </Button>
+        )}
+        {(onReadLater || onClearReadLater) && (
+          <Button
+            variant={bookmark.read_later ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (bookmark.read_later) {
+                onClearReadLater?.(bookmark.id, {
+                  onSuccess: () => toast({ title: "Read later cleared" }),
+                  onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+                });
+              } else {
+                onReadLater?.(bookmark.id, {
+                  onSuccess: () => toast({ title: "Marked read later" }),
+                  onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+                });
+              }
+            }}
+          >
+            {bookmark.read_later ? <BookmarkX className="h-3.5 w-3.5 mr-1.5" /> : <BookmarkCheck className="h-3.5 w-3.5 mr-1.5" />}
+            {bookmark.read_later ? "Clear read later" : "Read later"}
           </Button>
         )}
         {onArchive && !bookmark.is_archived && (

@@ -22,6 +22,7 @@ describe("BookmarkRepository", () => {
     expect(bm.is_trashed).toBe(0);
     expect(bm.is_archived).toBe(0);
     expect(bm.is_pinned).toBe(0);
+    expect(bm.read_later).toBe(0);
     expect(bm.id).toBeString();
   });
 
@@ -76,6 +77,21 @@ describe("BookmarkRepository", () => {
     expect(pinned!.is_pinned).toBe(1);
     const unpinned = repo.update(bm.id, { is_pinned: 0 });
     expect(unpinned!.is_pinned).toBe(0);
+  });
+
+  it("updates read_later separately from pinned", () => {
+    const bm = repo.create("https://example.com");
+    const readLater = repo.update(bm.id, { read_later: 1 });
+    expect(readLater!.read_later).toBe(1);
+    expect(readLater!.is_pinned).toBe(0);
+
+    const pinned = repo.update(bm.id, { is_pinned: 1 });
+    expect(pinned!.is_pinned).toBe(1);
+    expect(pinned!.read_later).toBe(1);
+
+    const cleared = repo.update(bm.id, { read_later: 0 });
+    expect(cleared!.read_later).toBe(0);
+    expect(cleared!.is_pinned).toBe(1);
   });
 
   it("updates is_archived", () => {

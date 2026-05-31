@@ -28,6 +28,7 @@ function makeApiBookmark(overrides: Partial<ApiBookmark> = {}): ApiBookmark {
     is_archived: 0,
     is_trashed: 0,
     trashed_at: null,
+    read_later: 0,
     read_at: null,
     notes: null,
     created_at: "2024-01-01T00:00:00Z",
@@ -91,12 +92,14 @@ type SearchResponse = {
 };
 type MockedAsyncFn<Args extends unknown[], Result> = ((...args: Args) => Promise<Result>) & {
   mockResolvedValue(value: Result): void;
+  mock: { calls: Args[] };
 };
 
 const mockedListBookmarks = api.listBookmarks as unknown as MockedAsyncFn<[ListBookmarksParams?], BookmarkListResponse>;
 const mockedListCategories = api.listCategories as unknown as MockedAsyncFn<[], CategoryTreeResponse>;
 const mockedListDomains = api.listDomains as unknown as MockedAsyncFn<[], DomainListResponse>;
 const mockedSearchBookmarks = api.searchBookmarks as unknown as MockedAsyncFn<[SearchParams], SearchResponse>;
+const mockedUpdateBookmark = api.updateBookmark as unknown as MockedAsyncFn<[string, Record<string, unknown>], { data: ApiBookmark }>;
 
 function pagination(total: number): Pagination {
   return {
@@ -136,6 +139,7 @@ beforeEach(() => {
   mockedListDomains.mockResolvedValue(domainListResponse());
   mockedListBookmarks.mockResolvedValue(bookmarkListResponse([]));
   mockedSearchBookmarks.mockResolvedValue(searchResponse());
+  mockedUpdateBookmark.mockResolvedValue({ data: makeApiBookmark() });
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -173,6 +177,7 @@ describe("useBookmarks — data normalisation", () => {
     expect(ui.summary).toBe("Desc");
     expect(ui.domain).toBe("example.com");
     expect(ui.category).toBe("Uncategorized");
+    expect(ui.read_later).toBe(0);
   });
 
   it("falls back to url when title is null", async () => {
@@ -266,6 +271,43 @@ describe("useBookmarks — search", () => {
 
     // Wait for the debounce (300ms) and then for the search call
     await waitFor(() => expect(mockedSearchBookmarks).toHaveBeenCalled(), { timeout: 2000 });
+  });
+
+  it("passes the read-later filter to list and search requests", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setReadLaterOnly(true));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ read_later: true }))
+    );
+
+    act(() => result.current.setSearchQuery("react"));
+    await waitFor(() =>
+      expect(mockedSearchBookmarks).toHaveBeenCalledWith(expect.objectContaining({ read_later: true })),
+      { timeout: 2000 }
+    );
+  });
+
+  it("invalidates active search results after read-later updates", async () => {
+    const bookmark = makeApiBookmark({ id: "bm-read-later", title: "React Guide", read_later: 1 });
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bookmark]));
+    mockedSearchBookmarks.mockResolvedValue(searchResponse([{ ...bookmark, snippet: null, rank: 1 }]));
+    mockedUpdateBookmark.mockResolvedValue({ data: { ...bookmark, read_later: 0 } });
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setReadLaterOnly(true));
+    act(() => result.current.setSearchQuery("react"));
+    await waitFor(() => expect(mockedSearchBookmarks).toHaveBeenCalled(), { timeout: 2000 });
+
+    const searchCallsBeforeUpdate = mockedSearchBookmarks.mock.calls.length;
+
+    act(() => result.current.clearReadLater("bm-read-later"));
+
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenCalledWith("bm-read-later", { read_later: 0 }));
+    await waitFor(() => expect(mockedSearchBookmarks.mock.calls.length).toBeGreaterThan(searchCallsBeforeUpdate));
   });
 });
 

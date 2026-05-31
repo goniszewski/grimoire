@@ -32,6 +32,7 @@ export interface BookmarkRow {
   is_archived: 0 | 1;
   is_trashed: 0 | 1;
   trashed_at: string | null;
+  read_later: 0 | 1;
   read_at: string | null;
   notes: string | null;
   created_at: string;

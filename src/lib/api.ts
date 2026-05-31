@@ -75,6 +75,7 @@ export interface ApiBookmark {
   is_archived: BookmarkDto["is_archived"];
   is_trashed: BookmarkDto["is_trashed"];
   trashed_at: BookmarkDto["trashed_at"];
+  read_later: BookmarkDto["read_later"];
   read_at: BookmarkDto["read_at"];
   notes: BookmarkDto["notes"];
   created_at: BookmarkDto["created_at"];
@@ -393,6 +394,7 @@ export interface ListBookmarksParams {
   category?: string;
   date_from?: string;
   date_to?: string;
+  read_later?: boolean;
   /** When true, returns only archived bookmarks (for the /archive page). */
   archived?: boolean;
 }
@@ -406,6 +408,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   if (params.category) q.set("category", params.category);
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
+  if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
   if (params.archived) q.set("archived", "true");
   const qs = q.toString();
   return apiFetch<BookmarkListResponseDto>(`/bookmarks${qs ? `?${qs}` : ""}`);
@@ -491,6 +494,7 @@ export interface SearchParams {
   category?: string;
   date_from?: string;
   date_to?: string;
+  read_later?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -503,6 +507,7 @@ export async function searchBookmarks(params: SearchParams): Promise<SearchRespo
   if (params.category) q.set("category", params.category);
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
+  if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<SearchResponseDto>(`/search?${q.toString()}`);

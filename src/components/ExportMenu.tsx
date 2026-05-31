@@ -7,30 +7,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-const DAEMON_URL = "http://127.0.0.1:3210";
+import { buildExportUrl, type ExportFilters } from "@/lib/export-url";
 
 interface ExportMenuProps {
   showLabel?: boolean;
-  filters?: {
-    tag?: string;
-    domain?: string;
-    category?: string;
-    date_from?: string;
-    date_to?: string;
-  };
+  filters?: ExportFilters;
 }
 
 async function triggerDownload(format: "json" | "csv", filters: ExportMenuProps["filters"] = {}) {
-  const params = new URLSearchParams({ format });
-  if (filters.tag) params.set("tag", filters.tag);
-  if (filters.domain) params.set("domain", filters.domain);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.date_from) params.set("date_from", filters.date_from);
-  if (filters.date_to) params.set("date_to", filters.date_to);
-
-  const url = `${DAEMON_URL}/export?${params.toString()}`;
-
+  const url = buildExportUrl(format, filters);
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);

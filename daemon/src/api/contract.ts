@@ -123,6 +123,9 @@ const bookmarkFilters = {
   category: stringSchema("Filter by category name"),
   date_from: stringSchema("Inclusive ISO date or date-time lower bound"),
   date_to: stringSchema("Inclusive ISO date or date-time upper bound"),
+  read_later: stringSchema("Filter by read-later state; accepts boolean strings or numeric flags", {
+    enum: ["true", "false", "1", "0"],
+  }),
 };
 
 const bookmarkProperties = {
@@ -137,10 +140,11 @@ const bookmarkProperties = {
   category_id: nullable(stringSchema("Assigned category ID")),
   favicon_url: nullable(stringSchema("Favicon URL", { format: "uri" })),
   screenshot_url: nullable(stringSchema("Screenshot URL", { format: "uri" })),
-  is_pinned: integerSchema("Pinned flag, 0 or 1", { enum: [0, 1] }),
+  is_pinned: integerSchema("Pinned flag, 0 or 1; maps Grimoire starred/favorite state", { enum: [0, 1] }),
   is_archived: integerSchema("Archived flag, 0 or 1", { enum: [0, 1] }),
   is_trashed: integerSchema("Trash flag, 0 or 1", { enum: [0, 1] }),
   trashed_at: nullable(stringSchema("Trash timestamp", { format: "date-time" })),
+  read_later: integerSchema("Read-later flag, 0 or 1", { enum: [0, 1] }),
   read_at: nullable(stringSchema("Read timestamp", { format: "date-time" })),
   notes: nullable(stringSchema("Personal notes")),
   created_at: stringSchema("Creation timestamp", { format: "date-time" }),
@@ -162,6 +166,7 @@ const bookmarkRequired = [
   "is_archived",
   "is_trashed",
   "trashed_at",
+  "read_later",
   "read_at",
   "notes",
   "created_at",
@@ -245,7 +250,8 @@ const schemas = {
     title: nullable(stringSchema("New title, or null to clear", { maxLength: 2000 })),
     category_id: nullable(stringSchema("Category ID, or null to clear")),
     tags: arrayOf(stringSchema("Tag name", { maxLength: 100 }), "Replacement tag names"),
-    is_pinned: integerSchema("Pinned flag, 0 or 1"),
+    is_pinned: integerSchema("Pinned flag, 0 or 1; maps Grimoire starred/favorite state"),
+    read_later: integerSchema("Read-later flag, 0 or 1"),
     is_archived: integerSchema("Archived flag, 0 or 1"),
     read_at: nullable(stringSchema("ISO 8601 date-time, or null to mark unread", { format: "date-time" })),
     notes: nullable(stringSchema("Personal notes, or null to clear", { maxLength: 100000 })),
@@ -1069,9 +1075,11 @@ const schemas = {
       tags: arrayOf(stringSchema("Tag name"), "Tag names"),
       category: nullable(stringSchema("Category name")),
       domain: stringSchema("Domain"),
+      is_pinned: integerSchema("Pinned flag, 0 or 1; maps Grimoire starred/favorite state", { enum: [0, 1] }),
+      read_later: integerSchema("Read-later flag, 0 or 1", { enum: [0, 1] }),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
     },
-    ["id", "url", "title", "summary", "tags", "category", "domain", "created_at"]
+    ["id", "url", "title", "summary", "tags", "category", "domain", "is_pinned", "read_later", "created_at"]
   ),
   McpErrorResponse: objectSchema({ error: stringSchema("MCP failure message") }, ["error"]),
 } as const satisfies ApiSchemaMap;
@@ -1764,6 +1772,7 @@ export const apiContract = {
           schema: arrayOf(ref("ExportBookmark"), "Export rows"),
         },
         "400": legacyErrorResponse("Invalid format"),
+        "422": legacyErrorResponse("Invalid read_later filter"),
       },
     },
     {

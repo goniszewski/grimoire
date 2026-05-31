@@ -54,6 +54,13 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   return isNaN(n) ? fallback : Math.max(n, min);
 }
 
+function parseBooleanFlagParam(val: string | null | undefined): 0 | 1 | undefined | "invalid" {
+  if (val === undefined || val === null || val === "") return undefined;
+  if (val === "true" || val === "1") return 1;
+  if (val === "false" || val === "0") return 0;
+  return "invalid";
+}
+
 function hasActivePipelineJob(db: Database, bookmarkId: string): boolean {
   const row = db
     .query<{ count: number }, [string, JobStatus, JobStatus]>(
@@ -143,6 +150,10 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const maxLimit = archived ? 500 : 100;
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), maxLimit);
     const offset = parseIntParam(c.req.query("offset"), 0);
+    const readLater = parseBooleanFlagParam(c.req.query("read_later"));
+    if (readLater === "invalid") {
+      return problem(c, 422, "Unprocessable Entity", "`read_later` must be true, false, 1, or 0");
+    }
 
     const result = repo.list({
       limit,
@@ -152,6 +163,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       category: c.req.query("category") ?? undefined,
       date_from: c.req.query("date_from") ?? undefined,
       date_to: c.req.query("date_to") ?? undefined,
+      read_later: readLater,
       archived,
     });
 
@@ -225,6 +237,13 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
         return problem(c, 422, "Unprocessable Entity", "`is_pinned` must be 0 or 1");
       }
       allowed.is_pinned = patch.is_pinned as 0 | 1;
+    }
+
+    if ("read_later" in patch) {
+      if (patch.read_later !== 0 && patch.read_later !== 1) {
+        return problem(c, 422, "Unprocessable Entity", "`read_later` must be 0 or 1");
+      }
+      allowed.read_later = patch.read_later as 0 | 1;
     }
 
     if ("is_archived" in patch) {

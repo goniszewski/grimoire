@@ -79,4 +79,27 @@ describe("Import API", () => {
     const json = await listRes.json() as { data: unknown[]; pagination: { total: number } };
     expect(json.pagination.total).toBe(2);
   });
+
+  it("imported Netscape bookmarks default pinned and read-later parity flags off", async () => {
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob([NETSCAPE_HTML], { type: "text/html" }),
+      "bookmarks.html"
+    );
+
+    await app.request("/import", { method: "POST", body: formData });
+
+    // Give the background async processor time to settle.
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const listRes = await app.request("/bookmarks");
+    expect(listRes.status).toBe(200);
+    const json = await listRes.json() as {
+      data: Array<{ is_pinned: 0 | 1; read_later: 0 | 1 }>;
+    };
+    expect(json.data.length).toBe(2);
+    expect(json.data.every((bookmark) => bookmark.is_pinned === 0)).toBe(true);
+    expect(json.data.every((bookmark) => bookmark.read_later === 0)).toBe(true);
+  });
 });

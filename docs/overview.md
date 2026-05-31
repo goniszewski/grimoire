@@ -85,7 +85,7 @@ Manual controls:
 
 - create, rename, delete, and reparent categories
 - drag and drop categories up to three nesting levels
-- edit bookmark title, tags, category, notes, pin state, archive state, and read state
+- edit bookmark title, tags, category, notes, pin state, read-later state, archive state, and read state
 - filter by category, tag, domain, and date
 - bulk delete and bulk move selected bookmarks
 
@@ -355,6 +355,7 @@ erDiagram
     text status
     text category_id
     integer is_pinned
+    integer read_later
     integer is_archived
     integer is_trashed
     text trashed_at

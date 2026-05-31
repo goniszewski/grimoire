@@ -55,6 +55,20 @@ describe("Search API", () => {
     expect(json.data.length).toBe(0);
   });
 
+  it("GET /search filters by read_later", async () => {
+    const repo = new BookmarkRepository(db);
+    const readLater = repo.create("https://example.com/read-later", "Shared Query");
+    const normal = repo.create("https://example.com/normal", "Shared Query");
+    repo.update(readLater.id, { read_later: 1 });
+
+    const res = await app.request("/search?q=Shared&mode=keyword&read_later=true");
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: Array<{ id: string; read_later: 0 | 1 }> };
+    expect(json.data.map((b) => b.id)).toContain(readLater.id);
+    expect(json.data.map((b) => b.id)).not.toContain(normal.id);
+    expect(json.data.every((b) => b.read_later === 1)).toBe(true);
+  });
+
   it("GET /search?mode=invalid returns 422", async () => {
     const res = await app.request("/search?q=hello&mode=invalid");
     expect(res.status).toBe(422);

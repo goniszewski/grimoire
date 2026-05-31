@@ -2,7 +2,7 @@ import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { HighlightText } from "./HighlightText";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, ExternalLink, Pencil, Check, Pin, PinOff, Archive, BookOpen, BookDashed } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Pencil, Check, Pin, PinOff, Archive, BookOpen, BookDashed, BookmarkCheck, BookmarkX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -27,6 +27,8 @@ interface BookmarkCardProps {
   onClick: (bookmark: Bookmark) => void;
   onPin?: StatusCallback;
   onUnpin?: StatusCallback;
+  onReadLater?: StatusCallback;
+  onClearReadLater?: StatusCallback;
   onArchive?: StatusCallback;
   onMarkRead?: StatusCallback;
   onMarkUnread?: StatusCallback;
@@ -37,7 +39,7 @@ interface BookmarkCardProps {
   compact?: boolean;
 }
 
-export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onArchive, onMarkRead, onMarkUnread, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onReadLater, onClearReadLater, onArchive, onMarkRead, onMarkUnread, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const touchStartX = useRef(0);
@@ -121,6 +123,21 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
     });
   };
 
+  const handleToggleReadLater = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bookmark.read_later) {
+      onClearReadLater?.(bookmark.id, {
+        onSuccess: () => toast({ title: "Read later cleared" }),
+        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+      });
+    } else {
+      onReadLater?.(bookmark.id, {
+        onSuccess: () => toast({ title: "Marked read later" }),
+        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+      });
+    }
+  };
+
   const handleToggleRead = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (bookmark.read_at) {
@@ -196,6 +213,9 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
             {bookmark.tags.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono hidden md:inline-flex">{tag}</Badge>
             ))}
+            {!!bookmark.read_later && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 hidden md:inline-flex">Read Later</Badge>
+            )}
             <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
               {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
             </span>
@@ -213,6 +233,11 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
               {(onMarkRead || onMarkUnread) && (
                 <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
                   {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                </Button>
+              )}
+              {(onReadLater || onClearReadLater) && (
+                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-amber-600' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
+                  {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                 </Button>
               )}
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
@@ -264,6 +289,14 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
 
             {bookmark.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
+                {!!bookmark.read_later && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+                  >
+                    Read Later
+                  </Badge>
+                )}
                 {bookmark.tags.slice(0, 4).map((tag) => (
                   <Badge
                     key={tag}
@@ -278,6 +311,16 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
                     +{bookmark.tags.length - 4}
                   </Badge>
                 )}
+              </div>
+            )}
+            {bookmark.tags.length === 0 && !!bookmark.read_later && (
+              <div className="flex flex-wrap gap-1">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+                >
+                  Read Later
+                </Badge>
               </div>
             )}
 
@@ -299,6 +342,11 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onAr
                 {(onMarkRead || onMarkUnread) && (
                   <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
                     {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                  </Button>
+                )}
+                {(onReadLater || onClearReadLater) && (
+                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-amber-600' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
+                    {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>

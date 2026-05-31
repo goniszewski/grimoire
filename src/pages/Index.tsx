@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SortOption } from "@/hooks/use-bookmarks";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -167,10 +167,29 @@ const Index = () => {
     exitSelectionMode();
   }, [selectedIds, store, exitSelectionMode]);
 
+  const handleBulkReadLater = useCallback((readLater: boolean) => {
+    selectedIds.forEach((id) => {
+      if (readLater) store.markReadLater(id, { onSuccess: () => {}, onError: () => {} });
+      else store.clearReadLater(id, { onSuccess: () => {}, onError: () => {} });
+    });
+    toast({
+      title: readLater
+        ? `Marked ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""} read later`
+        : `Cleared read later from ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""}`,
+    });
+    exitSelectionMode();
+  }, [selectedIds, store, exitSelectionMode]);
+
   const handleOpenDetail = useCallback((bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
     setDetailOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!selectedBookmark) return;
+    const latest = store.bookmarks.find((bookmark) => bookmark.id === selectedBookmark.id);
+    if (latest && latest !== selectedBookmark) setSelectedBookmark(latest);
+  }, [selectedBookmark, store.bookmarks]);
 
   const handlePaletteSelectBookmark = useCallback((bm: ApiBookmark) => {
     const uiBm: Bookmark = {
@@ -189,6 +208,7 @@ const Index = () => {
       updatedAt: bm.updated_at,
       is_pinned: bm.is_pinned,
       is_archived: bm.is_archived,
+      read_later: bm.read_later,
       read_at: bm.read_at,
       notes: bm.notes,
     };
@@ -201,6 +221,7 @@ const Index = () => {
     store.selectedCategory && { label: store.selectedCategory, clear: () => store.setSelectedCategory(null) },
     store.selectedDomain && { label: store.selectedDomain, clear: () => store.setSelectedDomain(null) },
     store.selectedTag && { label: `#${store.selectedTag}`, clear: () => store.setSelectedTag(null) },
+    store.readLaterOnly && { label: "Read Later", clear: () => store.setReadLaterOnly(false) },
     (store.dateRange.from || store.dateRange.to) && {
       label: "Date range",
       clear: () => store.setDateRange({ from: null, to: null }),
@@ -251,6 +272,7 @@ const Index = () => {
                   domain: store.selectedDomain ?? undefined,
                   date_from: store.dateRange.from?.toISOString().slice(0, 10),
                   date_to: store.dateRange.to?.toISOString().slice(0, 10),
+                  read_later: store.readLaterOnly ? true : undefined,
                 }}
               />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="hidden sm:flex">
@@ -271,7 +293,7 @@ const Index = () => {
           <main className="flex-1 p-4 sm:p-6">
             {/* Active filters */}
             {activeFilters.length > 0 && (
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span className="text-xs text-muted-foreground">Filtering by:</span>
                 {activeFilters.map((f) => (
                   <Badge
@@ -288,7 +310,7 @@ const Index = () => {
             )}
 
             {/* Results count + toolbar */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <p className="text-xs text-muted-foreground font-mono">
                   {store.filteredBookmarks.length} result{store.filteredBookmarks.length !== 1 ? "s" : ""}
@@ -299,11 +321,31 @@ const Index = () => {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 {selectionMode ? (
                   <>
                     <Button variant="outline" size="sm" onClick={selectAll} className="text-xs h-7">
                       Select all
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      disabled={selectedIds.size === 0}
+                      onClick={() => handleBulkReadLater(true)}
+                    >
+                      <BookmarkCheck className="h-3 w-3 mr-1.5" />
+                      Read Later
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      disabled={selectedIds.size === 0}
+                      onClick={() => handleBulkReadLater(false)}
+                    >
+                      <BookmarkX className="h-3 w-3 mr-1.5" />
+                      Clear
                     </Button>
                     <Button
                       variant="destructive"
@@ -345,6 +387,16 @@ const Index = () => {
                       onChange={store.setDateRange}
                       showLabel={showButtonLabels}
                     />
+                    <Button
+                      variant={store.readLaterOnly ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => store.setReadLaterOnly(!store.readLaterOnly)}
+                      className="text-xs h-7"
+                      aria-pressed={store.readLaterOnly}
+                    >
+                      <BookmarkCheck className="h-3 w-3" />
+                      {showButtonLabels && <span className="ml-1.5">Read Later</span>}
+                    </Button>
                     {store.filteredBookmarks.length > 0 && (
                       <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)} className="text-xs h-7">
                         <CheckSquare className="h-3 w-3" />
@@ -384,6 +436,8 @@ const Index = () => {
                     onClick={handleOpenDetail}
                     onPin={store.pinBookmark}
                     onUnpin={store.unpinBookmark}
+                    onReadLater={store.markReadLater}
+                    onClearReadLater={store.clearReadLater}
                     onArchive={store.archiveBookmark}
                     onMarkRead={store.markAsRead}
                     onMarkUnread={store.markAsUnread}
@@ -494,6 +548,8 @@ const Index = () => {
         onUpdateNotes={store.updateBookmarkNotes}
         onPin={store.pinBookmark}
         onUnpin={store.unpinBookmark}
+        onReadLater={store.markReadLater}
+        onClearReadLater={store.clearReadLater}
         onArchive={(id, callbacks) => store.archiveBookmark(id, {
           onSuccess: () => { setDetailOpen(false); callbacks.onSuccess(); },
           onError: callbacks.onError,

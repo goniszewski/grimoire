@@ -121,6 +121,7 @@ Query parameters:
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 | `archived` | "true" \| "false" | no | When true, return archived bookmarks |
@@ -168,7 +169,8 @@ Request body:
 | `title` | string \| null | no | New title, or null to clear |
 | `category_id` | string \| null | no | Category ID, or null to clear |
 | `tags` | array<string> | no | Replacement tag names |
-| `is_pinned` | integer | no | Pinned flag, 0 or 1 |
+| `is_pinned` | integer | no | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
+| `read_later` | integer | no | Read-later flag, 0 or 1 |
 | `is_archived` | integer | no | Archived flag, 0 or 1 |
 | `read_at` | string \| null | no | ISO 8601 date-time, or null to mark unread |
 | `notes` | string \| null | no | Personal notes, or null to clear |
@@ -398,6 +400,7 @@ Query parameters:
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 
@@ -1127,6 +1130,7 @@ Query parameters:
 | `category` | string | no | Filter by category name |
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
 
 Responses:
 
@@ -1134,6 +1138,7 @@ Responses:
 |---|---|---|---|
 | `200` | application/json or text/csv | `array<ExportBookmark>` | Downloadable JSON or CSV export |
 | `400` | application/json | `LegacyError` | Invalid format |
+| `422` | application/json | `LegacyError` | Invalid read_later filter |
 
 ### MCP
 
@@ -1204,10 +1209,11 @@ Legacy JSON error response
 | `category_id` | string \| null | yes | Assigned category ID |
 | `favicon_url` | string \| null | yes | Favicon URL |
 | `screenshot_url` | string \| null | yes | Screenshot URL |
-| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
 | `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
@@ -1243,10 +1249,11 @@ Bookmark with extracted content
 | `category_id` | string \| null | yes | Assigned category ID |
 | `favicon_url` | string \| null | yes | Favicon URL |
 | `screenshot_url` | string \| null | yes | Screenshot URL |
-| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
 | `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
@@ -1279,10 +1286,11 @@ Single bookmark response
 | `data.category_id` | string \| null | yes | Assigned category ID |
 | `data.favicon_url` | string \| null | yes | Favicon URL |
 | `data.screenshot_url` | string \| null | yes | Screenshot URL |
-| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
 | `data.trashed_at` | string \| null | yes | Trash timestamp |
+| `data.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `data.read_at` | string \| null | yes | Read timestamp |
 | `data.notes` | string \| null | yes | Personal notes |
 | `data.created_at` | string | yes | Creation timestamp |
@@ -1315,10 +1323,11 @@ Single bookmark response
 | `data.category_id` | string \| null | yes | Assigned category ID |
 | `data.favicon_url` | string \| null | yes | Favicon URL |
 | `data.screenshot_url` | string \| null | yes | Screenshot URL |
-| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `data.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `data.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `data.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
 | `data.trashed_at` | string \| null | yes | Trash timestamp |
+| `data.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `data.read_at` | string \| null | yes | Read timestamp |
 | `data.notes` | string \| null | yes | Personal notes |
 | `data.created_at` | string | yes | Creation timestamp |
@@ -1360,7 +1369,8 @@ Bookmark array response
 | `title` | string \| null | no | New title, or null to clear |
 | `category_id` | string \| null | no | Category ID, or null to clear |
 | `tags` | array<string> | no | Replacement tag names |
-| `is_pinned` | integer | no | Pinned flag, 0 or 1 |
+| `is_pinned` | integer | no | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
+| `read_later` | integer | no | Read-later flag, 0 or 1 |
 | `is_archived` | integer | no | Archived flag, 0 or 1 |
 | `read_at` | string \| null | no | ISO 8601 date-time, or null to mark unread |
 | `notes` | string \| null | no | Personal notes, or null to clear |
@@ -1508,10 +1518,11 @@ Bookmark search hit
 | `category_id` | string \| null | yes | Assigned category ID |
 | `favicon_url` | string \| null | yes | Favicon URL |
 | `screenshot_url` | string \| null | yes | Screenshot URL |
-| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1 |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
 | `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
 | `is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
 | `trashed_at` | string \| null | yes | Trash timestamp |
+| `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `read_at` | string \| null | yes | Read timestamp |
 | `notes` | string \| null | yes | Personal notes |
 | `created_at` | string | yes | Creation timestamp |
@@ -2364,6 +2375,8 @@ Response data
 | `tags` | array<string> | yes | Tag names |
 | `category` | string \| null | yes | Category name |
 | `domain` | string | yes | Domain |
+| `is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
+| `read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
 | `created_at` | string | yes | Creation timestamp |
 
 ### McpErrorResponse

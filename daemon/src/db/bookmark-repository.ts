@@ -19,6 +19,7 @@ export interface ListBookmarksOptions {
   category?: string;
   date_from?: string;
   date_to?: string;
+  read_later?: 0 | 1;
   /** When true, return only archived (non-trashed) bookmarks instead of active ones. */
   archived?: boolean;
 }
@@ -31,6 +32,8 @@ export interface ExportBookmarkRow {
   tags: string[];
   category: string | null;
   domain: string;
+  is_pinned: 0 | 1;
+  read_later: 0 | 1;
   created_at: string;
 }
 
@@ -40,6 +43,7 @@ export interface FilterOptions {
   category?: string;
   date_from?: string;
   date_to?: string;
+  read_later?: 0 | 1;
 }
 
 export interface ListResult {
@@ -136,6 +140,10 @@ export class BookmarkRepository {
       conditions.push("b.created_at <= ?");
       params.push(opts.date_to.length === 10 ? `${opts.date_to}T23:59:59Z` : opts.date_to);
     }
+    if (opts.read_later !== undefined) {
+      conditions.push("b.read_later = ?");
+      params.push(opts.read_later);
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -210,6 +218,10 @@ export class BookmarkRepository {
       conditions.push("b.created_at <= ?");
       params.push(filters.date_to.length === 10 ? `${filters.date_to}T23:59:59Z` : filters.date_to);
     }
+    if (filters.read_later !== undefined) {
+      conditions.push("b.read_later = ?");
+      params.push(filters.read_later);
+    }
 
     const where = `WHERE ${conditions.join(" AND ")}`;
 
@@ -255,11 +267,13 @@ export class BookmarkRepository {
       tags: tagMap.get(r.id) ?? [],
       category: r.category_name,
       domain: r.domain,
+      is_pinned: r.is_pinned,
+      read_later: r.read_later,
       created_at: r.created_at,
     }));
   }
 
-  /** Partial update: title, tags, category_id, is_pinned, is_archived, read_at, notes. */
+  /** Partial update: title, tags, category_id, is_pinned, read_later, is_archived, read_at, notes. */
   update(
     id: string,
     patch: {
@@ -267,6 +281,7 @@ export class BookmarkRepository {
       category_id?: string | null;
       tags?: string[];
       is_pinned?: 0 | 1;
+      read_later?: 0 | 1;
       is_archived?: 0 | 1;
       read_at?: string | null;
       notes?: string | null;
@@ -286,6 +301,10 @@ export class BookmarkRepository {
     if ("is_pinned" in patch) {
       sets.push("is_pinned = ?");
       params.push(patch.is_pinned!);
+    }
+    if ("read_later" in patch) {
+      sets.push("read_later = ?");
+      params.push(patch.read_later!);
     }
     if ("is_archived" in patch) {
       sets.push("is_archived = ?");

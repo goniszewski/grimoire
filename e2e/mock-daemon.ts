@@ -29,6 +29,7 @@ type MutableBookmark = {
   is_archived: 0 | 1;
   is_trashed: 0 | 1;
   trashed_at: string | null;
+  read_later: 0 | 1;
   read_at: string | null;
   notes: string | null;
   created_at: string;
@@ -50,6 +51,7 @@ type BookmarkSeed = Readonly<{
   is_archived: 0 | 1;
   is_trashed: 0 | 1;
   trashed_at: string | null;
+  read_later: 0 | 1;
   read_at: string | null;
   notes: string | null;
   created_at: string;
@@ -76,6 +78,7 @@ export interface MockDaemonState {
     health: number;
     imports: number;
     exportFormats: string[];
+    exportRequests: Array<{ format: string; read_later: string | null }>;
     searchQueries: Array<{ q: string; mode: string }>;
     createdBackups: number;
     verifiedBackups: string[];
@@ -105,6 +108,7 @@ function cloneBookmark(bookmark: BookmarkSeed): MutableBookmark {
     is_archived: bookmark.is_archived,
     is_trashed: bookmark.is_trashed,
     trashed_at: bookmark.trashed_at,
+    read_later: bookmark.read_later,
     read_at: bookmark.read_at,
     notes: bookmark.notes,
     created_at: bookmark.created_at,
@@ -127,6 +131,29 @@ function listResponse(bookmarks: MutableBookmark[]) {
 
 function activeBookmarks(bookmarks: MutableBookmark[]) {
   return bookmarks.filter((bookmark) => !bookmark.is_archived && !bookmark.is_trashed);
+}
+
+function parseReadLaterFilter(url: URL): 0 | 1 | undefined | "invalid" {
+  const value = url.searchParams.get("read_later");
+  if (value === null || value === "") return undefined;
+  if (value === "true" || value === "1") return 1;
+  if (value === "false" || value === "0") return 0;
+  return "invalid";
+}
+
+function applyReadLaterFilter(bookmarks: MutableBookmark[], url: URL): MutableBookmark[] | "invalid" {
+  const readLater = parseReadLaterFilter(url);
+  if (readLater === "invalid") return "invalid";
+  if (readLater === undefined) return bookmarks;
+  return bookmarks.filter((bookmark) => bookmark.read_later === readLater);
+}
+
+function csvField(value: string | number | null): string {
+  const text = String(value ?? "");
+  if (text.includes(",") || text.includes('"') || text.includes("\n")) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
 }
 
 function tagsMatch(bookmark: MutableBookmark, q: string) {
@@ -204,6 +231,10 @@ async function fulfillJson(route: Route, json: unknown, status = 200) {
   await route.fulfill({ status, json });
 }
 
+async function fulfillInvalidReadLater(route: Route) {
+  await fulfillJson(route, { error: "`read_later` must be true, false, 1, or 0" }, 422);
+}
+
 async function handleBookmarkRoute(route: Route, state: MockDaemonState, url: URL) {
   const request = route.request();
   const method = request.method();
@@ -211,9 +242,11 @@ async function handleBookmarkRoute(route: Route, state: MockDaemonState, url: UR
 
   if (pathname === "/bookmarks" && method === "GET") {
     const archived = url.searchParams.get("archived") === "true";
-    const rows = state.bookmarks.filter((bookmark) =>
+    const visibleRows = state.bookmarks.filter((bookmark) =>
       archived ? bookmark.is_archived === 1 : bookmark.is_archived === 0 && bookmark.is_trashed === 0
     );
+    const rows = applyReadLaterFilter(visibleRows, url);
+    if (rows === "invalid") return fulfillInvalidReadLater(route);
     return fulfillJson(route, listResponse(rows));
   }
 
@@ -278,7 +311,10 @@ async function handleSearch(route: Route, state: MockDaemonState, url: URL) {
   const mode = url.searchParams.get("mode") ?? "keyword";
   state.requests.searchQueries.push({ q, mode });
 
-  const rows = activeBookmarks(state.bookmarks)
+  const scopedBookmarks = applyReadLaterFilter(activeBookmarks(state.bookmarks), url);
+  if (scopedBookmarks === "invalid") return fulfillInvalidReadLater(route);
+
+  const rows = scopedBookmarks
     .filter((bookmark) => !q || searchMatches(bookmark, q))
     .map((bookmark, index) => ({
       ...bookmark,
@@ -311,23 +347,37 @@ async function handleImportProgress(route: Route) {
 async function handleExport(route: Route, state: MockDaemonState, url: URL) {
   const format = url.searchParams.get("format") ?? "json";
   state.requests.exportFormats.push(format);
+  state.requests.exportRequests.push({ format, read_later: url.searchParams.get("read_later") });
 
   const headers = {
     "Content-Disposition": `attachment; filename="bookmarks.${format}"`,
   };
+  const rows = applyReadLaterFilter(activeBookmarks(state.bookmarks), url);
+  if (rows === "invalid") return fulfillInvalidReadLater(route);
 
   if (format === "csv") {
+    const body = [
+      "url,title,read_later",
+      ...rows.map((bookmark) =>
+        [
+          csvField(bookmark.url),
+          csvField(bookmark.title),
+          csvField(bookmark.read_later),
+        ].join(",")
+      ),
+    ].join("\n");
+
     return route.fulfill({
       status: 200,
       headers: { ...headers, "Content-Type": "text/csv" },
-      body: "url,title\nhttps://example.com,Example\n",
+      body: `${body}\n`,
     });
   }
 
   return route.fulfill({
     status: 200,
     headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify(activeBookmarks(state.bookmarks)),
+    body: JSON.stringify(rows),
   });
 }
 
@@ -403,6 +453,7 @@ export async function installMockDaemon(
       health: 0,
       imports: 0,
       exportFormats: [],
+      exportRequests: [],
       searchQueries: [],
       createdBackups: 0,
       verifiedBackups: [],

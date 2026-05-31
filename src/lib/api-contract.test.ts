@@ -47,6 +47,7 @@ describe("frontend API contract types", () => {
       AssertAssignable<ApiSettings["runtime"], SettingsDto["runtime"]>,
       AssertAssignable<ApiBookmark["status"], BookmarkDto["status"]>,
       AssertAssignable<ApiBookmark["is_pinned"], BookmarkDto["is_pinned"]>,
+      AssertAssignable<ApiBookmark["read_later"], BookmarkDto["read_later"]>,
       AssertAssignable<ApiCategory["id"], CategoryNodeDto["id"]>,
       AssertAssignable<ApiCategory["children"][number]["parent_id"], CategoryNodeDto["parent_id"]>,
       AssertAssignable<ApiDiagnostics, DiagnosticsDto>,
@@ -67,6 +68,7 @@ describe("frontend API contract types", () => {
       AssertAssignable<ApiRestoreResult["restart_command"], RestoreResultDto["restart_command"]>,
       AssertAssignable<ApiRestoreResult["rollback_instructions"], RestoreResultDto["rollback_instructions"]>,
     ] = [
+      true,
       true,
       true,
       true,
