@@ -49,7 +49,7 @@ This batch keeps Little Imp's product model intact:
 | Non-goal | Decision source | Rationale | Reconsideration trigger |
 | --- | --- | --- | --- |
 | Multi-user accounts, signup, login, sessions, profile management, admin roles, and per-user backup scoping | PAR-028 through PAR-034 | These features would change Little Imp from a local personal app into a server/account product and would affect storage, backups, diagnostics, MCP, settings, auth, and support. | Reopen only through a separate multi-user/server product decision with schema, migration, auth/session, backup-scoping, and threat-model work approved together. |
-| Public-server or non-loopback deployment mode | PAR-004, TASK-087 | Current daemon routes, installer defaults, Docker docs, and support posture assume trusted loopback access. | Reopen only after TASK-087 defines release gates for auth, origin policy, CSRF expectations, secrets, diagnostics, backups, MCP, updates, and network exposure. |
+| Public-server or non-loopback deployment mode | PAR-004, TASK-087 | Current daemon routes, installer defaults, Docker docs, and support posture assume trusted loopback access. | Reopen only through the gates in `docs/security-boundaries.md`, including auth, origin policy, CSRF expectations, secrets, diagnostics, backups, MCP, updates, and network exposure. |
 | Grimoire-compatible endpoint aliases or adapter routes | PAR-025 | Aliases would add long-term API compatibility surface without a current local-first migration or extension requirement. | Reconsider only if a concrete integration or migration path proves aliases materially reduce user migration cost without weakening the canonical Little Imp API contract. |
 | Browser-extension/bookmarklet one-click capture endpoint | PAR-024, TASK-105 | Browser capture requires token auth, CORS/origin policy, payload/idempotency design, duplicate handling, and user setup decisions that are not stable yet. | Reopen after TASK-087, TASK-102, TASK-103, and TASK-106 are complete and a browser-capture product decision is approved. |
 | Browser-extension compatibility smoke tests | PAR-027 | Extension flows are excluded while extension capture itself is deferred. | Add smoke coverage only when browser-extension/bookmarklet capture is reopened. |
@@ -91,7 +91,7 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Define the loopback/local-integration security boundary, then add optional integration-token auth and CORS/origin controls for local non-browser clients.
+1. Use the documented loopback/local-integration security boundary, then add optional integration-token auth and CORS/origin controls for local non-browser clients.
 2. Publish human-readable API examples and OpenAPI-compatible output from the daemon contract for local scripts and integration clients.
 3. Add read-later persistence and open metrics while preserving the starred/favorite-to-pinned mapping.
 4. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
@@ -132,7 +132,7 @@ Grimoire:
 
 ## Recommended Implementation Order
 
-1. Finish scope/security documentation: TASK-085, TASK-087, and TASK-088.
+1. Finish recurring parity release planning: TASK-088.
 2. Add local integration authentication, API examples, OpenAPI output, and CORS/origin controls: TASK-102 through TASK-106, excluding deferred TASK-105 implementation.
 3. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
 4. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.

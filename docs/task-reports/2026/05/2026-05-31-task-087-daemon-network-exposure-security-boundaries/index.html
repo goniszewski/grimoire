@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daemon Network Exposure Security Boundaries - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --orange: #c2410c;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.2rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+ul { padding-left: 20px; }
+code {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.summary-panel {
+  min-width: 0;
+  border-left: 4px solid var(--green);
+  padding: 0 0 0 14px;
+}
+.summary-panel + .summary-panel {
+  border-left-color: var(--orange);
+}
+.summary-panel h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.summary-panel p { margin: 0; }
+details {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 32px 0;
+  }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Daemon Network Exposure Security Boundaries</h1>
+      <div class="meta-row">
+        <span>2026-05-31</span>
+        <span>TASK-087</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-security-boundaries-map.svg" alt="Visual map of loopback clients, daemon controls, and blocked public-network exposure gates">
+      <figcaption>After: the daemon has one canonical loopback threat model and explicit public-network release gates.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Security behavior was described across several docs, but there was no single threat model tying together first-party loopback use, local clients, MCP, backups, diagnostics, updates, and future public-network gates.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>The Grimoire parity batch needs local integration work, but token auth and CORS changes should start from a documented boundary instead of accidentally implying LAN or public-server support.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added <code>docs/security-boundaries.md</code> as the canonical loopback/local-integration threat model.</li>
+        <li>Documented public-network exposure as out of scope for the current parity batch.</li>
+        <li>Added route-family requirements for bookmarks, search, import, backup/restore, diagnostics, Settings, MCP, and updates.</li>
+        <li>Added release checklist gates that block non-loopback exposure unless explicit security controls are complete.</li>
+        <li>Moved TASK-087 to done and aligned parity worksheet/report status.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <div class="summary-grid">
+        <div class="summary-panel">
+          <h3>Current Boundary</h3>
+          <p>Little Imp stays local-first, single-user, loopback-first, and suitable for explicit same-machine integrations.</p>
+        </div>
+        <div class="summary-panel">
+          <h3>Future Gate</h3>
+          <p>Any public-network mode must first pass auth, origin, CSRF, data-protection, route-review, testing, and release-documentation gates.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Reviewed daemon bind, origin, diagnostics, backup, MCP, and update implementation references while writing the threat model.</li>
+        <li>Reviewed and tightened local-process access wording so the threat model covers any same-machine process that can reach the loopback daemon.</li>
+        <li>Searched task and docs references for stale TASK-087 backlog status.</li>
+        <li><code>npm run check</code> passed.</li>
+        <li><code>cd daemon &amp;&amp; bun test src/test/integration/security-hardening.test.ts src/test/integration/diagnostics.test.ts src/test/integration/updates.test.ts</code> passed.</li>
+        <li><code>npm run docs:api:check</code> passed.</li>
+        <li><code>git diff --check</code> passed.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The task is documentation-only. No daemon route, frontend UI, schema, migration, installer, or release artifact behavior changed.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>docs/security-boundaries.md</code></li>
+        <li><code>SECURITY.md</code></li>
+        <li><code>docs/overview.md</code></li>
+        <li><code>docs/release-checklist.md</code></li>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>tasks/done/TASK-087-daemon-network-exposure-security-boundaries.md</code></li>
+        <li><code>docs/task-reports/2026/05/2026-05-31-task-087-daemon-network-exposure-security-boundaries/index.html</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

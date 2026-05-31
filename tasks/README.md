@@ -100,7 +100,7 @@ tasks/
 | TASK-084 | [MVP Release Decision Package](done/TASK-084-mvp-release-decision-package.md) | MVP release closeout | medium | done |
 | TASK-085 | [Grimoire Parity Scope And Non-Goals](done/TASK-085-grimoire-parity-scope-and-non-goals.md) | Grimoire parity | critical | done |
 | TASK-086 | [Parity Task Conversion Criteria And Labels](done/TASK-086-parity-task-conversion-criteria-labels.md) | Grimoire parity | high | done |
-| TASK-087 | [Daemon Network Exposure Security Boundaries](backlog/TASK-087-daemon-network-exposure-security-boundaries.md) | Grimoire parity | critical | backlog |
+| TASK-087 | [Daemon Network Exposure Security Boundaries](done/TASK-087-daemon-network-exposure-security-boundaries.md) | Grimoire parity | critical | done |
 | TASK-088 | [Recurring Parity Release Checklist](backlog/TASK-088-recurring-parity-release-checklist.md) | Grimoire parity | medium | backlog |
 | TASK-089 | [Read Later Bookmark Flag](backlog/TASK-089-read-later-bookmark-flag.md) | Grimoire parity | high | backlog |
 | TASK-090 | [Bookmark Importance Rating (Rejected)](backlog/TASK-090-bookmark-importance-rating.md) | Grimoire parity | medium | rejected |
@@ -190,7 +190,10 @@ bookmark read-later/open-metric parity, category/tag parity, import/export
 workflow hardening, explicit pagination/filtering, aggregate counts, and
 large-library verification. TASK-086 is complete as the conversion record.
 TASK-085 is complete after locking the parity scope and non-goals across the
-parity report, roadmap, release docs, and task-report index.
+parity report, roadmap, release docs, and task-report index. TASK-087 is
+complete after adding the canonical loopback/local-integration threat model,
+public-network release gates, and release-checklist blockers for network
+exposure changes.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

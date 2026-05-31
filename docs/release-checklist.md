@@ -124,6 +124,22 @@ After the GitHub release artifacts are published:
 - Confirm Compose keeps the host port bound to `127.0.0.1:3210:3210`.
 - Run `docker compose down` and confirm the named data volume is preserved.
 
+## Network Exposure And Local Integration Gates
+
+- Confirm the native daemon still defaults to `HOST=127.0.0.1`.
+- Confirm Docker Compose still publishes the daemon as
+  `127.0.0.1:3210:3210`.
+- Confirm non-loopback `CORS_ORIGINS` entries are ignored and unsafe browser
+  writes from non-loopback origins are rejected.
+- Confirm release notes and user docs do not describe direct public-network
+  deployment as supported.
+- Confirm [security-boundaries.md](./security-boundaries.md) still covers
+  auth, CORS/origin policy, CSRF expectations, local file protections,
+  diagnostics redaction, backups, MCP, and update routes.
+- Block any release that binds beyond loopback or documents direct public
+  access unless all public-network gates in
+  [security-boundaries.md](./security-boundaries.md) are complete.
+
 ## Backup And Restore
 
 - Create a local backup from Settings or `POST /backup`.
@@ -161,6 +177,9 @@ After the GitHub release artifacts are published:
   tag where tag-qualified URLs are required.
 - Confirm links in `README.md`, `CONTRIBUTING.md`, and `tasks/README.md` resolve to existing files.
 - Confirm backup, Docker, MCP, and API source-of-truth docs match the shipped routes and defaults.
+- Confirm `SECURITY.md`, `docs/overview.md`, `docs/docker-deployment.md`, and
+  `docs/security-boundaries.md` agree that loopback remains the default secure
+  mode.
 - Confirm any Grimoire parity release notes or roadmap updates describe the
   current batch as local-first, single-user, loopback-first, and
   local-integrations-only, and do not claim multi-user/server parity, endpoint

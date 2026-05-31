@@ -33,6 +33,9 @@ Little Imp is designed as a local-first application that runs entirely on the us
   default; the container-internal `HOST=0.0.0.0` is only used so Docker can
   forward that loopback-bound host port into the container.
 
+The canonical threat model and future public-network release gates are
+documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
+
 ### Implemented Security Measures
 
 #### Input Validation
@@ -110,6 +113,11 @@ Little Imp is designed as a local-first application that runs entirely on the us
 #### Local Access
 
 Since Little Imp runs locally without authentication, any process on the user's machine can potentially access the API. This is by design for a local-first application but users should be aware of this limitation.
+
+Public-network exposure is not a supported mode for the current release or the
+current Grimoire parity batch. Any future mode that binds beyond loopback must
+complete the gates in [docs/security-boundaries.md](./docs/security-boundaries.md)
+before implementation or release.
 
 #### Docker Networking
 

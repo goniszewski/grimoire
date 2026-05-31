@@ -19,7 +19,7 @@ Suggested values:
 | PAR-001 | Approve the target parity mode: local-first only, integration-compatible local app, or Grimoire-style multi-user/server mode. | Critical | Approved | Done | Decision: current parity batch is local-first, single-user, loopback-first, and local-integrations-only. Admin/regular-user ownership and per-user backup scope are deferred until multi-user/server mode is reopened. |
 | PAR-002 | Define which Grimoire differences are intentional non-goals and document them in the parity report. | Critical | Approved | Done | Completed in `TASK-085`. |
 | PAR-003 | Convert approved parity rows into task-file acceptance criteria and labels. | High | Approved | Done | Completed in `TASK-086`. |
-| PAR-004 | Define security boundaries for any feature that exposes the daemon beyond trusted loopback usage. | Critical | Approved | Not started | Backlog: `TASK-087`. |
+| PAR-004 | Define security boundaries for any feature that exposes the daemon beyond trusted loopback usage. | Critical | Approved | Done | Completed in `TASK-087`. |
 | PAR-005 | Add a recurring parity checklist to release planning so closed gaps stay closed. | Medium | Approved | Not started | Backlog: `TASK-088`. |
 
 ## Epic 2: Bookmark Model And Detail Parity

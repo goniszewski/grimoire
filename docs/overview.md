@@ -428,6 +428,8 @@ erDiagram
 - Docker examples intentionally bind the host port to `127.0.0.1`.
 - Public reverse-proxy deployment requires an external authenticated tunnel, VPN, or reverse proxy.
 - The in-app lock is a local browser convenience, not daemon-level access control.
+- The route-level threat model, local integration boundaries, and public-network
+  release gates are documented in [security-boundaries.md](./security-boundaries.md).
 
 ### AI And Search
 
@@ -476,6 +478,7 @@ erDiagram
 - [Roadmap](./roadmap.md)
 - [Backup design](./backup-design.md)
 - [Docker deployment](./docker-deployment.md)
+- [Security boundaries](./security-boundaries.md)
 - [Update system design](./update-system.md)
 - [Release checklist](./release-checklist.md)
 - [Generated API documentation](../API.md)
