@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkHealth, checkHealthAfterRestore, recordBookmarkOpen, resolveDaemonUrl } from "./api";
+import { checkHealth, checkHealthAfterRestore, recordBookmarkOpen, resolveDaemonUrl, updateBookmark } from "./api";
 
 describe("daemon URL resolution", () => {
   it("defaults to the packaged daemon URL when no override is configured", () => {
@@ -103,5 +103,50 @@ describe("bookmark open metrics API", () => {
     );
     expect(result.data.opened_count).toBe(3);
     expect(result.data.last_opened_at).toBe("2026-05-31T12:00:00Z");
+  });
+});
+
+describe("bookmark mutation API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("sends supported bookmark patches through the daemon PUT endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "bm-1",
+            title: "Renamed",
+            tags: ["typescript"],
+            notes: null,
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    await updateBookmark("bm-1", {
+      title: "Renamed",
+      tags: ["typescript"],
+      is_pinned: 1,
+      notes: null,
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/bookmarks/bm-1",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({
+          title: "Renamed",
+          tags: ["typescript"],
+          is_pinned: 1,
+          notes: null,
+        }),
+      })
+    );
   });
 });

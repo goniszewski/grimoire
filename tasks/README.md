@@ -107,7 +107,7 @@ tasks/
 | TASK-091 | [Bookmark Open Metrics](done/TASK-091-bookmark-open-metrics.md) | Grimoire parity | medium | done |
 | TASK-092 | [Bookmark Detail Metadata And Content Sections](done/TASK-092-bookmark-detail-metadata-content.md) | Grimoire parity | high | done |
 | TASK-093 | [Bookmark Media Handling And Preview](backlog/TASK-093-bookmark-media-handling-preview.md) | Grimoire parity | medium | backlog |
-| TASK-094 | [Bookmark Mutation And Detail Regression Tests](backlog/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-094 | [Bookmark Mutation And Detail Regression Tests](done/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | done |
 | TASK-095 | [Sidebar Categories From Full Tree](backlog/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | backlog |
 | TASK-096 | [Category Detail Page](backlog/TASK-096-category-detail-page.md) | Grimoire parity | medium | backlog |
 | TASK-097 | [Category Metadata Fields](backlog/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | backlog |

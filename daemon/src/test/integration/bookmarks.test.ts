@@ -94,6 +94,158 @@ describe("Bookmarks API", () => {
     expect(json.data.is_pinned).toBe(0);
   });
 
+  it("PUT /bookmarks/:id updates every supported bookmark mutation field", async () => {
+    const category = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Research")!;
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/mutable" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+    const readAt = "2026-05-31T12:00:00.000Z";
+
+    const res = await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Renamed bookmark",
+        category_id: category.id,
+        tags: ["TypeScript", "Testing"],
+        is_pinned: 1,
+        read_later: 1,
+        is_archived: 1,
+        read_at: readAt,
+        notes: "A personal note",
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        title: string | null;
+        category_id: string | null;
+        tags: string[];
+        is_pinned: 0 | 1;
+        read_later: 0 | 1;
+        is_archived: 0 | 1;
+        read_at: string | null;
+        notes: string | null;
+      };
+    };
+    expect(json.data).toMatchObject({
+      title: "Renamed bookmark",
+      category_id: category.id,
+      is_pinned: 1,
+      read_later: 1,
+      is_archived: 1,
+      read_at: readAt,
+      notes: "A personal note",
+    });
+    expect(json.data.tags).toEqual(["testing", "typescript"]);
+  });
+
+  it("PUT /bookmarks/:id clears nullable fields and replacement tags", async () => {
+    const category = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Documentation")!;
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/clearable", title: "Original" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category_id: category.id,
+        tags: ["docs"],
+        read_at: "2026-05-31T12:00:00.000Z",
+        notes: "keep temporarily",
+      }),
+    });
+
+    const res = await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: null,
+        category_id: null,
+        tags: [],
+        read_at: null,
+        notes: null,
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        title: string | null;
+        category_id: string | null;
+        tags: string[];
+        read_at: string | null;
+        notes: string | null;
+      };
+    };
+    expect(json.data.title).toBeNull();
+    expect(json.data.category_id).toBeNull();
+    expect(json.data.tags).toEqual([]);
+    expect(json.data.read_at).toBeNull();
+    expect(json.data.notes).toBeNull();
+  });
+
+  for (const [field, value] of [
+    ["url", "https://example.com/unsupported-url"],
+    ["summary", "Unsupported summary mutation"],
+    ["description", "Unsupported description mutation"],
+    ["opened_count", 42],
+    ["last_opened_at", "2026-05-31T12:00:00.000Z"],
+    ["is_trashed", 1],
+    ["created_at", "2026-05-31T12:00:00.000Z"],
+  ] as const) {
+    it(`PUT /bookmarks/:id rejects unsupported patch field ${field}`, async () => {
+      const createRes = await app.request("/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: `https://example.com/reject-${field.replaceAll("_", "-")}` }),
+      });
+      const { data: bm } = await createRes.json() as { data: { id: string } };
+
+      const res = await app.request(`/bookmarks/${bm.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+
+      expect(res.status).toBe(422);
+      const json = await res.json() as { title: string; detail?: string };
+      expect(json.title).toBe("Unprocessable Entity");
+      expect(json.detail).toContain(field);
+    });
+  }
+
+  it("PUT /bookmarks/:id rejects non-object JSON patches", async () => {
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/non-object-patch" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+
+    const res = await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify("not an object"),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { detail?: string };
+    expect(json.detail).toContain("JSON object");
+  });
+
   it("GET /bookmarks filters by read_later", async () => {
     const readLaterRes = await app.request("/bookmarks", {
       method: "POST",

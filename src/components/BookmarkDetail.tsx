@@ -139,7 +139,6 @@ export function BookmarkDetail({
       bookmark={bookmarkWithDetail}
       onUpdateTags={onUpdateTags}
       onUpdateCategory={onUpdateCategory}
-      onUpdateField={onUpdateField}
       onUpdateNotes={onUpdateNotes}
       onPin={onPin}
       onUnpin={onUnpin}

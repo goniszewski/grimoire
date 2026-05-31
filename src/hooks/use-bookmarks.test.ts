@@ -313,6 +313,74 @@ describe("useBookmarks — search", () => {
   });
 });
 
+describe("useBookmarks — bookmark mutation patches", () => {
+  it("sends supported detail mutations through the central API client", async () => {
+    mockedListCategories.mockResolvedValue(categoryTreeResponse([
+      makeApiCategory({ id: "cat-2", name: "Research" }),
+    ]));
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([makeApiBookmark({ id: "bm-1" })]));
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.updateBookmarkField("bm-1", "title", "Renamed"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { title: "Renamed" }));
+
+    act(() => result.current.updateBookmarkTags("bm-1", ["typescript", "testing"]));
+    await waitFor(() =>
+      expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { tags: ["typescript", "testing"] })
+    );
+
+    act(() => result.current.updateBookmarkCategory("bm-1", "Research"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { category_id: "cat-2" }));
+
+    act(() => result.current.pinBookmark("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { is_pinned: 1 }));
+
+    act(() => result.current.unpinBookmark("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { is_pinned: 0 }));
+
+    act(() => result.current.markReadLater("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { read_later: 1 }));
+
+    act(() => result.current.clearReadLater("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { read_later: 0 }));
+
+    act(() => result.current.archiveBookmark("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { is_archived: 1 }));
+
+    act(() => result.current.unarchiveBookmark("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { is_archived: 0 }));
+
+    act(() => result.current.markAsRead("bm-1"));
+    await waitFor(() =>
+      expect(mockedUpdateBookmark).toHaveBeenLastCalledWith(
+        "bm-1",
+        expect.objectContaining({ read_at: expect.any(String) })
+      )
+    );
+
+    act(() => result.current.markAsUnread("bm-1"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { read_at: null }));
+
+    act(() => result.current.updateBookmarkNotes("bm-1", "note"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { notes: "note" }));
+
+    act(() => result.current.updateBookmarkNotes("bm-1", null));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { notes: null }));
+  });
+
+  it("does not send unsupported URL or summary edits to the daemon", async () => {
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([makeApiBookmark({ id: "bm-1" })]));
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.updateBookmarkField("bm-1", "url", "https://example.com/new"));
+    act(() => result.current.updateBookmarkField("bm-1", "summary", "new summary"));
+
+    expect(mockedUpdateBookmark).not.toHaveBeenCalled();
+  });
+});
+
 describe("useBookmarks — recentBookmarks", () => {
   it("returns up to 5 most recently saved bookmarks", async () => {
     const bookmarks = Array.from({ length: 7 }, (_, i) =>

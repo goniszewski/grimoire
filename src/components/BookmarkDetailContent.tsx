@@ -16,7 +16,6 @@ interface BookmarkDetailContentProps {
   bookmark: Bookmark;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
-  onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
   onUpdateNotes: (id: string, notes: string | null) => void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -42,7 +41,6 @@ export function BookmarkDetailContent({
   bookmark,
   onUpdateTags,
   onUpdateCategory,
-  onUpdateField,
   onUpdateNotes,
   onPin,
   onUnpin,
@@ -57,10 +55,6 @@ export function BookmarkDetailContent({
   const [tagInput, setTagInput] = useState("");
   const [editingCategory, setEditingCategory] = useState(false);
   const [categoryInput, setCategoryInput] = useState("");
-  const [editingUrl, setEditingUrl] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
-  const [editingSummary, setEditingSummary] = useState(false);
-  const [summaryInput, setSummaryInput] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState("");
   const [openMetrics, setOpenMetrics] = useState({
@@ -117,25 +111,6 @@ export function BookmarkDetailContent({
     setEditingCategory(false);
   };
 
-  const handleSummarySubmit = () => {
-    if (summaryInput.trim() && summaryInput.trim() !== bookmark.summary) {
-      onUpdateField(bookmark.id, "summary", summaryInput.trim());
-    }
-    setEditingSummary(false);
-  };
-
-  const handleUrlSubmit = () => {
-    if (urlInput.trim() && urlInput.trim() !== bookmark.url) {
-      try {
-        new URL(urlInput.trim());
-        onUpdateField(bookmark.id, "url", urlInput.trim());
-      } catch {
-        toast({ title: "Invalid URL", description: "Please enter a valid URL.", variant: "destructive" });
-      }
-    }
-    setEditingUrl(false);
-  };
-
   const handleNotesSubmit = () => {
     const trimmed = notesInput.trim() || null;
     if (trimmed !== (bookmark.notes?.trim() || null)) {
@@ -169,38 +144,9 @@ export function BookmarkDetailContent({
 
       <PipelineRecoveryPanel bookmarkId={bookmark.id} />
 
-      {/* Summary — editable */}
+      {/* Summary */}
       <div className="group/summary">
-        {editingSummary ? (
-          <div className="space-y-1.5">
-            <Textarea
-              value={summaryInput}
-              onChange={(e) => setSummaryInput(e.target.value)}
-              className="text-sm leading-relaxed min-h-[60px]"
-              autoFocus
-            />
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSummarySubmit}>
-                <Check className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingSummary(false)}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start gap-1.5">
-            <p className="text-sm text-muted-foreground leading-relaxed flex-1">{bookmark.summary}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover/summary:opacity-100 transition-opacity shrink-0 mt-0.5"
-              onClick={() => { setSummaryInput(bookmark.summary); setEditingSummary(true); }}
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+        <p className="text-sm text-muted-foreground leading-relaxed">{bookmark.summary}</p>
       </div>
 
       {hasSourceDetails && content && (
@@ -370,43 +316,15 @@ export function BookmarkDetailContent({
       <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 group/url">
           <Globe className="h-3 w-3 shrink-0" />
-          {editingUrl ? (
-            <div className="flex items-center gap-1 min-w-0 flex-1">
-              <Input
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleUrlSubmit()}
-                className="h-6 text-xs font-mono flex-1"
-                autoFocus
-              />
-              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={handleUrlSubmit}>
-                <Check className="h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={() => setEditingUrl(false)}>
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          ) : (
-            <>
-              <a
-                href={bookmark.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
-                className="hover:text-foreground font-mono truncate"
-              >
-                {bookmark.url}
-              </a>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 opacity-0 group-hover/url:opacity-100 transition-opacity shrink-0"
-                onClick={() => { setUrlInput(bookmark.url); setEditingUrl(true); }}
-              >
-                <Pencil className="h-2.5 w-2.5" />
-              </Button>
-            </>
-          )}
+          <a
+            href={bookmark.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
+            className="hover:text-foreground font-mono truncate"
+          >
+            {bookmark.url}
+          </a>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <Calendar className="h-3 w-3" />

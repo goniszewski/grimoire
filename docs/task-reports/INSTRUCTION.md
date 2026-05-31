@@ -115,6 +115,7 @@ Keep reports concise. The main card should be readable in one or two minutes. Pu
 <style>
 /* Keep styles embedded so the report is self-contained. */
 </style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
 </head>
 <body>
 <main class="page">
@@ -207,6 +208,18 @@ If the report includes a before/after or additional-screenshot gallery, constrai
   height: auto;
 }
 ```
+
+## Image Lightbox Requirements
+
+Any task-report HTML page or report index that renders screenshots or SVG images must load the shared lightweight lightbox helper:
+
+```html
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+```
+
+Adjust the relative path from the HTML file to `docs/task-reports/assets/task-report-lightbox.js`. The helper opens clicked images in a simple backdrop with zoom controls, reset, close, wheel zoom, and drag-to-pan behavior. This includes month index thumbnails, where image clicks should preview the image while the rest of the card remains a normal report link.
+
+Screenshot assets meant for inspection should preserve enough source pixels for zooming. Capture desktop report images at least `1920x1080` when the source view can support it. Capture narrow/mobile screenshots at device-pixel density when possible, for example a `390x700` viewport saved at `2x` as `780x1400`. Avoid using a screenshot of an already-downscaled screenshot as the primary evidence image.
 
 ## Index Page Requirements
 

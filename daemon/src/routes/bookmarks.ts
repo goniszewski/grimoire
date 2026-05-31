@@ -74,6 +74,17 @@ function hasActivePipelineJob(db: Database, bookmarkId: string): boolean {
   return (row?.count ?? 0) > 0;
 }
 
+const bookmarkPatchFields = new Set([
+  "title",
+  "category_id",
+  "tags",
+  "is_pinned",
+  "read_later",
+  "is_archived",
+  "read_at",
+  "notes",
+]);
+
 // ─── Response envelope ────────────────────────────────────────────────────────
 
 function ok<T>(c: Context, data: T, status: 200 | 201 = 200) {
@@ -199,7 +210,21 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       return problem(c, 400, "Bad Request", "Request body must be valid JSON");
     }
 
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return problem(c, 422, "Unprocessable Entity", "Bookmark patch body must be a JSON object");
+    }
+
     const patch = body as Record<string, unknown>;
+    const unsupportedFields = Object.keys(patch).filter((field) => !bookmarkPatchFields.has(field));
+    if (unsupportedFields.length > 0) {
+      return problem(
+        c,
+        422,
+        "Unprocessable Entity",
+        `Unsupported bookmark patch field${unsupportedFields.length === 1 ? "" : "s"}: ${unsupportedFields.join(", ")}`
+      );
+    }
+
     const allowed: Record<string, unknown> = {};
 
     if ("title" in patch) {

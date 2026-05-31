@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { BookmarkDetail } from "./BookmarkDetail";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
@@ -131,5 +132,42 @@ describe("BookmarkDetail", () => {
 
     await waitFor(() => expect(api.getBookmark).toHaveBeenCalledWith("bm-1"));
     expect(await screen.findByTestId("detail-content")).toHaveTextContent("Readable detail body");
+  });
+
+  it("calls onUpdateField when the editable title is changed and confirmed", async () => {
+    const user = userEvent.setup();
+    const onUpdateField = vi.fn();
+    const getBookmarkMock = vi.spyOn(api, "getBookmark") as unknown as {
+      mockResolvedValue: (value: unknown) => void;
+    };
+    getBookmarkMock.mockResolvedValue({ data: { content: null } });
+
+    renderWithQueryClient(
+      <BookmarkDetail
+        bookmark={makeBookmark()}
+        open
+        onOpenChange={vi.fn()}
+        onUpdateTags={vi.fn()}
+        onUpdateCategory={vi.fn()}
+        onUpdateField={onUpdateField}
+        onUpdateNotes={vi.fn()}
+        relatedBookmarks={[]}
+        onSelectRelated={vi.fn()}
+      />
+    );
+
+    const title = screen.getByText("Test Article", { selector: "span" });
+    const editButton = title.closest("div[class*='group/title']")?.querySelector("button");
+    expect(editButton).not.toBeNull();
+    await user.click(editButton!);
+
+    const input = screen.getByDisplayValue("Test Article");
+    await user.clear(input);
+    await user.type(input, "Renamed Article");
+    const confirmButton = input.closest("div")?.querySelector("button");
+    expect(confirmButton).not.toBeNull();
+    await user.click(confirmButton!);
+
+    expect(onUpdateField).toHaveBeenCalledWith("bm-1", "title", "Renamed Article");
   });
 });

@@ -99,7 +99,6 @@ function defaultProps(
     bookmark: bm,
     onUpdateTags: vi.fn(),
     onUpdateCategory: vi.fn(),
-    onUpdateField: vi.fn(),
     onUpdateNotes: vi.fn(),
     relatedBookmarks: [],
     onSelectRelated: vi.fn(),
@@ -148,6 +147,7 @@ describe("BookmarkDetailContent — rendering", () => {
     expect(link).toHaveAttribute("href", "https://example.com/article");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(link.closest("div[class*='group/url']")?.querySelector("button")).toBeNull();
   });
 
   it("renders related bookmarks when provided", () => {
@@ -336,32 +336,15 @@ describe("BookmarkDetailContent — notes editing", () => {
   });
 });
 
-// ─── Title / summary inline edit ─────────────────────────────────────────────
+// ─── Unsupported extracted-field editing ─────────────────────────────────────
 
-describe("BookmarkDetailContent — summary editing", () => {
-  it("calls onUpdateField with 'summary' when summary is edited and confirmed", async () => {
-    const onUpdateField = vi.fn();
-    const user = userEvent.setup();
+describe("BookmarkDetailContent — unsupported extracted fields", () => {
+  it("does not expose an edit affordance for the extracted summary", () => {
     const bm = makeBookmark({ summary: "original summary" });
-    render(<BookmarkDetailContent {...defaultProps(bm, { onUpdateField })} />);
+    render(<BookmarkDetailContent {...defaultProps(bm)} />);
 
-    // Hover over summary section — pencil appears. Force-click via direct DOM manipulation.
     const summaryText = screen.getByText("original summary");
-    const summaryRow = summaryText.closest("div[class*='flex']")!;
-    const pencilBtn = summaryRow.querySelector("button")!;
-    fireEvent.click(pencilBtn);
-
-    const textarea = screen.getByDisplayValue("original summary");
-    await user.clear(textarea);
-    await user.type(textarea, "updated summary");
-
-    // Confirm
-    const confirmBtns = screen
-      .getAllByRole("button")
-      .filter((b) => !b.textContent && b.classList.toString().includes("h-6"));
-    fireEvent.click(confirmBtns[0]);
-
-    expect(onUpdateField).toHaveBeenCalledWith("bm-1", "summary", "updated summary");
+    expect(summaryText.closest("div[class*='group/summary']")?.querySelector("button")).toBeNull();
   });
 });
 

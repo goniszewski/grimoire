@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookmark Mutation Regression Tests - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --accent: #0f7fbf;
+  --green: #15803d;
+  --orange: #c2410c;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 28px 0 8px;
+  font-size: 1.05rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span, .pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 26px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+ul {
+  padding-left: 1.2rem;
+}
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f8fafc;
+  padding: 1px 5px;
+  color: #334155;
+}
+details {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 28px 0;
+  }
+  .task-card {
+    padding: 20px;
+  }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Bookmark Mutation Regression Tests</h1>
+      <div class="meta-row">
+        <span>May 31, 2026</span>
+        <span>TASK-094</span>
+        <span>Done</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-regression-matrix.svg" alt="Regression matrix covering supported bookmark fields, rejected patch fields, and detail UI affordances">
+      <figcaption>After: bookmark mutation behavior has explicit regression coverage across daemon routes, frontend controls, hooks, and the API client.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Bookmark detail tests covered many controls, but daemon update coverage did not exercise every mutable field. Unsupported patch fields such as <code>url</code>, <code>summary</code>, and open metrics were silently ignored, while the detail view still showed hover edit controls for URL and extracted summary.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>TASK-094 needed a clear regression boundary: supported bookmark mutations should be covered end to end, and unsupported or immutable fields should either fail explicitly at the API or have no editable UI affordance.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added daemon integration tests for supported patch fields, clearing nullable values, unsupported fields, and non-object patch bodies.</li>
+        <li>Added frontend tests for title editing, supported mutation patches, API client serialization, and the absence of unsupported URL/summary edit controls.</li>
+        <li>Changed <code>PUT /bookmarks/:id</code> to reject unknown bookmark patch fields with <code>422</code> instead of silently returning the unchanged bookmark.</li>
+        <li>Removed the URL and extracted-summary edit affordances from bookmark detail content while preserving title, notes, tags, status, read-later, read, archive, and open controls.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Bookmark mutation behavior is now covered by focused regression tests, and unsupported fields have a consistent boundary: direct API attempts fail clearly, while the detail UI no longer invites unsupported URL or summary edits.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test src/test/integration/bookmarks.test.ts</code> passed with 27 tests.</li>
+        <li><code>npm run test -- src/components/BookmarkDetailContent.test.tsx src/components/BookmarkDetail.test.tsx src/hooks/use-bookmarks.test.ts src/lib/api.test.ts</code> passed with 61 tests.</li>
+        <li><code>npm run docs:api:check</code> passed with API documentation up to date.</li>
+        <li><code>npm run type-check</code> passed for frontend and daemon TypeScript.</li>
+        <li><code>npm run lint</code> completed with only existing warnings in unrelated files.</li>
+        <li><code>npm run check</code>, <code>npm run test:e2e</code>, <code>npx tsc --noEmit</code>, and <code>git diff --check</code> passed in the final review pass.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The daemon now checks that bookmark patches are JSON objects and rejects keys outside the documented update contract before field-specific validation runs. The frontend hook already avoided sending URL and summary patches; the detail component now matches that contract by removing those edit controls.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/routes/bookmarks.ts</code></li>
+        <li><code>daemon/src/test/integration/bookmarks.test.ts</code></li>
+        <li><code>src/components/BookmarkDetail.tsx</code></li>
+        <li><code>src/components/BookmarkDetailContent.tsx</code></li>
+        <li><code>src/components/BookmarkDetailContent.test.tsx</code></li>
+        <li><code>src/components/BookmarkDetail.test.tsx</code></li>
+        <li><code>src/hooks/use-bookmarks.test.ts</code></li>
+        <li><code>src/lib/api.test.ts</code></li>
+        <li><code>tasks/done/TASK-094-bookmark-mutation-detail-regression-tests.md</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

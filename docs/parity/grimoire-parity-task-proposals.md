@@ -26,14 +26,14 @@ Suggested values:
 
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
-| PAR-006 | Fix the bookmark detail URL and summary edit mismatch by either implementing supported mutations or removing the editable affordance. | Critical | Deferred | Not started | Proposal: keep canonical URL immutable after capture; support summary edits through the bookmark update flow or remove the unsupported editable affordance until scoped. |
+| PAR-006 | Fix the bookmark detail URL and summary edit mismatch by either implementing supported mutations or removing the editable affordance. | Critical | Deferred | Done | Mutation support remains deferred; `TASK-094` closed the immediate mismatch by keeping canonical URL and extracted summary immutable and removing their unsupported detail edit affordances. |
 | PAR-007 | Decide whether Little Imp pinning maps to Grimoire starred/favorite state and whether a separate flag field is required. | High | Approved | Done | Decision: Grimoire starred/favorite maps to existing Little Imp pinning. A separate read-later flag is desirable. Implementation: `TASK-089`. |
 | PAR-008 | Implement read-later persistence, API contract, list badges, bulk actions, filters, and tests. Map Grimoire starred/favorite state to existing pinned state. | High | Approved | Done | Done: `TASK-089`. |
 | PAR-009 | Add bookmark importance rating with schema migration, API update support, editor control, sort, filter, import/export coverage, and tests. | Medium | Rejected | Not started | Rejected for this parity batch. It does not directly improve vector search and adds schema/API/UI/filter/export complexity without clear current workflow value. Record: `TASK-090`. |
-| PAR-010 | Track opened count and last-opened timestamp when users open bookmark URLs from cards, detail, search, and related-bookmark surfaces. | Medium | Approved | Not started | Backlog: `TASK-091`. |
-| PAR-011 | Add richer bookmark detail sections for extracted markdown/content, author, published date, word count, language, and pipeline metadata. | High | Approved | Not started | Backlog: `TASK-092`. |
+| PAR-010 | Track opened count and last-opened timestamp when users open bookmark URLs from cards, detail, search, and related-bookmark surfaces. | Medium | Approved | Done | Done: `TASK-091`. |
+| PAR-011 | Add richer bookmark detail sections for extracted markdown/content, author, published date, word count, language, and pipeline metadata. | High | Approved | Done | Done: `TASK-092`. |
 | PAR-012 | Define media handling for favicon, screenshot, and extracted images, then add a detail media preview if it fits the local storage model. | Medium | Approved | Not started | Backlog: `TASK-093`. |
-| PAR-013 | Add regression tests for all bookmark field mutations and visible detail controls. | High | Approved | Not started | Backlog: `TASK-094`. |
+| PAR-013 | Add regression tests for all bookmark field mutations and visible detail controls. | High | Approved | Done | Done: `TASK-094`. |
 
 ## Epic 3: Category And Tag Parity
 
