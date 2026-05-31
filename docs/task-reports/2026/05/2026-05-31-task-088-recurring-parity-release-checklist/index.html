@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recurring Parity Release Checklist - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --orange: #c2410c;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 30px 0 10px;
+  font-size: 1.2rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.58;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+ul { padding-left: 20px; }
+code {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.summary-panel {
+  min-width: 0;
+  border-left: 4px solid var(--green);
+  padding: 0 0 0 14px;
+}
+.summary-panel + .summary-panel {
+  border-left-color: var(--blue);
+}
+.summary-panel h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.summary-panel p { margin: 0; }
+details {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 32px 0;
+  }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">May 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Recurring Parity Release Checklist</h1>
+      <div class="meta-row">
+        <span>2026-05-31</span>
+        <span>TASK-088</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-parity-checklist-map.svg" alt="Visual map of recurring Grimoire parity release checklist checkpoints and verification signals">
+      <figcaption>After: closed Grimoire parity gaps have recurring release-checklist review and verification signals.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The release checklist covered install, Homebrew, Docker, backup, quality gates, documentation, and network exposure, but it did not give future release operators a repeatable parity regression review.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>The Grimoire parity batch will close gaps across API contracts, bookmark fields, category/tag management, import/export, search, filters, pagination, and integrations. Without a recurring checklist, those closed gaps could regress during later release work.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added a recurring Grimoire parity review section to <code>docs/release-checklist.md</code>.</li>
+        <li>Linked the release checklist back to the parity report, parity worksheet, and relevant TASK/PAR IDs.</li>
+        <li>Named API, focused daemon, focused frontend, visual, Playwright e2e, and performance verification signals for each parity area.</li>
+        <li>Added a Vitest regression guard for the checklist section and verification vocabulary.</li>
+        <li>Moved TASK-088 to done and updated the task board, parity worksheet, parity report, and task-report index links.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <div class="summary-grid">
+        <div class="summary-panel">
+          <h3>Release Planning</h3>
+          <p>Future parity-facing beta and release-candidate builds now have a repeatable review path for closed parity gaps.</p>
+        </div>
+        <div class="summary-panel">
+          <h3>Regression Signals</h3>
+          <p>Each parity area names the verification needed when API, UI, import/export, integration, or performance-sensitive behavior changes.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>npx vitest run scripts/parity-release-checklist.test.ts</code> failed before the release checklist update.</li>
+        <li><code>npx vitest run scripts/parity-release-checklist.test.ts</code> passed after the release checklist update.</li>
+        <li><code>npx vitest run scripts/installer-matrix-docs.test.ts scripts/homebrew-formula.test.ts scripts/installed-app-smoke.test.ts scripts/parity-release-checklist.test.ts</code> passed.</li>
+        <li><code>npm run test</code> passed with 158/158 tests.</li>
+        <li><code>npm run lint</code> exited 0 with the repository's existing Fast Refresh and exhaustive-deps warnings.</li>
+        <li><code>git diff --check</code> passed.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The task is documentation and regression-test coverage only. No daemon route, frontend UI, schema, migration, installer, or release artifact behavior changed.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>docs/release-checklist.md</code></li>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>scripts/parity-release-checklist.test.ts</code></li>
+        <li><code>tasks/done/TASK-088-recurring-parity-release-checklist.md</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>docs/task-reports/2026/05/2026-05-31-task-088-recurring-parity-release-checklist/index.html</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

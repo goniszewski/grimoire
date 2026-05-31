@@ -140,6 +140,44 @@ After the GitHub release artifacts are published:
   access unless all public-network gates in
   [security-boundaries.md](./security-boundaries.md) are complete.
 
+## Recurring Grimoire Parity Review
+
+Before every parity-facing beta or release-candidate build, review the current
+batch against the parity report and worksheet:
+
+- [docs/parity/grimoire-feature-parity-report.md](./parity/grimoire-feature-parity-report.md)
+- [docs/parity/grimoire-parity-task-proposals.md](./parity/grimoire-parity-task-proposals.md)
+
+Use this section as the recurring regression path for closed parity gaps. A
+closed gap remains closed only when the matching verification signal still
+passes after related schema, API, UI, import/export, integration, or release
+documentation changes.
+
+| Checkpoint | Linked parity work | Required verification signal |
+|---|---|---|
+| API contract and docs | TASK-102, TASK-103, TASK-104, TASK-106, PAR-021 through PAR-026 | Run `npm run docs:api:check` for API docs drift; run focused daemon tests for changed routes, auth, origin, or contract helpers; confirm `API.md` and `docs/api-contract.json` match the source contract. |
+| Bookmark model and detail fields | TASK-089, TASK-091, TASK-092, TASK-094, PAR-007 through PAR-013 | Run focused daemon tests for migrations, repositories, route mutations, import/export field mapping, and focused frontend tests for list/detail badges, controls, filters, and optimistic UI. Use visual verification for changed card, detail, bulk action, or narrow layout states. |
+| Category and tag management | TASK-095 through TASK-101, PAR-014 through PAR-020 | Run focused daemon tests for category/tag API behavior and focused frontend tests for tree, sidebar, management, rename/delete, detail page, and filter refresh behavior. Use visual verification for visible category/tag navigation or management changes. |
+| Import and export behavior | TASK-107 through TASK-113, TASK-120, PAR-035 through PAR-042 | Run focused daemon tests with import/export fixtures for folders, duplicates, invalid/private URLs, remapping, result rows, and parity fields. Use Playwright e2e coverage when import review, remapping, or result-report UI changes. |
+| Search, filters, pagination, and aggregates | TASK-114 through TASK-119, PAR-043 through PAR-048 | Run focused daemon tests for query parameters, sort order, pagination, filter combinations, and aggregate counts; run focused frontend tests for filter/sort/page controls. Use Playwright e2e coverage for core library navigation and performance verification for list, search, filter, import, or pagination changes that can affect large libraries. |
+| Local integration behavior | TASK-102 through TASK-106, PAR-021 through PAR-026, [security-boundaries.md](./security-boundaries.md) | Run focused daemon tests for token auth, CORS/origin policy, MCP/API access, unsafe request rejection, diagnostics redaction, and update-source safeguards. Run `npm run docs:api:check` and verify human-readable API examples whenever local integration contracts change. |
+
+Apply these thresholds consistently:
+
+- API verification is required whenever route behavior, request or response
+  shapes, generated examples, auth requirements, status codes, or shared API
+  client expectations change.
+- Visual verification is required whenever parity work changes visible bookmark
+  cards, detail, category/tag management, import/export review surfaces,
+  library pagination, filters, or Settings/setup copy. Capture desktop and
+  narrow states and include relevant assets in the task report.
+- Playwright e2e coverage is required for user flows that cross multiple
+  surfaces, such as save/search/detail, import review/results, category or tag
+  browsing, backup/export interactions, and pagination/filter navigation.
+- Performance verification is required when list, search, filter, pagination,
+  aggregate, or import behavior changes in ways that may affect large
+  libraries.
+
 ## Backup And Restore
 
 - Create a local backup from Settings or `POST /backup`.

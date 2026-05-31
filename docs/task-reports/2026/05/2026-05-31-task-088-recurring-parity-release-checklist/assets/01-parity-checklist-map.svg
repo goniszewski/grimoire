@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-088 recurring parity release checklist</title>
+  <desc id="desc">A visual summary of the recurring Grimoire parity release review checkpoints and verification signals.</desc>
+  <rect width="1200" height="620" fill="#f7f7fa"/>
+  <rect x="48" y="42" width="1104" height="536" rx="24" fill="#ffffff" stroke="#dedfec" stroke-width="2"/>
+  <text x="90" y="106" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800">TASK-088: Recurring Parity Review</text>
+  <text x="90" y="146" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">Closed Grimoire parity gaps now have release-checklist verification signals.</text>
+
+  <rect x="84" y="198" width="320" height="266" rx="14" fill="#ecfdf5" stroke="#15803d" stroke-width="2"/>
+  <text x="112" y="240" fill="#14532d" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Parity Areas</text>
+  <text x="112" y="286" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- API contract and docs</text>
+  <text x="112" y="322" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Bookmark fields and detail</text>
+  <text x="112" y="358" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Category and tag management</text>
+  <text x="112" y="394" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Import, export, search</text>
+  <text x="112" y="430" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Local integrations</text>
+
+  <rect x="440" y="198" width="320" height="266" rx="14" fill="#eff6ff" stroke="#0f7fbf" stroke-width="2"/>
+  <text x="468" y="240" fill="#075985" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Verification</text>
+  <text x="468" y="286" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- API docs drift checks</text>
+  <text x="468" y="322" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Focused daemon tests</text>
+  <text x="468" y="358" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Focused frontend tests</text>
+  <text x="468" y="394" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Visual and e2e checks</text>
+  <text x="468" y="430" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Performance verification</text>
+
+  <rect x="796" y="198" width="320" height="266" rx="14" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+  <text x="824" y="240" fill="#7c2d12" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Release Gate</text>
+  <text x="824" y="286" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Review parity report</text>
+  <text x="824" y="322" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Reconcile worksheet status</text>
+  <text x="824" y="358" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Block stale closed gaps</text>
+  <text x="824" y="394" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Capture task-report assets</text>
+  <text x="824" y="430" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="19">- Record deviations</text>
+
+  <path d="M410 331 H430" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M766 331 H786" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+  <text x="93" y="516" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">Outcome:</text>
+  <text x="190" y="516" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">future parity releases must prove closed gaps with the right API, UI, e2e, and performance evidence.</text>
+</svg>

@@ -130,11 +130,17 @@ Grimoire:
 - Bookmark, category, tag, admin, profile, import, and API routes under `src/routes`
 - PocketBase migration and OpenAPI-related documentation in repository docs/scripts
 
+## Recurring Release Review
+
+`docs/release-checklist.md` now includes a recurring Grimoire parity review for
+release planning. Use it before every parity-facing beta or release-candidate
+build to confirm closed parity gaps still have passing API, daemon, frontend,
+visual, Playwright e2e, and performance verification where relevant.
+
 ## Recommended Implementation Order
 
-1. Finish recurring parity release planning: TASK-088.
-2. Add local integration authentication, API examples, OpenAPI output, and CORS/origin controls: TASK-102 through TASK-106, excluding deferred TASK-105 implementation.
-3. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
-4. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.
-5. Improve browser/Netscape import, export parity, duplicate policy, and import/export regression tests: TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
-6. Add pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification: TASK-114 through TASK-119.
+1. Add local integration authentication, API examples, OpenAPI output, and CORS/origin controls: TASK-102 through TASK-106, excluding deferred TASK-105 implementation.
+2. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
+3. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.
+4. Improve browser/Netscape import, export parity, duplicate policy, and import/export regression tests: TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
+5. Add pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification: TASK-114 through TASK-119.
