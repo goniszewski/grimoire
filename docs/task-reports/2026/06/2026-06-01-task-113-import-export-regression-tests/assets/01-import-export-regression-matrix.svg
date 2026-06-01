@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-113 import and export regression matrix</title>
+  <desc id="desc">A matrix showing large Netscape parser coverage, import preview and commit coverage, frontend preview caps, and JSON CSV export serialization coverage.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#1f2937" flood-opacity="0.14"/>
+    </filter>
+    <linearGradient id="header" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0f7fbf"/>
+      <stop offset="1" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="640" fill="#f7f7fa"/>
+  <rect x="64" y="56" width="1072" height="528" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+  <rect x="64" y="56" width="1072" height="118" rx="18" fill="url(#header)"/>
+  <path d="M64 156h1072v18H64z" fill="#ffffff"/>
+  <text x="96" y="108" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">Import / Export Regression Coverage</text>
+  <text x="96" y="144" fill="#dbeafe" font-family="Inter, Arial, sans-serif" font-size="18">TASK-113 keeps recent import and export parity behavior pinned down with focused, local-friendly tests.</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <g transform="translate(96 220)">
+      <rect width="228" height="244" rx="12" fill="#eef7ff" stroke="#bfdbfe"/>
+      <circle cx="34" cy="36" r="14" fill="#0f7fbf"/>
+      <text x="34" y="42" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800">1</text>
+      <text x="60" y="42" fill="#111827" font-size="20" font-weight="800">Parser Fixture</text>
+      <text x="24" y="82" fill="#475569" font-size="15">90 valid bookmarks</text>
+      <text x="24" y="112" fill="#475569" font-size="15">Nested folders</text>
+      <text x="24" y="142" fill="#475569" font-size="15">DD and DESCRIPTION notes</text>
+      <text x="24" y="172" fill="#475569" font-size="15">Invalid and private skips</text>
+      <rect x="24" y="202" width="180" height="18" rx="9" fill="#0f7fbf"/>
+    </g>
+
+    <g transform="translate(354 220)">
+      <rect width="228" height="244" rx="12" fill="#f0fdf4" stroke="#bbf7d0"/>
+      <circle cx="34" cy="36" r="14" fill="#15803d"/>
+      <text x="34" y="42" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800">2</text>
+      <text x="60" y="42" fill="#111827" font-size="20" font-weight="800">Import Route</text>
+      <text x="24" y="82" fill="#475569" font-size="15">67 source rows</text>
+      <text x="24" y="112" fill="#475569" font-size="15">Active merge</text>
+      <text x="24" y="142" fill="#475569" font-size="15">Archive/trash restore</text>
+      <text x="24" y="172" fill="#475569" font-size="15">Source duplicate merge</text>
+      <rect x="24" y="202" width="180" height="18" rx="9" fill="#15803d"/>
+    </g>
+
+    <g transform="translate(612 220)">
+      <rect width="228" height="244" rx="12" fill="#fff7ed" stroke="#fed7aa"/>
+      <circle cx="34" cy="36" r="14" fill="#c2410c"/>
+      <text x="34" y="42" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800">3</text>
+      <text x="60" y="42" fill="#111827" font-size="20" font-weight="800">Frontend Preview</text>
+      <text x="24" y="82" fill="#475569" font-size="15">55 preview rows</text>
+      <text x="24" y="112" fill="#475569" font-size="15">Aggregate counts visible</text>
+      <text x="24" y="142" fill="#475569" font-size="15">First 50 row cap</text>
+      <text x="24" y="172" fill="#475569" font-size="15">Overflow message tested</text>
+      <rect x="24" y="202" width="180" height="18" rx="9" fill="#c2410c"/>
+    </g>
+
+    <g transform="translate(870 220)">
+      <rect width="228" height="244" rx="12" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <circle cx="34" cy="36" r="14" fill="#7c3aed"/>
+      <text x="34" y="42" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800">4</text>
+      <text x="60" y="42" fill="#111827" font-size="20" font-weight="800">Export Rows</text>
+      <text x="24" y="82" fill="#475569" font-size="15">JSON parity fields</text>
+      <text x="24" y="112" fill="#475569" font-size="15">CSV escaping</text>
+      <text x="24" y="142" fill="#475569" font-size="15">Tags and category names</text>
+      <text x="24" y="172" fill="#475569" font-size="15">Notes and open metrics</text>
+      <rect x="24" y="202" width="180" height="18" rx="9" fill="#7c3aed"/>
+    </g>
+  </g>
+
+  <g transform="translate(96 506)" font-family="Inter, Arial, sans-serif">
+    <rect width="1002" height="44" rx="10" fill="#f8fafc" stroke="#dedfec"/>
+    <text x="22" y="28" fill="#334155" font-size="16" font-weight="700">Verification:</text>
+    <text x="126" y="28" fill="#626475" font-size="16">focused Bun import/export tests, ImportDialog Vitest coverage, lint, type-check, and whitespace checks passed.</text>
+  </g>
+</svg>

@@ -126,7 +126,7 @@ tasks/
 | TASK-110 | [Import Result Report](done/TASK-110-import-result-report.md) | Grimoire parity | medium | done |
 | TASK-111 | [Export Parity Fields](done/TASK-111-export-parity-fields.md) | Grimoire parity | medium | done |
 | TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
-| TASK-113 | [Import Export Regression Tests](backlog/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-113 | [Import Export Regression Tests](done/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | done |
 | TASK-114 | [Library Pagination](backlog/TASK-114-library-pagination.md) | Grimoire parity | high | backlog |
 | TASK-115 | [Server Driven Sorting](backlog/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | backlog |
 | TASK-116 | [Library Parity Filters](backlog/TASK-116-library-parity-filters.md) | Grimoire parity | high | backlog |
@@ -276,6 +276,10 @@ duplicate policy semantics for active merge and archived/trashed restore-merge,
 invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API
 helpers, SSE merged/restored progress fields, full daemon and frontend test
 coverage, and visual task reporting.
+TASK-113 is complete with import/export regression coverage for large but
+local-friendly import fixtures, nested folders, duplicates, invalid/private
+URLs, duplicate policy preview/commit states, result reports, frontend preview
+row caps, JSON/CSV parity field serialization, and broader review validation.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

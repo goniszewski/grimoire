@@ -143,6 +143,43 @@ function mockPreview(overrides: Partial<ImportPreview["summary"]> = {}): ImportP
   };
 }
 
+function mockLargePreview(rowCount = 55): ImportPreview {
+  return {
+    ...mockPreview({
+      totalRows: rowCount,
+      importableRows: rowCount,
+      new: rowCount,
+      activeDuplicates: 0,
+      archivedDuplicates: 0,
+      trashedDuplicates: 0,
+      invalidUrls: 0,
+      privateUrls: 0,
+      created: rowCount,
+      merged: 0,
+      restored: 0,
+      skipped: 0,
+    }),
+    folders: [["Large"], ["Large", "Batch"]],
+    tags: ["large", "regression"],
+    warnings: [],
+    rows: Array.from({ length: rowCount }, (_, index) => ({
+      classification: "new" as const,
+      action: "create" as const,
+      url: `https://large.example.com/${index}`,
+      title: `Large Row ${index}`,
+      notes: null,
+      tags: ["large"],
+      targetTags: ["large"],
+      folders: ["Large", "Batch"],
+      targetCategoryId: null,
+      targetCategoryPath: ["Large", "Batch"],
+      existingBookmarkId: null,
+      existingState: null,
+      skipReason: null,
+    })),
+  };
+}
+
 function uploadFile(file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" })) {
   const input = document.querySelector('input[type="file"]') as HTMLInputElement;
   fireEvent.change(input, { target: { files: [file] } });
@@ -210,6 +247,20 @@ describe("ImportDialog", () => {
     expect(api.importBookmarksFile).not.toHaveBeenCalled();
     expect(onImport).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("caps large preview row rendering while keeping aggregate counts visible", async () => {
+    mockResolved(api.previewImportBookmarksFile, { data: mockLargePreview(55) });
+    render(<ImportDialog open onOpenChange={vi.fn()} onImport={vi.fn()} />);
+
+    uploadFile();
+
+    expect(await screen.findByText("Import Preview")).toBeInTheDocument();
+    expect(screen.getAllByText("55 new").length).toBeGreaterThan(0);
+    expect(screen.getByText("Large Row 0")).toBeInTheDocument();
+    expect(screen.getByText("Large Row 49")).toBeInTheDocument();
+    expect(screen.queryByText("Large Row 50")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing first 50 rows of 55.")).toBeInTheDocument();
   });
 
   it("refreshes preview estimates when duplicate policy changes", async () => {

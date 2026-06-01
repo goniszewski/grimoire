@@ -428,6 +428,77 @@ describe("Bookmarks API", () => {
     expect(csv).toContain(`,0,${readAt},"Export note, with ""quotes"""`);
   });
 
+  it("GET /export serializes realistic JSON and CSV rows with escaped parity fields", async () => {
+    const category = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get('Research, "AI"')!;
+    const createRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/export-serialization" }),
+    });
+    const { data: bm } = await createRes.json() as { data: { id: string } };
+    const readAt = "2026-06-01T11:30:00.000Z";
+    const summary = 'Summary line one\nline two, with "quotes"';
+    const notes = 'Line one\nLine two, with "quotes"';
+
+    await app.request(`/bookmarks/${bm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "CSV Export Row",
+        category_id: category.id,
+        tags: ["beta", "alpha"],
+        is_pinned: 1,
+        read_later: 1,
+        read_at: readAt,
+        notes,
+      }),
+    });
+    db.query(
+      `INSERT INTO bookmark_content (bookmark_id, markdown, summary, word_count, extracted_at)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(bm.id, "Extracted body", summary, 12, "2026-06-01T11:31:00.000Z");
+    await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
+    await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
+
+    const jsonRes = await app.request("/export?format=json");
+    expect(jsonRes.status).toBe(200);
+    const jsonRows = await jsonRes.json() as Array<{
+      id: string;
+      title: string | null;
+      summary: string | null;
+      tags: string[];
+      category: string | null;
+      is_pinned: 0 | 1;
+      read_later: 0 | 1;
+      opened_count: number;
+      last_opened_at: string | null;
+      read_at: string | null;
+      notes: string | null;
+    }>;
+    expect(jsonRows.find((row) => row.id === bm.id)).toMatchObject({
+      title: "CSV Export Row",
+      summary,
+      tags: ["alpha", "beta"],
+      category: 'Research, "AI"',
+      is_pinned: 1,
+      read_later: 1,
+      opened_count: 2,
+      read_at: readAt,
+      notes,
+    });
+    expect(jsonRows.find((row) => row.id === bm.id)?.last_opened_at).not.toBeNull();
+
+    const csvRes = await app.request("/export?format=csv");
+    expect(csvRes.status).toBe(200);
+    const csv = await csvRes.text();
+    expect(csv).toContain('"Summary line one\nline two, with ""quotes"""');
+    expect(csv).toContain("alpha;beta");
+    expect(csv).toContain('"Research, ""AI"""');
+    expect(csv).toContain('"Line one\nLine two, with ""quotes"""');
+  });
+
   it("GET /export rejects invalid read_later filters", async () => {
     const res = await app.request("/export?read_later=maybe");
 

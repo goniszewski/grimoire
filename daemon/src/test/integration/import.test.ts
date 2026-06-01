@@ -14,6 +14,40 @@ const NETSCAPE_HTML = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
     <DT><A HREF="https://bun.sh" ADD_DATE="1600000001" TAGS="javascript,runtime">Bun</A>
 </DL>`;
 
+function largeMixedImportHtml(): string {
+  const rows = Array.from({ length: 64 }, (_, index) => {
+    return `      <DT><A HREF="https://large.example.com/item-${index}" TAGS="topic-${index % 5},batch-${Math.floor(index / 16)}">Large Row ${index}</A>`;
+  });
+
+  return `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Large Bookmarks</TITLE>
+<H1>Large Bookmarks</H1>
+<DL><p>
+  <DT><H3>Research</H3>
+  <DL><p>
+    <DT><H3>Batch A</H3>
+    <DL><p>
+${rows.slice(0, 24).join("\n")}
+    </DL><p>
+    <DT><H3>Batch B</H3>
+    <DL><p>
+${rows.slice(24, 48).join("\n")}
+      <DT><A HREF="https://large.example.com/item-24" TAGS="duplicate-source,topic-duplicate">Repeated Source Row</A>
+      <DT><A HREF="notaurl" TAGS="broken">Broken Row</A>
+      <DT><A HREF="http://127.0.0.1/admin" TAGS="private">Private Row</A>
+    </DL><p>
+    <DT><H3>Batch C</H3>
+    <DL><p>
+${rows.slice(48).join("\n")}
+    </DL><p>
+    <DT><H3>Empty Batch</H3>
+    <DL><p>
+    </DL><p>
+  </DL><p>
+</DL><p>`;
+}
+
 function formWithHtml(html: string, extraFields: Record<string, string> = {}): FormData {
   const formData = new FormData();
   formData.append("file", new Blob([html], { type: "text/html" }), "bookmarks.html");
@@ -423,6 +457,164 @@ describe("Import API", () => {
       .query<{ count: number }, []>("SELECT COUNT(*) AS count FROM bookmarks")
       .get()?.count ?? 0;
     expect(bookmarkCount).toBe(3);
+  });
+
+  it("POST /import preview and commit handle a large mixed-outcome fixture", async () => {
+    const activeId = await createBookmark(app, "https://large.example.com/item-0", "Existing Active");
+    const archivedId = await createBookmark(app, "https://large.example.com/item-1", "Existing Archived");
+    const trashedId = await createBookmark(app, "https://large.example.com/item-2", "Existing Trashed");
+    await app.request(`/bookmarks/${archivedId}`, {
+      method: "PUT",
+      body: JSON.stringify({ is_archived: 1 }),
+    });
+    await app.request(`/bookmarks/${trashedId}`, { method: "DELETE" });
+
+    const duplicatePolicy = {
+      active: "merge",
+      archived: "restore_merge",
+      trashed: "restore_merge",
+    };
+    const html = largeMixedImportHtml();
+    const previewRes = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify(duplicatePolicy),
+      }),
+    });
+
+    expect(previewRes.status).toBe(200);
+    const preview = await previewRes.json() as {
+      data: {
+        summary: {
+          totalRows: number;
+          importableRows: number;
+          new: number;
+          activeDuplicates: number;
+          archivedDuplicates: number;
+          trashedDuplicates: number;
+          invalidUrls: number;
+          privateUrls: number;
+          created: number;
+          merged: number;
+          restored: number;
+          skipped: number;
+        };
+        folders: string[][];
+        rows: Array<{ classification: string; action: string; existingBookmarkId: string | null }>;
+      };
+    };
+    expect(preview.data.summary).toMatchObject({
+      totalRows: 67,
+      importableRows: 65,
+      new: 61,
+      activeDuplicates: 2,
+      archivedDuplicates: 1,
+      trashedDuplicates: 1,
+      invalidUrls: 1,
+      privateUrls: 1,
+      created: 61,
+      merged: 2,
+      restored: 2,
+      skipped: 2,
+    });
+    expect(preview.data.folders).toEqual([
+      ["Research"],
+      ["Research", "Batch A"],
+      ["Research", "Batch B"],
+      ["Research", "Batch C"],
+      ["Research", "Empty Batch"],
+    ]);
+    expect(preview.data.rows[0]).toMatchObject({
+      classification: "active_duplicate",
+      action: "merge",
+      existingBookmarkId: activeId,
+    });
+    expect(preview.data.rows[24]).toMatchObject({
+      classification: "new",
+      action: "create",
+      existingBookmarkId: null,
+    });
+    expect(preview.data.rows[48]).toMatchObject({
+      classification: "active_duplicate",
+      action: "merge",
+      existingBookmarkId: null,
+    });
+
+    const importRes = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify(duplicatePolicy),
+      }),
+    });
+    expect(importRes.status).toBe(200);
+    const summary = await importRes.json() as { data: { progressUrl: string } };
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const payload = readProgressPayload(await progress.text());
+    expect(payload).toMatchObject({
+      queued: 61,
+      merged: 2,
+      restored: 2,
+      skipped: 2,
+      failed: 0,
+      total: 67,
+      folders: 5,
+      categoriesCreated: 5,
+      done: true,
+      error: null,
+    });
+
+    const result = payload.result as {
+      summary: {
+        totalRows: number;
+        importableRows: number;
+        created: number;
+        updated: number;
+        merged: number;
+        restored: number;
+        skipped: number;
+        failed: number;
+        warnings: number;
+      };
+      rows: Array<{ status: string; classification: string }>;
+    };
+    expect(result.summary).toMatchObject({
+      totalRows: 67,
+      importableRows: 65,
+      created: 61,
+      updated: 4,
+      merged: 2,
+      restored: 2,
+      skipped: 2,
+      failed: 0,
+    });
+    expect(result.summary.warnings).toBeGreaterThanOrEqual(8);
+    expect(result.rows).toHaveLength(67);
+
+    const largeBookmarkCount = db
+      .query<{ count: number }, []>(
+        "SELECT COUNT(*) AS count FROM bookmarks WHERE url LIKE 'https://large.example.com/item-%'"
+      )
+      .get()?.count ?? 0;
+    expect(largeBookmarkCount).toBe(64);
+
+    const restoredRows = db
+      .query<{ id: string; is_archived: 0 | 1; is_trashed: 0 | 1; trashed_at: string | null }, [string, string]>(
+        "SELECT id, is_archived, is_trashed, trashed_at FROM bookmarks WHERE id IN (?, ?) ORDER BY id"
+      )
+      .all(archivedId, trashedId);
+    expect(restoredRows).toHaveLength(2);
+    expect(restoredRows.every((row) => row.is_archived === 0 && row.is_trashed === 0 && row.trashed_at === null)).toBe(true);
+
+    const repeated = bookmarkByUrl<{ id: string }>(db, "https://large.example.com/item-24", "id");
+    expect(repeated).not.toBeNull();
+    expect(tagNamesForBookmark(db, repeated!.id)).toEqual([
+      "batch-1",
+      "duplicate-source",
+      "topic-4",
+      "topic-duplicate",
+    ]);
   });
 
   it("POST /import/preview includes normalized folder and tag remapping decisions", async () => {
