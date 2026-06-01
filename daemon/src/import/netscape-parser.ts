@@ -26,8 +26,15 @@ export interface ParsedBookmark {
   folders: string[];
 }
 
+export interface ParsedFolder {
+  /** Folder hierarchy from outermost → this folder. */
+  path: string[];
+}
+
 export interface ParseResult {
   bookmarks: ParsedBookmark[];
+  /** Unique folder paths discovered in document order, including empty folders. */
+  folders: ParsedFolder[];
   /** Parsing warnings (non-fatal). */
   warnings: string[];
 }
@@ -74,6 +81,8 @@ function stripTags(s: string): string {
  */
 export function parseNetscapeBookmarks(html: string): ParseResult {
   const bookmarks: ParsedBookmark[] = [];
+  const folders: ParsedFolder[] = [];
+  const folderKeys = new Set<string>();
   const warnings: string[] = [];
 
   // Build an ordered token list: { pos, type, raw }
@@ -130,6 +139,13 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
   // Pending H3 seen before a DL_OPEN — will become a folder level
   let pendingFolder: string | null = null;
 
+  function registerFolder(path: string[]): void {
+    const key = JSON.stringify(path);
+    if (folderKeys.has(key)) return;
+    folderKeys.add(key);
+    folders.push({ path: [...path] });
+  }
+
   for (const tok of tokens) {
     switch (tok.type) {
       case "h3":
@@ -140,6 +156,7 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
       case "dl_open":
         if (pendingFolder !== null) {
           folderStack.push(pendingFolder);
+          registerFolder(folderStack);
           pendingFolder = null;
         }
         break;
@@ -199,5 +216,5 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
     }
   }
 
-  return { bookmarks, warnings };
+  return { bookmarks, folders, warnings };
 }

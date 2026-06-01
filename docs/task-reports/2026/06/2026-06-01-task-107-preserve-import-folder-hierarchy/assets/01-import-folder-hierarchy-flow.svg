@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-107 import folder hierarchy flow</title>
+  <desc id="desc">Netscape bookmark folders are parsed into folder paths, resolved as Little Imp categories, and assigned to imported bookmarks.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#1f2937" flood-opacity=".12"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <path d="M2,2 L12,7 L2,12 Z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="520" fill="#f7f7fa"/>
+  <rect x="54" y="52" width="1092" height="416" rx="16" fill="#ffffff" stroke="#dedfec" filter="url(#shadow)"/>
+  <text x="92" y="104" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="800">Preserve Import Folder Hierarchy</text>
+  <text x="92" y="136" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="17">Netscape folders now become stable local categories before imported bookmarks are queued.</text>
+
+  <g transform="translate(92 190)">
+    <rect width="230" height="170" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="22" y="36" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Netscape HTML</text>
+    <text x="22" y="72" fill="#475569" font-family="JetBrains Mono, monospace" font-size="14">&lt;H3&gt;Docs&lt;/H3&gt;</text>
+    <text x="38" y="100" fill="#475569" font-family="JetBrains Mono, monospace" font-size="14">&lt;H3&gt;Runtime&lt;/H3&gt;</text>
+    <text x="54" y="128" fill="#475569" font-family="JetBrains Mono, monospace" font-size="14">&lt;A HREF=...&gt;</text>
+  </g>
+
+  <line x1="342" y1="275" x2="442" y2="275" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g transform="translate(462 190)">
+    <rect width="250" height="170" rx="10" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="22" y="36" fill="#14532d" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Parser Output</text>
+    <text x="22" y="72" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="15">folders: Docs</text>
+    <text x="22" y="101" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="15">folders: Docs / Runtime</text>
+    <text x="22" y="130" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="15">bookmark path: Docs / Runtime</text>
+  </g>
+
+  <line x1="732" y1="275" x2="832" y2="275" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g transform="translate(852 166)">
+    <rect width="250" height="218" rx="10" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="22" y="36" fill="#1e3a8a" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Little Imp Data</text>
+    <circle cx="36" cy="75" r="10" fill="#0f7fbf"/>
+    <text x="58" y="80" fill="#1e40af" font-family="Inter, Arial, sans-serif" font-size="15">Docs category</text>
+    <line x1="36" y1="88" x2="36" y2="118" stroke="#64748b" stroke-width="2"/>
+    <circle cx="36" cy="134" r="10" fill="#15803d"/>
+    <text x="58" y="139" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="15">Runtime category</text>
+    <rect x="26" y="166" width="198" height="32" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="42" y="188" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="14">Bookmark category_id</text>
+  </g>
+
+  <g transform="translate(92 394)">
+    <rect width="1010" height="36" rx="18" fill="#f8fafc" stroke="#dedfec"/>
+    <text x="24" y="24" fill="#475569" font-family="Inter, Arial, sans-serif" font-size="15">Progress now reports parsed folders, categories created, and existing category paths reused during re-import.</text>
+  </g>
+</svg>

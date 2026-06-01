@@ -14,7 +14,12 @@ import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
-import { parseNetscapeBookmarks } from "../import/netscape-parser.js";
+import { CategoryRepository } from "../db/category-repository.js";
+import {
+  parseNetscapeBookmarks,
+  type ParsedBookmark,
+  type ParsedFolder,
+} from "../import/netscape-parser.js";
 import { log } from "../logger.js";
 
 interface ImportDeps {
@@ -50,6 +55,9 @@ interface ProgressState {
   queued: number;
   skipped: number;
   total: number;
+  folders: number;
+  categoriesCreated: number;
+  categoriesReused: number;
   done: boolean;
   error?: string;
 }
@@ -58,6 +66,8 @@ const progressMap = new Map<string, ProgressState>();
 
 // ─── Max upload size: 10 MB ───────────────────────────────────────────────────
 const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_CATEGORY_LEVELS = 3;
+const MAX_IMPORT_CATEGORY_NAME_LENGTH = 100;
 
 // TTL for progress entries not consumed by an SSE client (5 minutes).
 const PROGRESS_TTL_MS = 5 * 60 * 1000;
@@ -73,6 +83,7 @@ function scheduleProgressCleanup(importId: string): void {
 export function createImportRoute(deps: ImportDeps): Hono {
   const router = new Hono();
   const repo = new BookmarkRepository(deps.db);
+  const categoryRepo = new CategoryRepository(deps.db);
 
   // POST /import
   router.post("/import", async (c) => {
@@ -117,7 +128,7 @@ export function createImportRoute(deps: ImportDeps): Hono {
       );
     }
 
-    const { bookmarks, warnings } = parseNetscapeBookmarks(text);
+    const { bookmarks, folders, warnings } = parseNetscapeBookmarks(text);
 
     if (warnings.length > 0) {
       log.warn("Import: parser warnings", { count: warnings.length, sample: warnings.slice(0, 3) });
@@ -128,11 +139,19 @@ export function createImportRoute(deps: ImportDeps): Hono {
 
     // Initialise progress state before spawning background work.
     // Schedule a TTL cleanup in case no SSE client ever connects.
-    progressMap.set(importId, { queued: 0, skipped: 0, total: bookmarks.length, done: false });
+    progressMap.set(importId, {
+      queued: 0,
+      skipped: 0,
+      total: bookmarks.length,
+      folders: folders.length,
+      categoriesCreated: 0,
+      categoriesReused: 0,
+      done: false,
+    });
     scheduleProgressCleanup(importId);
 
     // Process bookmarks in the background — don't block the HTTP response
-    processImport(importId, bookmarks, repo, deps.queue).catch((err) => {
+    processImport(importId, bookmarks, folders, repo, categoryRepo, deps.queue).catch((err) => {
       const state = progressMap.get(importId);
       if (state) {
         state.done = true;
@@ -144,12 +163,18 @@ export function createImportRoute(deps: ImportDeps): Hono {
       });
     });
 
-    log.info("Import: started", { importId, total: bookmarks.length, warnings: warnings.length });
+    log.info("Import: started", {
+      importId,
+      total: bookmarks.length,
+      folders: folders.length,
+      warnings: warnings.length,
+    });
 
     return c.json({
       data: {
         importId,
         total: bookmarks.length,
+        folders: folders.length,
         warnings: warnings.length,
         progressUrl: `/import/${importId}/progress`,
       },
@@ -202,6 +227,9 @@ export function createImportRoute(deps: ImportDeps): Hono {
             queued: state.queued,
             skipped: state.skipped,
             total: state.total,
+            folders: state.folders,
+            categoriesCreated: state.categoriesCreated,
+            categoriesReused: state.categoriesReused,
             done: state.done,
             error: state.error ?? null,
           });
@@ -242,12 +270,24 @@ export function createImportRoute(deps: ImportDeps): Hono {
 
 async function processImport(
   importId: string,
-  bookmarks: Awaited<ReturnType<typeof parseNetscapeBookmarks>>["bookmarks"],
+  bookmarks: ParsedBookmark[],
+  folders: ParsedFolder[],
   repo: BookmarkRepository,
+  categoryRepo: CategoryRepository,
   queue: JobQueue
 ): Promise<void> {
   const state = progressMap.get(importId);
   if (!state) return;
+
+  const categoryPathCache = new Map<string, string>();
+  const categoryStats = { created: 0, reused: 0 };
+
+  for (const folder of folders) {
+    ensureImportCategoryPath(folder.path, categoryRepo, categoryPathCache, categoryStats);
+  }
+
+  state.categoriesCreated = categoryStats.created;
+  state.categoriesReused = categoryStats.reused;
 
   // Process in batches to avoid blocking the event loop for large imports
   const BATCH_SIZE = 50;
@@ -263,8 +303,15 @@ async function processImport(
         continue;
       }
 
+      const categoryId = bm.folders.length > 0
+        ? ensureImportCategoryPath(bm.folders, categoryRepo, categoryPathCache, categoryStats)
+        : null;
+
+      state.categoriesCreated = categoryStats.created;
+      state.categoriesReused = categoryStats.reused;
+
       // Create bookmark record
-      const created = repo.create(bm.url, bm.title);
+      const created = repo.create(bm.url, bm.title, categoryId);
 
       // Apply tags derived from Netscape TAGS attribute
       if (bm.tags.length > 0) {
@@ -282,5 +329,58 @@ async function processImport(
   }
 
   state.done = true;
-  log.info("Import: complete", { importId, queued: state.queued, skipped: state.skipped });
+  log.info("Import: complete", {
+    importId,
+    queued: state.queued,
+    skipped: state.skipped,
+    categoriesCreated: state.categoriesCreated,
+    categoriesReused: state.categoriesReused,
+  });
+}
+
+function ensureImportCategoryPath(
+  path: string[],
+  categoryRepo: CategoryRepository,
+  cache: Map<string, string>,
+  stats: { created: number; reused: number }
+): string | null {
+  let parentId: string | null = null;
+  let currentId: string | null = null;
+  const segments: string[] = [];
+
+  for (const name of importCategorySegments(path)) {
+    segments.push(name);
+    const key = JSON.stringify(segments);
+    const cached = cache.get(key);
+    if (cached) {
+      parentId = cached;
+      currentId = cached;
+      continue;
+    }
+
+    const existing = categoryRepo.findByNameAndParent(name, parentId);
+    if (existing) {
+      cache.set(key, existing.id);
+      parentId = existing.id;
+      currentId = existing.id;
+      stats.reused++;
+      continue;
+    }
+
+    const created = categoryRepo.create(name, parentId);
+    cache.set(key, created.id);
+    parentId = created.id;
+    currentId = created.id;
+    stats.created++;
+  }
+
+  return currentId;
+}
+
+function importCategorySegments(path: string[]): string[] {
+  return path
+    .map((segment) => segment.trim())
+    .map((segment) => segment.slice(0, MAX_IMPORT_CATEGORY_NAME_LENGTH))
+    .filter(Boolean)
+    .slice(0, MAX_IMPORT_CATEGORY_LEVELS);
 }

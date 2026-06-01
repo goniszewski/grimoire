@@ -1186,6 +1186,7 @@ Content-Type: application/json
   "data": {
     "importId": "import_123",
     "total": 12,
+    "folders": 4,
     "warnings": 1,
     "progressUrl": "/import/import_123/progress"
   }
@@ -2648,6 +2649,7 @@ Response data
 |---|---|---:|---|
 | `importId` | string | yes | Import ID for progress stream |
 | `total` | integer | yes | Parsed bookmark count |
+| `folders` | integer | yes | Parsed Netscape folder count |
 | `warnings` | integer | yes | Parser warning count |
 | `progressUrl` | string | yes | SSE progress URL |
 
@@ -2660,6 +2662,7 @@ Response data
 | `data` | ImportSummary | yes |  |
 | `data.importId` | string | yes | Import ID for progress stream |
 | `data.total` | integer | yes | Parsed bookmark count |
+| `data.folders` | integer | yes | Parsed Netscape folder count |
 | `data.warnings` | integer | yes | Parser warning count |
 | `data.progressUrl` | string | yes | SSE progress URL |
 
@@ -2670,6 +2673,9 @@ Response data
 | `queued` | integer | yes | Queued bookmarks |
 | `skipped` | integer | yes | Skipped bookmarks |
 | `total` | integer | yes | Total parsed bookmarks |
+| `folders` | integer | yes | Total parsed Netscape folders |
+| `categoriesCreated` | integer | yes | Categories created from imported folder paths |
+| `categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
 | `done` | boolean | yes | Whether import processing is complete |
 | `error` | string \| null | yes | Background import error |
 

@@ -1780,6 +1780,11 @@
           "description": "Parsed bookmark count",
           "minimum": 0
         },
+        "folders": {
+          "type": "integer",
+          "description": "Parsed Netscape folder count",
+          "minimum": 0
+        },
         "warnings": {
           "type": "integer",
           "description": "Parser warning count",
@@ -1793,6 +1798,7 @@
       "required": [
         "importId",
         "total",
+        "folders",
         "warnings",
         "progressUrl"
       ],
@@ -1829,6 +1835,21 @@
           "description": "Total parsed bookmarks",
           "minimum": 0
         },
+        "folders": {
+          "type": "integer",
+          "description": "Total parsed Netscape folders",
+          "minimum": 0
+        },
+        "categoriesCreated": {
+          "type": "integer",
+          "description": "Categories created from imported folder paths",
+          "minimum": 0
+        },
+        "categoriesReused": {
+          "type": "integer",
+          "description": "Existing categories reused for imported folder paths",
+          "minimum": 0
+        },
         "done": {
           "type": "boolean",
           "description": "Whether import processing is complete"
@@ -1843,6 +1864,9 @@
         "queued",
         "skipped",
         "total",
+        "folders",
+        "categoriesCreated",
+        "categoriesReused",
         "done",
         "error"
       ],
@@ -5746,6 +5770,7 @@
               "data": {
                 "importId": "import_123",
                 "total": 12,
+                "folders": 4,
                 "warnings": 1,
                 "progressUrl": "/import/import_123/progress"
               }

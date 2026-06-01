@@ -494,10 +494,11 @@ const schemas = {
     {
       importId: stringSchema("Import ID for progress stream"),
       total: integerSchema("Parsed bookmark count", { minimum: 0 }),
+      folders: integerSchema("Parsed Netscape folder count", { minimum: 0 }),
       warnings: integerSchema("Parser warning count", { minimum: 0 }),
       progressUrl: stringSchema("SSE progress URL"),
     },
-    ["importId", "total", "warnings", "progressUrl"]
+    ["importId", "total", "folders", "warnings", "progressUrl"]
   ),
   ImportSummaryResponse: envelope(ref("ImportSummary")),
   ImportProgressEvent: objectSchema(
@@ -505,10 +506,13 @@ const schemas = {
       queued: integerSchema("Queued bookmarks", { minimum: 0 }),
       skipped: integerSchema("Skipped bookmarks", { minimum: 0 }),
       total: integerSchema("Total parsed bookmarks", { minimum: 0 }),
+      folders: integerSchema("Total parsed Netscape folders", { minimum: 0 }),
+      categoriesCreated: integerSchema("Categories created from imported folder paths", { minimum: 0 }),
+      categoriesReused: integerSchema("Existing categories reused for imported folder paths", { minimum: 0 }),
       done: booleanSchema("Whether import processing is complete"),
       error: nullable(stringSchema("Background import error")),
     },
-    ["queued", "skipped", "total", "done", "error"]
+    ["queued", "skipped", "total", "folders", "categoriesCreated", "categoriesReused", "done", "error"]
   ),
   RuntimeLlmCapability: objectSchema(
     {
@@ -1890,6 +1894,7 @@ export const apiContract = {
               data: {
                 importId: "import_123",
                 total: 12,
+                folders: 4,
                 warnings: 1,
                 progressUrl: "/import/import_123/progress",
               },

@@ -75,7 +75,7 @@ Suggested values:
 
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
-| PAR-035 | Preserve Netscape folder hierarchy as Little Imp categories during import, using the parser's existing `folders` data. | High | Approved | Not started | Backlog: `TASK-107`. |
+| PAR-035 | Preserve Netscape folder hierarchy as Little Imp categories during import, using the parser's existing `folders` data. | High | Approved | Done | Completed in `TASK-107`. |
 | PAR-036 | Add pre-import review with detected folders, tags, duplicates, invalid URLs, skipped private URLs, and estimated changes. | High | Approved | Not started | Backlog: `TASK-108`. |
 | PAR-037 | Add category and tag remapping before committing imported bookmarks. | Medium | Approved | Not started | Backlog: `TASK-109`. |
 | PAR-038 | Add duplicate handling choices: skip active duplicates by default with merge option, restore archived duplicates with merge, restore trashed duplicates with merge or skip, and report invalid/private URLs. | High | Approved | Not started | Backlog: `TASK-120`. |

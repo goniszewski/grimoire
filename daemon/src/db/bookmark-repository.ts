@@ -67,16 +67,16 @@ export class BookmarkRepository {
   ) {}
 
   /** Create a new bookmark record. Returns the inserted row. */
-  create(url: string, title?: string): BookmarkRow {
+  create(url: string, title?: string, categoryId?: string | null): BookmarkRow {
     const domain = new URL(url).hostname;
 
     const row = this.db
-      .query<BookmarkRow, [string, string, string | null]>(
-        `INSERT INTO bookmarks (url, domain, title)
-         VALUES (?, ?, ?)
+      .query<BookmarkRow, [string, string, string | null, string | null]>(
+        `INSERT INTO bookmarks (url, domain, title, category_id)
+         VALUES (?, ?, ?, ?)
          RETURNING *`
       )
-      .get(url, domain, title ?? null);
+      .get(url, domain, title ?? null, categoryId ?? null);
 
     if (!row) throw new Error("Failed to insert bookmark");
     return row;

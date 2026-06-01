@@ -216,4 +216,25 @@ export class CategoryRepository {
         .get(name) ?? null
     );
   }
+
+  /** Find a category by name under the exact parent, case-insensitively. */
+  findByNameAndParent(name: string, parentId: string | null): CategoryRow | null {
+    if (parentId === null) {
+      return (
+        this.db
+          .query<CategoryRow, [string]>(
+            "SELECT * FROM categories WHERE name = ? COLLATE NOCASE AND parent_id IS NULL LIMIT 1"
+          )
+          .get(name) ?? null
+      );
+    }
+
+    return (
+      this.db
+        .query<CategoryRow, [string, string]>(
+          "SELECT * FROM categories WHERE name = ? COLLATE NOCASE AND parent_id = ? LIMIT 1"
+        )
+        .get(name, parentId) ?? null
+    );
+  }
 }

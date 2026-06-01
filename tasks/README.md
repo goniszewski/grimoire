@@ -120,7 +120,7 @@ tasks/
 | TASK-104 | [OpenAPI Contract Output](done/TASK-104-openapi-contract-output.md) | Grimoire parity | high | done |
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
 | TASK-106 | [Integration CORS And Origin Controls](done/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | done |
-| TASK-107 | [Preserve Import Folder Hierarchy](backlog/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | backlog |
+| TASK-107 | [Preserve Import Folder Hierarchy](done/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | done |
 | TASK-108 | [Pre Import Review](backlog/TASK-108-pre-import-review.md) | Grimoire parity | high | backlog |
 | TASK-109 | [Import Category And Tag Remapping](backlog/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | backlog |
 | TASK-110 | [Import Result Report](backlog/TASK-110-import-result-report.md) | Grimoire parity | medium | backlog |
@@ -248,6 +248,11 @@ TASK-106 is complete with explicit unsafe CORS preflight rejection, missing
 Origin local-client coverage, generated local CORS setup documentation,
 loopback-only configured origin handling, and refreshed security-boundary
 documentation.
+TASK-107 is done with Netscape import folder paths preserved as local
+categories, empty folder creation, duplicate folder names scoped by parent,
+bookmark category assignment, generated import summary/progress fields, and
+focused daemon import coverage for nested folders, empty folders, duplicates,
+re-import behavior, and category route limit parity.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension
