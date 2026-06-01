@@ -80,6 +80,27 @@ export class CategoryRepository {
     return depth;
   }
 
+  /** Returns the deepest descendant distance for a category (leaf = 0). */
+  subtreeHeight(id: string): number {
+    const visited = new Set<string>([id]);
+
+    const walk = (categoryId: string): number => {
+      const children = this.db
+        .query<{ id: string }, [string]>("SELECT id FROM categories WHERE parent_id = ?")
+        .all(categoryId);
+
+      let maxHeight = 0;
+      for (const child of children) {
+        if (visited.has(child.id)) continue;
+        visited.add(child.id);
+        maxHeight = Math.max(maxHeight, 1 + walk(child.id));
+      }
+      return maxHeight;
+    };
+
+    return walk(id);
+  }
+
   /**
    * Returns true if `ancestorId` is an ancestor of `nodeId` (or equal to it).
    * Used to prevent creating cycles when reparenting.

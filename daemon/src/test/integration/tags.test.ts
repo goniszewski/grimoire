@@ -93,6 +93,18 @@ describe("Tags API", () => {
     expect(json.data.some((t) => t.name === "typescript")).toBe(true);
   });
 
+  it("GET /tags keeps empty tags visible with zero active bookmarks", async () => {
+    const { data: tag } = await createTag("empty-tag");
+
+    const res = await app.request("/tags");
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: Array<{ id: string; name: string; bookmark_count: number }> };
+
+    expect(json.data).toContainEqual(
+      expect.objectContaining({ id: tag.id, name: "empty-tag", bookmark_count: 0 })
+    );
+  });
+
   // ─── PUT /tags/:id ────────────────────────────────────────────────────────
 
   it("PUT /tags/:id renames a tag across bookmark references and filters", async () => {
@@ -271,6 +283,48 @@ describe("Tags API", () => {
     const listRes = await app.request("/tags");
     const listJson = await listRes.json() as { data: Array<{ id: string }> };
     expect(listJson.data.some((t) => t.id === tag.id)).toBe(false);
+  });
+
+  it("DELETE /tags/:id detaches tags from active, archived, trashed, filtered, and indexed views", async () => {
+    const { data: active } = await createBookmark("https://example.com/tag-active");
+    const { data: archived } = await createBookmark("https://example.com/tag-archived");
+    const { data: trashed } = await createBookmark("https://example.com/tag-trashed");
+    const { data: tag } = await createTag("typescript");
+    await attachTag(active.id, "typescript");
+    await attachTag(archived.id, "typescript");
+    await attachTag(trashed.id, "typescript");
+
+    await app.request(`/bookmarks/${archived.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_archived: 1 }),
+    });
+    await app.request(`/bookmarks/${trashed.id}`, { method: "DELETE" });
+
+    let tagsRes = await app.request("/tags");
+    const tagsJson = await tagsRes.json() as { data: Array<{ id: string; name: string; bookmark_count: number }> };
+    expect(tagsJson.data).toContainEqual(
+      expect.objectContaining({ id: tag.id, name: "typescript", bookmark_count: 1 })
+    );
+
+    const deleteRes = await app.request(`/tags/${tag.id}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(204);
+
+    const bookmarkRes = await app.request(`/bookmarks/${active.id}`);
+    const bookmarkJson = await bookmarkRes.json() as { data: { tags: string[] } };
+    expect(bookmarkJson.data.tags).toEqual([]);
+
+    const filterRes = await app.request("/bookmarks?tag=typescript");
+    const filterJson = await filterRes.json() as { pagination: { total: number } };
+    expect(filterJson.pagination.total).toBe(0);
+
+    const searchRes = await app.request("/search?q=typescript&mode=keyword");
+    const searchJson = await searchRes.json() as { pagination: { total: number } };
+    expect(searchJson.pagination.total).toBe(0);
+
+    tagsRes = await app.request("/tags");
+    const tagsAfterDeleteJson = await tagsRes.json() as { data: Array<{ id: string }> };
+    expect(tagsAfterDeleteJson.data.some((row) => row.id === tag.id)).toBe(false);
   });
 
   it("DELETE /tags/:id returns 404 for unknown id", async () => {

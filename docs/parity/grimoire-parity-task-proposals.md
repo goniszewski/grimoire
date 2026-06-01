@@ -44,8 +44,8 @@ Suggested values:
 | PAR-016 | Add optional category fields from Grimoire parity: color, icon, description, slug, archived, and public visibility after product approval. | Medium | Approved | In review | In review: `TASK-097`. |
 | PAR-017 | Add a dedicated tag management surface for listing, creating, deleting, and browsing tags outside bookmark detail. | High | Approved | In review | In review: `TASK-098`. |
 | PAR-018 | Add tag detail pages with tag metadata and paginated bookmark lists. | Medium | Approved | Done | Done: `TASK-099`. |
-| PAR-019 | Add tag rename API and UI if Grimoire-compatible tag management is approved. | Medium | Approved | Not started | Backlog: `TASK-100`. |
-| PAR-020 | Add category/tag regression tests for empty rows, counts, drag reparenting, delete behavior, and filter refresh. | High | Approved | Not started | Backlog: `TASK-101`. |
+| PAR-019 | Add tag rename API and UI if Grimoire-compatible tag management is approved. | Medium | Approved | Done | Done: `TASK-100`. |
+| PAR-020 | Add category/tag regression tests for empty rows, counts, drag reparenting, delete behavior, and filter refresh. | High | Approved | Done | Done: `TASK-101`. |
 
 ## Epic 4: Integration API And Browser Capture
 

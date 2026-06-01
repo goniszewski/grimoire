@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-101 category and tag regression matrix</title>
+  <desc id="desc">Four-column visual summary showing category tree constraints, category count coverage, tag count coverage, and frontend filter refresh coverage.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#ecfeff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="64" y="58" width="1152" height="604" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="108" y="122" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="42" font-weight="800">Category And Tag Regression Tests</text>
+  <text x="108" y="160" fill="#64748b" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20">TASK-101 pins down empty rows, counts, branch depth constraints, and filter refresh paths.</text>
+
+  <g transform="translate(108 216)">
+    <rect width="248" height="316" rx="12" fill="#f0f9ff" stroke="#bae6fd"/>
+    <circle cx="34" cy="40" r="15" fill="#0284c7"/>
+    <path d="M26 40h16M34 32v16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <text x="60" y="47" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="800">Tree Rules</text>
+    <text x="24" y="98" fill="#0c4a6e" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">subtreeHeight helper</text>
+    <text x="24" y="132" fill="#0c4a6e" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">branch move checks</text>
+    <text x="24" y="166" fill="#0c4a6e" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">3-level cap preserved</text>
+    <text x="24" y="200" fill="#0c4a6e" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">invalid reparent = 422</text>
+  </g>
+
+  <g transform="translate(384 216)">
+    <rect width="248" height="316" rx="12" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <circle cx="34" cy="40" r="15" fill="#16a34a"/>
+    <path d="M26 40l6 6 12-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="60" y="47" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="800">Categories</text>
+    <text x="24" y="98" fill="#166534" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">empty tree rows</text>
+    <text x="24" y="132" fill="#166534" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">active counts only</text>
+    <text x="24" y="166" fill="#166534" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">rename + move counts</text>
+    <text x="24" y="200" fill="#166534" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">delete clears category_id</text>
+  </g>
+
+  <g transform="translate(660 216)">
+    <rect width="248" height="316" rx="12" fill="#fff7ed" stroke="#fed7aa"/>
+    <circle cx="34" cy="40" r="15" fill="#ea580c"/>
+    <path d="M26 40h16M34 32v16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <text x="60" y="47" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="800">Tags</text>
+    <text x="24" y="98" fill="#7c2d12" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">empty tag = 0</text>
+    <text x="24" y="132" fill="#7c2d12" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">active counts only</text>
+    <text x="24" y="166" fill="#7c2d12" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">delete detaches all</text>
+    <text x="24" y="200" fill="#7c2d12" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">search/filter cleared</text>
+  </g>
+
+  <g transform="translate(936 216)">
+    <rect width="248" height="316" rx="12" fill="#f5f3ff" stroke="#ddd6fe"/>
+    <circle cx="34" cy="40" r="15" fill="#7c3aed"/>
+    <path d="M26 40h16M34 32v16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <text x="60" y="47" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="800">Frontend</text>
+    <text x="24" y="98" fill="#4c1d95" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">selected delete clears</text>
+    <text x="24" y="132" fill="#4c1d95" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">selected rename follows</text>
+    <text x="24" y="166" fill="#4c1d95" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">move dialog covered</text>
+    <text x="24" y="200" fill="#4c1d95" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="17">aggregate refetches</text>
+  </g>
+
+  <rect x="108" y="584" width="1076" height="1" fill="#e2e8f0"/>
+  <text x="108" y="622" fill="#475569" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Verification: focused daemon and frontend tests, lint, type-check, API docs drift check, and whitespace diff check.</text>
+</svg>

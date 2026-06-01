@@ -138,6 +138,11 @@ function parentDestination(repo: CategoryRepository, parentId: string | null): s
   return parent ? `"${parent.name}"` : "unknown parent";
 }
 
+function moveExceedsMaxDepth(repo: CategoryRepository, categoryId: string, parentId: string | null): boolean {
+  const targetDepth = parentId ? repo.depth(parentId) + 1 : 0;
+  return targetDepth + repo.subtreeHeight(categoryId) > MAX_DEPTH;
+}
+
 // ─── Route factory ────────────────────────────────────────────────────────────
 
 export function createCategoriesRoute(deps: CategoriesDeps): Hono {
@@ -297,8 +302,14 @@ export function createCategoriesRoute(deps: CategoriesDeps): Hono {
         if (repo.depth(parent.id) >= MAX_DEPTH) {
           return problem(c, 422, "Unprocessable Entity", "Maximum nesting depth (3 levels) exceeded");
         }
+        if (moveExceedsMaxDepth(repo, id, parent.id)) {
+          return problem(c, 422, "Unprocessable Entity", "Maximum nesting depth (3 levels) exceeded");
+        }
         patch.parent_id = parent.id;
       } else {
+        if (moveExceedsMaxDepth(repo, id, null)) {
+          return problem(c, 422, "Unprocessable Entity", "Maximum nesting depth (3 levels) exceeded");
+        }
         patch.parent_id = null;
       }
     }

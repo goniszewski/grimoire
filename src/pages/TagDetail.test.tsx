@@ -240,6 +240,8 @@ describe("TagDetail", () => {
     await waitFor(() => expect(mockedRenameTag).toHaveBeenCalledWith("tag-1", "react-query"));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.tags });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.lists() });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.archive });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.trash });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["search"] });
     await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/tags/react-query"));
     expect(await screen.findByRole("heading", { name: "#react-query" })).toBeInTheDocument();

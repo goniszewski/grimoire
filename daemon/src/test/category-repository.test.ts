@@ -89,6 +89,16 @@ describe("CategoryRepository", () => {
     expect(repo.depth(grand.id)).toBe(2);
   });
 
+  it("subtreeHeight returns deepest descendant distance", () => {
+    const root = repo.create("Root");
+    const child = repo.create("Child", root.id);
+    repo.create("Grand", child.id);
+    repo.create("Sibling", root.id);
+
+    expect(repo.subtreeHeight(root.id)).toBe(2);
+    expect(repo.subtreeHeight(child.id)).toBe(1);
+  });
+
   // ─── findById ────────────────────────────────────────────────────────────
 
   it("findById returns the category", () => {

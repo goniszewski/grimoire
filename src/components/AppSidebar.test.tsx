@@ -327,6 +327,30 @@ describe("AppSidebar — delete category", () => {
     await waitFor(() => expect(api.deleteCategory).toHaveBeenCalledWith("root-notes"));
     expect(onSelectCategory).not.toHaveBeenCalled();
   });
+
+  it("clears the active category filter when deleting the selected category id", async () => {
+    const onSelectCategory = vi.fn();
+    mockResolved(api.deleteCategory, { data: null });
+    mockResolved(api.listCategories, {
+      data: [{ id: "cat-1", name: "Technology", parent_id: null, bookmark_count: 10, children: [] }],
+    });
+
+    render(
+      <AppSidebar
+        {...defaultProps}
+        selectedCategory="Technology"
+        selectedCategoryId="cat-1"
+        onSelectCategory={onSelectCategory}
+      />,
+      { wrapper: makeWrapper() }
+    );
+
+    fireEvent.click(screen.getAllByRole("menuitem").find((el) => el.textContent?.includes("Delete"))!);
+    fireEvent.click(screen.getByTestId("alert-action"));
+
+    await waitFor(() => expect(api.deleteCategory).toHaveBeenCalledWith("cat-1"));
+    expect(onSelectCategory).toHaveBeenCalledWith(null);
+  });
 });
 
 describe("AppSidebar — rename category", () => {
@@ -392,5 +416,66 @@ describe("AppSidebar — rename category", () => {
 
     await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("root-notes", { name: "Renamed Notes" }));
     expect(onSelectCategory).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the active category filter when renaming the selected category id", async () => {
+    const onSelectCategory = vi.fn();
+    mockResolved(api.updateCategory, {
+      data: { id: "cat-1", name: "Engineering", parent_id: null, created_at: "", updated_at: "" },
+    });
+    mockResolved(api.listCategories, {
+      data: [{ id: "cat-1", name: "Technology", parent_id: null, bookmark_count: 10, children: [] }],
+    });
+
+    render(
+      <AppSidebar
+        {...defaultProps}
+        selectedCategory="Technology"
+        selectedCategoryId="cat-1"
+        onSelectCategory={onSelectCategory}
+      />,
+      { wrapper: makeWrapper() }
+    );
+
+    fireEvent.click(screen.getAllByRole("menuitem").find((el) => el.textContent?.includes("Rename"))!);
+    const input = await screen.findByRole("textbox");
+    fireEvent.change(input, { target: { value: "Engineering" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("cat-1", { name: "Engineering" }));
+    expect(onSelectCategory).toHaveBeenCalledWith("Engineering", "cat-1");
+  });
+});
+
+describe("AppSidebar — move category", () => {
+  it("moves a category to the top level from the move dialog", async () => {
+    mockResolved(api.updateCategory, {
+      data: { id: "cat-1", name: "Technology", parent_id: null, created_at: "", updated_at: "" },
+    });
+    mockResolved(api.listCategories, {
+      data: [
+        {
+          id: "cat-1",
+          name: "Technology",
+          parent_id: "cat-2",
+          bookmark_count: 10,
+          children: [],
+        },
+        {
+          id: "cat-2",
+          name: "Science",
+          parent_id: null,
+          bookmark_count: 5,
+          children: [],
+        },
+      ],
+    });
+
+    render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapper() });
+
+    fireEvent.click(screen.getAllByRole("menuitem").find((el) => el.textContent?.includes("Move"))!);
+    fireEvent.click(screen.getByTestId("alert-action"));
+
+    await waitFor(() => expect(api.updateCategory).toHaveBeenCalledWith("cat-1", { parent_id: null }));
   });
 });

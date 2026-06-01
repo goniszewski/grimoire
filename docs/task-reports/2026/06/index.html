@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>2026 Little Imp Task Reports</title>
+<title>June 2026 Little Imp Task Reports</title>
 <style>
 :root {
   --bg: #f7f7fa;
@@ -68,7 +68,7 @@ h1 {
 .card {
   display: grid;
   gap: 12px;
-  min-height: 150px;
+  min-height: 180px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -77,6 +77,19 @@ h1 {
   box-shadow: var(--shadow);
 }
 .card:hover { border-color: var(--blue); }
+.thumb {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+  aspect-ratio: 16 / 8;
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .card h2 {
   margin: 0;
   font-size: 1.25rem;
@@ -106,42 +119,34 @@ h1 {
   }
 }
 </style>
+<script src="../../assets/task-report-lightbox.js" defer></script>
 </head>
 <body>
 <main class="page">
   <nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="../index.html">Task Reports</a>
+    <a href="../../index.html">Task Reports</a> / <a href="../index.html">2026</a>
   </nav>
 
   <header>
     <p class="eyebrow">Little Imp Task Reports</p>
-    <h1>2026</h1>
-    <p class="lede">Yearly archive of meaningful Little Imp implementation, release, documentation, and product-alignment work.</p>
+    <h1>June 2026</h1>
+    <p class="lede">Monthly archive of task reports for visible product, release, documentation, and runtime behavior changes.</p>
   </header>
 
-  <section aria-labelledby="months">
-    <h2 class="section-title" id="months">Months</h2>
+  <section aria-labelledby="reports">
+    <h2 class="section-title" id="reports">Reports</h2>
     <div class="grid">
-      <a class="card" href="06/index.html">
-        <p class="meta">June 2026</p>
-        <h2>Parity Regression Hardening</h2>
-        <p>Reports covering category and tag regression coverage, including daemon category branch-depth validation, aggregate counts, delete behavior, and frontend filter refresh paths.</p>
+      <a class="card" href="2026-06-01-task-101-category-tag-regression-tests/index.html">
+        <div class="thumb">
+          <img src="2026-06-01-task-101-category-tag-regression-tests/assets/01-category-tag-regression-matrix.svg" alt="Regression matrix for TASK-101 category and tag tests">
+        </div>
+        <p class="meta">June 1, 2026 · TASK-101</p>
+        <h2>Category And Tag Regression Tests</h2>
+        <p>Added focused daemon and frontend regression coverage for category/tag counts, branch reparent constraints, deletes, and filter refresh behavior.</p>
         <div class="pill-row">
           <span class="pill">Categories</span>
           <span class="pill">Tags</span>
           <span class="pill">Tests</span>
-          <span class="pill">Runtime</span>
-        </div>
-      </a>
-      <a class="card" href="05/index.html">
-        <p class="meta">May 2026</p>
-        <h2>Release Closeout And Parity Planning</h2>
-        <p>Reports covering release-readiness evidence, first-user UX smoke validation, Grimoire parity scope alignment, bookmark parity, open metrics, detail metadata, media previews, mutation regression review, category navigation, category detail, category metadata, tag management, tag detail pages, tag rename behavior, and task-report presentation polish.</p>
-        <div class="pill-row">
-          <span class="pill">Docs</span>
-          <span class="pill">Product</span>
-          <span class="pill">Bookmarks</span>
-          <span class="pill">Release</span>
         </div>
       </a>
     </div>

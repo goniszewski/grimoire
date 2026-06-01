@@ -3,6 +3,14 @@ import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
 
+type TestCategoryNode = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  bookmark_count: number;
+  children: TestCategoryNode[];
+};
+
 describe("Categories API", () => {
   let app: ReturnType<typeof createApp>;
 
@@ -11,6 +19,50 @@ describe("Categories API", () => {
     const queue = new JobQueue();
     app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test" });
   });
+
+  async function createCategory(name: string, parent_id?: string | null): Promise<TestCategoryNode> {
+    const res = await app.request("/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, ...(parent_id !== undefined ? { parent_id } : {}) }),
+    });
+    expect(res.status).toBe(201);
+    const json = await res.json() as { data: TestCategoryNode };
+    return json.data;
+  }
+
+  async function createBookmark(url: string): Promise<{ id: string; category_id: string | null }> {
+    const res = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    expect(res.status).toBe(201);
+    const json = await res.json() as { data: { id: string; category_id: string | null } };
+    return json.data;
+  }
+
+  async function patchBookmark(id: string, patch: Record<string, unknown>): Promise<{ id: string; category_id: string | null }> {
+    const res = await app.request(`/bookmarks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: { id: string; category_id: string | null } };
+    return json.data;
+  }
+
+  async function listCategories(): Promise<TestCategoryNode[]> {
+    const res = await app.request("/categories");
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: TestCategoryNode[] };
+    return json.data;
+  }
+
+  function flattenCategories(nodes: TestCategoryNode[]): TestCategoryNode[] {
+    return nodes.flatMap((node) => [node, ...flattenCategories(node.children ?? [])]);
+  }
 
   // ─── POST /categories ─────────────────────────────────────────────────────
 
@@ -259,6 +311,23 @@ describe("Categories API", () => {
     expect(json.data.parent_id).toBeNull();
   });
 
+  it("PUT /categories/:id rejects branch moves that would exceed maximum depth", async () => {
+    const root = await createCategory("Root");
+    const child = await createCategory("Child", root.id);
+    await createCategory("Grandchild", child.id);
+    const target = await createCategory("Target");
+
+    const res = await app.request(`/categories/${root.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parent_id: target.id }),
+    });
+
+    expect(res.status).toBe(422);
+    const problem = await res.json() as { detail?: string };
+    expect(problem.detail).toContain("Maximum nesting depth");
+  });
+
   it("PUT /categories/:id returns 404 for unknown id", async () => {
     const res = await app.request("/categories/does-not-exist", {
       method: "PUT",
@@ -318,6 +387,52 @@ describe("Categories API", () => {
     expect(techNode).toBeDefined();
     expect(Array.isArray(techNode!.children)).toBe(true);
     expect(techNode!.children.length).toBe(1);
+  });
+
+  it("keeps active bookmark counts accurate after category rename, move, archive, and delete", async () => {
+    const inbox = await createCategory("Inbox");
+    const reference = await createCategory("Reference");
+    const active = await createBookmark("https://example.com/category-active");
+    const archived = await createBookmark("https://example.com/category-archived");
+    await patchBookmark(active.id, { category_id: inbox.id });
+    await patchBookmark(archived.id, { category_id: inbox.id, is_archived: 1 });
+
+    let flat = flattenCategories(await listCategories());
+    expect(flat.find((category) => category.id === inbox.id)?.bookmark_count).toBe(1);
+
+    const renameRes = await app.request(`/categories/${inbox.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Docs" }),
+    });
+    expect(renameRes.status).toBe(200);
+
+    const moveRes = await app.request(`/categories/${inbox.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parent_id: reference.id }),
+    });
+    expect(moveRes.status).toBe(200);
+
+    flat = flattenCategories(await listCategories());
+    expect(flat).toContainEqual(
+      expect.objectContaining({
+        id: inbox.id,
+        name: "Docs",
+        parent_id: reference.id,
+        bookmark_count: 1,
+      })
+    );
+
+    const deleteRes = await app.request(`/categories/${inbox.id}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(204);
+
+    flat = flattenCategories(await listCategories());
+    expect(flat.some((category) => category.id === inbox.id)).toBe(false);
+
+    const activeRes = await app.request(`/bookmarks/${active.id}`);
+    const activeJson = await activeRes.json() as { data: { category_id: string | null } };
+    expect(activeJson.data.category_id).toBeNull();
   });
 
   it("records manual category changes in the timeline", async () => {

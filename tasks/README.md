@@ -114,7 +114,7 @@ tasks/
 | TASK-098 | [Tag Management Surface](in-review/TASK-098-tag-management-surface.md) | Grimoire parity | high | in-review |
 | TASK-099 | [Tag Detail Pages](done/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | done |
 | TASK-100 | [Tag Rename API And UI](done/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | done |
-| TASK-101 | [Category And Tag Regression Tests](backlog/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | backlog |
+| TASK-101 | [Category And Tag Regression Tests](done/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | done |
 | TASK-102 | [Integration Token Authentication](backlog/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | backlog |
 | TASK-103 | [Human Readable API Examples](backlog/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | backlog |
 | TASK-104 | [OpenAPI Contract Output](backlog/TASK-104-openapi-contract-output.md) | Grimoire parity | high | backlog |
@@ -227,6 +227,9 @@ TASK-100 is complete with atomic tag rename behavior, duplicate-name conflict
 handling, generated API docs, tag management and detail rename controls, cache
 consistency hardening, FTS search verification, focused daemon/frontend tests,
 e2e coverage, and visual reporting.
+TASK-101 is complete with focused category/tag regression coverage for empty
+rows, active counts, selected filter refresh, tag delete filter/search cleanup,
+category move/delete behavior, and whole-branch category depth validation.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

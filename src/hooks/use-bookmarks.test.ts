@@ -406,6 +406,38 @@ describe("useBookmarks — bookmark mutation patches", () => {
 
     expect(mockedUpdateBookmark).not.toHaveBeenCalled();
   });
+
+  it("refreshes category and tag aggregates after bookmark category and tag changes", async () => {
+    mockedListCategories.mockResolvedValue(categoryTreeResponse([
+      makeApiCategory({ id: "cat-research", name: "Research", bookmark_count: 0 }),
+    ]));
+    mockedListTags.mockResolvedValue(tagListResponse([
+      {
+        id: "tag-typescript",
+        name: "typescript",
+        created_at: "2026-06-01T08:00:00Z",
+        bookmark_count: 1,
+      },
+    ]));
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([makeApiBookmark({ id: "bm-1" })]));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    const categoryCallsBeforeCategoryChange = mockedListCategories.mock.calls.length;
+    act(() => result.current.updateBookmarkCategory("bm-1", "Research"));
+    await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { category_id: "cat-research" }));
+    await waitFor(() =>
+      expect(mockedListCategories.mock.calls.length).toBeGreaterThan(categoryCallsBeforeCategoryChange)
+    );
+
+    const tagCallsBeforeTagChange = mockedListTags.mock.calls.length;
+    act(() => result.current.updateBookmarkTags("bm-1", ["typescript", "testing"]));
+    await waitFor(() =>
+      expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { tags: ["typescript", "testing"] })
+    );
+    await waitFor(() => expect(mockedListTags.mock.calls.length).toBeGreaterThan(tagCallsBeforeTagChange));
+  });
 });
 
 describe("useBookmarks — recentBookmarks", () => {
