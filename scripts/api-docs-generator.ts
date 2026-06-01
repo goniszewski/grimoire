@@ -205,6 +205,18 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("");
   lines.push("Local integration surfaces such as `/mcp` require a managed bearer token. Create one with `POST /integration-tokens`, store the returned token immediately, and send it as `Authorization: Bearer <token>`. Regular REST routes remain tokenless for the first-party app, but if a client presents an `Authorization` header it must be a valid integration token. List responses only include redacted token prefixes. Missing required tokens, invalid tokens, rotated tokens, or revoked tokens return `401` with `application/problem+json` and a `WWW-Authenticate` bearer challenge.");
   lines.push("");
+  lines.push("## Browser Origin And CORS");
+  lines.push("");
+  lines.push("Little Imp keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.");
+  lines.push("");
+  lines.push("Configure additional local browser clients with `CORS_ORIGINS` as a comma-separated list of loopback origins:");
+  lines.push("");
+  lines.push("```sh");
+  lines.push("CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4321 littleimpd");
+  lines.push("```");
+  lines.push("");
+  lines.push("Only full `http` or `https` origins are accepted, including scheme, host, and any port used by the client. Non-loopback origins are ignored even when configured, unsafe browser writes from rejected origins return `403`, and rejected preflight requests return `403` without reflecting `Access-Control-Allow-Origin`. One-click capture examples are deliberately out of scope for this batch.");
+  lines.push("");
   lines.push("## Response Conventions");
   lines.push("");
   lines.push("- Most JSON endpoints return `{ \"data\": ... }` envelopes.");

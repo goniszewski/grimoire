@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integration CORS And Origin Controls - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 56px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+.breadcrumbs {
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 18px;
+}
+h2 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0 0 10px; }
+ul { margin: 0; padding-left: 20px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+details {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 16px;
+}
+summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 800;
+}
+.status { color: var(--green); }
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 36px 0;
+  }
+  .task-card { padding: 20px; }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">June 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Integration CORS And Origin Controls</h1>
+      <div class="meta-row">
+        <span>2026-06-01</span>
+        <span>TASK-106</span>
+        <span class="status">Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-origin-policy-flow.svg" alt="Diagram of allowed loopback origins, local clients without Origin headers, and rejected unsafe public origins">
+      <figcaption>After: CORS reflection stays loopback-only and unsafe preflight failures now return an explicit 403.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Little Imp already kept unsafe browser writes behind a loopback origin allowlist, but rejected CORS preflights fell through to a generic no-reflection response and the generated API docs did not explain local client origin setup.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Grimoire parity calls for conservative local integration CORS controls with deliberate trusted-origin configuration, clear failure behavior, and documentation that keeps browser-capture flows out of the current batch.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added explicit 403 responses for rejected CORS preflight requests before the CORS middleware can emit a generic 204.</li>
+        <li>Added daemon coverage for no-Origin local clients, allowed loopback preflights, unsafe preflight rejection, and configured loopback origins.</li>
+        <li>Documented local <code>CORS_ORIGINS</code> setup in generated <code>API.md</code> with loopback-only constraints.</li>
+        <li>Updated the security boundary with the implemented TASK-106 origin policy and preflight expectations.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Local browser clients can be configured deliberately with loopback origins, local scripts continue to work without CORS headers, and unsafe public browser origins receive predictable rejection for writes and preflights.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test src/test/integration/security-hardening.test.ts</code> failed RED for unsafe preflights returning 204, then passed with 9/9 tests.</li>
+        <li><code>npx vitest run scripts/api-docs-generator.test.ts</code> failed RED for missing CORS docs, then passed with 10/10 tests.</li>
+        <li><code>npm run docs:api</code> regenerated API artifacts; <code>API.md</code> changed while <code>docs/api-contract.json</code> and <code>docs/openapi.json</code> stayed content-identical.</li>
+        <li><code>npm run docs:api:check</code> passed after regeneration.</li>
+        <li><code>npm run lint</code> passed with the existing Fast Refresh warnings in shared UI files.</li>
+        <li><code>npm run type-check</code> passed for frontend and daemon TypeScript.</li>
+        <li><code>git diff --check</code> passed.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The policy remains intentionally narrow. Missing <code>Origin</code> is allowed for non-browser local clients but does not reflect CORS. Configured origins are normalized and accepted only when they are loopback HTTP or HTTPS origins. Non-loopback entries stay ignored even if present in <code>CORS_ORIGINS</code>.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/server.ts</code></li>
+        <li><code>daemon/src/config.ts</code></li>
+        <li><code>daemon/src/test/integration/security-hardening.test.ts</code></li>
+        <li><code>scripts/api-docs-generator.ts</code></li>
+        <li><code>scripts/api-docs-generator.test.ts</code></li>
+        <li><code>API.md</code></li>
+        <li><code>docs/security-boundaries.md</code></li>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>tasks/done/TASK-106-integration-cors-origin-controls.md</code></li>
+        <li><code>docs/task-reports/2026/06/2026-06-01-task-106-integration-cors-origin-controls/index.html</code></li>
+        <li><code>docs/task-reports/2026/06/2026-06-01-task-106-integration-cors-origin-controls/assets/01-origin-policy-flow.svg</code></li>
+        <li><code>docs/task-reports/2026/06/index.html</code></li>
+        <li><code>docs/task-reports/2026/index.html</code></li>
+        <li><code>docs/task-reports/index.html</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

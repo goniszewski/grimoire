@@ -165,6 +165,11 @@ async function applySecurityHeaders(c: Context, next: Next): Promise<void> {
 async function enforceLocalOrigin(c: Context, next: Next): Promise<Response | void> {
   const origin = c.req.header("origin");
   const method = c.req.method;
+  const isPreflight = method === "OPTIONS" && !!c.req.header("access-control-request-method");
+  if (isPreflight && origin && !isAllowedLocalOrigin(origin)) {
+    return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
+  }
+
   const unsafeBrowserRequest = !!origin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
   if (unsafeBrowserRequest && !isAllowedLocalOrigin(origin)) {
     return c.json({ error: "Origin is not allowed for this local daemon" }, 403);

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-106 integration CORS and origin controls</title>
+  <desc id="desc">Diagram showing local browser origins, configured loopback clients, non-browser local clients, and rejected unsafe public web origins.</desc>
+  <rect width="1200" height="675" fill="#f7f7fa"/>
+  <g transform="translate(72 70)">
+    <text x="0" y="0" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="800">TASK-106 Origin Controls</text>
+    <text x="0" y="40" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="18">Local integration CORS remains loopback-only, explicit, and predictable for preflight failures.</text>
+  </g>
+  <g transform="translate(82 170)">
+    <rect x="0" y="0" width="292" height="170" rx="8" fill="#ffffff" stroke="#dedfec"/>
+    <rect x="18" y="18" width="58" height="58" rx="8" fill="#e0f2fe"/>
+    <text x="96" y="42" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">First-party UI</text>
+    <text x="96" y="76" fill="#475569" font-family="Inter, Arial, sans-serif" font-size="16">127.0.0.1:3210</text>
+    <text x="24" y="122" fill="#15803d" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Allowed</text>
+    <text x="24" y="148" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Tokenless while daemon stays loopback-bound.</text>
+  </g>
+  <g transform="translate(454 170)">
+    <rect x="0" y="0" width="292" height="170" rx="8" fill="#ffffff" stroke="#dedfec"/>
+    <rect x="18" y="18" width="58" height="58" rx="8" fill="#dcfce7"/>
+    <text x="96" y="42" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Configured local</text>
+    <text x="96" y="76" fill="#475569" font-family="Inter, Arial, sans-serif" font-size="16">CORS_ORIGINS</text>
+    <text x="24" y="122" fill="#15803d" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Allowed if loopback</text>
+    <text x="24" y="148" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Local dev clients can be added deliberately.</text>
+  </g>
+  <g transform="translate(826 170)">
+    <rect x="0" y="0" width="292" height="170" rx="8" fill="#ffffff" stroke="#dedfec"/>
+    <rect x="18" y="18" width="58" height="58" rx="8" fill="#fef3c7"/>
+    <text x="96" y="42" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Local scripts</text>
+    <text x="96" y="76" fill="#475569" font-family="Inter, Arial, sans-serif" font-size="16">No Origin header</text>
+    <text x="24" y="122" fill="#15803d" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">Allowed, no CORS</text>
+    <text x="24" y="148" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Non-browser clients do not need CORS reflection.</text>
+  </g>
+  <path d="M228 372 C228 432 342 456 480 456" fill="none" stroke="#0f7fbf" stroke-width="4" stroke-linecap="round"/>
+  <path d="M600 372 L600 456" fill="none" stroke="#0f7fbf" stroke-width="4" stroke-linecap="round"/>
+  <path d="M972 372 C972 432 858 456 720 456" fill="none" stroke="#0f7fbf" stroke-width="4" stroke-linecap="round"/>
+  <g transform="translate(412 438)">
+    <rect x="0" y="0" width="376" height="116" rx="8" fill="#191827"/>
+    <text x="28" y="42" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="800">littleimpd local daemon</text>
+    <text x="28" y="76" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="16">Reflect CORS only for allowed loopback origins.</text>
+  </g>
+  <g transform="translate(82 525)">
+    <rect x="0" y="0" width="294" height="90" rx="8" fill="#fff1f2" stroke="#fecdd3"/>
+    <text x="24" y="36" fill="#9f1239" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">Public web origin</text>
+    <text x="24" y="64" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Unsafe writes and preflights return 403.</text>
+  </g>
+  <path d="M378 570 L408 536" fill="none" stroke="#e11d48" stroke-width="4" stroke-linecap="round"/>
+  <path d="M378 536 L408 570" fill="none" stroke="#e11d48" stroke-width="4" stroke-linecap="round"/>
+</svg>

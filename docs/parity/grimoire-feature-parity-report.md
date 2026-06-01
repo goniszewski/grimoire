@@ -82,8 +82,8 @@ This batch keeps Little Imp's product model intact:
 | Import | Browser import with review-oriented workflow | Netscape HTML import with SSE progress, tags parsed, folders parsed but not applied | Partial | Need pre-import review, duplicate choices, and category mapping from folders. |
 | Export | Export/migration capabilities | JSON/CSV export with filters plus pinned/starred and read-later fields | Partial | Current export now includes pinned/starred mapping and read-later state, but still omits approved parity fields covered by TASK-111: notes, read state, archive state, and opened metrics. |
 | Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 defers direct Grimoire/PocketBase import until normal import/export parity is stable. Browser/Netscape import hardening remains in scope. |
-| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` | Partial | Human-readable local client examples and OpenAPI-compatible output are complete through TASK-103 and TASK-104. Browser-extension/bookmarklet examples are deferred. |
-| Browser extension support | Companion extension supported by API | Local integration tokens exist; no capture endpoint | Deferred non-goal | CORS controls are still in scope. One-click browser-extension/bookmarklet capture is deferred by TASK-105, and extension smoke tests are rejected for this batch. |
+| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` | Partial | Human-readable local client examples, OpenAPI-compatible output, and local CORS setup docs are complete through TASK-103, TASK-104, and TASK-106. Browser-extension/bookmarklet examples are deferred. |
+| Browser extension support | Companion extension supported by API | Local integration tokens and CORS controls exist; no capture endpoint | Deferred non-goal | CORS controls are complete through TASK-106. One-click browser-extension/bookmarklet capture is deferred by TASK-105, and extension smoke tests are rejected for this batch. |
 | Deployment | Docker/self-hosting-oriented docs | Native installer, Homebrew, local daemon, Docker guidance, update docs | Intentional product difference | Little Imp is stronger for local install. Public-server and multi-user deployment modes are out of scope for this parity batch. |
 | Backups and restore | Not a primary parity strength | Local/S3 backups, encrypted packages, restore recovery | Little Imp ahead | This is beyond Grimoire parity. |
 | Timeline and suggestions | Limited compared with Little Imp | Timeline events, review queue, AI organization suggestions | Little Imp ahead | Local-first AI organization is a Little Imp differentiator. |
@@ -91,13 +91,12 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Finish local integration follow-ups: CORS/origin controls.
-2. Keep human-readable API examples and OpenAPI-compatible output generated from the daemon contract for local scripts and integration clients.
-3. Add open metrics while preserving the starred/favorite-to-pinned mapping and the separate read-later flag.
-4. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
-5. Add dedicated tag/category management and detail pages, plus approved category metadata.
-6. Add import review, duplicate handling, folder-to-category mapping, remapping, result reporting, and export parity fields.
-7. Add explicit UI pagination, server-driven sorting, additional approved filters, aggregate counts, and large-library performance checks.
+1. Keep human-readable API examples, OpenAPI-compatible output, and CORS/origin documentation generated from the daemon contract for local scripts and integration clients.
+2. Add open metrics while preserving the starred/favorite-to-pinned mapping and the separate read-later flag.
+3. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
+4. Add dedicated tag/category management and detail pages, plus approved category metadata.
+5. Add import review, duplicate handling, folder-to-category mapping, remapping, result reporting, and export parity fields.
+6. Add explicit UI pagination, server-driven sorting, additional approved filters, aggregate counts, and large-library performance checks.
 
 ## Notable Little Imp Advantages
 
@@ -139,7 +138,7 @@ visual, Playwright e2e, and performance verification where relevant.
 
 ## Recommended Implementation Order
 
-1. Add local integration API examples, OpenAPI output, and CORS/origin controls: TASK-103, TASK-104, and TASK-106, excluding deferred TASK-105 implementation.
+1. Keep completed local integration API examples, OpenAPI output, and CORS/origin controls stable: TASK-103, TASK-104, and TASK-106, excluding deferred TASK-105 implementation.
 2. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
 3. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.
 4. Improve browser/Netscape import, export parity, duplicate policy, and import/export regression tests: TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.

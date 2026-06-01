@@ -97,6 +97,51 @@ describe("Security hardening", () => {
     expect(res.headers.get("access-control-allow-origin")).toBe("http://127.0.0.1:3210");
   });
 
+  it("allows non-browser local client writes without an Origin header", async () => {
+    const app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test", staticDir: false });
+
+    const res = await app.request("/bookmarks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url: "https://example.com/local-client-without-origin" }),
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("returns predictable CORS preflight responses for allowed and unsafe origins", async () => {
+    const app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test", staticDir: false });
+
+    const allowed = await app.request("/bookmarks", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type, Authorization",
+      },
+    });
+    expect(allowed.status).toBe(204);
+    expect(allowed.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
+    expect(allowed.headers.get("access-control-allow-methods")).toContain("POST");
+    expect(allowed.headers.get("access-control-allow-headers")).toContain("Authorization");
+
+    const rejected = await app.request("/bookmarks", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://evil.example",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type, Authorization",
+      },
+    });
+    expect(rejected.status).toBe(403);
+    expect(rejected.headers.get("access-control-allow-origin")).toBeNull();
+    const json = (await rejected.json()) as { error: string };
+    expect(json.error).toContain("Origin is not allowed");
+  });
+
   it("ignores configured non-loopback CORS origins while allowing configured loopback origins", async () => {
     const originalOrigins = Config.CORS_ORIGINS;
     (Config as MutableConfig).CORS_ORIGINS = ["https://evil.example", "http://localhost:4567"];

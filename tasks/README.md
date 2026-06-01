@@ -119,7 +119,7 @@ tasks/
 | TASK-103 | [Human Readable API Examples](done/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | done |
 | TASK-104 | [OpenAPI Contract Output](done/TASK-104-openapi-contract-output.md) | Grimoire parity | high | done |
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
-| TASK-106 | [Integration CORS And Origin Controls](backlog/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | backlog |
+| TASK-106 | [Integration CORS And Origin Controls](done/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | done |
 | TASK-107 | [Preserve Import Folder Hierarchy](backlog/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | backlog |
 | TASK-108 | [Pre Import Review](backlog/TASK-108-pre-import-review.md) | Grimoire parity | high | backlog |
 | TASK-109 | [Import Category And Tag Remapping](backlog/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | backlog |
@@ -244,6 +244,10 @@ TASK-104 is complete with OpenAPI 3.0 output generated from the same source
 contract into `docs/openapi.json`, OpenAPI-only generation/check commands, and
 focused generator coverage for parameters, responses, pagination schemas, and
 MCP bearer-token security.
+TASK-106 is complete with explicit unsafe CORS preflight rejection, missing
+Origin local-client coverage, generated local CORS setup documentation,
+loopback-only configured origin handling, and refreshed security-boundary
+documentation.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

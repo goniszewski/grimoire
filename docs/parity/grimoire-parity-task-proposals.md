@@ -56,7 +56,7 @@ Suggested values:
 | PAR-023 | Add OpenAPI-compatible output for local integration clients. | High | Approved | Done | Done: `TASK-104`. |
 | PAR-024 | Add a one-click capture endpoint for bookmarklet or extension saves with title, tags, category, notes, and source metadata. | High | Deferred | Not started | Deferred. Current scope is local API integrations only, not bookmarklet/browser-extension capture. Record: `TASK-105`. |
 | PAR-025 | Add Grimoire-compatible endpoint aliases or adapters only where they reduce migration or extension work. | Medium | Rejected | Not started | Not needed for the current parity batch. |
-| PAR-026 | Add CORS/origin policy controls and documentation for integration clients. | High | Approved | Not started | Backlog: `TASK-106`. |
+| PAR-026 | Add CORS/origin policy controls and documentation for integration clients. | High | Approved | Done | Done: `TASK-106`. |
 | PAR-027 | Add browser-extension compatibility smoke tests for save, update, categorize, tag, and auth failure flows. | Medium | Rejected | Not started | Not needed for the current parity batch. |
 
 ## Epic 5: Accounts, Profile, And Admin

@@ -259,6 +259,18 @@ describe("API documentation generator", () => {
     expect(markdown).not.toMatch(/bookmarklet/i);
   });
 
+  it("documents conservative local CORS setup for integration clients", () => {
+    const markdown = buildApiMarkdown(buildApiContractDocument(apiContract));
+
+    expect(markdown).toContain("## Browser Origin And CORS");
+    expect(markdown).toContain("CORS_ORIGINS");
+    expect(markdown).toContain("http://localhost:5173");
+    expect(markdown).toContain("http://127.0.0.1:3210");
+    expect(markdown).toContain("Non-loopback origins are ignored");
+    expect(markdown).not.toMatch(/browser extension/i);
+    expect(markdown).not.toMatch(/bookmarklet/i);
+  });
+
   it("keeps example responses aligned with immediate route behavior", () => {
     const document = buildApiContractDocument(apiContract);
     const routeExample = (method: string, path: string, title: string) => {

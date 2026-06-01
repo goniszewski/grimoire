@@ -142,8 +142,8 @@ settings backups, diagnostics, and logs must continue to redact or omit them.
 
 ## Local Integration Controls
 
-TASK-102 implements the bearer-token baseline for MCP. TASK-106 should continue
-from these controls for browser origin and CORS policy:
+TASK-102 implements the bearer-token baseline for MCP. TASK-106 adds the
+browser origin and CORS policy for local integration clients:
 
 - Bearer tokens are for explicit local non-browser integration clients. They
   are currently required by `/mcp` and may be presented to regular REST routes
@@ -153,8 +153,14 @@ from these controls for browser origin and CORS policy:
   diagnostics, logs, and settings output, rotatable, and revocable.
 - First-party loopback browser behavior may remain tokenless only while the
   daemon stays loopback-bound and unsafe browser writes remain origin-checked.
-- CORS allowlists must stay loopback-only unless a future public-network design
-  is approved.
+- CORS allowlists stay loopback-only unless a future public-network design is
+  approved. `CORS_ORIGINS` may add local browser clients such as
+  `http://localhost:5173` or `http://127.0.0.1:4321`, but non-loopback entries
+  are ignored even if configured.
+- Browser requests without an `Origin` header are treated as non-browser local
+  client traffic and do not receive CORS reflection.
+- Unsafe browser writes and CORS preflights from rejected origins return `403`
+  without reflecting `Access-Control-Allow-Origin`.
 - Non-browser clients should not depend on browser CORS for security.
 - If cookie or session auth is ever added, CSRF protection becomes mandatory for
   unsafe methods.
