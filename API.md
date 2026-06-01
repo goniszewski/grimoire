@@ -568,7 +568,7 @@ Request body:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `name` | string | yes | Lowercase tag name |
+| `name` | string | yes | Tag name, normalized to lowercase |
 
 Responses:
 
@@ -577,6 +577,37 @@ Responses:
 | `200` | application/json | `TagResponse` | Existing tag |
 | `201` | application/json | `TagResponse` | Created tag |
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+
+#### PUT /tags/:id
+
+Rename a tag without changing bookmark associations.
+
+Duplicate target tag names are rejected with 409 rather than merged implicitly.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `TagRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Tag name, normalized to lowercase |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `TagResponse` | Renamed tag |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `404` | application/problem+json | `ProblemDetails` | Tag not found |
+| `409` | application/problem+json | `ProblemDetails` | Duplicate tag name |
 | `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
 
 #### DELETE /tags/:id
@@ -613,7 +644,7 @@ Request body:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `name` | string | yes | Lowercase tag name |
+| `name` | string | yes | Tag name, normalized to lowercase |
 
 Responses:
 
@@ -1813,7 +1844,7 @@ Tag row with active bookmark count returned by tag listings
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `name` | string | yes | Lowercase tag name |
+| `name` | string | yes | Tag name, normalized to lowercase |
 
 ### TagListResponse
 

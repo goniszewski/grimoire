@@ -54,6 +54,20 @@ export class TagRepository {
     return row;
   }
 
+  /** Rename a tag. Bookmark associations stay attached by tag ID. */
+  rename(id: string, name: string): TagRow | null {
+    const normalised = name.toLowerCase().trim();
+    return this.db.transaction(() => {
+      const row =
+        this.db
+          .query<TagRow, [string, string]>("UPDATE tags SET name = ? WHERE id = ? RETURNING *")
+          .get(normalised, id) ?? null;
+      if (!row) return null;
+      this.refreshFtsTagsForTag(id);
+      return row;
+    })();
+  }
+
   /**
    * Delete a tag and detach it from all bookmarks.
    * The ON DELETE CASCADE on bookmark_tags handles the cleanup.
@@ -78,5 +92,21 @@ export class TagRepository {
       [bookmarkId, tagId]
     );
     return info.changes > 0;
+  }
+
+  private refreshFtsTagsForTag(tagId: string): void {
+    this.db.run(
+      `UPDATE bookmarks_fts
+       SET tags = (
+         SELECT COALESCE(GROUP_CONCAT(t.name, ' '), '')
+         FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id = bookmarks_fts.bookmark_id
+       )
+       WHERE bookmark_id IN (
+         SELECT bookmark_id FROM bookmark_tags WHERE tag_id = ?
+       )`,
+      [tagId]
+    );
   }
 }

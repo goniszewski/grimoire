@@ -1693,7 +1693,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Lowercase tag name",
+          "description": "Tag name, normalized to lowercase",
           "maxLength": 50
         }
       },
@@ -5012,6 +5012,71 @@
         },
         "400": {
           "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid tag name",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/tags/:id",
+      "tag": "Tags",
+      "summary": "Rename a tag without changing bookmark associations.",
+      "description": "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+      "request": {
+        "pathParams": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "id path parameter"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Renamed tag",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "TagResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "404": {
+          "description": "Tag not found",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "Duplicate tag name",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -9,14 +9,18 @@ import {
   Globe,
   Hash,
   Loader2,
+  Pencil,
   Search,
   Tags as TagsIcon,
 } from "lucide-react";
-import { listBookmarks, listTags, type ApiBookmark, type ApiTag } from "@/lib/api";
+import { listBookmarks, listTags, renameTag, type ApiBookmark, type ApiTag } from "@/lib/api";
 import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { openBookmarkExternal } from "@/lib/bookmark-open";
+import { TagRenameDialog } from "@/components/TagRenameDialog";
+import { toast } from "@/hooks/use-toast";
+import { applyRenamedTagToCache } from "@/lib/tag-cache";
 
 const PAGE_SIZE = 20;
 
@@ -106,11 +110,14 @@ function TagBookmarkRow({
 const TagDetail = () => {
   const { tag: routeTag } = useParams<{ tag: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const tagName = useMemo(() => (routeTag ?? "").trim().toLowerCase(), [routeTag]);
   const [pageState, setPageState] = useState<TagPageState>({
     tag: null,
     offset: 0,
   });
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const offset = pageState.tag === tagName ? pageState.offset : 0;
 
   function setPageOffset(nextOffset: (currentOffset: number) => number) {
@@ -156,6 +163,32 @@ const TagDetail = () => {
   const pageEnd = pagination ? pagination.offset + bookmarks.length : bookmarks.length;
   const canGoPrevious = offset > 0;
   const canGoNext = !!pagination?.has_more;
+
+  function invalidateTagAffectedQueries() {
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.tags });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.archive });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.trash });
+    queryClient.invalidateQueries({ queryKey: ["search"] });
+  }
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const response = await renameTag(id, name);
+      return response.data;
+    },
+    onSuccess: (response) => {
+      applyRenamedTagToCache(queryClient, response);
+      invalidateTagAffectedQueries();
+      setRenameOpen(false);
+      setRenameError(null);
+      toast({ title: "Tag renamed", description: `#${response.name}` });
+      navigate(`/tags/${encodeURIComponent(response.name)}`, { replace: true });
+    },
+    onError: (error: Error) => {
+      setRenameError(error.message || "Tag could not be renamed.");
+    },
+  });
 
   if (tagsQuery.isLoading) {
     return (
@@ -228,6 +261,18 @@ const TagDetail = () => {
                 <TagsIcon className="h-4 w-4" />
                 Manage
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setRenameError(null);
+                setRenameOpen(true);
+              }}
+              aria-label={`Rename #${tag.name} tag`}
+            >
+              <Pencil className="h-4 w-4" />
+              Rename
             </Button>
           </div>
         </div>
@@ -313,6 +358,23 @@ const TagDetail = () => {
           )}
         </section>
       </main>
+
+      <TagRenameDialog
+        tag={tag}
+        open={renameOpen}
+        error={renameError}
+        pending={renameMutation.isPending}
+        onClearError={() => setRenameError(null)}
+        onOpenChange={(open) => {
+          setRenameOpen(open);
+          if (!open) setRenameError(null);
+        }}
+        onSubmit={(name) => {
+          if (!tag) return;
+          setRenameError(null);
+          renameMutation.mutate({ id: tag.id, name });
+        }}
+      />
     </div>
   );
 };

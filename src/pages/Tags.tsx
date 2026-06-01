@@ -1,13 +1,14 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Hash, Loader2, Plus, Search, Trash2 } from "lucide-react";
-import { createTag, deleteTag, listTags, type ApiTag } from "@/lib/api";
+import { ArrowLeft, Hash, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { createTag, deleteTag, listTags, renameTag, type ApiTag } from "@/lib/api";
 import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TagRenameDialog } from "@/components/TagRenameDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,25 +20,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-
-const MAX_TAG_NAME_LEN = 50;
-const TAG_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-function normaliseTagName(value: string): string {
-  return value.trim().toLowerCase();
-}
+import { MAX_TAG_NAME_LEN, normaliseTagName, validateTagName } from "@/lib/tag-names";
+import { applyRenamedTagToCache } from "@/lib/tag-cache";
 
 function bookmarkCountLabel(count: number): string {
   return `${count} bookmark${count === 1 ? "" : "s"}`;
-}
-
-function validateTagName(name: string): string | null {
-  if (!name) return "Enter a tag name.";
-  if (name.length > MAX_TAG_NAME_LEN) return `Tag names must be ${MAX_TAG_NAME_LEN} characters or fewer.`;
-  if (!TAG_NAME_PATTERN.test(name)) {
-    return "Use lowercase letters, digits, and single hyphens without spaces.";
-  }
-  return null;
 }
 
 const Tags = () => {
@@ -46,6 +33,8 @@ const Tags = () => {
   const [tagInput, setTagInput] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiTag | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ApiTag | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const tagsQuery = useQuery({
     queryKey: bookmarkKeys.tags,
@@ -59,6 +48,14 @@ const Tags = () => {
   const tags = useMemo(() => {
     return [...(tagsQuery.data ?? [])].sort((a, b) => a.name.localeCompare(b.name));
   }, [tagsQuery.data]);
+
+  function invalidateTagAffectedQueries() {
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.tags });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.archive });
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.trash });
+    queryClient.invalidateQueries({ queryKey: ["search"] });
+  }
 
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -80,11 +77,7 @@ const Tags = () => {
     mutationFn: deleteTag,
     onSuccess: () => {
       const deletedName = deleteTarget?.name;
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.tags });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.archive });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.trash });
-      queryClient.invalidateQueries({ queryKey: ["search"] });
+      invalidateTagAffectedQueries();
       setDeleteTarget(null);
       if (deletedName) toast({ title: "Tag deleted", description: `#${deletedName}` });
     },
@@ -94,6 +87,23 @@ const Tags = () => {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const response = await renameTag(id, name);
+      return response.data;
+    },
+    onSuccess: (response) => {
+      applyRenamedTagToCache(queryClient, response);
+      invalidateTagAffectedQueries();
+      setRenameTarget(null);
+      setRenameError(null);
+      toast({ title: "Tag renamed", description: `#${response.name}` });
+    },
+    onError: (error: Error) => {
+      setRenameError(error.message || "Tag could not be renamed.");
     },
   });
 
@@ -215,6 +225,19 @@ const Tags = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setRenameTarget(tag);
+                      setRenameError(null);
+                    }}
+                    aria-label={`Rename ${tag.name} tag`}
+                    title={`Rename ${tag.name} tag`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={() => setDeleteTarget(tag)}
                     aria-label={`Delete ${tag.name} tag`}
@@ -250,6 +273,25 @@ const Tags = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TagRenameDialog
+        tag={renameTarget}
+        open={!!renameTarget}
+        error={renameError}
+        pending={renameMutation.isPending}
+        onClearError={() => setRenameError(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameTarget(null);
+            setRenameError(null);
+          }
+        }}
+        onSubmit={(name) => {
+          if (!renameTarget) return;
+          setRenameError(null);
+          renameMutation.mutate({ id: renameTarget.id, name });
+        }}
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ vi.mock("@/lib/api", () => ({
   listTags: vi.fn(),
   createTag: vi.fn(),
   deleteTag: vi.fn(),
+  renameTag: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -21,6 +22,7 @@ import * as api from "@/lib/api";
 const mockedListTags = api.listTags as unknown as ReturnType<typeof vi.fn>;
 const mockedCreateTag = api.createTag as unknown as ReturnType<typeof vi.fn>;
 const mockedDeleteTag = api.deleteTag as unknown as ReturnType<typeof vi.fn>;
+const mockedRenameTag = api.renameTag as unknown as ReturnType<typeof vi.fn>;
 
 function makeTag(overrides: Partial<ApiTag> = {}): ApiTag {
   return {
@@ -61,6 +63,7 @@ beforeEach(() => {
   mockedListTags.mockResolvedValue({ data: [] });
   mockedCreateTag.mockResolvedValue({ data: makeTagRecord() });
   mockedDeleteTag.mockResolvedValue(undefined);
+  mockedRenameTag.mockResolvedValue({ data: makeTagRecord({ name: "react-query" }) });
 });
 
 describe("Tags page", () => {
@@ -110,5 +113,42 @@ describe("Tags page", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.lists() });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.archive });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.trash });
+  });
+
+  it("renames a tag from the management surface and refreshes cached bookmark views", async () => {
+    mockedListTags
+      .mockResolvedValueOnce({ data: [makeTag({ bookmark_count: 3 })] })
+      .mockResolvedValue({ data: [makeTag({ name: "react-query", bookmark_count: 3 })] });
+
+    const { queryClient } = renderTagsPage();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Rename typescript tag" }));
+    expect(screen.getByText("Rename #typescript")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("New tag name"), { target: { value: " React-Query " } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename tag" }));
+
+    await waitFor(() => expect(mockedRenameTag).toHaveBeenCalledWith("tag-1", "react-query"));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.tags });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.lists() });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.archive });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.trash });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["search"] });
+    expect(await screen.findByText("react-query")).toBeInTheDocument();
+  });
+
+  it("keeps the rename dialog open when the daemon rejects the target name", async () => {
+    mockedListTags.mockResolvedValue({ data: [makeTag()] });
+    mockedRenameTag.mockRejectedValue(new Error("Tag already exists"));
+
+    renderTagsPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Rename typescript tag" }));
+    fireEvent.change(screen.getByLabelText("New tag name"), { target: { value: "react-query" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename tag" }));
+
+    expect(await screen.findByText("Tag already exists")).toBeInTheDocument();
+    expect(screen.getByText("Rename #typescript")).toBeInTheDocument();
   });
 });

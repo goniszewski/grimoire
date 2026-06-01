@@ -653,6 +653,13 @@ export async function createTag(name: string): Promise<ApiTagResponse> {
   });
 }
 
+export async function renameTag(id: string, name: string): Promise<ApiTagResponse> {
+  return apiFetch<ApiTagResponse>(`/tags/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ name } satisfies TagRequestDto),
+  });
+}
+
 export async function deleteTag(id: string): Promise<void> {
   await apiFetch<void>(`/tags/${id}`, { method: "DELETE" });
 }

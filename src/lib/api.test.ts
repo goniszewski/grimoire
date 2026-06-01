@@ -5,6 +5,7 @@ import {
   createTag,
   deleteTag,
   recordBookmarkOpen,
+  renameTag,
   resolveDaemonUrl,
   updateBookmark,
 } from "./api";
@@ -202,5 +203,34 @@ describe("tag management API", () => {
       "http://127.0.0.1:3210/tags/tag-1",
       expect.objectContaining({ method: "DELETE" })
     );
+  });
+
+  it("renames tags through the daemon endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "tag-1",
+            name: "react-query",
+            created_at: "2026-05-31T12:00:00Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    const result = await renameTag("tag-1", "react-query");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/tags/tag-1",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ name: "react-query" }),
+      })
+    );
+    expect(result.data.name).toBe("react-query");
   });
 });

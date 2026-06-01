@@ -87,6 +87,63 @@ export function createTagsRoute(deps: TagsDeps): Hono {
     return ok(c, tag, 201);
   });
 
+  // PUT /tags/:id — rename a tag without changing bookmark associations
+  router.put("/tags/:id", async (c) => {
+    const tagId = c.req.param("id");
+    const currentTag = tagRepo.findById(tagId);
+    if (!currentTag) return problem(c, 404, "Not Found", "Tag not found");
+
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return problem(c, 400, "Bad Request", "Request body must be valid JSON");
+    }
+
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return problem(c, 422, "Unprocessable Entity", "Tag rename body must be a JSON object");
+    }
+
+    const b = body as Record<string, unknown>;
+
+    if (typeof b.name !== "string" || !b.name.trim()) {
+      return problem(c, 422, "Unprocessable Entity", "`name` (non-empty string) is required");
+    }
+
+    const name = b.name.toLowerCase().trim();
+
+    if (name.length > MAX_TAG_NAME_LEN) {
+      return problem(c, 422, "Unprocessable Entity", `\`name\` must be at most ${MAX_TAG_NAME_LEN} characters`);
+    }
+
+    if (!isValidTagName(name)) {
+      return problem(
+        c,
+        422,
+        "Unprocessable Entity",
+        "`name` must contain only lowercase letters, digits, and hyphens (no leading/trailing hyphens)"
+      );
+    }
+
+    const duplicate = tagRepo.findByName(name);
+    if (duplicate && duplicate.id !== tagId) {
+      return problem(c, 409, "Conflict", `Tag "${name}" already exists`);
+    }
+
+    if (currentTag.name === name) return ok(c, currentTag, 200);
+
+    try {
+      const renamed = tagRepo.rename(tagId, name);
+      if (!renamed) return problem(c, 404, "Not Found", "Tag not found");
+      return ok(c, renamed, 200);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
+        return problem(c, 409, "Conflict", `Tag "${name}" already exists`);
+      }
+      throw err;
+    }
+  });
+
   // DELETE /tags/:id — remove tag (detaches from all bookmarks via CASCADE)
   router.delete("/tags/:id", (c) => {
     const deleted = tagRepo.delete(c.req.param("id"));

@@ -479,7 +479,7 @@ const schemas = {
     ["id", "name", "created_at", "bookmark_count"],
     "Tag row with active bookmark count returned by tag listings"
   ),
-  TagRequest: objectSchema({ name: stringSchema("Lowercase tag name", { maxLength: 50 }) }, ["name"]),
+  TagRequest: objectSchema({ name: stringSchema("Tag name, normalized to lowercase", { maxLength: 50 }) }, ["name"]),
   TagListResponse: envelope(arrayOf(ref("TagWithCount"), "Tags")),
   TagResponse: envelope(ref("TagRecord")),
   Domain: objectSchema(
@@ -1509,6 +1509,24 @@ export const apiContract = {
         "200": jsonResponse("Existing tag", ref("TagResponse")),
         "201": jsonResponse("Created tag", ref("TagResponse")),
         "400": problemResponse("Malformed JSON"),
+        "422": problemResponse("Invalid tag name"),
+      },
+    },
+    {
+      method: "PUT",
+      path: "/tags/:id",
+      tag: "Tags",
+      summary: "Rename a tag without changing bookmark associations.",
+      description: "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+      request: {
+        pathParams: idParam(),
+        body: { contentType: "application/json", schema: ref("TagRequest") },
+      },
+      responses: {
+        "200": jsonResponse("Renamed tag", ref("TagResponse")),
+        "400": problemResponse("Malformed JSON"),
+        "404": problemResponse("Tag not found"),
+        "409": problemResponse("Duplicate tag name"),
         "422": problemResponse("Invalid tag name"),
       },
     },

@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import React from "react";
 import TagDetail from "./TagDetail";
 import type { ApiBookmark, ApiTag, ListBookmarksParams } from "@/lib/api";
+import { bookmarkKeys } from "@/hooks/use-bookmarks";
 
 vi.mock("@/lib/api", () => ({
   listBookmarks: vi.fn(),
   listTags: vi.fn(),
+  renameTag: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -22,6 +24,7 @@ type Pagination = {
 
 const mockedListBookmarks = api.listBookmarks as unknown as ReturnType<typeof vi.fn>;
 const mockedListTags = api.listTags as unknown as ReturnType<typeof vi.fn>;
+const mockedRenameTag = api.renameTag as unknown as ReturnType<typeof vi.fn>;
 
 function makeTag(overrides: Partial<ApiTag> = {}): ApiTag {
   return {
@@ -64,22 +67,36 @@ function bookmarkResponse(data: ApiBookmark[], pagination: Pagination) {
   return { data, pagination };
 }
 
+function LocationDisplay() {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname}</span>;
+}
+
 function renderTagDetail(path = "/tags/typescript") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const renderResult = render(
     <MemoryRouter initialEntries={[path]}>
       <QueryClientProvider client={qc}>
         <Routes>
           <Route path="/tags/:tag" element={<TagDetail />} />
         </Routes>
+        <LocationDisplay />
       </QueryClientProvider>
     </MemoryRouter>
   );
+  return { ...renderResult, queryClient: qc };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockedListTags.mockResolvedValue({ data: [makeTag()] });
+  mockedRenameTag.mockResolvedValue({
+    data: {
+      id: "tag-1",
+      name: "react-query",
+      created_at: "2026-05-31T12:00:00Z",
+    },
+  });
   mockedListBookmarks.mockResolvedValue(
     bookmarkResponse([makeApiBookmark()], {
       total: 1,
@@ -135,6 +152,7 @@ describe("TagDetail", () => {
       "/?tag=typescript"
     );
     expect(screen.getByRole("link", { name: "Manage tags" })).toHaveAttribute("href", "/tags");
+    expect(screen.getByRole("button", { name: "Rename #typescript tag" })).toBeInTheDocument();
     expect(screen.getByText("Example bookmark")).toBeInTheDocument();
     expect(screen.getByText("1-20 of 22")).toBeInTheDocument();
     expect(mockedListBookmarks).toHaveBeenCalledWith({
@@ -203,5 +221,27 @@ describe("TagDetail", () => {
 
     expect(await screen.findByText("Tag not found")).toBeInTheDocument();
     expect(mockedListBookmarks).not.toHaveBeenCalled();
+  });
+
+  it("renames the current tag and navigates to the new detail route", async () => {
+    mockedListTags
+      .mockResolvedValueOnce({ data: [makeTag()] })
+      .mockResolvedValue({ data: [makeTag({ name: "react-query" })] });
+
+    const { queryClient } = renderTagDetail();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Rename #typescript tag" }));
+    expect(screen.getByText("Rename #typescript")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("New tag name"), { target: { value: " React-Query " } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename tag" }));
+
+    await waitFor(() => expect(mockedRenameTag).toHaveBeenCalledWith("tag-1", "react-query"));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.tags });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.lists() });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["search"] });
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/tags/react-query"));
+    expect(await screen.findByRole("heading", { name: "#react-query" })).toBeInTheDocument();
   });
 });
