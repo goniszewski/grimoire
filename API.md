@@ -51,6 +51,8 @@ Examples:
 
 **Generate diagnostics**
 
+Request:
+
 ```bash
 curl http://127.0.0.1:3210/diagnostics
 ```
@@ -79,6 +81,8 @@ Responses:
 Examples:
 
 **Check for updates**
+
+Request:
 
 ```bash
 curl 'http://127.0.0.1:3210/updates/check?channel=stable'
@@ -110,6 +114,75 @@ Responses:
 | `409` | application/problem+json | `ProblemDetails` | URL already exists in trash or archive |
 | `422` | application/problem+json | `ProblemDetails` | Invalid URL or missing url field |
 
+Examples:
+
+**Save a bookmark**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/bookmarks \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/rag-vector-search","title":"RAG Vector Search Notes"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "data": {
+    "id": "bm_123",
+    "url": "https://example.com/rag-vector-search",
+    "domain": "example.com",
+    "title": "RAG Vector Search Notes",
+    "description": null,
+    "status": "saved",
+    "category_id": null,
+    "favicon_url": null,
+    "screenshot_url": null,
+    "is_pinned": 0,
+    "is_archived": 0,
+    "is_trashed": 0,
+    "trashed_at": null,
+    "read_later": 0,
+    "read_at": null,
+    "opened_count": 0,
+    "last_opened_at": null,
+    "notes": null,
+    "created_at": "2026-06-01T09:30:00.000Z",
+    "updated_at": "2026-06-01T09:30:00.000Z",
+    "tags": []
+  }
+}
+```
+
+**Reject an invalid bookmark URL**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/bookmarks \
+  -H "Content-Type: application/json" \
+  -d '{"url":"http://127.0.0.1/private"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/problem+json
+
+{
+  "type": "https://littleimp.app/problems/unprocessable-entity",
+  "title": "Unprocessable Entity",
+  "status": 422,
+  "detail": "Invalid URL - must be http or https"
+}
+```
+
 #### GET /bookmarks
 
 List active or archived bookmarks with filters and pagination.
@@ -135,6 +208,60 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `BookmarkListResponse` | Bookmark page |
 
+Examples:
+
+**List filtered bookmarks**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_later=true&limit=10&offset=0"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": [
+    {
+      "id": "bm_123",
+      "url": "https://example.com/rag-vector-search",
+      "domain": "example.com",
+      "title": "RAG Vector Search Notes",
+      "description": "Practical notes about vector search for retrieval augmented generation.",
+      "status": "indexed",
+      "category_id": "cat_ai",
+      "favicon_url": "/media/bookmarks/bm_123/favicon",
+      "screenshot_url": "/media/bookmarks/bm_123/screenshot",
+      "is_pinned": 0,
+      "is_archived": 0,
+      "is_trashed": 0,
+      "trashed_at": null,
+      "read_later": 1,
+      "read_at": null,
+      "opened_count": 2,
+      "last_opened_at": "2026-06-01T08:45:00.000Z",
+      "notes": "Compare chunking guidance with local notes.",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "updated_at": "2026-06-01T09:30:00.000Z",
+      "tags": [
+        "rag",
+        "search"
+      ]
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "limit": 10,
+    "offset": 0,
+    "has_more": false
+  }
+}
+```
+
 #### GET /bookmarks/:id
 
 Get one bookmark with extracted content.
@@ -151,6 +278,68 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `BookmarkDetailResponse` | Bookmark detail |
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
+
+Examples:
+
+**Read bookmark detail**
+
+Request:
+
+```bash
+curl http://127.0.0.1:3210/bookmarks/bm_123
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "id": "bm_123",
+    "url": "https://example.com/rag-vector-search",
+    "domain": "example.com",
+    "title": "RAG Vector Search Notes",
+    "description": "Practical notes about vector search for retrieval augmented generation.",
+    "status": "indexed",
+    "category_id": "cat_ai",
+    "favicon_url": "/media/bookmarks/bm_123/favicon",
+    "screenshot_url": "/media/bookmarks/bm_123/screenshot",
+    "is_pinned": 0,
+    "is_archived": 0,
+    "is_trashed": 0,
+    "trashed_at": null,
+    "read_later": 1,
+    "read_at": null,
+    "opened_count": 2,
+    "last_opened_at": "2026-06-01T08:45:00.000Z",
+    "notes": "Compare chunking guidance with local notes.",
+    "created_at": "2026-06-01T09:30:00.000Z",
+    "updated_at": "2026-06-01T09:30:00.000Z",
+    "tags": [
+      "rag",
+      "search"
+    ],
+    "content": {
+      "bookmark_id": "bm_123",
+      "raw_html": null,
+      "markdown": "## RAG Vector Search\n\nUse hybrid retrieval when exact terms matter.",
+      "summary": "A practical walkthrough of hybrid retrieval for RAG systems.",
+      "author": "Example Author",
+      "published_at": "2026-05-28T12:00:00.000Z",
+      "word_count": 1240,
+      "language": "en",
+      "extracted_at": "2026-06-01T09:30:00.000Z"
+    },
+    "media": {
+      "favicon": null,
+      "screenshot": null,
+      "images": []
+    }
+  }
+}
+```
 
 #### GET /media/bookmarks/:bookmarkId/:mediaId
 
@@ -206,6 +395,54 @@ Responses:
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `404` | application/problem+json | `ProblemDetails` | Bookmark not found |
 | `422` | application/problem+json | `ProblemDetails` | Invalid patch field |
+
+Examples:
+
+**Update bookmark metadata**
+
+Request:
+
+```bash
+curl -X PUT http://127.0.0.1:3210/bookmarks/bm_123 \
+  -H "Content-Type: application/json" \
+  -d '{"tags":["rag","retrieval"],"read_later":1,"notes":"Compare with local chunking notes."}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "id": "bm_123",
+    "url": "https://example.com/rag-vector-search",
+    "domain": "example.com",
+    "title": "RAG Vector Search Notes",
+    "description": "Practical notes about vector search for retrieval augmented generation.",
+    "status": "indexed",
+    "category_id": "cat_ai",
+    "favicon_url": "/media/bookmarks/bm_123/favicon",
+    "screenshot_url": "/media/bookmarks/bm_123/screenshot",
+    "is_pinned": 0,
+    "is_archived": 0,
+    "is_trashed": 0,
+    "trashed_at": null,
+    "read_later": 1,
+    "read_at": null,
+    "opened_count": 2,
+    "last_opened_at": "2026-06-01T08:45:00.000Z",
+    "notes": "Compare with local chunking notes.",
+    "created_at": "2026-06-01T09:30:00.000Z",
+    "updated_at": "2026-06-01T09:30:00.000Z",
+    "tags": [
+      "rag",
+      "retrieval"
+    ]
+  }
+}
+```
 
 #### POST /bookmarks/:id/open
 
@@ -314,6 +551,8 @@ Examples:
 
 **List related bookmarks**
 
+Request:
+
 ```bash
 curl "http://127.0.0.1:3210/bookmarks/bm_123/related?limit=5"
 ```
@@ -400,6 +639,8 @@ Examples:
 
 **Retry failed pipeline work**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/bookmarks/reprocess \
   -H "Content-Type: application/json" \
@@ -453,6 +694,65 @@ Responses:
 | `400` | application/problem+json | `ProblemDetails` | Invalid FTS query syntax |
 | `422` | application/problem+json | `ProblemDetails` | Invalid mode or missing embedding configuration |
 
+Examples:
+
+**Hybrid search with pagination**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&limit=10&offset=0"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": [
+    {
+      "id": "bm_123",
+      "url": "https://example.com/rag-vector-search",
+      "domain": "example.com",
+      "title": "RAG Vector Search Notes",
+      "description": "Practical notes about vector search for retrieval augmented generation.",
+      "status": "indexed",
+      "category_id": "cat_ai",
+      "favicon_url": "/media/bookmarks/bm_123/favicon",
+      "screenshot_url": "/media/bookmarks/bm_123/screenshot",
+      "is_pinned": 0,
+      "is_archived": 0,
+      "is_trashed": 0,
+      "trashed_at": null,
+      "read_later": 1,
+      "read_at": null,
+      "opened_count": 2,
+      "last_opened_at": "2026-06-01T08:45:00.000Z",
+      "notes": "Compare chunking guidance with local notes.",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "updated_at": "2026-06-01T09:30:00.000Z",
+      "tags": [
+        "rag",
+        "search"
+      ],
+      "snippet": "Use hybrid retrieval when exact vector search terms matter.",
+      "rank": 0.93
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "limit": 10,
+    "offset": 0,
+    "has_more": false
+  },
+  "meta": {
+    "mode": "hybrid"
+  }
+}
+```
+
 ### Categories
 
 #### GET /categories
@@ -464,6 +764,43 @@ Responses:
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json | `CategoryTreeResponse` | Category tree |
+
+Examples:
+
+**List category tree**
+
+Request:
+
+```bash
+curl http://127.0.0.1:3210/categories
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": [
+    {
+      "id": "cat_ai",
+      "name": "AI Research",
+      "parent_id": null,
+      "color": "#2563eb",
+      "icon": "brain",
+      "description": "Papers, implementation notes, and reference material for AI work.",
+      "slug": "ai-research",
+      "is_archived": 0,
+      "is_public": 0,
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "updated_at": "2026-06-01T09:30:00.000Z",
+      "bookmark_count": 1,
+      "children": []
+    }
+  ]
+}
+```
 
 #### POST /categories
 
@@ -493,6 +830,41 @@ Responses:
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `409` | application/problem+json | `ProblemDetails` | Duplicate category under parent |
 | `422` | application/problem+json | `ProblemDetails` | Invalid name or parent |
+
+Examples:
+
+**Create a category with metadata**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"AI Research","color":"#2563eb","icon":"brain","slug":"ai-research","description":"Papers, implementation notes, and reference material for AI work.","is_public":0}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "data": {
+    "id": "cat_ai",
+    "name": "AI Research",
+    "parent_id": null,
+    "color": "#2563eb",
+    "icon": "brain",
+    "description": "Papers, implementation notes, and reference material for AI work.",
+    "slug": "ai-research",
+    "is_archived": 0,
+    "is_public": 0,
+    "created_at": "2026-06-01T09:30:00.000Z",
+    "updated_at": "2026-06-01T09:30:00.000Z"
+  }
+}
+```
 
 #### PUT /categories/:id
 
@@ -559,6 +931,34 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `TagListResponse` | Tags |
 
+Examples:
+
+**List tags**
+
+Request:
+
+```bash
+curl http://127.0.0.1:3210/tags
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": [
+    {
+      "id": "tag_rag",
+      "name": "rag",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "bookmark_count": 1
+    }
+  ]
+}
+```
+
 #### POST /tags
 
 Create a tag, idempotently returning an existing tag when present.
@@ -580,6 +980,33 @@ Responses:
 | `201` | application/json | `TagResponse` | Created tag |
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+
+Examples:
+
+**Create a tag**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/tags \
+  -H "Content-Type: application/json" \
+  -d '{"name":"rag"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "data": {
+    "id": "tag_rag",
+    "name": "rag",
+    "created_at": "2026-06-01T09:30:00.000Z"
+  }
+}
+```
 
 #### PUT /tags/:id
 
@@ -713,6 +1140,33 @@ Responses:
 | `413` | application/problem+json | `ProblemDetails` | File exceeds 10 MB |
 | `415` | application/problem+json | `ProblemDetails` | Request is not multipart/form-data |
 | `422` | application/problem+json | `ProblemDetails` | Missing file or invalid bookmark export |
+
+Examples:
+
+**Import Netscape bookmarks**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/import \
+  -F file=@bookmarks.html
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "importId": "import_123",
+    "total": 12,
+    "warnings": 1,
+    "progressUrl": "/import/import_123/progress"
+  }
+}
+```
 
 #### GET /import/:importId/progress
 
@@ -850,6 +1304,32 @@ Responses:
 | `422` | application/json | `LegacyError` | Invalid backup create request |
 | `500` | application/json | `LegacyError` | Backup creation failed |
 
+Examples:
+
+**Create a local backup**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/backup \
+  -H "Content-Type: application/json" \
+  -d '{"skip_remote":true}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "path": "/Users/me/.local/share/littleimp/backups/2026-06-01T09-30-00-000Z",
+  "size_bytes": 98304,
+  "bookmark_count": 42,
+  "created_at": "2026-06-01T09:30:00.000Z"
+}
+```
+
 #### GET /backup/list
 
 List local backups and optionally merge remote S3 backups.
@@ -906,6 +1386,8 @@ Examples:
 
 **Update backup schedule**
 
+Request:
+
 ```bash
 curl -X PUT http://127.0.0.1:3210/backup/schedule \
   -H "Content-Type: application/json" \
@@ -948,6 +1430,8 @@ Examples:
 
 **Set a custom backup destination**
 
+Request:
+
 ```bash
 curl -X PUT http://127.0.0.1:3210/backup/destination \
   -H "Content-Type: application/json" \
@@ -980,6 +1464,8 @@ Responses:
 Examples:
 
 **Verify a local backup**
+
+Request:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/backup/verify \
@@ -1015,6 +1501,8 @@ Examples:
 
 **Create an encrypted package**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/backup/package \
   -H "Content-Type: application/json" \
@@ -1048,6 +1536,8 @@ Responses:
 Examples:
 
 **Verify an encrypted package**
+
+Request:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/backup/package/verify \
@@ -1087,6 +1577,8 @@ Examples:
 
 **Restore a local backup**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/restore \
   -H "Content-Type: application/json" \
@@ -1095,6 +1587,8 @@ curl -X POST http://127.0.0.1:3210/restore \
 
 **Restore a remote backup**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/restore \
   -H "Content-Type: application/json" \
@@ -1102,6 +1596,8 @@ curl -X POST http://127.0.0.1:3210/restore \
 ```
 
 **Restore an encrypted package**
+
+Request:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/restore \
@@ -1123,6 +1619,8 @@ Responses:
 Examples:
 
 **Test S3 connectivity**
+
+Request:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/settings/test-s3
@@ -1225,6 +1723,62 @@ Responses:
 | `400` | application/json | `LegacyError` | Invalid format |
 | `422` | application/json | `LegacyError` | Invalid read_later filter |
 
+Examples:
+
+**Export read-later bookmarks as JSON**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/export?format=json&read_later=true"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[
+  {
+    "id": "bm_123",
+    "url": "https://example.com/rag-vector-search",
+    "title": "RAG Vector Search Notes",
+    "summary": "A practical walkthrough of hybrid retrieval for RAG systems.",
+    "tags": [
+      "rag",
+      "search"
+    ],
+    "category": "AI Research",
+    "domain": "example.com",
+    "is_pinned": 0,
+    "read_later": 1,
+    "opened_count": 2,
+    "last_opened_at": "2026-06-01T08:45:00.000Z",
+    "created_at": "2026-06-01T09:30:00.000Z"
+  }
+]
+```
+
+**Reject an invalid export filter**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/export?format=json&read_later=maybe"
+```
+
+Response:
+
+```http
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/json
+
+{
+  "error": "`read_later` must be true, false, 1, or 0"
+}
+```
+
 ### Integrations
 
 #### GET /integration-tokens
@@ -1236,6 +1790,36 @@ Responses:
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json | `IntegrationTokenListResponse` | Integration tokens |
+
+Examples:
+
+**List integration tokens**
+
+Request:
+
+```bash
+curl http://127.0.0.1:3210/integration-tokens
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": [
+    {
+      "id": "itok_123",
+      "name": "Raycast MCP",
+      "token_prefix": "limp_it_7fd9",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "last_used_at": null,
+      "revoked_at": null
+    }
+  ]
+}
+```
 
 #### POST /integration-tokens
 
@@ -1265,10 +1849,33 @@ Examples:
 
 **Create an integration token**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/integration-tokens \
   -H "Content-Type: application/json" \
   -d '{"name":"Raycast MCP"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "data": {
+    "token": "limp_it_example_secret",
+    "record": {
+      "id": "itok_123",
+      "name": "Raycast MCP",
+      "token_prefix": "limp_it_7fd9",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "last_used_at": null,
+      "revoked_at": null
+    }
+  }
+}
 ```
 
 #### POST /integration-tokens/:id/rotate
@@ -1325,11 +1932,58 @@ Examples:
 
 **Call the MCP endpoint**
 
+Request:
+
 ```bash
 curl -X POST http://127.0.0.1:3210/mcp \
   -H "Authorization: Bearer limp_it_example" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {},
+    "serverInfo": {
+      "name": "little-imp",
+      "version": "0.1.0-beta"
+    }
+  }
+}
+```
+
+**Reject a missing integration token**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/problem+json
+WWW-Authenticate: Bearer realm="littleimp-local-integrations"
+
+{
+  "type": "https://littleimp.app/problems/integration-token-required",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "A managed integration bearer token is required for this route"
+}
 ```
 
 ## Schemas

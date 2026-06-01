@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { extname, join } from "node:path";
 import type {
   ApiContract,
+  ApiExampleBody,
+  ApiExampleResponse,
   ApiObjectSchema,
   ApiRoute,
   ApiSchema,
@@ -42,6 +44,21 @@ interface FieldRow {
 }
 
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "all"]);
+const STATUS_TEXT: Record<number, string> = {
+  200: "OK",
+  201: "Created",
+  202: "Accepted",
+  204: "No Content",
+  400: "Bad Request",
+  401: "Unauthorized",
+  404: "Not Found",
+  409: "Conflict",
+  413: "Payload Too Large",
+  415: "Unsupported Media Type",
+  422: "Unprocessable Entity",
+  500: "Internal Server Error",
+  502: "Bad Gateway",
+};
 
 export function buildApiContractDocument<const Contract extends ApiContract>(
   contract: Contract
@@ -222,11 +239,41 @@ function appendExamples(lines: string[], route: ApiRoute): void {
   for (const example of route.examples) {
     lines.push(`**${example.title}**`);
     lines.push("");
+    lines.push("Request:");
+    lines.push("");
     lines.push("```bash");
     lines.push(example.request);
     lines.push("```");
     lines.push("");
+    if (example.response) {
+      appendExampleResponse(lines, example.response);
+    }
   }
+}
+
+function appendExampleResponse(lines: string[], response: ApiExampleResponse): void {
+  lines.push("Response:");
+  lines.push("");
+  lines.push("```http");
+  const statusText = response.statusText ?? STATUS_TEXT[response.status] ?? "";
+  lines.push(`HTTP/1.1 ${response.status}${statusText ? ` ${statusText}` : ""}`);
+  if (response.contentType) {
+    lines.push(`Content-Type: ${response.contentType}`);
+  }
+  for (const [header, value] of Object.entries(response.headers ?? {})) {
+    lines.push(`${header}: ${value}`);
+  }
+  if (response.body !== undefined) {
+    lines.push("");
+    lines.push(...formatExampleBody(response.body));
+  }
+  lines.push("```");
+  lines.push("");
+}
+
+function formatExampleBody(body: ApiExampleBody): string[] {
+  if (typeof body === "string") return body.split("\n");
+  return JSON.stringify(body, null, 2).split("\n");
 }
 
 function appendFieldTable(lines: string[], fields: FieldRow[]): void {

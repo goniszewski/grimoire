@@ -102,4 +102,86 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("**Call the MCP endpoint**");
     expect(markdown).toContain("Authorization: Bearer");
   });
+
+  it("includes response-bearing local client examples for core API workflows", () => {
+    const document = buildApiContractDocument(apiContract);
+    const markdown = buildApiMarkdown(document);
+    const requiredExamples = [
+      ["POST", "/integration-tokens", "Create an integration token"],
+      ["GET", "/integration-tokens", "List integration tokens"],
+      ["POST", "/bookmarks", "Save a bookmark"],
+      ["GET", "/bookmarks", "List filtered bookmarks"],
+      ["GET", "/bookmarks/:id", "Read bookmark detail"],
+      ["PUT", "/bookmarks/:id", "Update bookmark metadata"],
+      ["GET", "/search", "Hybrid search with pagination"],
+      ["POST", "/import", "Import Netscape bookmarks"],
+      ["GET", "/export", "Export read-later bookmarks as JSON"],
+      ["POST", "/categories", "Create a category with metadata"],
+      ["GET", "/categories", "List category tree"],
+      ["POST", "/tags", "Create a tag"],
+      ["GET", "/tags", "List tags"],
+      ["POST", "/backup", "Create a local backup"],
+    ] as const;
+
+    for (const [method, path, title] of requiredExamples) {
+      const route = document.routes.find((candidate) => candidate.method === method && candidate.path === path);
+      const example = route?.examples?.find((candidate) => candidate.title === title);
+
+      expect(example, `${method} ${path} should include "${title}"`).toBeDefined();
+      expect(example?.response, `${title} should include a response example`).toBeDefined();
+      expect(markdown).toContain(`**${title}**`);
+    }
+
+    expect(markdown).toContain("Response:");
+    expect(markdown).toContain("HTTP/1.1 201 Created");
+    expect(markdown).toContain("Content-Type: application/json");
+  });
+
+  it("documents common local-client error flows without extension or bookmarklet examples", () => {
+    const document = buildApiContractDocument(apiContract);
+    const markdown = buildApiMarkdown(document);
+    const problemExamples = document.routes.flatMap((route) =>
+      (route.examples ?? []).filter((example) => String(example.response?.status ?? "").startsWith("4"))
+    );
+
+    expect(problemExamples.map((example) => example.title)).toEqual(
+      expect.arrayContaining([
+        "Reject an invalid bookmark URL",
+        "Reject a missing integration token",
+        "Reject an invalid export filter",
+      ])
+    );
+    expect(markdown).toContain('"type": "https://littleimp.app/problems/unprocessable-entity"');
+    expect(markdown).toContain('WWW-Authenticate: Bearer realm="littleimp-local-integrations"');
+    expect(markdown).not.toMatch(/browser extension/i);
+    expect(markdown).not.toMatch(/bookmarklet/i);
+  });
+
+  it("keeps example responses aligned with immediate route behavior", () => {
+    const document = buildApiContractDocument(apiContract);
+    const routeExample = (method: string, path: string, title: string) => {
+      const route = document.routes.find((candidate) => candidate.method === method && candidate.path === path);
+      return route?.examples?.find((candidate) => candidate.title === title);
+    };
+
+    expect(routeExample("POST", "/bookmarks", "Save a bookmark")?.response?.body).toMatchObject({
+      data: {
+        status: "saved",
+        category_id: null,
+        read_later: 0,
+        opened_count: 0,
+        tags: [],
+      },
+    });
+
+    expect(routeExample("POST", "/backup", "Create a local backup")?.response?.body).not.toHaveProperty(
+      "remote_url"
+    );
+
+    expect(routeExample("POST", "/categories", "Create a category with metadata")?.response?.body).toMatchObject({
+      data: {
+        description: "Papers, implementation notes, and reference material for AI work.",
+      },
+    });
+  });
 });

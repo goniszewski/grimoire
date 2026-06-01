@@ -81,9 +81,26 @@ export interface ApiResponse {
   headers?: Record<string, string>;
 }
 
+export type ApiExampleBody =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly ApiExampleBody[]
+  | { readonly [key: string]: ApiExampleBody };
+
+export interface ApiExampleResponse {
+  status: number;
+  statusText?: string;
+  contentType?: string;
+  headers?: Record<string, string>;
+  body?: ApiExampleBody;
+}
+
 export interface ApiExample {
   title: string;
   request: string;
+  response?: ApiExampleResponse;
 }
 
 export interface ApiRoute {

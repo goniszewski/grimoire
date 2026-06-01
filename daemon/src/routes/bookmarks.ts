@@ -121,7 +121,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const { url, title } = body as { url: string; title?: unknown };
 
     if (!isValidUrl(url)) {
-      return problem(c, 422, "Unprocessable Entity", "Invalid URL — must be http or https");
+      return problem(c, 422, "Unprocessable Entity", "Invalid URL - must be http or https");
     }
 
     // Idempotency: return existing active (not archived, not trashed) bookmark if URL already saved

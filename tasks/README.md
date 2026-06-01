@@ -116,7 +116,7 @@ tasks/
 | TASK-100 | [Tag Rename API And UI](done/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | done |
 | TASK-101 | [Category And Tag Regression Tests](done/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | done |
 | TASK-102 | [Integration Token Authentication](done/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | done |
-| TASK-103 | [Human Readable API Examples](backlog/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | backlog |
+| TASK-103 | [Human Readable API Examples](done/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | done |
 | TASK-104 | [OpenAPI Contract Output](backlog/TASK-104-openapi-contract-output.md) | Grimoire parity | high | backlog |
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
 | TASK-106 | [Integration CORS And Origin Controls](backlog/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | backlog |
@@ -234,6 +234,12 @@ TASK-102 is complete with managed local integration bearer tokens, hashed token
 storage, redacted list output, MCP protection, optional REST bearer validation,
 rotation, revocation, generated API docs, security documentation, and focused
 daemon auth coverage.
+TASK-103 is complete with generated request/response examples for local
+integration clients across integration tokens, MCP auth failures, bookmark
+create/list/detail/update, search filtering and pagination, import/export,
+categories, tags, backup, and common error flows. The examples are stored in
+the source API contract and regenerated into both `API.md` and
+`docs/api-contract.json`, with docs drift covered by `npm run docs:api:check`.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

@@ -1182,6 +1182,121 @@ const schemas = {
   McpErrorResponse: objectSchema({ error: stringSchema("MCP failure message") }, ["error"]),
 } as const satisfies ApiSchemaMap;
 
+const exampleTimestamp = "2026-06-01T09:30:00.000Z";
+const exampleBookmark = {
+  id: "bm_123",
+  url: "https://example.com/rag-vector-search",
+  domain: "example.com",
+  title: "RAG Vector Search Notes",
+  description: "Practical notes about vector search for retrieval augmented generation.",
+  status: "indexed",
+  category_id: "cat_ai",
+  favicon_url: "/media/bookmarks/bm_123/favicon",
+  screenshot_url: "/media/bookmarks/bm_123/screenshot",
+  is_pinned: 0,
+  is_archived: 0,
+  is_trashed: 0,
+  trashed_at: null,
+  read_later: 1,
+  read_at: null,
+  opened_count: 2,
+  last_opened_at: "2026-06-01T08:45:00.000Z",
+  notes: "Compare chunking guidance with local notes.",
+  created_at: exampleTimestamp,
+  updated_at: exampleTimestamp,
+  tags: ["rag", "search"],
+} as const;
+
+const exampleCreatedBookmark = {
+  ...exampleBookmark,
+  title: "RAG Vector Search Notes",
+  description: null,
+  status: "saved",
+  category_id: null,
+  favicon_url: null,
+  screenshot_url: null,
+  read_later: 0,
+  opened_count: 0,
+  last_opened_at: null,
+  notes: null,
+  tags: [],
+} as const;
+
+const exampleBookmarkDetail = {
+  ...exampleBookmark,
+  content: {
+    bookmark_id: "bm_123",
+    raw_html: null,
+    markdown: "## RAG Vector Search\n\nUse hybrid retrieval when exact terms matter.",
+    summary: "A practical walkthrough of hybrid retrieval for RAG systems.",
+    author: "Example Author",
+    published_at: "2026-05-28T12:00:00.000Z",
+    word_count: 1240,
+    language: "en",
+    extracted_at: exampleTimestamp,
+  },
+  media: {
+    favicon: null,
+    screenshot: null,
+    images: [],
+  },
+} as const;
+
+const examplePagination = {
+  total: 1,
+  limit: 10,
+  offset: 0,
+  has_more: false,
+} as const;
+
+const exampleCategory = {
+  id: "cat_ai",
+  name: "AI Research",
+  parent_id: null,
+  color: "#2563eb",
+  icon: "brain",
+  description: "Papers, implementation notes, and reference material for AI work.",
+  slug: "ai-research",
+  is_archived: 0,
+  is_public: 0,
+  created_at: exampleTimestamp,
+  updated_at: exampleTimestamp,
+} as const;
+
+const exampleCategoryNode = {
+  ...exampleCategory,
+  bookmark_count: 1,
+  children: [],
+} as const;
+
+const exampleTag = {
+  id: "tag_rag",
+  name: "rag",
+  created_at: exampleTimestamp,
+} as const;
+
+const exampleTagWithCount = {
+  ...exampleTag,
+  bookmark_count: 1,
+} as const;
+
+const exampleIntegrationToken = {
+  id: "itok_123",
+  name: "Raycast MCP",
+  token_prefix: "limp_it_7fd9",
+  created_at: exampleTimestamp,
+  last_used_at: null,
+  revoked_at: null,
+} as const;
+
+const problem = (type: string, title: string, status: number, detail: string) =>
+  ({
+    type,
+    title,
+    status,
+    detail,
+  }) as const;
+
 export const apiContract = {
   name: "Little Imp daemon API",
   version: "1",
@@ -1252,6 +1367,33 @@ export const apiContract = {
         "409": problemResponse("URL already exists in trash or archive"),
         "422": problemResponse("Invalid URL or missing url field"),
       },
+      examples: [
+        {
+          title: "Save a bookmark",
+          request:
+            'curl -X POST http://127.0.0.1:3210/bookmarks \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"https://example.com/rag-vector-search","title":"RAG Vector Search Notes"}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: { data: exampleCreatedBookmark },
+          },
+        },
+        {
+          title: "Reject an invalid bookmark URL",
+          request:
+            'curl -X POST http://127.0.0.1:3210/bookmarks \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"http://127.0.0.1/private"}\'',
+          response: {
+            status: 422,
+            contentType: "application/problem+json",
+            body: problem(
+              "https://littleimp.app/problems/unprocessable-entity",
+              "Unprocessable Entity",
+              422,
+              "Invalid URL - must be http or https"
+            ),
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1266,6 +1408,21 @@ export const apiContract = {
         }),
       },
       responses: { "200": jsonResponse("Bookmark page", ref("BookmarkListResponse")) },
+      examples: [
+        {
+          title: "List filtered bookmarks",
+          request:
+            'curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_later=true&limit=10&offset=0"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: [exampleBookmark],
+              pagination: examplePagination,
+            },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1277,6 +1434,17 @@ export const apiContract = {
         "200": jsonResponse("Bookmark detail", ref("BookmarkDetailResponse")),
         "404": problemResponse("Bookmark not found"),
       },
+      examples: [
+        {
+          title: "Read bookmark detail",
+          request: "curl http://127.0.0.1:3210/bookmarks/bm_123",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: { data: exampleBookmarkDetail },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1317,6 +1485,24 @@ export const apiContract = {
         "404": problemResponse("Bookmark not found"),
         "422": problemResponse("Invalid patch field"),
       },
+      examples: [
+        {
+          title: "Update bookmark metadata",
+          request:
+            'curl -X PUT http://127.0.0.1:3210/bookmarks/bm_123 \\\n  -H "Content-Type: application/json" \\\n  -d \'{"tags":["rag","retrieval"],"read_later":1,"notes":"Compare with local chunking notes."}\'',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                ...exampleBookmark,
+                tags: ["rag", "retrieval"],
+                notes: "Compare with local chunking notes.",
+              },
+            },
+          },
+        },
+      ],
     },
     {
       method: "POST",
@@ -1471,6 +1657,28 @@ export const apiContract = {
         "400": problemResponse("Invalid FTS query syntax"),
         "422": problemResponse("Invalid mode or missing embedding configuration"),
       },
+      examples: [
+        {
+          title: "Hybrid search with pagination",
+          request:
+            'curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&limit=10&offset=0"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: [
+                {
+                  ...exampleBookmark,
+                  snippet: "Use hybrid retrieval when exact vector search terms matter.",
+                  rank: 0.93,
+                },
+              ],
+              pagination: examplePagination,
+              meta: { mode: "hybrid" },
+            },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1478,6 +1686,17 @@ export const apiContract = {
       tag: "Categories",
       summary: "List categories as a tree with bookmark counts.",
       responses: { "200": jsonResponse("Category tree", ref("CategoryTreeResponse")) },
+      examples: [
+        {
+          title: "List category tree",
+          request: "curl http://127.0.0.1:3210/categories",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: { data: [exampleCategoryNode] },
+          },
+        },
+      ],
     },
     {
       method: "POST",
@@ -1491,6 +1710,18 @@ export const apiContract = {
         "409": problemResponse("Duplicate category under parent"),
         "422": problemResponse("Invalid name or parent"),
       },
+      examples: [
+        {
+          title: "Create a category with metadata",
+          request:
+            'curl -X POST http://127.0.0.1:3210/categories \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"AI Research","color":"#2563eb","icon":"brain","slug":"ai-research","description":"Papers, implementation notes, and reference material for AI work.","is_public":0}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: { data: exampleCategory },
+          },
+        },
+      ],
     },
     {
       method: "PUT",
@@ -1523,6 +1754,17 @@ export const apiContract = {
       tag: "Tags",
       summary: "List tags with bookmark counts.",
       responses: { "200": jsonResponse("Tags", ref("TagListResponse")) },
+      examples: [
+        {
+          title: "List tags",
+          request: "curl http://127.0.0.1:3210/tags",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: { data: [exampleTagWithCount] },
+          },
+        },
+      ],
     },
     {
       method: "POST",
@@ -1536,6 +1778,18 @@ export const apiContract = {
         "400": problemResponse("Malformed JSON"),
         "422": problemResponse("Invalid tag name"),
       },
+      examples: [
+        {
+          title: "Create a tag",
+          request:
+            'curl -X POST http://127.0.0.1:3210/tags \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"rag"}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: { data: exampleTag },
+          },
+        },
+      ],
     },
     {
       method: "PUT",
@@ -1624,6 +1878,25 @@ export const apiContract = {
         "415": problemResponse("Request is not multipart/form-data"),
         "422": problemResponse("Missing file or invalid bookmark export"),
       },
+      examples: [
+        {
+          title: "Import Netscape bookmarks",
+          request:
+            "curl -X POST http://127.0.0.1:3210/import \\\n  -F file=@bookmarks.html",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                importId: "import_123",
+                total: 12,
+                warnings: 1,
+                progressUrl: "/import/import_123/progress",
+              },
+            },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1680,6 +1953,23 @@ export const apiContract = {
         "409": legacyErrorResponse("Backup or restore already in progress"),
         "500": legacyErrorResponse("Backup creation failed"),
       },
+      examples: [
+        {
+          title: "Create a local backup",
+          request:
+            'curl -X POST http://127.0.0.1:3210/backup \\\n  -H "Content-Type: application/json" \\\n  -d \'{"skip_remote":true}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: {
+              path: "/Users/me/.local/share/littleimp/backups/2026-06-01T09-30-00-000Z",
+              size_bytes: 98304,
+              bookmark_count: 42,
+              created_at: exampleTimestamp,
+            },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1925,6 +2215,41 @@ export const apiContract = {
         "400": legacyErrorResponse("Invalid format"),
         "422": legacyErrorResponse("Invalid read_later filter"),
       },
+      examples: [
+        {
+          title: "Export read-later bookmarks as JSON",
+          request: 'curl "http://127.0.0.1:3210/export?format=json&read_later=true"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: [
+              {
+                id: exampleBookmark.id,
+                url: exampleBookmark.url,
+                title: exampleBookmark.title,
+                summary: "A practical walkthrough of hybrid retrieval for RAG systems.",
+                tags: exampleBookmark.tags,
+                category: exampleCategory.name,
+                domain: exampleBookmark.domain,
+                is_pinned: exampleBookmark.is_pinned,
+                read_later: exampleBookmark.read_later,
+                opened_count: exampleBookmark.opened_count,
+                last_opened_at: exampleBookmark.last_opened_at,
+                created_at: exampleBookmark.created_at,
+              },
+            ],
+          },
+        },
+        {
+          title: "Reject an invalid export filter",
+          request: 'curl "http://127.0.0.1:3210/export?format=json&read_later=maybe"',
+          response: {
+            status: 422,
+            contentType: "application/json",
+            body: { error: "`read_later` must be true, false, 1, or 0" },
+          },
+        },
+      ],
     },
     {
       method: "GET",
@@ -1932,6 +2257,17 @@ export const apiContract = {
       tag: "Integrations",
       summary: "List managed local integration tokens with secret values redacted.",
       responses: { "200": jsonResponse("Integration tokens", ref("IntegrationTokenListResponse")) },
+      examples: [
+        {
+          title: "List integration tokens",
+          request: "curl http://127.0.0.1:3210/integration-tokens",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: { data: [exampleIntegrationToken] },
+          },
+        },
+      ],
     },
     {
       method: "POST",
@@ -1952,6 +2288,16 @@ export const apiContract = {
           title: "Create an integration token",
           request:
             'curl -X POST http://127.0.0.1:3210/integration-tokens \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"Raycast MCP"}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: {
+              data: {
+                token: "limp_it_example_secret",
+                record: exampleIntegrationToken,
+              },
+            },
+          },
         },
       ],
     },
@@ -1994,6 +2340,38 @@ export const apiContract = {
           title: "Call the MCP endpoint",
           request:
             'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Authorization: Bearer limp_it_example" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}\'',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              jsonrpc: "2.0",
+              id: 1,
+              result: {
+                protocolVersion: "2025-03-26",
+                capabilities: {},
+                serverInfo: {
+                  name: "little-imp",
+                  version: "0.1.0-beta",
+                },
+              },
+            },
+          },
+        },
+        {
+          title: "Reject a missing integration token",
+          request:
+            'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\'',
+          response: {
+            status: 401,
+            contentType: "application/problem+json",
+            headers: { "WWW-Authenticate": 'Bearer realm="littleimp-local-integrations"' },
+            body: problem(
+              "https://littleimp.app/problems/integration-token-required",
+              "Unauthorized",
+              401,
+              "A managed integration bearer token is required for this route"
+            ),
+          },
         },
       ],
     },
