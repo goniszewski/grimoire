@@ -30,7 +30,11 @@ The requested capabilities are:
 
 Multi-user support is a platform shift for Little Imp.
 
-The current implementation assumes one local owner. The daemon exposes unauthenticated APIs on a loopback-bound port, stores the library in one SQLite database, stores settings in one local JSON file, and runs search, embeddings, jobs, suggestions, backups, and MCP against one global library.
+The current implementation assumes one local owner. The daemon exposes a
+loopback-bound API where first-party REST remains tokenless, local integration
+tokens protect MCP and validate presented REST bearer tokens, and all data still
+belongs to one SQLite database, one local settings file, and one global search,
+embedding, job, suggestion, backup, and MCP context.
 
 The safest post-MVP direction is:
 
@@ -92,15 +96,18 @@ Relevant current files:
 
 ### 3.2 Authentication State
 
-There is no server-side authentication layer today.
+The current single-user daemon has a scoped local integration-token layer for
+MCP and presented REST bearer tokens. It does not have multi-user sessions,
+accounts, roles, or route-level authorization.
 
 Current Docker documentation explicitly warns:
 
-- Little Imp has no authentication layer.
+- Little Imp's integration tokens do not make the daemon a public server.
 - The daemon should not be published on a public interface.
 - Remote access should be handled by an authenticated tunnel, VPN, or reverse proxy before traffic reaches Little Imp.
 
-The Hono app currently registers CORS middleware and all routes directly. There is no request principal, session lookup, role check, or authorization middleware.
+The Hono app still has no request principal, session lookup, role check, or
+multi-user authorization middleware.
 
 ### 3.3 Data Model State
 

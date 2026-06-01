@@ -45,6 +45,10 @@ describe("API documentation generator", () => {
     expect(routes).toContain("PUT /backup/schedule");
     expect(routes).toContain("PUT /backup/destination");
     expect(routes).toContain("POST /settings/test-s3");
+    expect(routes).toContain("GET /integration-tokens");
+    expect(routes).toContain("POST /integration-tokens");
+    expect(routes).toContain("POST /integration-tokens/:id/rotate");
+    expect(routes).toContain("DELETE /integration-tokens/:id");
     expect(routes).toContain("ALL /mcp");
 
     const settingsPatch = document.schemas.SettingsPatch;
@@ -94,6 +98,8 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("**Set a custom backup destination**");
     expect(markdown).toContain("**Test S3 connectivity**");
     expect(markdown).toContain("**Restore a local backup**");
+    expect(markdown).toContain("**Create an integration token**");
     expect(markdown).toContain("**Call the MCP endpoint**");
+    expect(markdown).toContain("Authorization: Bearer");
   });
 });

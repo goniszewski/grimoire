@@ -109,7 +109,9 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("");
   lines.push("## Authentication");
   lines.push("");
-  lines.push("The daemon is intended to bind to localhost and currently requires no authentication.");
+  lines.push("The daemon is intended to bind to localhost. The first-party loopback browser app uses the local origin boundary and does not need to send an API token.");
+  lines.push("");
+  lines.push("Local integration surfaces such as `/mcp` require a managed bearer token. Create one with `POST /integration-tokens`, store the returned token immediately, and send it as `Authorization: Bearer <token>`. Regular REST routes remain tokenless for the first-party app, but if a client presents an `Authorization` header it must be a valid integration token. List responses only include redacted token prefixes. Missing required tokens, invalid tokens, rotated tokens, or revoked tokens return `401` with `application/problem+json` and a `WWW-Authenticate` bearer challenge.");
   lines.push("");
   lines.push("## Response Conventions");
   lines.push("");

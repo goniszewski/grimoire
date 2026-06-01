@@ -115,7 +115,7 @@ tasks/
 | TASK-099 | [Tag Detail Pages](done/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | done |
 | TASK-100 | [Tag Rename API And UI](done/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | done |
 | TASK-101 | [Category And Tag Regression Tests](done/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | done |
-| TASK-102 | [Integration Token Authentication](backlog/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | backlog |
+| TASK-102 | [Integration Token Authentication](done/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | done |
 | TASK-103 | [Human Readable API Examples](backlog/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | backlog |
 | TASK-104 | [OpenAPI Contract Output](backlog/TASK-104-openapi-contract-output.md) | Grimoire parity | high | backlog |
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
@@ -230,6 +230,10 @@ e2e coverage, and visual reporting.
 TASK-101 is complete with focused category/tag regression coverage for empty
 rows, active counts, selected filter refresh, tag delete filter/search cleanup,
 category move/delete behavior, and whole-branch category depth validation.
+TASK-102 is complete with managed local integration bearer tokens, hashed token
+storage, redacted list output, MCP protection, optional REST bearer validation,
+rotation, revocation, generated API docs, security documentation, and focused
+daemon auth coverage.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

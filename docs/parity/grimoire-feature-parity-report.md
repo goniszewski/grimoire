@@ -62,7 +62,7 @@ This batch keeps Little Imp's product model intact:
 | --- | --- | --- | --- | --- |
 | Product model | Self-hosted web app with multi-user assumptions | Local-first single-user app with loopback daemon | Intentional product difference | Current parity batch is local-first, single-user, loopback-first, and local-integrations-only. |
 | Multi-user accounts | Signup, login, per-user data, first user becomes admin | No multi-user auth; app lock is local privacy only | Deferred non-goal | Deferred by PAR-028 through PAR-034. A future multi-user/server mode is a separate product decision, not unfinished current-batch work. |
-| Sessions and API auth | Lucia sessions plus bearer-token API patterns | Daemon REST API is unauthenticated on loopback | Partial / planned local integration work | Grimoire-style sessions are out of scope. Optional integration-token auth for local non-browser clients is approved as TASK-102. |
+| Sessions and API auth | Lucia sessions plus bearer-token API patterns | First-party REST remains loopback-trusted; MCP and future integration surfaces use managed bearer tokens | Partial local integration parity | Grimoire-style sessions are out of scope. TASK-102 adds scoped local integration-token auth without turning Little Imp into a multi-user server. |
 | Admin panel | User list, counts, disable/delete users | None | Deferred non-goal | Admin roles only matter if multi-user/server mode is reopened. |
 | Profile page | User info, password editing, profile stats | Preferences and app lock only | Deferred non-goal | Local preferences are not account profile management; account profiles are deferred with multi-user support. |
 | Bookmark CRUD | Add, edit, delete, list, detail | Add, list, detail, soft delete, restore, permanent delete, update selected fields | Partial | Little Imp updates title, category, tags, pin, archive, read state, and notes. URL/summary edit UI is still not backed by API mutation. |
@@ -83,7 +83,7 @@ This batch keeps Little Imp's product model intact:
 | Export | Export/migration capabilities | JSON/CSV export with filters plus pinned/starred and read-later fields | Partial | Current export now includes pinned/starred mapping and read-later state, but still omits approved parity fields covered by TASK-111: notes, read state, archive state, and opened metrics. |
 | Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 defers direct Grimoire/PocketBase import until normal import/export parity is stable. Browser/Netscape import hardening remains in scope. |
 | Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md` and `docs/api-contract.json` | Partial | Contract and generated docs exist. Human-readable local client examples and OpenAPI-compatible output are approved as TASK-103 and TASK-104. Browser-extension/bookmarklet examples are deferred. |
-| Browser extension support | Companion extension supported by API | No explicit extension auth or capture endpoint | Deferred non-goal | Local integration token auth and CORS controls are in scope. One-click browser-extension/bookmarklet capture is deferred by TASK-105, and extension smoke tests are rejected for this batch. |
+| Browser extension support | Companion extension supported by API | Local integration tokens exist; no capture endpoint | Deferred non-goal | CORS controls are still in scope. One-click browser-extension/bookmarklet capture is deferred by TASK-105, and extension smoke tests are rejected for this batch. |
 | Deployment | Docker/self-hosting-oriented docs | Native installer, Homebrew, local daemon, Docker guidance, update docs | Intentional product difference | Little Imp is stronger for local install. Public-server and multi-user deployment modes are out of scope for this parity batch. |
 | Backups and restore | Not a primary parity strength | Local/S3 backups, encrypted packages, restore recovery | Little Imp ahead | This is beyond Grimoire parity. |
 | Timeline and suggestions | Limited compared with Little Imp | Timeline events, review queue, AI organization suggestions | Little Imp ahead | Local-first AI organization is a Little Imp differentiator. |
@@ -91,7 +91,7 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Use the documented loopback/local-integration security boundary, then add optional integration-token auth and CORS/origin controls for local non-browser clients.
+1. Finish local integration follow-ups: CORS/origin controls, human-readable API examples, and OpenAPI output for local clients.
 2. Publish human-readable API examples and OpenAPI-compatible output from the daemon contract for local scripts and integration clients.
 3. Add open metrics while preserving the starred/favorite-to-pinned mapping and the separate read-later flag.
 4. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
@@ -139,7 +139,7 @@ visual, Playwright e2e, and performance verification where relevant.
 
 ## Recommended Implementation Order
 
-1. Add local integration authentication, API examples, OpenAPI output, and CORS/origin controls: TASK-102 through TASK-106, excluding deferred TASK-105 implementation.
+1. Add local integration API examples, OpenAPI output, and CORS/origin controls: TASK-103, TASK-104, and TASK-106, excluding deferred TASK-105 implementation.
 2. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
 3. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.
 4. Improve browser/Netscape import, export parity, duplicate policy, and import/export regression tests: TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.

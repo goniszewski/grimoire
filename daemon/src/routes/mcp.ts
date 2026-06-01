@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { createMcpServer, createTransport } from "../mcp/server.js";
 import { log } from "../logger.js";
+import { requireIntegrationToken } from "../lib/integration-auth.js";
 
 interface McpRouteDeps {
   db: Database;
@@ -25,6 +26,8 @@ interface McpRouteDeps {
  */
 export function createMcpRoute(deps: McpRouteDeps): Hono {
   const router = new Hono();
+
+  router.use("/mcp", requireIntegrationToken(deps.db));
 
   router.all("/mcp", async (c) => {
     try {

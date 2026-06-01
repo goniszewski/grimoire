@@ -485,7 +485,15 @@ The daemon reads its configuration from `~/.local/share/littleimp/.env` at start
 
 ## MCP (Model Context Protocol) integration
 
-Little Imp exposes an MCP server at `http://127.0.0.1:3210/mcp`. This lets AI assistants like Claude Desktop or Cursor query and add bookmarks directly.
+Little Imp exposes an MCP server at `http://127.0.0.1:3210/mcp`. This lets AI assistants like Claude Desktop or Cursor query and add bookmarks directly. MCP requires a managed local integration token.
+
+Create a token and store the returned `data.token` value in your MCP client:
+
+```sh
+curl -X POST http://127.0.0.1:3210/integration-tokens \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Claude Desktop MCP"}'
+```
 
 ### Available tools
 
@@ -506,13 +514,23 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "little-imp": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "http://127.0.0.1:3210/mcp"]
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://127.0.0.1:3210/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer ${LITTLE_IMP_MCP_TOKEN}"
+      ],
+      "env": {
+        "LITTLE_IMP_MCP_TOKEN": "limp_it_replace_with_your_token"
+      }
     }
   }
 }
 ```
 
-> **Note:** `mcp-remote` is only needed because Claude Desktop does not yet support HTTP MCP servers directly. Any MCP client that supports the Streamable HTTP transport (spec 2025-03-26+) can connect to `http://127.0.0.1:3210/mcp` directly.
+> **Note:** `mcp-remote` is only needed because Claude Desktop does not yet support HTTP MCP servers directly. The `--allow-http` flag is for the local loopback URL above; do not use it for untrusted networks. Any MCP client that supports the Streamable HTTP transport (spec 2025-03-26+) can connect to `http://127.0.0.1:3210/mcp` directly.
 
 ---
 

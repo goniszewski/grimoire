@@ -3,9 +3,11 @@
 This guide covers the supported Docker path for Little Imp: one local-only
 container that serves both the React frontend and the daemon API on port 3210.
 
-Little Imp has no authentication layer. Do not publish the daemon on a public
-interface unless you put it behind authentication, a VPN, or another trusted
-access control layer.
+Little Imp has scoped bearer-token authentication for local integration
+surfaces such as MCP, but the first-party browser app and general REST API
+still rely on the loopback trust boundary. Do not publish the daemon on a
+public interface unless you put it behind authentication, a VPN, or another
+trusted access control layer.
 
 ## Prerequisites
 
@@ -164,10 +166,12 @@ Then open `http://127.0.0.1:3211`.
 
 ## Remote Access
 
-Little Imp is designed for local-first, single-user use and does not authenticate
-API requests. Public reverse proxy examples are intentionally omitted. If you
-need remote access, put the service behind an authenticated tunnel, VPN, or
-reverse proxy that enforces authentication before traffic reaches Little Imp.
+Little Imp is designed for local-first, single-user use. Integration token auth
+does not turn the daemon into a public server because most first-party REST
+routes remain loopback-trusted. Public reverse proxy examples are intentionally
+omitted. If you need remote access, put the service behind an authenticated
+tunnel, VPN, or reverse proxy that enforces authentication before traffic
+reaches Little Imp.
 
 Do not use these unsafe port mappings:
 

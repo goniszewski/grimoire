@@ -24,6 +24,8 @@ import { createMcpRoute } from "./routes/mcp.js";
 import { createUpdatesRoute } from "./routes/updates.js";
 import { createReprocessRoute } from "./routes/reprocess.js";
 import { createMediaRoute } from "./routes/media.js";
+import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
+import { validatePresentedIntegrationToken } from "./lib/integration-auth.js";
 import { join } from "path";
 import { existsSync } from "fs";
 
@@ -47,6 +49,7 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/backup/destination",
   "/backup/schedule",
   "/bookmarks/reprocess",
+  "/integration-tokens",
   "/restore",
   "/settings/test-s3",
 ]);
@@ -220,6 +223,7 @@ export function createApp(deps: AppDeps): Hono {
       allowHeaders: ["Content-Type", "Authorization"],
     })
   );
+  app.use("*", validatePresentedIntegrationToken(deps.db, new Set(["/mcp"])));
 
   // JSON error handler — never leak internal details in production
   app.onError((err, c) => {
@@ -252,6 +256,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createBackupRoute({ db: deps.db, dbPath: join(Config.DATA_DIR, "littleimp.db") }));
   app.route("/", createUpdatesRoute());
   app.route("/", createReprocessRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createIntegrationTokensRoute({ db: deps.db }));
   app.route("/", createMcpRoute({ db: deps.db, queue: deps.queue, version: deps.version }));
 
   if (deps.staticDir !== false) {

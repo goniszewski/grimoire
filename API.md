@@ -11,7 +11,9 @@
 
 ## Authentication
 
-The daemon is intended to bind to localhost and currently requires no authentication.
+The daemon is intended to bind to localhost. The first-party loopback browser app uses the local origin boundary and does not need to send an API token.
+
+Local integration surfaces such as `/mcp` require a managed bearer token. Create one with `POST /integration-tokens`, store the returned token immediately, and send it as `Authorization: Bearer <token>`. Regular REST routes remain tokenless for the first-party app, but if a client presents an `Authorization` header it must be a valid integration token. List responses only include redacted token prefixes. Missing required tokens, invalid tokens, rotated tokens, or revoked tokens return `401` with `application/problem+json` and a `WWW-Authenticate` bearer challenge.
 
 ## Response Conventions
 
@@ -1223,19 +1225,100 @@ Responses:
 | `400` | application/json | `LegacyError` | Invalid format |
 | `422` | application/json | `LegacyError` | Invalid read_later filter |
 
+### Integrations
+
+#### GET /integration-tokens
+
+List managed local integration tokens with secret values redacted.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `IntegrationTokenListResponse` | Integration tokens |
+
+#### POST /integration-tokens
+
+Create a managed bearer token for an explicit local integration client.
+
+The full token is returned only once. Store it in the client and use it as an Authorization bearer token. The JSON body is optional; omit it to create a token named `Local integration`.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `IntegrationTokenCreateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | User-visible integration client name |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `201` | application/json | `IntegrationTokenCreateResponse` | Integration token created |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `415` | application/problem+json | `ProblemDetails` | Request body is not application/json |
+| `422` | application/problem+json | `ProblemDetails` | Invalid token name |
+
+Examples:
+
+**Create an integration token**
+
+```bash
+curl -X POST http://127.0.0.1:3210/integration-tokens \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Raycast MCP"}'
+```
+
+#### POST /integration-tokens/:id/rotate
+
+Rotate an active integration token and return the new bearer token once.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `IntegrationTokenCreateResponse` | Integration token rotated |
+| `404` | application/problem+json | `ProblemDetails` | Active integration token not found |
+
+#### DELETE /integration-tokens/:id
+
+Revoke an integration token.
+
+Path parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | id path parameter |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `204` | - | - | Integration token revoked |
+| `404` | application/problem+json | `ProblemDetails` | Integration token not found |
+
 ### MCP
 
 #### ALL /mcp
 
 Handle MCP Streamable HTTP transport requests.
 
-The daemon creates a fresh MCP server and transport for each request.
+The daemon creates a fresh MCP server and transport for each request. MCP is a local integration surface and requires `Authorization: Bearer <integration-token>`.
 
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json or text/event-stream | - | MCP transport response |
+| `401` | application/problem+json | `ProblemDetails` | Missing, invalid, rotated, or revoked integration token |
 | `500` | application/json | `McpErrorResponse` | MCP request failed |
 
 Examples:
@@ -1244,6 +1327,7 @@ Examples:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/mcp \
+  -H "Authorization: Bearer limp_it_example" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}'
 ```
@@ -2583,6 +2667,64 @@ Response data
 | `opened_count` | integer | yes | Number of user-triggered opens |
 | `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `created_at` | string | yes | Creation timestamp |
+
+### IntegrationTokenRecord
+
+Managed local integration token metadata. Full bearer token values are returned only at creation or rotation.
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Integration token ID |
+| `name` | string | yes | User-visible integration client name |
+| `token_prefix` | string | yes | Redacted token prefix for display and support |
+| `created_at` | string | yes | Token creation timestamp |
+| `last_used_at` | string \| null | yes | Most recent successful token use timestamp |
+| `revoked_at` | string \| null | yes | Token revocation timestamp |
+
+### IntegrationTokenCreateRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | User-visible integration client name |
+
+### IntegrationTokenCreateResult
+
+One-time integration token creation or rotation result
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `token` | string | yes | Full bearer token. Store it now; it is never returned by list endpoints. |
+| `record` | IntegrationTokenRecord | yes |  |
+| `record.id` | string | yes | Integration token ID |
+| `record.name` | string | yes | User-visible integration client name |
+| `record.token_prefix` | string | yes | Redacted token prefix for display and support |
+| `record.created_at` | string | yes | Token creation timestamp |
+| `record.last_used_at` | string \| null | yes | Most recent successful token use timestamp |
+| `record.revoked_at` | string \| null | yes | Token revocation timestamp |
+
+### IntegrationTokenCreateResponse
+
+Integration token creation response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | IntegrationTokenCreateResult | yes |  |
+| `data.token` | string | yes | Full bearer token. Store it now; it is never returned by list endpoints. |
+| `data.record` | IntegrationTokenRecord | yes |  |
+| `data.record.id` | string | yes | Integration token ID |
+| `data.record.name` | string | yes | User-visible integration client name |
+| `data.record.token_prefix` | string | yes | Redacted token prefix for display and support |
+| `data.record.created_at` | string | yes | Token creation timestamp |
+| `data.record.last_used_at` | string \| null | yes | Most recent successful token use timestamp |
+| `data.record.revoked_at` | string \| null | yes | Token revocation timestamp |
+
+### IntegrationTokenListResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | array<IntegrationTokenRecord> | yes | Integration token records |
 
 ### McpErrorResponse
 

@@ -1154,6 +1154,31 @@ const schemas = {
       "created_at",
     ]
   ),
+  IntegrationTokenRecord: objectSchema(
+    {
+      id: stringSchema("Integration token ID"),
+      name: stringSchema("User-visible integration client name"),
+      token_prefix: stringSchema("Redacted token prefix for display and support"),
+      created_at: stringSchema("Token creation timestamp", { format: "date-time" }),
+      last_used_at: nullable(stringSchema("Most recent successful token use timestamp", { format: "date-time" })),
+      revoked_at: nullable(stringSchema("Token revocation timestamp", { format: "date-time" })),
+    },
+    ["id", "name", "token_prefix", "created_at", "last_used_at", "revoked_at"],
+    "Managed local integration token metadata. Full bearer token values are returned only at creation or rotation."
+  ),
+  IntegrationTokenCreateRequest: objectSchema({
+    name: stringSchema("User-visible integration client name", { maxLength: 120 }),
+  }),
+  IntegrationTokenCreateResult: objectSchema(
+    {
+      token: stringSchema("Full bearer token. Store it now; it is never returned by list endpoints."),
+      record: ref("IntegrationTokenRecord"),
+    },
+    ["token", "record"],
+    "One-time integration token creation or rotation result"
+  ),
+  IntegrationTokenCreateResponse: envelope(ref("IntegrationTokenCreateResult"), "Integration token creation response"),
+  IntegrationTokenListResponse: envelope(arrayOf(ref("IntegrationTokenRecord"), "Integration token records")),
   McpErrorResponse: objectSchema({ error: stringSchema("MCP failure message") }, ["error"]),
 } as const satisfies ApiSchemaMap;
 
@@ -1902,20 +1927,73 @@ export const apiContract = {
       },
     },
     {
+      method: "GET",
+      path: "/integration-tokens",
+      tag: "Integrations",
+      summary: "List managed local integration tokens with secret values redacted.",
+      responses: { "200": jsonResponse("Integration tokens", ref("IntegrationTokenListResponse")) },
+    },
+    {
+      method: "POST",
+      path: "/integration-tokens",
+      tag: "Integrations",
+      summary: "Create a managed bearer token for an explicit local integration client.",
+      description:
+        "The full token is returned only once. Store it in the client and use it as an Authorization bearer token. The JSON body is optional; omit it to create a token named `Local integration`.",
+      request: { body: { contentType: "application/json", schema: ref("IntegrationTokenCreateRequest") } },
+      responses: {
+        "201": jsonResponse("Integration token created", ref("IntegrationTokenCreateResponse")),
+        "400": problemResponse("Malformed JSON"),
+        "415": problemResponse("Request body is not application/json"),
+        "422": problemResponse("Invalid token name"),
+      },
+      examples: [
+        {
+          title: "Create an integration token",
+          request:
+            'curl -X POST http://127.0.0.1:3210/integration-tokens \\\n  -H "Content-Type: application/json" \\\n  -d \'{"name":"Raycast MCP"}\'',
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/integration-tokens/:id/rotate",
+      tag: "Integrations",
+      summary: "Rotate an active integration token and return the new bearer token once.",
+      request: { pathParams: idParam() },
+      responses: {
+        "200": jsonResponse("Integration token rotated", ref("IntegrationTokenCreateResponse")),
+        "404": problemResponse("Active integration token not found"),
+      },
+    },
+    {
+      method: "DELETE",
+      path: "/integration-tokens/:id",
+      tag: "Integrations",
+      summary: "Revoke an integration token.",
+      request: { pathParams: idParam() },
+      responses: {
+        "204": noContentResponse("Integration token revoked"),
+        "404": problemResponse("Integration token not found"),
+      },
+    },
+    {
       method: "ALL",
       path: "/mcp",
       tag: "MCP",
       summary: "Handle MCP Streamable HTTP transport requests.",
-      description: "The daemon creates a fresh MCP server and transport for each request.",
+      description:
+        "The daemon creates a fresh MCP server and transport for each request. MCP is a local integration surface and requires `Authorization: Bearer <integration-token>`.",
       responses: {
         "200": { description: "MCP transport response", contentType: "application/json or text/event-stream" },
+        "401": problemResponse("Missing, invalid, rotated, or revoked integration token"),
         "500": jsonResponse("MCP request failed", ref("McpErrorResponse")),
       },
       examples: [
         {
           title: "Call the MCP endpoint",
           request:
-            'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}\'',
+            'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Authorization: Bearer limp_it_example" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}\'',
         },
       ],
     },

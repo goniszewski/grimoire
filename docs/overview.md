@@ -140,7 +140,7 @@ Integration points:
 - REST API on `http://127.0.0.1:3210`.
 - Generated API documentation in [../API.md](../API.md).
 - Source API contract in `daemon/src/api/contract.ts`.
-- Streamable HTTP MCP endpoint at `/mcp` with tools for bookmark search, reading, listing, creation, and category listing.
+- Streamable HTTP MCP endpoint at `/mcp` protected by managed local integration bearer tokens, with tools for bookmark search, reading, listing, creation, and category listing.
 
 ## User Flows
 
@@ -424,10 +424,10 @@ erDiagram
 
 ### Security Model
 
-- The daemon API has no authentication layer.
+- The first-party loopback browser app remains tokenless; MCP and future local integration surfaces use managed bearer tokens.
 - The supported network posture is loopback-only, typically `127.0.0.1:3210`.
 - Docker examples intentionally bind the host port to `127.0.0.1`.
-- Public reverse-proxy deployment requires an external authenticated tunnel, VPN, or reverse proxy.
+- Public reverse-proxy deployment still requires an external authenticated tunnel, VPN, or reverse proxy because the general REST API is loopback-trusted.
 - The in-app lock is a local browser convenience, not daemon-level access control.
 - The route-level threat model, local integration boundaries, and public-network
   release gates are documented in [security-boundaries.md](./security-boundaries.md).

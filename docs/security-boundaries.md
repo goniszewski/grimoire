@@ -26,10 +26,13 @@ The supported default posture is:
 - Data ownership: a single local user profile and a local SQLite database under
   the configured `DATA_DIR`.
 
-The daemon currently has no authentication layer. That is acceptable only
-inside the trusted loopback boundary. Any process on the same machine that can
-reach the loopback port can call the API, so OS account security and local
-process trust remain part of the threat model.
+The daemon now has a scoped authentication layer for explicit local integration
+surfaces such as MCP. The first-party loopback browser app remains tokenless
+inside the local origin boundary. General REST routes are still loopback-only,
+and tokenless for first-party use, but presented `Authorization` headers are
+validated as integration bearer tokens. Any process on the same machine that can
+reach the loopback port remains in the local trust model unless a route is
+explicitly protected by integration token middleware.
 
 ## In Scope
 
@@ -44,7 +47,7 @@ These controls are in scope:
 
 - Keeping loopback binding as the default secure mode.
 - Conservative browser origin and CORS handling.
-- Future bearer-token authentication for local non-browser integration clients.
+- Bearer-token authentication for local non-browser integration clients.
 - Secret redaction in Settings, diagnostics, logs, and backups.
 - Explicit user setup for integrations that receive tokens.
 - Release checklist gates that block accidental public exposure.
@@ -69,7 +72,7 @@ operator-owned wrapper, not a Little Imp public-server mode.
 | Boundary | Assets | Current trust assumption | Required controls |
 | --- | --- | --- | --- |
 | Browser UI to daemon | Bookmarks, notes, categories, tags, settings, backups | First-party loopback browser origins are trusted | Unsafe browser requests require an allowed loopback `Origin`; non-loopback configured CORS origins are ignored |
-| Local non-browser clients to daemon | API and MCP operations | Explicit same-machine clients are intended; untrusted local processes remain a known risk until token auth exists | Current routes are loopback-only; TASK-102 must add bearer tokens before broader integration use |
+| Local non-browser clients to daemon | API and MCP operations | Explicit same-machine clients are intended; untrusted local processes remain part of the loopback trust model | MCP and future integration-specific routes require managed bearer tokens; general REST routes remain loopback-only unless separately protected |
 | Daemon to SQLite | Bookmark library, content, embeddings, jobs, timeline, settings references | Local daemon owns the database | SQLite remains under `DATA_DIR`; migrations preserve user data |
 | Daemon to filesystem | Backups, logs, settings, restore rollbacks | Local user controls filesystem permissions | Path traversal checks, safe backup names, checksum verification, rollback directories |
 | Daemon to fetched bookmark URLs | Extracted content and metadata | User-supplied public URLs can be hostile | Private and loopback host blocking, request timeouts, response size and content-type limits |
@@ -81,12 +84,13 @@ operator-owned wrapper, not a Little Imp public-server mode.
 
 ### Local process access
 
-Any local process that can reach `127.0.0.1:3210` can call the daemon API while
-the daemon is unauthenticated. On multi-user machines, that can include
+Any local process that can reach `127.0.0.1:3210` can call unprotected daemon
+REST routes. Protected integration surfaces, including `/mcp`, require managed
+bearer tokens, but general loopback process trust remains part of the
+local-first threat model. On multi-user machines, local access can include
 processes outside the active desktop session if the host allows them to connect
-to loopback. This is a known local-first limitation. Users should protect their
-OS account, avoid untrusted local processes, and not expose the daemon socket to
-other machines.
+to loopback. Users should protect their OS account, avoid untrusted local
+processes, and not expose the daemon socket to other machines.
 
 ### Malicious websites
 
@@ -98,9 +102,9 @@ read-only and must not perform state-changing operations.
 ### Public-network exposure
 
 Public-network exposure is not approved. If Little Imp is reachable from other
-machines without an authenticated wrapper, the unauthenticated API, MCP,
-diagnostics, backup, restore, update, and Settings routes become sensitive
-remote attack surface.
+machines without an authenticated wrapper, tokenless REST routes and sensitive
+route families such as MCP, diagnostics, backup, restore, update, and Settings
+become remote attack surface.
 
 ### Server-side request forgery
 
@@ -133,17 +137,20 @@ settings backups, diagnostics, and logs must continue to redact or omit them.
 | Backup and restore | Loopback-only high-impact data operations with checksum, path, and concurrency guards | Require strong auth, reauthentication or confirmation, CSRF protection, least-privilege file access, and reviewed remote restore behavior |
 | Diagnostics | Loopback-only local support payload with redaction | Require authentication and user-visible export controls; must not expose contents, notes, vectors, or secrets |
 | Settings | Loopback-only runtime configuration; API keys are write-only/redacted | Require authentication, authorization, CSRF protection, and secret-handling review |
-| MCP | Loopback-only local integration endpoint | Require integration tokens at minimum; public MCP requires a separate security design |
+| MCP | Loopback-only local integration endpoint protected by managed bearer tokens | Public MCP requires a separate security design |
 | Updates | Read-only daemon check rejects private/loopback sources; CLI install verifies artifacts | Public mode must preserve source restrictions, artifact verification, explicit user control, and rollback guidance |
 
 ## Local Integration Controls
 
-TASK-102 and TASK-106 should start from these controls:
+TASK-102 implements the bearer-token baseline for MCP. TASK-106 should continue
+from these controls for browser origin and CORS policy:
 
-- Bearer tokens are for explicit local non-browser integration clients.
+- Bearer tokens are for explicit local non-browser integration clients. They
+  are currently required by `/mcp` and may be presented to regular REST routes
+  for validation without becoming mandatory for the first-party app.
 - Token setup must be deliberate and visible to the user.
-- Tokens must be stored locally, redacted from diagnostics/logs/settings output,
-  and removable by the user.
+- Tokens must be stored locally as hashes, redacted from list output,
+  diagnostics, logs, and settings output, rotatable, and revocable.
 - First-party loopback browser behavior may remain tokenless only while the
   daemon stays loopback-bound and unsafe browser writes remain origin-checked.
 - CORS allowlists must stay loopback-only unless a future public-network design

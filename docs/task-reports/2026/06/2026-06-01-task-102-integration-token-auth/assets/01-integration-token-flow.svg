@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-102 integration token authentication flow</title>
+  <desc id="desc">Diagram showing token creation, hashed local storage, bearer token use for MCP, optional REST validation, and rejection for invalid, rotated, or revoked tokens.</desc>
+  <rect width="1280" height="640" fill="#f7f7fa"/>
+  <rect x="54" y="52" width="1172" height="536" rx="18" fill="#ffffff" stroke="#dedfec"/>
+  <text x="90" y="110" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">Integration Token Auth</text>
+  <text x="90" y="146" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">Scoped bearer tokens for local clients while first-party loopback UI stays tokenless.</text>
+
+  <g transform="translate(90 210)">
+    <rect width="230" height="132" rx="12" fill="#eef6ff" stroke="#0f7fbf"/>
+    <text x="24" y="42" fill="#0b5c87" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Create Token</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">POST /integration-tokens</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Returns full token once</text>
+  </g>
+
+  <path d="M334 276 H442" stroke="#626475" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <g transform="translate(456 210)">
+    <rect width="250" height="132" rx="12" fill="#f3efff" stroke="#7c3aed"/>
+    <text x="24" y="42" fill="#5b21b6" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Store Hash</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">SQLite integration_tokens</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Hash + redacted prefix only</text>
+  </g>
+
+  <path d="M720 276 H828" stroke="#626475" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <g transform="translate(842 210)">
+    <rect width="300" height="132" rx="12" fill="#eefbf3" stroke="#15803d"/>
+    <text x="24" y="42" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Use Token</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Authorization: Bearer ...</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Required by /mcp</text>
+  </g>
+
+  <g transform="translate(90 402)">
+    <rect width="330" height="96" rx="12" fill="#fff7ed" stroke="#c2410c"/>
+    <text x="24" y="39" fill="#9a3412" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">Invalid / Rotated / Revoked</text>
+    <text x="24" y="68" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">401 problem+json + WWW-Authenticate</text>
+  </g>
+
+  <g transform="translate(475 402)">
+    <rect width="330" height="96" rx="12" fill="#f8fafc" stroke="#64748b"/>
+    <text x="24" y="39" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">First-Party App</text>
+    <text x="24" y="68" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Loopback browser routes stay tokenless</text>
+  </g>
+
+  <g transform="translate(860 402)">
+    <rect width="282" height="96" rx="12" fill="#f0fdfa" stroke="#0f766e"/>
+    <text x="24" y="39" fill="#115e59" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">REST Clients</text>
+    <text x="24" y="68" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Presented tokens are validated</text>
+  </g>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#626475"/>
+    </marker>
+  </defs>
+</svg>
