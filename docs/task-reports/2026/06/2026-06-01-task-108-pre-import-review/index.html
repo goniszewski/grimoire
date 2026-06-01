@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre Import Review - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --ink: #111827;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --blue: #2563eb;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(15, 23, 42, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--blue); }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+.breadcrumbs {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { color: inherit; text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 700;
+}
+.hero-shot, .shot-grid figure {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.hero-shot {
+  margin: 28px 0;
+}
+.hero-shot img, .shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+figcaption {
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+  border-top: 1px solid var(--line);
+}
+section {
+  margin-top: 24px;
+}
+h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #334155;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+ul {
+  margin: 0;
+  padding-left: 20px;
+}
+code {
+  border-radius: 5px;
+  background: #eef2f7;
+  padding: 2px 5px;
+}
+.callout {
+  border-left: 4px solid var(--green);
+  background: #f0fdf4;
+  padding: 12px 14px;
+  color: #14532d;
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+}
+details {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 28px 0;
+  }
+  .task-card { padding: 20px; }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">June 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Pre Import Review</h1>
+      <div class="meta-row">
+        <span>June 1, 2026</span>
+        <span>TASK-108</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-preview-desktop.png" alt="Desktop import preview dialog showing duplicate policies, row classifications, folders, tags, and warnings">
+      <figcaption>After: selected bookmark files are previewed with row counts and duplicate policy choices before any import commit runs.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The frontend import dialog committed a selected Netscape bookmark file immediately. The daemon already exposed preview and duplicate-policy endpoints, but users could not inspect detected folders, tags, duplicates, invalid rows, or private URL skips before data changed.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>TASK-108 requires a cancelable pre-import review flow. Users need to see the estimated create, merge, restore, and skip actions and choose the approved TASK-120 duplicate policy before the existing streaming commit phase begins.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Changed <code>ImportDialog</code> from immediate upload to a preview-first state using <code>POST /import/preview</code>.</li>
+        <li>Added duplicate policy controls for active, archived, and trashed duplicates, with preview estimates refreshed when policy changes.</li>
+        <li>Added summary cards, row-classification breakdown, detected folder/tag chips, parser warnings, and a bounded row table.</li>
+        <li>Guarded pending preview requests so stale responses cannot repopulate the dialog after it closes.</li>
+        <li>Kept commit behavior on the existing <code>POST /import</code> plus SSE progress flow, now reporting created, merged, restored, and skipped counts in the done state.</li>
+        <li>Updated the Playwright mock daemon and import/export smoke test to assert preview happens before commit.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p class="callout">Selecting a file no longer mutates the library. The user can cancel after preview, adjust duplicate policy choices, or confirm the import with the same policy that produced the estimates.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>npm run test -- src/components/ImportDialog.test.tsx src/lib/api.test.ts</code> passed.</li>
+        <li><code>npm run test:e2e -- e2e/business-requirements.spec.ts</code> passed.</li>
+        <li><code>npm run lint</code> passed with existing Fast Refresh warnings only.</li>
+        <li><code>npm run type-check</code> passed.</li>
+        <li><code>npm run build</code> passed with existing Browserslist and chunk-size warnings.</li>
+        <li><code>git diff --check</code> passed.</li>
+        <li>Captured desktop and narrow visual states against an isolated loopback daemon on port <code>33210</code>.</li>
+      </ul>
+    </section>
+
+    <details open>
+      <summary>Additional Screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/01-after-preview-desktop.png" alt="Desktop import preview dialog with duplicate rows and policy controls">
+          <figcaption>Desktop: duplicate policy controls and row-level preview fit in the full dialog.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/02-after-preview-mobile.png" alt="Narrow import preview dialog with single-column summary cards and detected row counts">
+          <figcaption>Narrow: summary cards collapse to one column and header copy remains readable.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The dialog stores the selected file after preview so policy changes can re-run the daemon preview without committing. Preview responses are sequence-guarded so a slow response from a closed dialog cannot overwrite the reset state. The generated API DTO type is intentionally narrowed into a shallow local view model inside the component to avoid deep TypeScript instantiation while keeping the API client contract as the source of truth.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>src/components/ImportDialog.tsx</code></li>
+        <li><code>src/components/ImportDialog.test.tsx</code></li>
+        <li><code>e2e/mock-daemon.ts</code></li>
+        <li><code>e2e/business-requirements.spec.ts</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

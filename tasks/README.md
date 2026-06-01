@@ -121,7 +121,7 @@ tasks/
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
 | TASK-106 | [Integration CORS And Origin Controls](done/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | done |
 | TASK-107 | [Preserve Import Folder Hierarchy](done/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | done |
-| TASK-108 | [Pre Import Review](backlog/TASK-108-pre-import-review.md) | Grimoire parity | high | backlog |
+| TASK-108 | [Pre Import Review](done/TASK-108-pre-import-review.md) | Grimoire parity | high | done |
 | TASK-109 | [Import Category And Tag Remapping](backlog/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | backlog |
 | TASK-110 | [Import Result Report](backlog/TASK-110-import-result-report.md) | Grimoire parity | medium | backlog |
 | TASK-111 | [Export Parity Fields](backlog/TASK-111-export-parity-fields.md) | Grimoire parity | medium | backlog |
@@ -253,6 +253,10 @@ categories, empty folder creation, duplicate folder names scoped by parent,
 bookmark category assignment, generated import summary/progress fields, and
 focused daemon import coverage for nested folders, empty folders, duplicates,
 re-import behavior, and category route limit parity.
+TASK-108 is complete with a cancelable preview-first import dialog, TASK-120
+duplicate policy controls, detected folders/tags/duplicate/invalid/private row
+summaries, confirm-before-commit behavior, focused frontend tests, e2e smoke
+coverage, and visual reporting.
 TASK-120 is complete with non-mutating import preview classification, shared
 duplicate policy semantics for active merge and archived/trashed restore-merge,
 invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API

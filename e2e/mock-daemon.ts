@@ -80,6 +80,7 @@ export interface MockDaemonState {
   backupDestination: BackupDestinationDto;
   requests: {
     health: number;
+    importPreviews: number;
     imports: number;
     exportFormats: string[];
     exportRequests: Array<{ format: string; read_later: string | null }>;
@@ -345,7 +346,12 @@ async function handleImportProgress(route: Route) {
   const event: ImportProgressEventDto = {
     queued: 1,
     skipped: 0,
+    merged: 0,
+    restored: 0,
     total: 1,
+    folders: 0,
+    categoriesCreated: 0,
+    categoriesReused: 0,
     done: true,
     error: null,
   };
@@ -466,6 +472,7 @@ export async function installMockDaemon(
     },
     requests: {
       health: 0,
+      importPreviews: 0,
       imports: 0,
       exportFormats: [],
       exportRequests: [],
@@ -507,13 +514,55 @@ export async function installMockDaemon(
     }
     if (pathname === "/search") return handleSearch(route, state, url);
 
+    if (pathname === "/import/preview" && method === "POST") {
+      state.requests.importPreviews += 1;
+      return fulfillJson(route, {
+        data: {
+          duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
+          summary: {
+            totalRows: 1,
+            importableRows: 1,
+            new: 1,
+            activeDuplicates: 0,
+            archivedDuplicates: 0,
+            trashedDuplicates: 0,
+            invalidUrls: 0,
+            privateUrls: 0,
+            created: 1,
+            merged: 0,
+            restored: 0,
+            skipped: 0,
+          },
+          folders: [],
+          tags: [],
+          warnings: [],
+          rows: [
+            {
+              classification: "new",
+              action: "create",
+              url: "https://example.com/imported",
+              title: "Imported",
+              notes: null,
+              tags: [],
+              folders: [],
+              existingBookmarkId: null,
+              existingState: null,
+              skipReason: null,
+            },
+          ],
+        },
+      });
+    }
+
     if (pathname === "/import" && method === "POST") {
       state.requests.imports += 1;
       return fulfillJson(route, {
         data: {
           importId: "import-smoke-1",
           total: 1,
+          folders: 0,
           warnings: 0,
+          duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
           progressUrl: `${BASE}/import/import-smoke-1/progress`,
         },
       });

@@ -42,7 +42,7 @@ test.describe("Documented business requirements smoke", () => {
 
     await page.getByRole("button", { name: /^Import$/ }).click();
     await expect(page.getByRole("heading", { name: /import bookmarks/i })).toBeVisible();
-    await expect(page.getByText(/netscape bookmark html file/i)).toBeVisible();
+    await expect(page.getByText(/drop your bookmark file here/i)).toBeVisible();
 
     await page.locator('input[type="file"]').setInputFiles({
       name: "bookmarks.html",
@@ -52,7 +52,14 @@ test.describe("Documented business requirements smoke", () => {
       ),
     });
 
-    await expect(page.getByText(/1 bookmark queued for processing/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/import preview/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/1 new/i).first()).toBeVisible();
+    await expect.poll(() => daemon.requests.importPreviews).toBe(1);
+
+    await page.getByRole("button", { name: /import 1 item/i }).click();
+
+    await expect(page.getByText(/import complete/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/1 created/i)).toBeVisible();
     await expect.poll(() => daemon.requests.imports).toBe(1);
     await page.getByRole("button", { name: /^Done$/ }).click();
 
