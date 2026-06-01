@@ -29,11 +29,74 @@ export interface RouteImplementationDrift {
 export interface ApiDocOutputs {
   markdown: string;
   contractJson: string;
+  openApiJson: string;
 }
 
 export interface ApiDocOutputPaths {
   markdown: string;
   contractJson: string;
+  openApiJson: string;
+}
+
+type ApiDocOutputKind = keyof ApiDocOutputs;
+
+interface OpenApiDocument {
+  openapi: "3.0.3";
+  info: {
+    title: string;
+    version: string;
+    description: string;
+  };
+  servers: Array<{ url: string }>;
+  tags: Array<{ name: string }>;
+  paths: Record<string, Record<string, OpenApiOperation>>;
+  components: {
+    schemas: Record<string, OpenApiSchema>;
+    securitySchemes: Record<string, OpenApiSecurityScheme>;
+  };
+  "x-little-imp-contract": {
+    schemaVersion: ApiContractDocument["schemaVersion"];
+    source: string;
+  };
+}
+
+type OpenApiSchema = Record<string, unknown>;
+
+interface OpenApiSecurityScheme {
+  type: "http";
+  scheme: "bearer";
+  bearerFormat: string;
+  description: string;
+}
+
+interface OpenApiOperation {
+  tags: string[];
+  summary: string;
+  description?: string;
+  operationId: string;
+  parameters?: OpenApiParameter[];
+  requestBody?: OpenApiRequestBody;
+  responses: Record<string, OpenApiResponse>;
+  security?: Array<Record<string, string[]>>;
+  "x-little-imp-source-method": HttpMethod;
+}
+
+interface OpenApiParameter {
+  name: string;
+  in: "path" | "query";
+  required: boolean;
+  description?: string;
+  schema: OpenApiSchema;
+}
+
+interface OpenApiRequestBody {
+  description?: string;
+  content: Record<string, { schema: OpenApiSchema }>;
+}
+
+interface OpenApiResponse {
+  description: string;
+  content?: Record<string, { schema: OpenApiSchema }>;
 }
 
 interface FieldRow {
@@ -76,24 +139,34 @@ export function buildApiContractDocument<const Contract extends ApiContract>(
 
 export function buildApiDocOutputs(contract: ApiContract): ApiDocOutputs {
   const document = buildApiContractDocument(contract);
+  const openApiDocument = buildOpenApiDocument(contract);
   return {
     markdown: buildApiMarkdown(document),
     contractJson: `${JSON.stringify(document, null, 2)}\n`,
+    openApiJson: `${JSON.stringify(openApiDocument, null, 2)}\n`,
   };
 }
 
-export function writeApiDocOutputs(outputs: ApiDocOutputs, paths: ApiDocOutputPaths): void {
-  writeFileSync(paths.markdown, outputs.markdown);
-  writeFileSync(paths.contractJson, outputs.contractJson);
+export function writeApiDocOutputs(
+  outputs: ApiDocOutputs,
+  paths: ApiDocOutputPaths,
+  kinds: readonly ApiDocOutputKind[] = ["markdown", "contractJson", "openApiJson"]
+): void {
+  for (const kind of kinds) {
+    writeFileSync(paths[kind], outputs[kind]);
+  }
 }
 
-export function findApiDocDrift(outputs: ApiDocOutputs, paths: ApiDocOutputPaths): string[] {
+export function findApiDocDrift(
+  outputs: ApiDocOutputs,
+  paths: ApiDocOutputPaths,
+  kinds: readonly ApiDocOutputKind[] = ["markdown", "contractJson", "openApiJson"]
+): string[] {
   const drift: string[] = [];
-  if (!existsSync(paths.markdown) || readFileSync(paths.markdown, "utf8") !== outputs.markdown) {
-    drift.push(paths.markdown);
-  }
-  if (!existsSync(paths.contractJson) || readFileSync(paths.contractJson, "utf8") !== outputs.contractJson) {
-    drift.push(paths.contractJson);
+  for (const kind of kinds) {
+    if (!existsSync(paths[kind]) || readFileSync(paths[kind], "utf8") !== outputs[kind]) {
+      drift.push(paths[kind]);
+    }
   }
   return drift;
 }
@@ -121,8 +194,10 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("");
   lines.push(`- Base URL: \`${document.baseUrl}\``);
   lines.push("- Machine-readable contract: [`docs/api-contract.json`](./docs/api-contract.json)");
+  lines.push("- OpenAPI output: [`docs/openapi.json`](./docs/openapi.json)");
   lines.push("- Regenerate: `npm run docs:api`");
   lines.push("- Drift check: `npm run docs:api:check`");
+  lines.push("- OpenAPI-only commands: `npm run docs:openapi` and `npm run docs:openapi:check`");
   lines.push("");
   lines.push("## Authentication");
   lines.push("");
@@ -135,6 +210,16 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("- Most JSON endpoints return `{ \"data\": ... }` envelopes.");
   lines.push("- Paginated endpoints include a `pagination` object with `total`, `limit`, `offset`, and `has_more`.");
   lines.push("- Newer route validation errors use `application/problem+json`; some backup/export routes still return `{ \"error\": string }`.");
+  lines.push("");
+  lines.push("## OpenAPI Output");
+  lines.push("");
+  lines.push("`docs/openapi.json` is generated from the same daemon-owned contract for local client tooling that expects an OpenAPI 3.0 document.");
+  lines.push("");
+  lines.push("Limitations:");
+  lines.push("");
+  lines.push("- Hono `ALL` routes are represented by the primary client method `POST` with `x-little-imp-source-method: \"ALL\"`.");
+  lines.push("- Mixed content responses such as JSON/CSV exports share the closest generated schema; CSV, media, and SSE clients should still use the documented content type.");
+  lines.push("- First-party REST routes remain local-origin routes. The OpenAPI bearer scheme documents managed local integration tokens, and MCP marks that scheme as required.");
   lines.push("");
   lines.push("## Endpoints");
   lines.push("");
@@ -176,6 +261,225 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
+}
+
+export function buildOpenApiDocument(contract: ApiContract): OpenApiDocument {
+  const paths: OpenApiDocument["paths"] = {};
+
+  for (const route of contract.routes) {
+    const openApiPath = toOpenApiPath(route.path);
+    const pathItem = paths[openApiPath] ?? {};
+    paths[openApiPath] = pathItem;
+
+    for (const method of toOpenApiMethods(route.method)) {
+      pathItem[method] = buildOpenApiOperation(route, method, contract.schemas);
+    }
+  }
+
+  return {
+    openapi: "3.0.3",
+    info: {
+      title: contract.name,
+      version: contract.version,
+      description: contract.description,
+    },
+    servers: [{ url: contract.baseUrl }],
+    tags: [...new Set(contract.routes.map((route) => route.tag))].map((name) => ({ name })),
+    paths,
+    components: {
+      schemas: Object.fromEntries(
+        Object.entries(contract.schemas).map(([name, schema]) => [name, toOpenApiSchema(schema)])
+      ),
+      securitySchemes: {
+        localIntegrationBearer: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "Little Imp integration token",
+          description: "Managed local integration bearer token created with POST /integration-tokens.",
+        },
+      },
+    },
+    "x-little-imp-contract": {
+      schemaVersion: 1,
+      source: "daemon/src/api/contract.ts",
+    },
+  };
+}
+
+function buildOpenApiOperation(
+  route: ApiRoute,
+  openApiMethod: string,
+  schemas: ApiSchemaMap
+): OpenApiOperation {
+  const parameters = [
+    ...openApiParametersFromSchema(route.request?.pathParams, "path", schemas),
+    ...openApiParametersFromSchema(route.request?.query, "query", schemas),
+  ];
+  const operation: OpenApiOperation = {
+    tags: [route.tag],
+    summary: route.summary,
+    ...(route.description ? { description: route.description } : {}),
+    operationId: buildOperationId(openApiMethod, route.path),
+    ...(parameters.length > 0 ? { parameters } : {}),
+    ...(route.request?.body ? { requestBody: buildOpenApiRequestBody(route.request.body, schemas) } : {}),
+    responses: Object.fromEntries(
+      Object.entries(route.responses).map(([status, response]) => [
+        status,
+        buildOpenApiResponse(response, schemas),
+      ])
+    ),
+    ...(route.path === "/mcp" ? { security: [{ localIntegrationBearer: [] }] } : {}),
+    "x-little-imp-source-method": route.method,
+  };
+
+  return operation;
+}
+
+function openApiParametersFromSchema(
+  schema: ApiObjectSchema | undefined,
+  location: "path" | "query",
+  schemas: ApiSchemaMap
+): OpenApiParameter[] {
+  if (!schema) return [];
+
+  const required = new Set(schema.required ?? []);
+  return Object.entries(schema.properties).map(([name, property]) => ({
+    name,
+    in: location,
+    required: location === "path" ? true : required.has(name),
+    ...(property.description ? { description: property.description } : {}),
+    schema: toOpenApiSchema(property, schemas),
+  }));
+}
+
+function buildOpenApiRequestBody(
+  body: NonNullable<NonNullable<ApiRoute["request"]>["body"]>,
+  schemas: ApiSchemaMap
+): OpenApiRequestBody {
+  return {
+    ...(body.description ? { description: body.description } : {}),
+    content: buildOpenApiContent(body.contentType, body.schema, schemas),
+  };
+}
+
+function buildOpenApiResponse(response: ApiResponse, schemas: ApiSchemaMap): OpenApiResponse {
+  return {
+    description: response.description,
+    ...(response.contentType ? { content: buildOpenApiContent(response.contentType, response.schema, schemas) } : {}),
+  };
+}
+
+function buildOpenApiContent(
+  contentType: string,
+  schema: ApiSchema | undefined,
+  schemas: ApiSchemaMap
+): Record<string, { schema: OpenApiSchema }> {
+  return Object.fromEntries(
+    splitContentTypes(contentType).map((mediaType) => [
+      mediaType,
+      { schema: openApiSchemaForContentType(mediaType, schema, schemas) },
+    ])
+  );
+}
+
+function openApiSchemaForContentType(
+  mediaType: string,
+  schema: ApiSchema | undefined,
+  schemas: ApiSchemaMap
+): OpenApiSchema {
+  if (schema && mediaType !== "text/csv") return toOpenApiSchema(schema, schemas);
+  if (mediaType.startsWith("image/")) return { type: "string", format: "binary" };
+  return { type: "string" };
+}
+
+function splitContentTypes(contentType: string): string[] {
+  return contentType.split(/\s+or\s+/).map((part) => part.trim()).filter(Boolean);
+}
+
+function toOpenApiSchema(schema: ApiSchema, schemas?: ApiSchemaMap): OpenApiSchema {
+  if ("ref" in schema) {
+    const refSchema = { $ref: `#/components/schemas/${schema.ref}` };
+    return schema.nullable ? { allOf: [refSchema], nullable: true } : refSchema;
+  }
+  if ("oneOf" in schema) {
+    return withNullable(schema, { oneOf: schema.oneOf.map((item) => toOpenApiSchema(item, schemas)) });
+  }
+  if ("type" in schema && schema.type === "array") {
+    return withNullable(schema, {
+      type: "array",
+      ...(schema.description ? { description: schema.description } : {}),
+      items: toOpenApiSchema(schema.items, schemas),
+    });
+  }
+  if ("type" in schema && schema.type === "object") {
+    const required = schema.required ? [...schema.required] : [];
+    return withNullable(schema, {
+      type: "object",
+      ...(schema.description ? { description: schema.description } : {}),
+      properties: Object.fromEntries(
+        Object.entries(schema.properties).map(([name, property]) => [name, toOpenApiSchema(property, schemas)])
+      ),
+      ...(required.length > 0 ? { required } : {}),
+      additionalProperties:
+        typeof schema.additionalProperties === "object"
+          ? toOpenApiSchema(schema.additionalProperties, schemas)
+          : (schema.additionalProperties ?? false),
+    });
+  }
+  if ("type" in schema) {
+    const converted: OpenApiSchema = {
+      type: schema.type,
+      ...(schema.description ? { description: schema.description } : {}),
+    };
+    copySchemaProperty(schema, converted, "enum");
+    copySchemaProperty(schema, converted, "example");
+    copySchemaProperty(schema, converted, "format");
+    copySchemaProperty(schema, converted, "minLength");
+    copySchemaProperty(schema, converted, "maxLength");
+    copySchemaProperty(schema, converted, "minimum");
+    copySchemaProperty(schema, converted, "maximum");
+    copySchemaProperty(schema, converted, "pattern");
+    return withNullable(schema, converted);
+  }
+  return {};
+}
+
+function copySchemaProperty(schema: ApiSchema, target: OpenApiSchema, property: string): void {
+  const record = schema as Record<string, unknown>;
+  if (record[property] !== undefined) {
+    target[property] = record[property];
+  }
+}
+
+function withNullable(schema: ApiSchema, converted: OpenApiSchema): OpenApiSchema {
+  if (schema.nullable) {
+    return { ...converted, nullable: true };
+  }
+  return converted;
+}
+
+function toOpenApiPath(path: string): string {
+  return path.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
+}
+
+function toOpenApiMethods(method: HttpMethod): string[] {
+  return method === "ALL" ? ["post"] : [method.toLowerCase()];
+}
+
+function buildOperationId(method: string, path: string): string {
+  const words = [method, ...path.split("/").filter(Boolean).map((segment) => segment.replace(/^:/, ""))];
+  return words
+    .map((word, index) => {
+      const cleaned = word.replace(/[^A-Za-z0-9]+/g, " ");
+      const cased = cleaned
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part[0].toUpperCase() + part.slice(1))
+        .join("");
+      if (index === 0) return cased.charAt(0).toLowerCase() + cased.slice(1);
+      return cased;
+    })
+    .join("");
 }
 
 function groupRoutesByTag(routes: ApiRoute[]): Array<[string, ApiRoute[]]> {

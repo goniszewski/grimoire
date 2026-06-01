@@ -52,8 +52,8 @@ Suggested values:
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
 | PAR-021 | Add optional integration-token authentication for non-browser clients while preserving secure loopback defaults. | Critical | Approved | Done | Done: `TASK-102`. |
-| PAR-022 | Generate human-readable API documentation from `docs/api-contract.json`, including request and response examples. | High | Approved | Not started | Backlog: `TASK-103`. |
-| PAR-023 | Add OpenAPI-compatible output for local integration clients. | High | Approved | Not started | Backlog: `TASK-104`. |
+| PAR-022 | Generate human-readable API documentation from `docs/api-contract.json`, including request and response examples. | High | Approved | Done | Done: `TASK-103`. |
+| PAR-023 | Add OpenAPI-compatible output for local integration clients. | High | Approved | Done | Done: `TASK-104`. |
 | PAR-024 | Add a one-click capture endpoint for bookmarklet or extension saves with title, tags, category, notes, and source metadata. | High | Deferred | Not started | Deferred. Current scope is local API integrations only, not bookmarklet/browser-extension capture. Record: `TASK-105`. |
 | PAR-025 | Add Grimoire-compatible endpoint aliases or adapters only where they reduce migration or extension work. | Medium | Rejected | Not started | Not needed for the current parity batch. |
 | PAR-026 | Add CORS/origin policy controls and documentation for integration clients. | High | Approved | Not started | Backlog: `TASK-106`. |

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">OpenAPI contract generation flow</title>
+  <desc id="desc">A flow diagram showing the daemon API contract generating API markdown, contract JSON, OpenAPI JSON, drift checks, and local client tooling.</desc>
+  <rect width="1600" height="900" fill="#f7f7fa"/>
+  <g transform="translate(110 90)">
+    <text x="0" y="0" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="800">TASK-104 OpenAPI Contract Output</text>
+    <text x="0" y="42" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="18">One daemon-owned source now produces human docs, internal JSON, and OpenAPI 3.0 output.</text>
+  </g>
+
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#1e2032" flood-opacity=".12"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto">
+      <path d="M0,0 L14,7 L0,14 Z" fill="#0f7fbf"/>
+    </marker>
+  </defs>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <g transform="translate(110 260)" filter="url(#shadow)">
+      <rect width="310" height="210" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="48" fill="#7c3aed" font-size="14" font-weight="800">SOURCE</text>
+      <text x="24" y="92" fill="#191827" font-size="26" font-weight="800">daemon/src/api/contract.ts</text>
+      <text x="24" y="132" fill="#626475" font-size="17">Routes, schemas, examples,</text>
+      <text x="24" y="160" fill="#626475" font-size="17">responses, parameters, and</text>
+      <text x="24" y="188" fill="#626475" font-size="17">local integration auth notes.</text>
+    </g>
+
+    <path d="M440 365 H575" fill="none" stroke="#0f7fbf" stroke-width="8" marker-end="url(#arrow)"/>
+
+    <g transform="translate(610 170)" filter="url(#shadow)">
+      <rect width="340" height="150" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="44" fill="#0f7fbf" font-size="14" font-weight="800">GENERATED</text>
+      <text x="24" y="84" fill="#191827" font-size="25" font-weight="800">API.md</text>
+      <text x="24" y="118" fill="#626475" font-size="16">Human-readable endpoints and examples.</text>
+    </g>
+
+    <g transform="translate(610 360)" filter="url(#shadow)">
+      <rect width="340" height="150" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="44" fill="#0f7fbf" font-size="14" font-weight="800">GENERATED</text>
+      <text x="24" y="84" fill="#191827" font-size="25" font-weight="800">docs/api-contract.json</text>
+      <text x="24" y="118" fill="#626475" font-size="16">Internal machine-readable contract.</text>
+    </g>
+
+    <g transform="translate(610 550)" filter="url(#shadow)">
+      <rect width="340" height="150" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="44" fill="#15803d" font-size="14" font-weight="800">NEW</text>
+      <text x="24" y="84" fill="#191827" font-size="25" font-weight="800">docs/openapi.json</text>
+      <text x="24" y="118" fill="#626475" font-size="16">OpenAPI 3.0 for local client tooling.</text>
+    </g>
+
+    <path d="M950 245 H1080" fill="none" stroke="#0f7fbf" stroke-width="8" marker-end="url(#arrow)"/>
+    <path d="M950 435 H1080" fill="none" stroke="#0f7fbf" stroke-width="8" marker-end="url(#arrow)"/>
+    <path d="M950 625 H1080" fill="none" stroke="#15803d" stroke-width="8" marker-end="url(#arrow)"/>
+
+    <g transform="translate(1110 245)" filter="url(#shadow)">
+      <rect width="360" height="190" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="48" fill="#c2410c" font-size="14" font-weight="800">CHECKED</text>
+      <text x="24" y="92" fill="#191827" font-size="26" font-weight="800">docs:api:check</text>
+      <text x="24" y="132" fill="#626475" font-size="17">Fails when any generated</text>
+      <text x="24" y="160" fill="#626475" font-size="17">API artifact drifts from</text>
+      <text x="24" y="188" fill="#626475" font-size="17">the source contract.</text>
+    </g>
+
+    <g transform="translate(1110 500)" filter="url(#shadow)">
+      <rect width="360" height="190" rx="8" fill="#ffffff" stroke="#dedfec"/>
+      <text x="24" y="48" fill="#15803d" font-size="14" font-weight="800">NEW COMMAND</text>
+      <text x="24" y="92" fill="#191827" font-size="26" font-weight="800">docs:openapi:check</text>
+      <text x="24" y="132" fill="#626475" font-size="17">OpenAPI-only drift check</text>
+      <text x="24" y="160" fill="#626475" font-size="17">for local integration</text>
+      <text x="24" y="188" fill="#626475" font-size="17">client workflows.</text>
+    </g>
+  </g>
+</svg>

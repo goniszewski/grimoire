@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { apiContract } from "../daemon/src/api/contract";
 import {
   buildApiContractDocument,
+  buildApiDocOutputs,
   buildApiMarkdown,
   findRouteImplementationDrift,
 } from "./api-docs-generator";
@@ -79,6 +80,107 @@ describe("API documentation generator", () => {
       "openai_compatible",
       "none",
     ]);
+  });
+
+  it("emits an OpenAPI document for local integration clients", () => {
+    const outputs = buildApiDocOutputs(apiContract);
+
+    expect(outputs.openApiJson).toBeTypeOf("string");
+
+    const openapi = JSON.parse(outputs.openApiJson);
+    expect(openapi.openapi).toBe("3.0.3");
+    expect(openapi.info).toMatchObject({
+      title: apiContract.name,
+      version: apiContract.version,
+      description: apiContract.description,
+    });
+    expect(openapi.servers).toEqual([{ url: apiContract.baseUrl }]);
+    expect(openapi.components.securitySchemes.localIntegrationBearer).toEqual({
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "Little Imp integration token",
+      description: "Managed local integration bearer token created with POST /integration-tokens.",
+    });
+    expect(openapi.components.schemas.Pagination.required).toEqual([
+      "total",
+      "limit",
+      "offset",
+      "has_more",
+    ]);
+    expect(openapi.components.schemas.Bookmark.properties.title).toMatchObject({
+      type: "string",
+      nullable: true,
+    });
+    expect(openapi.components.schemas.BookmarkDetail.properties.content).toEqual({
+      allOf: [{ $ref: "#/components/schemas/BookmarkContent" }],
+      nullable: true,
+    });
+
+    const emptyRequiredPaths: string[] = [];
+    const collectEmptyRequiredArrays = (value: unknown, path: string): void => {
+      if (Array.isArray(value)) {
+        if (path.endsWith(".required") && value.length === 0) {
+          emptyRequiredPaths.push(path);
+        }
+        value.forEach((item, index) => collectEmptyRequiredArrays(item, `${path}[${index}]`));
+        return;
+      }
+      if (value && typeof value === "object") {
+        for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+          collectEmptyRequiredArrays(child, `${path}.${key}`);
+        }
+      }
+    };
+    collectEmptyRequiredArrays(openapi, "openapi");
+    expect(emptyRequiredPaths).toEqual([]);
+
+    const openApiOperations = new Set(
+      Object.entries(openapi.paths).flatMap(([path, methods]) =>
+        Object.keys(methods as Record<string, unknown>).map((method) => `${method.toUpperCase()} ${path}`)
+      )
+    );
+    const contractOperations = new Set(
+      apiContract.routes.map((route) => {
+        const method = route.method === "ALL" ? "POST" : route.method;
+        const path = route.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
+        return `${method} ${path}`;
+      })
+    );
+
+    expect(openApiOperations).toEqual(contractOperations);
+
+    const bookmarkDetail = openapi.paths["/bookmarks/{id}"].get;
+    expect(bookmarkDetail.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "id",
+          in: "path",
+          required: true,
+          schema: expect.objectContaining({ type: "string" }),
+        }),
+      ])
+    );
+    expect(bookmarkDetail.responses["200"].content["application/json"].schema).toEqual({
+      $ref: "#/components/schemas/BookmarkDetailResponse",
+    });
+
+    const bookmarkList = openapi.paths["/bookmarks"].get;
+    expect(bookmarkList.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "read_later",
+          in: "query",
+          required: false,
+          schema: expect.objectContaining({ enum: ["true", "false", "1", "0"] }),
+        }),
+      ])
+    );
+    expect(bookmarkList.responses["200"].content["application/json"].schema).toEqual({
+      $ref: "#/components/schemas/BookmarkListResponse",
+    });
+
+    expect(openapi.paths["/mcp"].post.security).toEqual([{ localIntegrationBearer: [] }]);
+    expect(openapi.paths["/mcp"].post["x-little-imp-source-method"]).toBe("ALL");
   });
 
   it("distinguishes CRUD row responses from count-bearing list responses", () => {

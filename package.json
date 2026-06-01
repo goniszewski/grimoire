@@ -23,6 +23,8 @@
     "daemon:start": "cd daemon && bun run start",
     "docs:api": "bun run scripts/generate-api-docs.ts",
     "docs:api:check": "bun run scripts/generate-api-docs.ts --check",
+    "docs:openapi": "bun run scripts/generate-api-docs.ts --openapi-only",
+    "docs:openapi:check": "bun run scripts/generate-api-docs.ts --check --openapi-only",
     "package:release": "bun run scripts/package-release.ts",
     "release:validate": "bun run scripts/release-artifacts-validator.ts",
     "installer:matrix:linux": "bash scripts/validate-linux-installer-matrix.sh",

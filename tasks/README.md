@@ -117,7 +117,7 @@ tasks/
 | TASK-101 | [Category And Tag Regression Tests](done/TASK-101-category-tag-regression-tests.md) | Grimoire parity | high | done |
 | TASK-102 | [Integration Token Authentication](done/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | done |
 | TASK-103 | [Human Readable API Examples](done/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | done |
-| TASK-104 | [OpenAPI Contract Output](backlog/TASK-104-openapi-contract-output.md) | Grimoire parity | high | backlog |
+| TASK-104 | [OpenAPI Contract Output](done/TASK-104-openapi-contract-output.md) | Grimoire parity | high | done |
 | TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
 | TASK-106 | [Integration CORS And Origin Controls](backlog/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | backlog |
 | TASK-107 | [Preserve Import Folder Hierarchy](backlog/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | backlog |
@@ -240,6 +240,10 @@ create/list/detail/update, search filtering and pagination, import/export,
 categories, tags, backup, and common error flows. The examples are stored in
 the source API contract and regenerated into both `API.md` and
 `docs/api-contract.json`, with docs drift covered by `npm run docs:api:check`.
+TASK-104 is complete with OpenAPI 3.0 output generated from the same source
+contract into `docs/openapi.json`, OpenAPI-only generation/check commands, and
+focused generator coverage for parameters, responses, pagination schemas, and
+MCP bearer-token security.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

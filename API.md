@@ -6,8 +6,10 @@
 
 - Base URL: `http://127.0.0.1:3210`
 - Machine-readable contract: [`docs/api-contract.json`](./docs/api-contract.json)
+- OpenAPI output: [`docs/openapi.json`](./docs/openapi.json)
 - Regenerate: `npm run docs:api`
 - Drift check: `npm run docs:api:check`
+- OpenAPI-only commands: `npm run docs:openapi` and `npm run docs:openapi:check`
 
 ## Authentication
 
@@ -20,6 +22,16 @@ Local integration surfaces such as `/mcp` require a managed bearer token. Create
 - Most JSON endpoints return `{ "data": ... }` envelopes.
 - Paginated endpoints include a `pagination` object with `total`, `limit`, `offset`, and `has_more`.
 - Newer route validation errors use `application/problem+json`; some backup/export routes still return `{ "error": string }`.
+
+## OpenAPI Output
+
+`docs/openapi.json` is generated from the same daemon-owned contract for local client tooling that expects an OpenAPI 3.0 document.
+
+Limitations:
+
+- Hono `ALL` routes are represented by the primary client method `POST` with `x-little-imp-source-method: "ALL"`.
+- Mixed content responses such as JSON/CSV exports share the closest generated schema; CSV, media, and SSE clients should still use the documented content type.
+- First-party REST routes remain local-origin routes. The OpenAPI bearer scheme documents managed local integration tokens, and MCP marks that scheme as required.
 
 ## Endpoints
 

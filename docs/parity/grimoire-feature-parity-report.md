@@ -82,7 +82,7 @@ This batch keeps Little Imp's product model intact:
 | Import | Browser import with review-oriented workflow | Netscape HTML import with SSE progress, tags parsed, folders parsed but not applied | Partial | Need pre-import review, duplicate choices, and category mapping from folders. |
 | Export | Export/migration capabilities | JSON/CSV export with filters plus pinned/starred and read-later fields | Partial | Current export now includes pinned/starred mapping and read-later state, but still omits approved parity fields covered by TASK-111: notes, read state, archive state, and opened metrics. |
 | Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 defers direct Grimoire/PocketBase import until normal import/export parity is stable. Browser/Netscape import hardening remains in scope. |
-| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md` and `docs/api-contract.json` | Partial | Contract and generated docs exist. Human-readable local client examples and OpenAPI-compatible output are approved as TASK-103 and TASK-104. Browser-extension/bookmarklet examples are deferred. |
+| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` | Partial | Human-readable local client examples and OpenAPI-compatible output are complete through TASK-103 and TASK-104. Browser-extension/bookmarklet examples are deferred. |
 | Browser extension support | Companion extension supported by API | Local integration tokens exist; no capture endpoint | Deferred non-goal | CORS controls are still in scope. One-click browser-extension/bookmarklet capture is deferred by TASK-105, and extension smoke tests are rejected for this batch. |
 | Deployment | Docker/self-hosting-oriented docs | Native installer, Homebrew, local daemon, Docker guidance, update docs | Intentional product difference | Little Imp is stronger for local install. Public-server and multi-user deployment modes are out of scope for this parity batch. |
 | Backups and restore | Not a primary parity strength | Local/S3 backups, encrypted packages, restore recovery | Little Imp ahead | This is beyond Grimoire parity. |
@@ -91,8 +91,8 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Finish local integration follow-ups: CORS/origin controls, human-readable API examples, and OpenAPI output for local clients.
-2. Publish human-readable API examples and OpenAPI-compatible output from the daemon contract for local scripts and integration clients.
+1. Finish local integration follow-ups: CORS/origin controls.
+2. Keep human-readable API examples and OpenAPI-compatible output generated from the daemon contract for local scripts and integration clients.
 3. Add open metrics while preserving the starred/favorite-to-pinned mapping and the separate read-later flag.
 4. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
 5. Add dedicated tag/category management and detail pages, plus approved category metadata.

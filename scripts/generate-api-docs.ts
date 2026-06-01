@@ -15,7 +15,10 @@ const routesDir = join(projectRoot, "daemon", "src", "routes");
 const outputPaths: ApiDocOutputPaths = {
   markdown: join(projectRoot, "API.md"),
   contractJson: join(projectRoot, "docs", "api-contract.json"),
+  openApiJson: join(projectRoot, "docs", "openapi.json"),
 };
+const openApiOnly = process.argv.includes("--openapi-only");
+const outputKinds = openApiOnly ? (["openApiJson"] as const) : undefined;
 
 const outputs = buildApiDocOutputs(apiContract);
 const routeDrift = findRouteImplementationDrift(apiContract, routesDir);
@@ -34,7 +37,7 @@ if (routeDrift.missingFromContract.length > 0 || routeDrift.extraInContract.leng
 }
 
 if (process.argv.includes("--check")) {
-  const drift = findApiDocDrift(outputs, outputPaths);
+  const drift = findApiDocDrift(outputs, outputPaths, outputKinds);
   if (drift.length > 0) {
     console.error("Generated API documentation is stale:");
     for (const file of drift) console.error(`  - ${file}`);
@@ -43,7 +46,9 @@ if (process.argv.includes("--check")) {
   }
   console.log("API documentation is up to date.");
 } else {
-  writeApiDocOutputs(outputs, outputPaths);
-  console.log(`Generated ${outputPaths.markdown}`);
-  console.log(`Generated ${outputPaths.contractJson}`);
+  writeApiDocOutputs(outputs, outputPaths, outputKinds);
+  for (const file of Object.values(outputPaths)) {
+    if (openApiOnly && file !== outputPaths.openApiJson) continue;
+    console.log(`Generated ${file}`);
+  }
 }
