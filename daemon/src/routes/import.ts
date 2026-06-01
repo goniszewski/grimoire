@@ -58,11 +58,13 @@ interface ProgressState {
   skipped: number;
   merged: number;
   restored: number;
+  failed: number;
   total: number;
   folders: number;
   categoriesCreated: number;
   categoriesReused: number;
   done: boolean;
+  result: ImportResultReport | null;
   error?: string;
 }
 
@@ -129,6 +131,49 @@ interface ImportPreviewSummary {
   merged: number;
   restored: number;
   skipped: number;
+}
+
+type ImportResultRowStatus = "created" | "merged" | "restored" | "skipped" | "failed";
+
+interface ImportResultSummary {
+  totalRows: number;
+  importableRows: number;
+  created: number;
+  updated: number;
+  merged: number;
+  restored: number;
+  skipped: number;
+  failed: number;
+  warnings: number;
+  categoriesCreated: number;
+  categoriesReused: number;
+}
+
+interface ImportResultRow {
+  status: ImportResultRowStatus;
+  action: ImportPreviewRow["action"];
+  classification: ImportRowClassification;
+  url: string | null;
+  title: string;
+  notes: string | null;
+  tags: string[];
+  targetTags: string[];
+  folders: string[];
+  targetCategoryId: string | null;
+  targetCategoryPath: string[];
+  existingBookmarkId: string | null;
+  bookmarkId: string | null;
+  skipReason: string | null;
+  warning: string | null;
+  error: string | null;
+}
+
+interface ImportResultReport {
+  duplicatePolicy: ImportDuplicatePolicy;
+  remapping: ImportRemappingDecision;
+  summary: ImportResultSummary;
+  warnings: string[];
+  rows: ImportResultRow[];
 }
 
 interface ImportAnalysis {
@@ -778,6 +823,115 @@ function importPreviewPayload(analysis: ImportAnalysis) {
   };
 }
 
+function importResultReport(analysis: ImportAnalysis): ImportResultReport {
+  return {
+    duplicatePolicy: analysis.duplicatePolicy,
+    remapping: analysis.remapping,
+    summary: {
+      totalRows: analysis.summary.totalRows,
+      importableRows: analysis.summary.importableRows,
+      created: 0,
+      updated: 0,
+      merged: 0,
+      restored: 0,
+      skipped: 0,
+      failed: 0,
+      warnings: analysis.warnings.length,
+      categoriesCreated: 0,
+      categoriesReused: 0,
+    },
+    warnings: analysis.warnings,
+    rows: [],
+  };
+}
+
+function sameStringArray(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function normalisedTags(tags: string[]): string[] {
+  return tags.map(tagKey).filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
+function rowHasRemapping(row: ImportPreviewRow): boolean {
+  return (
+    !sameStringArray(row.folders, row.targetCategoryPath) ||
+    !sameStringArray(normalisedTags(row.tags), row.targetTags)
+  );
+}
+
+function warningForImportResultRow(
+  row: ImportPreviewRow,
+  status: ImportResultRowStatus,
+  error: string | null
+): string | null {
+  if (error) return "Import failed for this row.";
+  if (row.classification === "invalid_url" || row.classification === "private_url") {
+    return row.skipReason;
+  }
+  if (row.classification === "active_duplicate") {
+    return status === "merged"
+      ? "Active duplicate merged into an existing bookmark."
+      : "Active duplicate skipped by the selected policy.";
+  }
+  if (row.classification === "archived_duplicate") {
+    return status === "restored"
+      ? "Archived duplicate restored and merged."
+      : "Archived duplicate skipped by the selected policy.";
+  }
+  if (row.classification === "trashed_duplicate") {
+    return status === "restored"
+      ? "Trashed duplicate restored and merged."
+      : "Trashed duplicate skipped by the selected policy.";
+  }
+  if (rowHasRemapping(row)) {
+    return "Category or tag remapping applied.";
+  }
+  return null;
+}
+
+function addImportResultRow(
+  report: ImportResultReport,
+  row: ImportPreviewRow,
+  status: ImportResultRowStatus,
+  bookmarkId: string | null,
+  error: string | null = null
+): void {
+  const warning = warningForImportResultRow(row, status, error);
+  if (warning) report.summary.warnings++;
+
+  if (status === "created") report.summary.created++;
+  if (status === "merged") {
+    report.summary.merged++;
+    report.summary.updated++;
+  }
+  if (status === "restored") {
+    report.summary.restored++;
+    report.summary.updated++;
+  }
+  if (status === "skipped") report.summary.skipped++;
+  if (status === "failed") report.summary.failed++;
+
+  report.rows.push({
+    status,
+    action: row.action,
+    classification: row.classification,
+    url: row.url,
+    title: row.title,
+    notes: row.notes,
+    tags: row.tags,
+    targetTags: row.targetTags,
+    folders: row.folders,
+    targetCategoryId: row.targetCategoryId,
+    targetCategoryPath: row.targetCategoryPath,
+    existingBookmarkId: row.existingBookmarkId,
+    bookmarkId,
+    skipReason: row.skipReason,
+    warning,
+    error,
+  });
+}
+
 // ─── Route factory ────────────────────────────────────────────────────────────
 
 export function createImportRoute(deps: ImportDeps): Hono {
@@ -853,11 +1007,13 @@ export function createImportRoute(deps: ImportDeps): Hono {
       skipped: 0,
       merged: 0,
       restored: 0,
+      failed: 0,
       total: analysis.summary.totalRows,
       folders: analysis.folders.length,
       categoriesCreated: 0,
       categoriesReused: 0,
       done: false,
+      result: null,
     });
     scheduleProgressCleanup(importId);
 
@@ -941,12 +1097,14 @@ export function createImportRoute(deps: ImportDeps): Hono {
             skipped: state.skipped,
             merged: state.merged,
             restored: state.restored,
+            failed: state.failed,
             total: state.total,
             folders: state.folders,
             categoriesCreated: state.categoriesCreated,
             categoriesReused: state.categoriesReused,
             done: state.done,
             error: state.error ?? null,
+            result: state.result,
           });
 
           if (state.done) {
@@ -996,6 +1154,7 @@ async function processImport(
   const categoryPathCache = new Map<string, string>();
   const categoryStats = { created: 0, reused: 0 };
   const createdByUrl = new Map<string, string>();
+  const report = importResultReport(analysis);
 
   for (const mapping of analysis.remapping.folders) {
     if (mapping.action === "existing") {
@@ -1006,6 +1165,8 @@ async function processImport(
 
   state.categoriesCreated = categoryStats.created;
   state.categoriesReused = categoryStats.reused;
+  report.summary.categoriesCreated = categoryStats.created;
+  report.summary.categoriesReused = categoryStats.reused;
 
   // Process in batches to avoid blocking the event loop for large imports
   const BATCH_SIZE = 50;
@@ -1014,87 +1175,119 @@ async function processImport(
     const batch = analysis.rows.slice(i, i + BATCH_SIZE);
 
     for (const row of batch) {
-      if (row.action === "skip") {
-        state.skipped++;
-        continue;
-      }
+      let rowBookmarkId: string | null = null;
 
-      const bm = row.bookmark;
-      if (!bm) {
-        state.skipped++;
-        continue;
-      }
-
-      const categoryId = resolveImportCategoryId(row, categoryRepo, categoryPathCache, categoryStats);
-
-      state.categoriesCreated = categoryStats.created;
-      state.categoriesReused = categoryStats.reused;
-
-      if (row.action === "merge" || row.action === "restore_merge") {
-        const targetId = row.existingBookmarkId ?? createdByUrl.get(bm.url) ?? repo.findByUrl(bm.url)?.id ?? null;
-        if (!targetId) {
+      try {
+        if (row.action === "skip") {
           state.skipped++;
+          addImportResultRow(report, row, "skipped", null);
           continue;
         }
-        repo.mergeImportDuplicate(targetId, {
-          tags: row.targetTags,
-          category_id: categoryId,
-          notes: bm.notes,
-          restore: row.action === "restore_merge",
-        });
-        if (row.action === "merge") state.merged++;
-        else state.restored++;
-        continue;
-      }
 
-      const existingAtCommit = repo.findByUrl(bm.url);
-      if (existingAtCommit) {
-        if (existingAtCommit.is_trashed && analysis.duplicatePolicy.trashed === "restore_merge") {
-          repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: row.targetTags,
-            category_id: categoryId,
-            notes: bm.notes,
-            restore: true,
-          });
-          state.restored++;
-        } else if (existingAtCommit.is_archived && analysis.duplicatePolicy.archived === "restore_merge") {
-          repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: row.targetTags,
-            category_id: categoryId,
-            notes: bm.notes,
-            restore: true,
-          });
-          state.restored++;
-        } else if (!existingAtCommit.is_archived && !existingAtCommit.is_trashed && analysis.duplicatePolicy.active === "merge") {
-          repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: row.targetTags,
-            category_id: categoryId,
-            notes: bm.notes,
-          });
-          state.merged++;
-        } else {
+        const bm = row.bookmark;
+        if (!bm) {
           state.skipped++;
+          addImportResultRow(report, row, "skipped", null);
+          continue;
         }
-        continue;
+
+        const categoryId = resolveImportCategoryId(row, categoryRepo, categoryPathCache, categoryStats);
+
+        state.categoriesCreated = categoryStats.created;
+        state.categoriesReused = categoryStats.reused;
+        report.summary.categoriesCreated = categoryStats.created;
+        report.summary.categoriesReused = categoryStats.reused;
+
+        if (row.action === "merge" || row.action === "restore_merge") {
+          const targetId = row.existingBookmarkId ?? createdByUrl.get(bm.url) ?? repo.findByUrl(bm.url)?.id ?? null;
+          if (!targetId) {
+            state.skipped++;
+            addImportResultRow(report, row, "skipped", null);
+            continue;
+          }
+          rowBookmarkId = targetId;
+          repo.mergeImportDuplicate(targetId, {
+            tags: row.targetTags,
+            category_id: categoryId,
+            notes: bm.notes,
+            restore: row.action === "restore_merge",
+          });
+          if (row.action === "merge") {
+            state.merged++;
+            addImportResultRow(report, row, "merged", targetId);
+          } else {
+            state.restored++;
+            addImportResultRow(report, row, "restored", targetId);
+          }
+          continue;
+        }
+
+        const existingAtCommit = repo.findByUrl(bm.url);
+        if (existingAtCommit) {
+          rowBookmarkId = existingAtCommit.id;
+          if (existingAtCommit.is_trashed && analysis.duplicatePolicy.trashed === "restore_merge") {
+            repo.mergeImportDuplicate(existingAtCommit.id, {
+              tags: row.targetTags,
+              category_id: categoryId,
+              notes: bm.notes,
+              restore: true,
+            });
+            state.restored++;
+            addImportResultRow(report, row, "restored", existingAtCommit.id);
+          } else if (existingAtCommit.is_archived && analysis.duplicatePolicy.archived === "restore_merge") {
+            repo.mergeImportDuplicate(existingAtCommit.id, {
+              tags: row.targetTags,
+              category_id: categoryId,
+              notes: bm.notes,
+              restore: true,
+            });
+            state.restored++;
+            addImportResultRow(report, row, "restored", existingAtCommit.id);
+          } else if (!existingAtCommit.is_archived && !existingAtCommit.is_trashed && analysis.duplicatePolicy.active === "merge") {
+            repo.mergeImportDuplicate(existingAtCommit.id, {
+              tags: row.targetTags,
+              category_id: categoryId,
+              notes: bm.notes,
+            });
+            state.merged++;
+            addImportResultRow(report, row, "merged", existingAtCommit.id);
+          } else {
+            state.skipped++;
+            addImportResultRow(report, row, "skipped", existingAtCommit.id);
+          }
+          continue;
+        }
+
+        // Create bookmark record
+        const created = repo.create(bm.url, bm.title, categoryId);
+        rowBookmarkId = created.id;
+        createdByUrl.set(bm.url, created.id);
+
+        if (bm.notes) {
+          repo.update(created.id, { notes: bm.notes });
+        }
+
+        // Apply tags derived from Netscape TAGS attribute
+        if (row.targetTags.length > 0) {
+          repo.setTags(created.id, row.targetTags);
+        }
+
+        // Enqueue ingest pipeline job
+        queue.enqueue("ingest", { bookmarkId: created.id, url: bm.url });
+
+        state.queued++;
+        addImportResultRow(report, row, "created", created.id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        state.failed++;
+        addImportResultRow(report, row, "failed", rowBookmarkId, message);
+        log.warn("Import: row failed", {
+          importId,
+          sourceIndex: row.sourceIndex,
+          url: row.url,
+          error: message,
+        });
       }
-
-      // Create bookmark record
-      const created = repo.create(bm.url, bm.title, categoryId);
-      createdByUrl.set(bm.url, created.id);
-
-      if (bm.notes) {
-        repo.update(created.id, { notes: bm.notes });
-      }
-
-      // Apply tags derived from Netscape TAGS attribute
-      if (row.targetTags.length > 0) {
-        repo.setTags(created.id, row.targetTags);
-      }
-
-      // Enqueue ingest pipeline job
-      queue.enqueue("ingest", { bookmarkId: created.id, url: bm.url });
-
-      state.queued++;
     }
 
     // Yield to event loop between batches
@@ -1102,12 +1295,14 @@ async function processImport(
   }
 
   state.done = true;
+  state.result = report;
   log.info("Import: complete", {
     importId,
     queued: state.queued,
     skipped: state.skipped,
     merged: state.merged,
     restored: state.restored,
+    failed: state.failed,
     categoriesCreated: state.categoriesCreated,
     categoriesReused: state.categoriesReused,
   });

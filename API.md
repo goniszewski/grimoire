@@ -2989,6 +2989,75 @@ Response data
 | `data.warnings` | array<string> | yes | Parser warnings |
 | `data.rows` | array<ImportPreviewRow> | yes | Preview rows |
 
+### ImportResultSummary
+
+Final committed import result counts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `created` | integer | yes | Bookmarks created by the committed import |
+| `updated` | integer | yes | Existing bookmarks updated by merge or restore actions |
+| `merged` | integer | yes | Active duplicate bookmarks merged by the committed import |
+| `restored` | integer | yes | Archived or trashed duplicate bookmarks restored and merged |
+| `skipped` | integer | yes | Rows skipped by validation or duplicate policy |
+| `failed` | integer | yes | Rows that failed during commit after import processing started |
+| `warnings` | integer | yes | Parser and row-level warnings included in the result report |
+| `categoriesCreated` | integer | yes | Categories created from imported folder paths |
+| `categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
+
+### ImportResultRow
+
+Final committed import row result
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `status` | "created" \| "merged" \| "restored" \| "skipped" \| "failed" | yes | Final committed row status |
+| `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Requested action selected by the duplicate policy |
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `url` | string \| null | yes | Source bookmark URL |
+| `title` | string | yes | Source bookmark title |
+| `notes` | string \| null | yes | Source note text when the import format provides note-like metadata |
+| `tags` | array<string> | yes | Source tag names |
+| `targetTags` | array<string> | yes | Target tag names after remapping |
+| `folders` | array<string> | yes | Source folder path |
+| `targetCategoryId` | string \| null | yes | Mapped target category ID when it already exists |
+| `targetCategoryPath` | array<string> | yes | Target category path after remapping |
+| `existingBookmarkId` | string \| null | yes | Matching existing bookmark ID from preview analysis |
+| `bookmarkId` | string \| null | yes | Bookmark ID created or updated by the committed import row |
+| `skipReason` | string \| null | yes | Reason the row was skipped |
+| `warning` | string \| null | yes | User-visible row warning, duplicate note, remapping note, or skipped-row reason |
+| `error` | string \| null | yes | User-visible row error when commit processing failed for this row |
+
+### ImportResultReport
+
+Final import result report available when progress is done
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `remapping` | ImportRemapping | yes |  |
+| `remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
+| `summary` | ImportResultSummary | yes |  |
+| `summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `summary.created` | integer | yes | Bookmarks created by the committed import |
+| `summary.updated` | integer | yes | Existing bookmarks updated by merge or restore actions |
+| `summary.merged` | integer | yes | Active duplicate bookmarks merged by the committed import |
+| `summary.restored` | integer | yes | Archived or trashed duplicate bookmarks restored and merged |
+| `summary.skipped` | integer | yes | Rows skipped by validation or duplicate policy |
+| `summary.failed` | integer | yes | Rows that failed during commit after import processing started |
+| `summary.warnings` | integer | yes | Parser and row-level warnings included in the result report |
+| `summary.categoriesCreated` | integer | yes | Categories created from imported folder paths |
+| `summary.categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
+| `warnings` | array<string> | yes | Parser warnings |
+| `rows` | array<ImportResultRow> | yes | Committed row results |
+
 ### ImportSummary
 
 | Field | Type | Required | Description |
@@ -3034,12 +3103,35 @@ Response data
 | `skipped` | integer | yes | Skipped bookmarks |
 | `merged` | integer | yes | Existing active bookmarks merged |
 | `restored` | integer | yes | Existing archived or trashed bookmarks restored and merged |
+| `failed` | integer | yes | Rows that failed during commit after import processing started |
 | `total` | integer | yes | Total parsed bookmarks |
 | `folders` | integer | yes | Total parsed Netscape folders |
 | `categoriesCreated` | integer | yes | Categories created from imported folder paths |
 | `categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
 | `done` | boolean | yes | Whether import processing is complete |
 | `error` | string \| null | yes | Background import error |
+| `result` | ImportResultReport \| null | yes |  |
+| `result.duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `result.duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `result.duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `result.duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `result.remapping` | ImportRemapping | yes |  |
+| `result.remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `result.remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
+| `result.summary` | ImportResultSummary | yes |  |
+| `result.summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `result.summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `result.summary.created` | integer | yes | Bookmarks created by the committed import |
+| `result.summary.updated` | integer | yes | Existing bookmarks updated by merge or restore actions |
+| `result.summary.merged` | integer | yes | Active duplicate bookmarks merged by the committed import |
+| `result.summary.restored` | integer | yes | Archived or trashed duplicate bookmarks restored and merged |
+| `result.summary.skipped` | integer | yes | Rows skipped by validation or duplicate policy |
+| `result.summary.failed` | integer | yes | Rows that failed during commit after import processing started |
+| `result.summary.warnings` | integer | yes | Parser and row-level warnings included in the result report |
+| `result.summary.categoriesCreated` | integer | yes | Categories created from imported folder paths |
+| `result.summary.categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
+| `result.warnings` | array<string> | yes | Parser warnings |
+| `result.rows` | array<ImportResultRow> | yes | Committed row results |
 
 ### RuntimeLlmCapability
 

@@ -3,6 +3,7 @@ import type { Database } from "bun:sqlite";
 import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
+import type { Job } from "../../types/job.js";
 
 const NETSCAPE_HTML = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
@@ -52,6 +53,20 @@ function tagNamesForBookmark(db: Database, bookmarkId: string): string[] {
     )
     .all(bookmarkId)
     .map((tag) => tag.name);
+}
+
+function readProgressPayload(text: string): Record<string, unknown> {
+  const dataLines = text
+    .split("\n")
+    .filter((line) => line.startsWith("data: "));
+  expect(dataLines.length).toBeGreaterThan(0);
+  return JSON.parse(dataLines[dataLines.length - 1]!.slice("data: ".length)) as Record<string, unknown>;
+}
+
+class FailingJobQueue extends JobQueue {
+  override enqueue<T>(_type: string, _payload: T): Job<T> {
+    throw new Error("Queue unavailable");
+  }
 }
 
 describe("Import API", () => {
@@ -269,8 +284,6 @@ describe("Import API", () => {
       data: { folders: number; progressUrl: string };
     };
     expect(summary.data.folders).toBe(4);
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
 
     const progress = await app.request(summary.data.progressUrl);
     expect(progress.status).toBe(200);
@@ -664,6 +677,181 @@ describe("Import API", () => {
     );
     expect(created?.category_id).toBe(importedDocs!.id);
     expect(tagNamesForBookmark(db, created!.id)).toEqual(["curated", "docs"]);
+  });
+
+  it("POST /import progress includes a row-level result report with warnings and mapping effects", async () => {
+    const activeId = await createBookmark(app, "https://active-report.example.com", "Active Report");
+    const archivedId = await createBookmark(app, "https://archived-report.example.com", "Archived Report");
+    await app.request(`/bookmarks/${activeId}`, {
+      method: "PUT",
+      body: JSON.stringify({ tags: ["existing"], notes: "Existing note" }),
+    });
+    await app.request(`/bookmarks/${archivedId}`, {
+      method: "PUT",
+      body: JSON.stringify({ is_archived: 1 }),
+    });
+    const existingCategory = db
+      .query<{ id: string }, []>("INSERT INTO categories (name) VALUES ('Imported Research') RETURNING id")
+      .get();
+    expect(existingCategory).toBeDefined();
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><H3>Research</H3>
+  <DL><p>
+    <DT><A HREF="https://created-report.example.com" TAGS="AI">Created Report</A>
+    <DT><A HREF="https://active-report.example.com" TAGS="AI" DESCRIPTION="Imported note">Active Report Duplicate</A>
+    <DT><A HREF="https://archived-report.example.com" TAGS="AI">Archived Report Duplicate</A>
+    <DT><A HREF="notaurl">Broken Report Row</A>
+    <DT><A HREF="http://127.0.0.1/admin">Private Report Row</A>
+  </DL><p>
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify({
+          active: "merge",
+          archived: "restore_merge",
+        }),
+        remapping: JSON.stringify({
+          folders: [
+            {
+              sourcePath: ["Research"],
+              action: "existing",
+              categoryId: existingCategory!.id,
+            },
+          ],
+          tags: [
+            {
+              sourceTag: "ai",
+              action: "renamed",
+              targetName: "machine-learning",
+            },
+          ],
+        }),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const payload = readProgressPayload(await progress.text());
+    expect(payload.done).toBe(true);
+    expect(payload.result).toMatchObject({
+      summary: {
+        totalRows: 5,
+        created: 1,
+        updated: 2,
+        merged: 1,
+        restored: 1,
+        skipped: 2,
+        failed: 0,
+      },
+    });
+
+    const result = payload.result as {
+      summary: { warnings: number };
+      rows: Array<{
+        status: string;
+        action: string;
+        classification: string;
+        title: string;
+        bookmarkId: string | null;
+        existingBookmarkId: string | null;
+        targetCategoryPath: string[];
+        targetTags: string[];
+        warning: string | null;
+        error: string | null;
+      }>;
+    };
+    expect(result.summary.warnings).toBeGreaterThanOrEqual(4);
+    expect(result.rows).toHaveLength(5);
+    expect(result.rows.map((row) => row.status)).toEqual([
+      "created",
+      "merged",
+      "restored",
+      "skipped",
+      "skipped",
+    ]);
+    expect(result.rows[0]).toMatchObject({
+      title: "Created Report",
+      bookmarkId: expect.any(String),
+      targetCategoryPath: ["Imported Research"],
+      targetTags: ["machine-learning"],
+      warning: expect.stringContaining("remapping"),
+      error: null,
+    });
+    expect(result.rows[1]).toMatchObject({
+      classification: "active_duplicate",
+      action: "merge",
+      existingBookmarkId: activeId,
+      bookmarkId: activeId,
+      warning: expect.stringContaining("Active duplicate"),
+    });
+    expect(result.rows[2]).toMatchObject({
+      classification: "archived_duplicate",
+      status: "restored",
+      existingBookmarkId: archivedId,
+      bookmarkId: archivedId,
+      warning: expect.stringContaining("Archived duplicate"),
+    });
+    expect(result.rows[3]).toMatchObject({
+      classification: "invalid_url",
+      status: "skipped",
+      warning: expect.stringContaining("malformed"),
+    });
+    expect(result.rows[4]).toMatchObject({
+      classification: "private_url",
+      status: "skipped",
+      warning: expect.stringContaining("private"),
+    });
+  });
+
+  it("POST /import result report preserves bookmark ID when a row fails after creation", async () => {
+    const failingApp = createApp({
+      db,
+      queue: new FailingJobQueue(),
+      startTime: new Date(),
+      version: "0.0.0-test",
+    });
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://partial-failure.example.com">Partial Failure</A>
+</DL><p>`;
+
+    const res = await failingApp.request("/import", {
+      method: "POST",
+      body: formWithHtml(html),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    const progress = await failingApp.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const payload = readProgressPayload(await progress.text());
+    expect(payload).toMatchObject({
+      queued: 0,
+      failed: 1,
+      done: true,
+    });
+
+    const result = payload.result as {
+      rows: Array<{
+        status: string;
+        bookmarkId: string | null;
+        error: string | null;
+      }>;
+    };
+    const created = bookmarkByUrl<{ id: string }>(db, "https://partial-failure.example.com", "id");
+    expect(created).not.toBeNull();
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({
+      status: "failed",
+      bookmarkId: created!.id,
+      error: "Queue unavailable",
+    });
   });
 
   it("POST /import/preview rejects conflicting tag remapping targets", async () => {

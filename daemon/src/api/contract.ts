@@ -651,6 +651,91 @@ const schemas = {
     "Non-mutating import preview"
   ),
   ImportPreviewResponse: envelope(ref("ImportPreview")),
+  ImportResultSummary: objectSchema(
+    {
+      totalRows: integerSchema("Total parsed bookmark rows, including skipped invalid/private rows", { minimum: 0 }),
+      importableRows: integerSchema("Valid public HTTP(S) bookmark rows", { minimum: 0 }),
+      created: integerSchema("Bookmarks created by the committed import", { minimum: 0 }),
+      updated: integerSchema("Existing bookmarks updated by merge or restore actions", { minimum: 0 }),
+      merged: integerSchema("Active duplicate bookmarks merged by the committed import", { minimum: 0 }),
+      restored: integerSchema("Archived or trashed duplicate bookmarks restored and merged", { minimum: 0 }),
+      skipped: integerSchema("Rows skipped by validation or duplicate policy", { minimum: 0 }),
+      failed: integerSchema("Rows that failed during commit after import processing started", { minimum: 0 }),
+      warnings: integerSchema("Parser and row-level warnings included in the result report", { minimum: 0 }),
+      categoriesCreated: integerSchema("Categories created from imported folder paths", { minimum: 0 }),
+      categoriesReused: integerSchema("Existing categories reused for imported folder paths", { minimum: 0 }),
+    },
+    [
+      "totalRows",
+      "importableRows",
+      "created",
+      "updated",
+      "merged",
+      "restored",
+      "skipped",
+      "failed",
+      "warnings",
+      "categoriesCreated",
+      "categoriesReused",
+    ],
+    "Final committed import result counts"
+  ),
+  ImportResultRow: objectSchema(
+    {
+      status: stringSchema("Final committed row status", {
+        enum: ["created", "merged", "restored", "skipped", "failed"],
+      }),
+      action: stringSchema("Requested action selected by the duplicate policy", {
+        enum: ["create", "skip", "merge", "restore_merge"],
+      }),
+      classification: stringSchema("Import row classification", {
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+      }),
+      url: nullable(stringSchema("Source bookmark URL")),
+      title: stringSchema("Source bookmark title"),
+      notes: nullable(stringSchema("Source note text when the import format provides note-like metadata")),
+      tags: arrayOf(stringSchema("Source tag name"), "Source tag names"),
+      targetTags: arrayOf(stringSchema("Mapped target tag name"), "Target tag names after remapping"),
+      folders: arrayOf(stringSchema("Source folder name"), "Source folder path"),
+      targetCategoryId: nullable(stringSchema("Mapped target category ID when it already exists")),
+      targetCategoryPath: arrayOf(stringSchema("Mapped target category path segment"), "Target category path after remapping"),
+      existingBookmarkId: nullable(stringSchema("Matching existing bookmark ID from preview analysis")),
+      bookmarkId: nullable(stringSchema("Bookmark ID created or updated by the committed import row")),
+      skipReason: nullable(stringSchema("Reason the row was skipped")),
+      warning: nullable(stringSchema("User-visible row warning, duplicate note, remapping note, or skipped-row reason")),
+      error: nullable(stringSchema("User-visible row error when commit processing failed for this row")),
+    },
+    [
+      "status",
+      "action",
+      "classification",
+      "url",
+      "title",
+      "notes",
+      "tags",
+      "targetTags",
+      "folders",
+      "targetCategoryId",
+      "targetCategoryPath",
+      "existingBookmarkId",
+      "bookmarkId",
+      "skipReason",
+      "warning",
+      "error",
+    ],
+    "Final committed import row result"
+  ),
+  ImportResultReport: objectSchema(
+    {
+      duplicatePolicy: ref("ImportDuplicatePolicy"),
+      remapping: ref("ImportRemapping"),
+      summary: ref("ImportResultSummary"),
+      warnings: arrayOf(stringSchema("Parser warning"), "Parser warnings"),
+      rows: arrayOf(ref("ImportResultRow"), "Committed row results"),
+    },
+    ["duplicatePolicy", "remapping", "summary", "warnings", "rows"],
+    "Final import result report available when progress is done"
+  ),
   ImportSummary: objectSchema(
     {
       importId: stringSchema("Import ID for progress stream"),
@@ -670,14 +755,29 @@ const schemas = {
       skipped: integerSchema("Skipped bookmarks", { minimum: 0 }),
       merged: integerSchema("Existing active bookmarks merged", { minimum: 0 }),
       restored: integerSchema("Existing archived or trashed bookmarks restored and merged", { minimum: 0 }),
+      failed: integerSchema("Rows that failed during commit after import processing started", { minimum: 0 }),
       total: integerSchema("Total parsed bookmarks", { minimum: 0 }),
       folders: integerSchema("Total parsed Netscape folders", { minimum: 0 }),
       categoriesCreated: integerSchema("Categories created from imported folder paths", { minimum: 0 }),
       categoriesReused: integerSchema("Existing categories reused for imported folder paths", { minimum: 0 }),
       done: booleanSchema("Whether import processing is complete"),
       error: nullable(stringSchema("Background import error")),
+      result: nullable(ref("ImportResultReport")),
     },
-    ["queued", "skipped", "merged", "restored", "total", "folders", "categoriesCreated", "categoriesReused", "done", "error"]
+    [
+      "queued",
+      "skipped",
+      "merged",
+      "restored",
+      "failed",
+      "total",
+      "folders",
+      "categoriesCreated",
+      "categoriesReused",
+      "done",
+      "error",
+      "result",
+    ]
   ),
   RuntimeLlmCapability: objectSchema(
     {

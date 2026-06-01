@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import Result Report - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --ink: #111827;
+  --muted: #64748b;
+  --line: #dbe4ef;
+  --blue: #2563eb;
+  --green: #15803d;
+  --red: #b91c1c;
+  --shadow: 0 18px 45px rgba(15, 23, 42, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--blue); }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+.breadcrumbs {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { color: inherit; text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 700;
+}
+.hero-shot, .shot-grid figure {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.hero-shot { margin: 28px 0; }
+.hero-shot img, .shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+figcaption {
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+  border-top: 1px solid var(--line);
+}
+section { margin-top: 24px; }
+h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #334155;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+ul {
+  margin: 0;
+  padding-left: 20px;
+}
+code {
+  border-radius: 5px;
+  background: #eef2f7;
+  padding: 2px 5px;
+}
+.callout {
+  border-left: 4px solid var(--green);
+  background: #f0fdf4;
+  padding: 12px 14px;
+  color: #14532d;
+}
+.risk {
+  border-left: 4px solid var(--red);
+  background: #fef2f2;
+  padding: 12px 14px;
+  color: #7f1d1d;
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+}
+details {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 28px 0;
+  }
+  .task-card { padding: 20px; }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">June 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Import Result Report</h1>
+      <div class="meta-row">
+        <span>June 1, 2026</span>
+        <span>TASK-110</span>
+        <span>In review</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-desktop.png" alt="Desktop import completion dialog showing the final result report">
+      <figcaption>After: import completion separates the progress summary from a row-level result report with counts, warnings, failures, and mapping effects.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Import completion only exposed aggregate progress from the server-sent event stream. Users could see that work finished, but they could not review which rows were created, merged, restored, skipped, failed, or remapped.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>TASK-110 needs a durable enough immediate report after import commit, especially after duplicate policy and category/tag remapping choices change row outcomes.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added daemon-side import result data with summary counts, row statuses, warnings, errors, bookmark IDs, and mapping effects.</li>
+        <li>Included the final result report in import progress events while keeping progress counters separate from the report payload.</li>
+        <li>Recorded created, merged, restored, skipped, and per-row failed outcomes without aborting the whole import on a single row failure.</li>
+        <li>Preserved affected bookmark IDs when a row fails after a bookmark has already been created or located.</li>
+        <li>Updated the generated API contract, API docs, OpenAPI output, shared types, and e2e mock daemon payloads.</li>
+        <li>Rendered a dense completion report in the import dialog, with table rows on desktop and compact row cards on narrow screens.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p class="callout">The import flow now ends with an inspectable result report that shows counts, parser warnings, duplicate-policy outcomes, partial failures, and category/tag mapping effects for individual rows.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>npm run test -- src/components/ImportDialog.test.tsx</code> passed.</li>
+        <li><code>bun test src/test/integration/import.test.ts</code> passed in <code>daemon/</code>.</li>
+        <li><code>npm run docs:api</code> regenerated contract outputs.</li>
+        <li><code>npm run docs:api:check</code> passed.</li>
+        <li><code>npm run check</code> passed, including lint, type-check, full frontend tests, full daemon tests, API-doc drift check, and production build.</li>
+        <li><code>npm run test:e2e</code> passed.</li>
+        <li><code>npm run lint</code> passed after the e2e selector update, with the existing Fast Refresh warnings only.</li>
+        <li><code>git diff --check</code> passed.</li>
+        <li>Review hardening added focused regression coverage for post-create row failures and final SSE payload parsing.</li>
+        <li>Captured desktop and narrow visual states from an API-mocked Vite dev server on <code>127.0.0.1:8080</code>.</li>
+      </ul>
+    </section>
+
+    <details open>
+      <summary>Additional Screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/01-after-desktop.png" alt="Desktop final import report with summary grid and row table">
+          <figcaption>Desktop: the completion state shows aggregate progress, then a compact result report and row-level table.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/02-after-mobile.png" alt="Narrow final import report with compact row cards">
+          <figcaption>Narrow: the report switches to row cards so warnings and mapping details wrap instead of widening the modal.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The report is assembled from the same analyzed rows used for preview and commit. Parser warnings remain report-level warnings, while row warnings cover duplicate merges, restore-merge decisions, skipped rows, remapping, and per-row write failures.</p>
+      <p class="risk">The task was moved to done after owner review, review hardening, and full local verification.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/routes/import.ts</code></li>
+        <li><code>daemon/src/api/contract.ts</code></li>
+        <li><code>daemon/src/api/types.ts</code></li>
+        <li><code>daemon/src/test/integration/import.test.ts</code></li>
+        <li><code>src/components/ImportDialog.tsx</code></li>
+        <li><code>src/components/ImportDialog.test.tsx</code></li>
+        <li><code>e2e/mock-daemon.ts</code></li>
+        <li><code>API.md</code></li>
+        <li><code>docs/api-contract.json</code></li>
+        <li><code>docs/openapi.json</code></li>
+        <li><code>tasks/done/TASK-110-import-result-report.md</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

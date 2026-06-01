@@ -59,7 +59,7 @@ test.describe("Documented business requirements smoke", () => {
     await page.getByRole("button", { name: /import 1 item/i }).click();
 
     await expect(page.getByText(/import complete/i)).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText(/1 created/i)).toBeVisible();
+    await expect(page.getByText(/1 created/i).first()).toBeVisible();
     await expect.poll(() => daemon.requests.imports).toBe(1);
     await page.getByRole("button", { name: /^Done$/ }).click();
 

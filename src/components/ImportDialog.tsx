@@ -128,11 +128,56 @@ interface ImportPreviewView {
   rows: ImportPreviewRowView[];
 }
 
+type ImportResultRowStatus = "created" | "merged" | "restored" | "skipped" | "failed";
+
+interface ImportResultRowView {
+  status: ImportResultRowStatus;
+  action: ImportRowAction;
+  classification: ImportRowClassification;
+  url: string | null;
+  title: string;
+  notes: string | null;
+  tags: string[];
+  targetTags: string[];
+  folders: string[];
+  targetCategoryId: string | null;
+  targetCategoryPath: string[];
+  existingBookmarkId: string | null;
+  bookmarkId: string | null;
+  skipReason: string | null;
+  warning: string | null;
+  error: string | null;
+}
+
+interface ImportResultReportView {
+  duplicatePolicy: FullImportDuplicatePolicy;
+  remapping: {
+    folders: ImportFolderMappingView[];
+    tags: ImportTagMappingView[];
+  };
+  summary: {
+    totalRows: number;
+    importableRows: number;
+    created: number;
+    updated: number;
+    merged: number;
+    restored: number;
+    skipped: number;
+    failed: number;
+    warnings: number;
+    categoriesCreated: number;
+    categoriesReused: number;
+  };
+  warnings: string[];
+  rows: ImportResultRowView[];
+}
+
 interface FinalImportProgress {
   queued: number;
   skipped: number;
   merged: number;
   restored: number;
+  failed: number;
 }
 
 const DEFAULT_DUPLICATE_POLICY: FullImportDuplicatePolicy = {
@@ -155,6 +200,14 @@ const ACTION_LABELS: Record<ImportRowAction, string> = {
   skip: "Skip",
   merge: "Merge",
   restore_merge: "Restore and merge",
+};
+
+const RESULT_STATUS_LABELS: Record<ImportResultRowStatus, string> = {
+  created: "Created",
+  merged: "Merged",
+  restored: "Restored",
+  skipped: "Skipped",
+  failed: "Failed",
 };
 
 const TAG_ACTION_LABELS: Record<ImportTagMappingAction, string> = {
@@ -262,8 +315,21 @@ function finalProgressLabel(progress: FinalImportProgress): string {
     progress.merged > 0 ? plural(progress.merged, "merged", "merged") : null,
     progress.restored > 0 ? plural(progress.restored, "restored", "restored") : null,
     progress.skipped > 0 ? plural(progress.skipped, "skipped", "skipped") : null,
+    progress.failed > 0 ? plural(progress.failed, "failed", "failed") : null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : "No rows changed";
+}
+
+function rowResultDetail(row: ImportResultRowView): string {
+  return row.error ?? row.warning ?? row.skipReason ?? row.url ?? "No row details";
+}
+
+function rowResultMapping(row: ImportResultRowView): string {
+  const parts = [
+    row.targetCategoryPath.length > 0 ? row.targetCategoryPath.join(" / ") : null,
+    row.targetTags.length > 0 ? row.targetTags.map((tag) => `#${tag}`).join(", ") : null,
+  ].filter(Boolean);
+  return parts.join(" · ") || "No mapping";
 }
 
 export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps) {
@@ -277,6 +343,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
   const [folderMappings, setFolderMappings] = useState<Record<string, FolderRemapState>>({});
   const [tagMappings, setTagMappings] = useState<Record<string, TagRemapState>>({});
   const [finalProgress, setFinalProgress] = useState<FinalImportProgress | null>(null);
+  const [finalReport, setFinalReport] = useState<ImportResultReportView | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -317,6 +384,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     setProgress(15);
     setPreview(null);
     setFinalProgress(null);
+    setFinalReport(null);
     setErrorMsg("");
 
     try {
@@ -428,7 +496,8 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
 
       // Subscribe to SSE progress
       cleanupRef.current = subscribeToImportProgress(importId, (state) => {
-        const completed = state.queued + state.skipped + state.merged + state.restored;
+        const failed = state.failed ?? 0;
+        const completed = state.queued + state.skipped + state.merged + state.restored + failed;
         const pct = total > 0
           ? 30 + Math.round((completed / total) * 70)
           : 100;
@@ -447,7 +516,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
             skipped: state.skipped,
             merged: state.merged,
             restored: state.restored,
+            failed,
           });
+          setFinalReport((state.result ?? null) as ImportResultReportView | null);
           setProgress(100);
           setPhase("done");
           onImport();
@@ -471,6 +542,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     setFolderMappings({});
     setTagMappings({});
     setFinalProgress(null);
+    setFinalReport(null);
     setErrorMsg("");
     if (fileRef.current) fileRef.current.value = "";
     onOpenChange(false);
@@ -922,15 +994,134 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
         )}
 
         {phase === "done" && (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <CheckCircle2 className="h-12 w-12 text-pipeline-indexed" />
-            <div className="text-center">
-              <p className="font-semibold">Import complete</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {finalProgress ? finalProgressLabel(finalProgress) : "Bookmarks queued for background processing."}
-              </p>
+          <div className="min-w-0 space-y-4 py-2">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-9 w-9 shrink-0 text-pipeline-indexed" />
+              <div className="min-w-0">
+                <p className="font-semibold">Import complete</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {finalProgress ? finalProgressLabel(finalProgress) : "Bookmarks queued for background processing."}
+                </p>
+              </div>
             </div>
-            <Button onClick={handleClose}>Done</Button>
+
+            {finalReport && (
+              <div className="min-w-0 space-y-3 rounded-md border border-border p-3">
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold">
+                    <ListChecks className="h-4 w-4 text-primary" />
+                    Result report
+                  </h3>
+                  <Badge variant={finalReport.summary.failed > 0 ? "destructive" : "secondary"} className="shrink-0">
+                    {plural(finalReport.summary.totalRows, "row")}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs min-[520px]:grid-cols-4">
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.created}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.created, "created", "created")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.updated}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.updated, "updated", "updated")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.merged}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.merged, "merged", "merged")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.restored}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.restored, "restored", "restored")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.skipped}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.skipped, "skipped", "skipped")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.failed}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.failed, "failed", "failed")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">{finalReport.summary.warnings}</p>
+                    <p className="text-muted-foreground">{plural(finalReport.summary.warnings, "warning")}</p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-border p-2">
+                    <p className="text-base font-semibold">
+                      {finalReport.summary.categoriesCreated + finalReport.summary.categoriesReused}
+                    </p>
+                    <p className="text-muted-foreground">category paths</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 min-[560px]:hidden">
+                  {finalReport.rows.slice(0, 50).map((row, index) => (
+                    <div
+                      key={`${row.url ?? row.title}-${index}-compact`}
+                      className="min-w-0 rounded-md border border-border p-3 text-xs"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium">{row.title || row.url || "Untitled"}</p>
+                        <Badge variant={row.status === "failed" ? "destructive" : "outline"} className="shrink-0 text-[10px]">
+                          {RESULT_STATUS_LABELS[row.status]}
+                        </Badge>
+                      </div>
+                      <p className="mt-2 break-words text-muted-foreground">{rowResultDetail(row)}</p>
+                      <p className="mt-1 break-words text-muted-foreground">{rowResultMapping(row)}</p>
+                    </div>
+                  ))}
+                  {finalReport.rows.length > 50 && (
+                    <p className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground">
+                      Showing first 50 rows of {finalReport.rows.length}.
+                    </p>
+                  )}
+                </div>
+
+                <div className="hidden min-w-0 max-w-full overflow-x-auto rounded-md border border-border min-[560px]:block">
+                  <div className="max-h-64 overflow-y-auto">
+                    <table className="w-full min-w-[620px] text-left text-xs">
+                      <thead className="sticky top-0 bg-background">
+                        <tr className="border-b border-border">
+                          <th className="px-3 py-2 font-medium">Title</th>
+                          <th className="px-3 py-2 font-medium">Status</th>
+                          <th className="px-3 py-2 font-medium">Detail</th>
+                          <th className="px-3 py-2 font-medium">Mapping</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {finalReport.rows.slice(0, 50).map((row, index) => (
+                          <tr key={`${row.url ?? row.title}-${index}`} className="border-b border-border last:border-b-0">
+                            <td className="max-w-[170px] truncate px-3 py-2">{row.title || row.url || "Untitled"}</td>
+                            <td className="px-3 py-2">{RESULT_STATUS_LABELS[row.status]}</td>
+                            <td className="max-w-[220px] truncate px-3 py-2">{rowResultDetail(row)}</td>
+                            <td className="max-w-[180px] truncate px-3 py-2">{rowResultMapping(row)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {finalReport.rows.length > 50 && (
+                      <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                        Showing first 50 rows of {finalReport.rows.length}.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {finalReport.warnings.length > 0 && (
+                  <div className="rounded-md border border-border p-3 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">Parser warnings</p>
+                    <p className="mt-1">{finalReport.warnings[0]}</p>
+                    {finalReport.warnings.length > 1 && (
+                      <p className="mt-1">+{finalReport.warnings.length - 1} more</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button onClick={handleClose}>Done</Button>
+            </div>
           </div>
         )}
 

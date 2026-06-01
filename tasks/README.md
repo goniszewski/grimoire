@@ -123,7 +123,7 @@ tasks/
 | TASK-107 | [Preserve Import Folder Hierarchy](done/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | done |
 | TASK-108 | [Pre Import Review](done/TASK-108-pre-import-review.md) | Grimoire parity | high | done |
 | TASK-109 | [Import Category And Tag Remapping](done/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | done |
-| TASK-110 | [Import Result Report](backlog/TASK-110-import-result-report.md) | Grimoire parity | medium | backlog |
+| TASK-110 | [Import Result Report](done/TASK-110-import-result-report.md) | Grimoire parity | medium | done |
 | TASK-111 | [Export Parity Fields](backlog/TASK-111-export-parity-fields.md) | Grimoire parity | medium | backlog |
 | TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
 | TASK-113 | [Import Export Regression Tests](backlog/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | backlog |
@@ -263,6 +263,10 @@ and tag fields, import-dialog mapping controls, regenerated API/OpenAPI docs,
 focused daemon/frontend tests, e2e coverage, visual reporting, and review
 hardening for nested folder inheritance, explicit tag target validation, and
 category aggregate refresh after import.
+TASK-110 is complete with daemon import result payloads, generated API/OpenAPI
+docs, frontend completion report UI, row-level warning/failure rendering,
+focused daemon/frontend tests, e2e coverage, visual reporting, and review
+hardening for post-create row failure IDs and final SSE progress parsing.
 TASK-120 is complete with non-mutating import preview classification, shared
 duplicate policy semantics for active merge and archived/trashed restore-merge,
 invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API

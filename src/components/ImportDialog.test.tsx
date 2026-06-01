@@ -301,15 +301,111 @@ describe("ImportDialog", () => {
       (_importId: string, onProgress: (state: unknown) => void) => {
         onProgress({
           queued: 1,
-          skipped: 4,
-          merged: 0,
+          skipped: 2,
+          merged: 1,
           restored: 0,
+          failed: 1,
           total: 5,
           folders: 2,
           categoriesCreated: 2,
           categoriesReused: 0,
           done: true,
           error: null,
+          result: {
+            summary: {
+              totalRows: 5,
+              importableRows: 3,
+              created: 1,
+              updated: 1,
+              merged: 1,
+              restored: 0,
+              skipped: 2,
+              failed: 1,
+              warnings: 4,
+              categoriesCreated: 2,
+              categoriesReused: 0,
+            },
+            duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
+            remapping: {
+              folders: [],
+              tags: [],
+            },
+            warnings: ["Skipped malformed URL near position 20"],
+            rows: [
+              {
+                status: "created",
+                action: "create",
+                classification: "new",
+                url: "https://new.example.com",
+                title: "New Row",
+                notes: null,
+                tags: ["ai"],
+                targetTags: ["ai"],
+                folders: ["Research"],
+                targetCategoryId: null,
+                targetCategoryPath: ["Research"],
+                existingBookmarkId: null,
+                bookmarkId: "bm-new",
+                skipReason: null,
+                warning: "Category or tag remapping applied.",
+                error: null,
+              },
+              {
+                status: "merged",
+                action: "merge",
+                classification: "active_duplicate",
+                url: "https://existing.example.com",
+                title: "Existing Row",
+                notes: null,
+                tags: ["typescript"],
+                targetTags: ["typescript"],
+                folders: ["Research", "AI"],
+                targetCategoryId: null,
+                targetCategoryPath: ["Research", "AI"],
+                existingBookmarkId: "bm-existing",
+                bookmarkId: "bm-existing",
+                skipReason: null,
+                warning: "Active duplicate merged into an existing bookmark.",
+                error: null,
+              },
+              {
+                status: "skipped",
+                action: "skip",
+                classification: "invalid_url",
+                url: "notaurl",
+                title: "Broken Row",
+                notes: null,
+                tags: [],
+                targetTags: [],
+                folders: [],
+                targetCategoryId: null,
+                targetCategoryPath: [],
+                existingBookmarkId: null,
+                bookmarkId: null,
+                skipReason: "Skipped malformed URL near position 20",
+                warning: "Skipped malformed URL near position 20",
+                error: null,
+              },
+              {
+                status: "failed",
+                action: "create",
+                classification: "new",
+                url: "https://failed.example.com",
+                title: "Failed Row",
+                notes: null,
+                tags: [],
+                targetTags: [],
+                folders: [],
+                targetCategoryId: null,
+                targetCategoryPath: [],
+                existingBookmarkId: null,
+                bookmarkId: null,
+                skipReason: null,
+                warning: "Import failed for this row.",
+                error: "Database write failed",
+              },
+            ],
+          },
         });
         return vi.fn();
       }
@@ -330,7 +426,15 @@ describe("ImportDialog", () => {
     });
     expect(api.subscribeToImportProgress).toHaveBeenCalledWith("import-1", expect.any(Function));
     expect(await screen.findByText("Import complete")).toBeInTheDocument();
-    expect(screen.getByText("1 created, 4 skipped")).toBeInTheDocument();
+    expect(screen.getByText("1 created, 1 merged, 2 skipped, 1 failed")).toBeInTheDocument();
+    expect(screen.getByText("Result report")).toBeInTheDocument();
+    expect(screen.getByText("1 updated")).toBeInTheDocument();
+    expect(screen.getByText("1 failed")).toBeInTheDocument();
+    expect(screen.getByText("4 warnings")).toBeInTheDocument();
+    expect(screen.getAllByText("Existing Row").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Active duplicate merged into an existing bookmark.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Failed Row").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Database write failed").length).toBeGreaterThan(0);
     expect(onImport).toHaveBeenCalled();
   });
 

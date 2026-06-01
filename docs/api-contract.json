@@ -2290,6 +2290,253 @@
       "additionalProperties": false,
       "description": "Response data"
     },
+    "ImportResultSummary": {
+      "type": "object",
+      "properties": {
+        "totalRows": {
+          "type": "integer",
+          "description": "Total parsed bookmark rows, including skipped invalid/private rows",
+          "minimum": 0
+        },
+        "importableRows": {
+          "type": "integer",
+          "description": "Valid public HTTP(S) bookmark rows",
+          "minimum": 0
+        },
+        "created": {
+          "type": "integer",
+          "description": "Bookmarks created by the committed import",
+          "minimum": 0
+        },
+        "updated": {
+          "type": "integer",
+          "description": "Existing bookmarks updated by merge or restore actions",
+          "minimum": 0
+        },
+        "merged": {
+          "type": "integer",
+          "description": "Active duplicate bookmarks merged by the committed import",
+          "minimum": 0
+        },
+        "restored": {
+          "type": "integer",
+          "description": "Archived or trashed duplicate bookmarks restored and merged",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "description": "Rows skipped by validation or duplicate policy",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Rows that failed during commit after import processing started",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "description": "Parser and row-level warnings included in the result report",
+          "minimum": 0
+        },
+        "categoriesCreated": {
+          "type": "integer",
+          "description": "Categories created from imported folder paths",
+          "minimum": 0
+        },
+        "categoriesReused": {
+          "type": "integer",
+          "description": "Existing categories reused for imported folder paths",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "totalRows",
+        "importableRows",
+        "created",
+        "updated",
+        "merged",
+        "restored",
+        "skipped",
+        "failed",
+        "warnings",
+        "categoriesCreated",
+        "categoriesReused"
+      ],
+      "additionalProperties": false,
+      "description": "Final committed import result counts"
+    },
+    "ImportResultRow": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Final committed row status",
+          "enum": [
+            "created",
+            "merged",
+            "restored",
+            "skipped",
+            "failed"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "description": "Requested action selected by the duplicate policy",
+          "enum": [
+            "create",
+            "skip",
+            "merge",
+            "restore_merge"
+          ]
+        },
+        "classification": {
+          "type": "string",
+          "description": "Import row classification",
+          "enum": [
+            "new",
+            "active_duplicate",
+            "archived_duplicate",
+            "trashed_duplicate",
+            "invalid_url",
+            "private_url"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "Source bookmark URL",
+          "nullable": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Source bookmark title"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Source note text when the import format provides note-like metadata",
+          "nullable": true
+        },
+        "tags": {
+          "type": "array",
+          "description": "Source tag names",
+          "items": {
+            "type": "string",
+            "description": "Source tag name"
+          }
+        },
+        "targetTags": {
+          "type": "array",
+          "description": "Target tag names after remapping",
+          "items": {
+            "type": "string",
+            "description": "Mapped target tag name"
+          }
+        },
+        "folders": {
+          "type": "array",
+          "description": "Source folder path",
+          "items": {
+            "type": "string",
+            "description": "Source folder name"
+          }
+        },
+        "targetCategoryId": {
+          "type": "string",
+          "description": "Mapped target category ID when it already exists",
+          "nullable": true
+        },
+        "targetCategoryPath": {
+          "type": "array",
+          "description": "Target category path after remapping",
+          "items": {
+            "type": "string",
+            "description": "Mapped target category path segment"
+          }
+        },
+        "existingBookmarkId": {
+          "type": "string",
+          "description": "Matching existing bookmark ID from preview analysis",
+          "nullable": true
+        },
+        "bookmarkId": {
+          "type": "string",
+          "description": "Bookmark ID created or updated by the committed import row",
+          "nullable": true
+        },
+        "skipReason": {
+          "type": "string",
+          "description": "Reason the row was skipped",
+          "nullable": true
+        },
+        "warning": {
+          "type": "string",
+          "description": "User-visible row warning, duplicate note, remapping note, or skipped-row reason",
+          "nullable": true
+        },
+        "error": {
+          "type": "string",
+          "description": "User-visible row error when commit processing failed for this row",
+          "nullable": true
+        }
+      },
+      "required": [
+        "status",
+        "action",
+        "classification",
+        "url",
+        "title",
+        "notes",
+        "tags",
+        "targetTags",
+        "folders",
+        "targetCategoryId",
+        "targetCategoryPath",
+        "existingBookmarkId",
+        "bookmarkId",
+        "skipReason",
+        "warning",
+        "error"
+      ],
+      "additionalProperties": false,
+      "description": "Final committed import row result"
+    },
+    "ImportResultReport": {
+      "type": "object",
+      "properties": {
+        "duplicatePolicy": {
+          "ref": "ImportDuplicatePolicy"
+        },
+        "remapping": {
+          "ref": "ImportRemapping"
+        },
+        "summary": {
+          "ref": "ImportResultSummary"
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Parser warnings",
+          "items": {
+            "type": "string",
+            "description": "Parser warning"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "description": "Committed row results",
+          "items": {
+            "ref": "ImportResultRow"
+          }
+        }
+      },
+      "required": [
+        "duplicatePolicy",
+        "remapping",
+        "summary",
+        "warnings",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "description": "Final import result report available when progress is done"
+    },
     "ImportSummary": {
       "type": "object",
       "properties": {
@@ -2370,6 +2617,11 @@
           "description": "Existing archived or trashed bookmarks restored and merged",
           "minimum": 0
         },
+        "failed": {
+          "type": "integer",
+          "description": "Rows that failed during commit after import processing started",
+          "minimum": 0
+        },
         "total": {
           "type": "integer",
           "description": "Total parsed bookmarks",
@@ -2398,6 +2650,10 @@
           "type": "string",
           "description": "Background import error",
           "nullable": true
+        },
+        "result": {
+          "ref": "ImportResultReport",
+          "nullable": true
         }
       },
       "required": [
@@ -2405,12 +2661,14 @@
         "skipped",
         "merged",
         "restored",
+        "failed",
         "total",
         "folders",
         "categoriesCreated",
         "categoriesReused",
         "done",
-        "error"
+        "error",
+        "result"
       ],
       "additionalProperties": false
     },
