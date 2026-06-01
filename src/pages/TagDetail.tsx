@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -163,6 +163,22 @@ const TagDetail = () => {
   const pageEnd = pagination ? pagination.offset + bookmarks.length : bookmarks.length;
   const canGoPrevious = offset > 0;
   const canGoNext = !!pagination?.has_more;
+
+  useEffect(() => {
+    if (bookmarksQuery.isFetching || !pagination) return;
+
+    if (pagination.total === 0) {
+      if (offset !== 0) {
+        setPageState({ tag: tagName, offset: 0 });
+      }
+      return;
+    }
+
+    if (pagination.offset >= pagination.total) {
+      const lastValidOffset = Math.floor((pagination.total - 1) / PAGE_SIZE) * PAGE_SIZE;
+      setPageState({ tag: tagName, offset: lastValidOffset });
+    }
+  }, [bookmarksQuery.isFetching, offset, pagination, tagName]);
 
   function invalidateTagAffectedQueries() {
     queryClient.invalidateQueries({ queryKey: bookmarkKeys.tags });

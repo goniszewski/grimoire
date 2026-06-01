@@ -124,14 +124,20 @@ function cloneBookmark(bookmark: BookmarkSeed): MutableBookmark {
   };
 }
 
-function listResponse(bookmarks: MutableBookmark[]) {
+function listResponse(bookmarks: MutableBookmark[], url?: URL) {
+  const rawLimit = url?.searchParams.get("limit");
+  const rawOffset = url?.searchParams.get("offset");
+  const limit = rawLimit ? Math.max(1, Number.parseInt(rawLimit, 10) || 200) : 200;
+  const offset = rawOffset ? Math.max(0, Number.parseInt(rawOffset, 10) || 0) : 0;
+  const page = bookmarks.slice(offset, offset + limit);
+
   return {
-    data: bookmarks,
+    data: page,
     pagination: {
       total: bookmarks.length,
-      limit: 200,
-      offset: 0,
-      has_more: false,
+      limit,
+      offset,
+      has_more: offset + page.length < bookmarks.length,
     },
   };
 }
@@ -254,7 +260,7 @@ async function handleBookmarkRoute(route: Route, state: MockDaemonState, url: UR
     );
     const rows = applyReadLaterFilter(visibleRows, url);
     if (rows === "invalid") return fulfillInvalidReadLater(route);
-    return fulfillJson(route, listResponse(rows));
+    return fulfillJson(route, listResponse(rows, url));
   }
 
   if (pathname === "/bookmarks" && method === "POST") {
@@ -337,7 +343,7 @@ async function handleSearch(route: Route, state: MockDaemonState, url: URL) {
     }));
 
   return fulfillJson(route, {
-    ...listResponse(rows),
+    ...listResponse(rows, url),
     meta: { mode },
   });
 }

@@ -222,6 +222,22 @@ const CategoryDetail = () => {
   const canGoNext = !!pagination?.has_more;
 
   useEffect(() => {
+    if (bookmarksQuery.isFetching || !pagination) return;
+
+    if (pagination.total === 0) {
+      if (offset !== 0) {
+        setPageState({ categoryId, offset: 0 });
+      }
+      return;
+    }
+
+    if (pagination.offset >= pagination.total) {
+      const lastValidOffset = Math.floor((pagination.total - 1) / PAGE_SIZE) * PAGE_SIZE;
+      setPageState({ categoryId, offset: lastValidOffset });
+    }
+  }, [bookmarksQuery.isFetching, categoryId, offset, pagination]);
+
+  useEffect(() => {
     if (category && !editingMetadata) {
       setMetadataForm(categoryToForm(category));
       setMetadataError(null);
@@ -595,6 +611,10 @@ const CategoryDetail = () => {
           {bookmarksQuery.isLoading ? (
             <div className="rounded-lg border px-4 py-10 text-center text-sm text-muted-foreground">
               Loading bookmarks...
+            </div>
+          ) : bookmarksQuery.isError ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              Bookmarks unavailable
             </div>
           ) : bookmarks.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-4 py-16 text-center">

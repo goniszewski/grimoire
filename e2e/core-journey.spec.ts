@@ -5,6 +5,22 @@ import { BASE, makeApiBookmark, makeHealthResponse, makeSettingsResponse } from 
 
 // ─── Mock daemon routes ────────────────────────────────────────────────────────
 
+function paginatedBookmarks(url: string, rows: unknown[]) {
+  const parsed = new URL(url);
+  const limit = Math.max(1, Number.parseInt(parsed.searchParams.get("limit") ?? "200", 10) || 200);
+  const offset = Math.max(0, Number.parseInt(parsed.searchParams.get("offset") ?? "0", 10) || 0);
+  const data = rows.slice(offset, offset + limit);
+  return {
+    data,
+    pagination: {
+      total: rows.length,
+      limit,
+      offset,
+      has_more: offset + data.length < rows.length,
+    },
+  };
+}
+
 async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
   // Health
   await page.route(`${BASE}/health`, (route) =>
@@ -42,7 +58,7 @@ async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
   await page.route(`${BASE}/bookmarks**`, async (route) => {
     const method = route.request().method();
     if (method === "GET") {
-      return route.fulfill({ json: { data: bookmarks } });
+      return route.fulfill({ json: paginatedBookmarks(route.request().url(), bookmarks) });
     }
     if (method === "POST") {
       const body = route.request().postDataJSON();
@@ -88,7 +104,7 @@ test.describe("Core bookmark journey", () => {
       const url = route.request().url();
 
       if (method === "GET" && !url.includes("/status")) {
-        return route.fulfill({ json: { data: [...bookmarks] } });
+        return route.fulfill({ json: paginatedBookmarks(route.request().url(), [...bookmarks]) });
       }
       if (method === "POST") {
         const body = route.request().postDataJSON();
@@ -175,7 +191,7 @@ test.describe("Core bookmark journey", () => {
       if (url.includes("is_archived=1") || url.includes("archive")) {
         return route.fulfill({ json: { data: [archivedBm] } });
       }
-      return route.fulfill({ json: { data: [] } });
+      return route.fulfill({ json: paginatedBookmarks(route.request().url(), []) });
     });
     await page.route(`${BASE}/health`, (route) =>
       route.fulfill({ json: makeHealthResponse() })
@@ -207,7 +223,7 @@ test.describe("Core bookmark journey", () => {
     );
     await page.route(`${BASE}/tags**`, (route) => route.fulfill({ json: { data: [] } }));
     await page.route(`${BASE}/bookmarks**`, (route) =>
-      route.fulfill({ json: { data: [] } })
+      route.fulfill({ json: { data: [], pagination: { total: 0, limit: 200, offset: 0, has_more: false } } })
     );
 
     await page.goto("/trash");

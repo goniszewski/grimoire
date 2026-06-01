@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAppLock } from "@/hooks/use-app-lock";
 import { LockScreen } from "@/components/LockScreen";
@@ -10,7 +10,7 @@ import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { AIPalette } from "@/components/AIPalette";
-import { useBookmarks, useRelatedBookmarks } from "@/hooks/use-bookmarks";
+import { LIBRARY_PAGE_SIZE_OPTIONS, SortOption, useBookmarks, useRelatedBookmarks } from "@/hooks/use-bookmarks";
 import { useDaemonStatus } from "@/hooks/use-daemon-status";
 import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
 import { DegradedModeBanner } from "@/components/DegradedModeBanner";
@@ -37,8 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { SortOption } from "@/hooks/use-bookmarks";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -54,6 +53,7 @@ const Index = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const lastPageSelectionKey = useRef(store.pageSelectionKey);
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
   const appLock = useAppLock();
   const { aiEnabled, isLoading: settingsLoading } = useSettings();
@@ -64,6 +64,12 @@ const Index = () => {
     setSelectionMode(false);
     setSelectedIds(new Set());
   }, []);
+
+  useEffect(() => {
+    if (lastPageSelectionKey.current === store.pageSelectionKey) return;
+    lastPageSelectionKey.current = store.pageSelectionKey;
+    exitSelectionMode();
+  }, [store.pageSelectionKey, exitSelectionMode]);
 
   // Dark mode by default (only if no prior preference)
   useEffect(() => {
@@ -237,6 +243,19 @@ const Index = () => {
       clear: () => store.setDateRange({ from: null, to: null }),
     },
   ].filter(Boolean) as { label: string; clear: () => void }[];
+  const totalResults = store.pagination.total;
+  const pageSummary = totalResults === 0
+    ? "0 results"
+    : `${store.pageStart}-${store.pageEnd} of ${totalResults}`;
+  const isRecoveringPage = totalResults > 0 && store.filteredBookmarks.length === 0 && store.pagination.offset > 0;
+  const hasLibraryContext =
+    !!store.searchQuery ||
+    !!store.selectedCategory ||
+    !!store.selectedTag ||
+    !!store.selectedDomain ||
+    !!store.readLaterOnly ||
+    !!store.dateRange.from ||
+    !!store.dateRange.to;
 
   if (appLock.locked) {
     return <LockScreen onUnlock={appLock.unlock} />;
@@ -258,7 +277,7 @@ const Index = () => {
           onSelectCategory={store.setSelectedCategory}
           onSelectTag={store.setSelectedTag}
           onSelectDomain={store.setSelectedDomain}
-          totalCount={store.bookmarks.length}
+          totalCount={totalResults}
         />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -327,7 +346,8 @@ const Index = () => {
             <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <p className="text-xs text-muted-foreground font-mono">
-                  {store.filteredBookmarks.length} result{store.filteredBookmarks.length !== 1 ? "s" : ""}
+                  {totalResults} result{totalResults !== 1 ? "s" : ""}
+                  {store.isFetchingPage && <span className="ml-2">Updating...</span>}
                 </p>
                 {selectionMode && selectedIds.size > 0 && (
                   <Badge variant="secondary" className="text-xs font-mono">
@@ -437,7 +457,19 @@ const Index = () => {
             </div>
 
             {/* Bookmark grid */}
-            {store.filteredBookmarks.length > 0 ? (
+            {store.isLoading ? (
+              <div className="rounded-lg border px-4 py-12 text-center text-sm text-muted-foreground">
+                Loading bookmarks...
+              </div>
+            ) : store.isError ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-4 text-sm text-destructive">
+                Bookmarks unavailable
+              </div>
+            ) : isRecoveringPage ? (
+              <div className="rounded-lg border px-4 py-12 text-center text-sm text-muted-foreground">
+                Loading a valid page...
+              </div>
+            ) : store.filteredBookmarks.length > 0 ? (
               <div className={viewMode === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
                 : "flex flex-col gap-2"
@@ -463,7 +495,7 @@ const Index = () => {
                   />
                 ))}
               </div>
-            ) : store.bookmarks.length === 0 && !store.searchQuery && !store.selectedCategory && !store.selectedTag && !store.selectedDomain ? (
+            ) : totalResults === 0 && !hasLibraryContext ? (
               /* First-run / empty library state */
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="relative mb-6">
@@ -505,6 +537,52 @@ const Index = () => {
                   <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
                     <Upload className="h-3.5 w-3.5 mr-1.5" />
                     Import
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {totalResults > 0 && (
+              <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span>{pageSummary}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Page {store.currentPage} of {store.totalPages}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <Select value={String(store.pageSize)} onValueChange={(value) => store.setPageSize(Number(value))}>
+                    <SelectTrigger aria-label="Page size" className="h-8 w-[116px] text-xs font-mono">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIBRARY_PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)} className="text-xs">
+                          {size} / page
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!store.canGoPreviousPage || store.isFetchingPage}
+                    onClick={store.goToPreviousPage}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!store.canGoNextPage || store.isFetchingPage}
+                    onClick={store.goToNextPage}
+                    aria-label="Next page"
+                  >
+                    Next
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>

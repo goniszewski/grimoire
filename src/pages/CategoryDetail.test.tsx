@@ -302,6 +302,45 @@ describe("CategoryDetail", () => {
     expect(screen.getByText("21-21 of 21")).toBeInTheDocument();
   });
 
+  it("recovers when a category bookmark page is beyond the latest total", async () => {
+    mockedListCategories.mockResolvedValue({
+      data: [makeApiCategory({ bookmark_count: 21 })],
+    });
+    mockedListBookmarks.mockImplementation((params: ListBookmarksParams) => {
+      if (params.offset === 20) {
+        return Promise.resolve(
+          bookmarkResponse([], {
+            total: 19,
+            limit: 20,
+            offset: 20,
+            has_more: false,
+          })
+        );
+      }
+      return Promise.resolve(
+        bookmarkResponse(
+          [makeApiBookmark({ id: "bm-1", title: "First page bookmark" })],
+          { total: 21, limit: 20, offset: 0, has_more: true }
+        )
+      );
+    });
+
+    renderCategoryDetail();
+
+    expect(await screen.findByText("First page bookmark")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenCalledWith({
+        category_id: "cat-ai",
+        limit: 20,
+        offset: 20,
+      })
+    );
+    await waitFor(() => expect(screen.getByText("First page bookmark")).toBeInTheDocument());
+    expect(screen.queryByText("No bookmarks in this category yet")).not.toBeInTheDocument();
+  });
+
   it("does not fall back to third-party favicon requests for bookmarks without stored icons", async () => {
     mockedListCategories.mockResolvedValue({
       data: [makeApiCategory()],

@@ -104,6 +104,7 @@ type SearchResponse = {
 };
 type MockedAsyncFn<Args extends unknown[], Result> = ((...args: Args) => Promise<Result>) & {
   mockResolvedValue(value: Result): void;
+  mockImplementation(fn: (...args: Args) => Promise<Result>): void;
   mock: { calls: Args[] };
 };
 
@@ -123,10 +124,26 @@ function pagination(total: number): Pagination {
   };
 }
 
+function pagePagination(total: number, limit: number, offset: number): Pagination {
+  return {
+    total,
+    limit,
+    offset,
+    has_more: offset + limit < total,
+  };
+}
+
 function bookmarkListResponse(data: ApiBookmark[]): BookmarkListResponse {
   return {
     data,
     pagination: pagination(data.length),
+  };
+}
+
+function bookmarkPageResponse(data: ApiBookmark[], total: number, limit: number, offset: number): BookmarkListResponse {
+  return {
+    data,
+    pagination: pagePagination(total, limit, offset),
   };
 }
 
@@ -146,6 +163,19 @@ function searchResponse(data: SearchResponse["data"] = []): SearchResponse {
   return {
     data,
     pagination: pagination(data.length),
+    meta: { mode: "keyword" },
+  };
+}
+
+function searchPageResponse(
+  data: SearchResponse["data"],
+  total: number,
+  limit: number,
+  offset: number
+): SearchResponse {
+  return {
+    data,
+    pagination: pagePagination(total, limit, offset),
     meta: { mode: "keyword" },
   };
 }
@@ -337,6 +367,167 @@ describe("useBookmarks — search", () => {
 
     await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenCalledWith("bm-read-later", { read_later: 0 }));
     await waitFor(() => expect(mockedSearchBookmarks.mock.calls.length).toBeGreaterThan(searchCallsBeforeUpdate));
+  });
+});
+
+describe("useBookmarks — pagination", () => {
+  it("requests daemon library pages and exposes page metadata", async () => {
+    mockedListBookmarks.mockImplementation(async (params = {}) => {
+      const limit = params.limit ?? 20;
+      const offset = params.offset ?? 0;
+      if (offset === 20) {
+        return bookmarkPageResponse(
+          [makeApiBookmark({ id: "bm-21", title: "Second page" })],
+          21,
+          limit,
+          offset
+        );
+      }
+      return bookmarkPageResponse(
+        [makeApiBookmark({ id: "bm-1", title: "First page" })],
+        21,
+        limit,
+        offset
+      );
+    });
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, offset: 0 }));
+    expect(result.current.pagination.total).toBe(21);
+    expect(result.current.currentPage).toBe(1);
+    expect(result.current.pageStart).toBe(1);
+    expect(result.current.pageEnd).toBe(1);
+    expect(result.current.filteredBookmarks.map((bookmark) => bookmark.id)).toEqual(["bm-1"]);
+
+    act(() => result.current.goToNextPage());
+
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, offset: 20 }))
+    );
+    await waitFor(() => expect(result.current.filteredBookmarks.map((bookmark) => bookmark.id)).toEqual(["bm-21"]));
+    expect(result.current.currentPage).toBe(2);
+    expect(result.current.totalPages).toBe(2);
+    expect(result.current.pageStart).toBe(21);
+    expect(result.current.pageEnd).toBe(21);
+  });
+
+  it("uses daemon pagination for search results", async () => {
+    const first = makeApiBookmark({ id: "bm-search-1", title: "Search page one" });
+    const second = makeApiBookmark({ id: "bm-search-21", title: "Search page two" });
+    mockedSearchBookmarks.mockImplementation(async (params) => {
+      const limit = params.limit ?? 20;
+      const offset = params.offset ?? 0;
+      if (offset === 20) {
+        return searchPageResponse([{ ...second, snippet: null, rank: 0.5 }], 21, limit, offset);
+      }
+      return searchPageResponse([{ ...first, snippet: null, rank: 1 }], 21, limit, offset);
+    });
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSearchQuery("react"));
+
+    await waitFor(() =>
+      expect(mockedSearchBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, offset: 0 })),
+      { timeout: 2000 }
+    );
+
+    act(() => result.current.goToNextPage());
+
+    await waitFor(() =>
+      expect(mockedSearchBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, offset: 20 })),
+      { timeout: 2000 }
+    );
+    await waitFor(() =>
+      expect(result.current.filteredBookmarks.map((bookmark) => bookmark.id)).toEqual(["bm-search-21"])
+    );
+  });
+
+  it("updates the page selection key immediately when search input changes", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    const initialSelectionKey = result.current.pageSelectionKey;
+
+    act(() => result.current.setSearchQuery("react"));
+
+    expect(result.current.pageSelectionKey).not.toBe(initialSelectionKey);
+    expect(JSON.parse(result.current.pageSelectionKey)).toMatchObject({
+      q: "react",
+      pageOffset: 0,
+    });
+  });
+
+  it("resets to the first page when filters or page size change", async () => {
+    mockedListBookmarks.mockImplementation(async (params = {}) => {
+      const limit = params.limit ?? 20;
+      const offset = params.offset ?? 0;
+      return bookmarkPageResponse(
+        [makeApiBookmark({ id: `bm-${offset}`, title: `Offset ${offset}` })],
+        60,
+        limit,
+        offset
+      );
+    });
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.goToNextPage());
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 20, offset: 20 }))
+    );
+
+    act(() => result.current.setSelectedDomain("example.com"));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({ domain: "example.com", limit: 20, offset: 0 })
+      )
+    );
+
+    act(() => result.current.goToNextPage());
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({ domain: "example.com", limit: 20, offset: 20 })
+      )
+    );
+
+    act(() => result.current.setPageSize(50));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({ domain: "example.com", limit: 50, offset: 0 })
+      )
+    );
+  });
+
+  it("recovers from an empty out-of-range daemon page", async () => {
+    mockedListBookmarks.mockImplementation(async (params = {}) => {
+      const limit = params.limit ?? 20;
+      const offset = params.offset ?? 0;
+      if (offset === 20) {
+        return bookmarkPageResponse([], 19, limit, offset);
+      }
+      return bookmarkPageResponse(
+        [makeApiBookmark({ id: "bm-valid", title: "Valid page" })],
+        19,
+        limit,
+        offset
+      );
+    });
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.goToNextPage());
+
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenCalledWith(expect.objectContaining({ limit: 20, offset: 20 }))
+    );
+    await waitFor(() => expect(result.current.currentPage).toBe(1));
+    expect(result.current.filteredBookmarks.map((bookmark) => bookmark.id)).toEqual(["bm-valid"]);
   });
 });
 

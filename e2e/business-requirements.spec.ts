@@ -107,6 +107,37 @@ test.describe("Documented business requirements smoke", () => {
       .toContainEqual({ format: "json", read_later: "true" });
   });
 
+  test("paginates the library and clears selections across pages", async ({ page }) => {
+    await installMockDaemon(page, {
+      bookmarks: Array.from({ length: 25 }, (_, index) =>
+        makeApiBookmark({
+          id: `bm-page-${index + 1}`,
+          url: `https://example.com/page-${index + 1}`,
+          domain: "example.com",
+          title: `Pagination Bookmark ${index + 1}`,
+          created_at: `2026-06-01T08:${String(index).padStart(2, "0")}:00Z`,
+          updated_at: `2026-06-01T08:${String(index).padStart(2, "0")}:00Z`,
+        })
+      ),
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 1$/ })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 21$/ })).toBeHidden();
+    await expect(page.getByText("1-20 of 25")).toBeVisible();
+
+    await page.getByRole("button", { name: /^Select$/ }).click();
+    await page.getByRole("heading", { name: /^Pagination Bookmark 1$/ }).click();
+    await expect(page.getByText("1 selected")).toBeVisible();
+
+    await page.getByRole("button", { name: "Next page" }).click();
+
+    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 21$/ })).toBeVisible();
+    await expect(page.getByText("21-25 of 25")).toBeVisible();
+    await expect(page.getByText("1 selected")).toBeHidden();
+  });
+
   test("clears a URL-provided tag filter when the tag query is removed", async ({ page }) => {
     await installMockDaemon(page, {
       bookmarks: [

@@ -31,6 +31,9 @@ export type SortOption =
   | "domain-az"
   | "domain-za";
 
+export const LIBRARY_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+export const DEFAULT_LIBRARY_PAGE_SIZE = LIBRARY_PAGE_SIZE_OPTIONS[0];
+
 // ─── Normalise API bookmark to a shape the UI components already understand ──
 
 export interface UIBookmark {
@@ -83,6 +86,13 @@ export interface UITagCount {
 export interface UIDomainCount {
   domain: string;
   count: number;
+}
+
+export interface LibraryPaginationState {
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 }
 
 type BookmarkForUi = {
@@ -174,16 +184,70 @@ export function useBookmarks() {
   const qc = useQueryClient();
 
   // ─── UI filter state ───────────────────────────────────────────────────────
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<SearchMode>("keyword");
+  const [searchMode, setSearchModeState] = useState<SearchMode>("keyword");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
-  const [readLaterOnly, setReadLaterOnly] = useState(false);
-  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [selectedTag, setSelectedTagState] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomainState] = useState<string | null>(null);
+  const [readLaterOnly, setReadLaterOnlyState] = useState(false);
+  const [dateRange, setDateRangeState] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
+  const [sortBy, setSortByState] = useState<SortOption>("newest");
+  const [pageSize, setPageSizeState] = useState<number>(DEFAULT_LIBRARY_PAGE_SIZE);
+  const [pageOffset, setPageOffset] = useState(0);
+
+  const dateFrom = dateRange.from?.toISOString().slice(0, 10);
+  const dateTo = dateRange.to?.toISOString().slice(0, 10);
+
+  const resetPage = useCallback(() => {
+    setPageOffset(0);
+  }, []);
+
+  const setSearchQuery = useCallback((query: string) => {
+    setSearchQueryState(query);
+    resetPage();
+  }, [resetPage]);
+
+  const setSearchMode = useCallback((mode: SearchMode) => {
+    setSearchModeState(mode);
+    resetPage();
+  }, [resetPage]);
+
+  const setSelectedTag = useCallback((tag: string | null) => {
+    setSelectedTagState(tag);
+    resetPage();
+  }, [resetPage]);
+
+  const setSelectedDomain = useCallback((domain: string | null) => {
+    setSelectedDomainState(domain);
+    resetPage();
+  }, [resetPage]);
+
+  const setReadLaterOnly = useCallback((readLater: boolean) => {
+    setReadLaterOnlyState(readLater);
+    resetPage();
+  }, [resetPage]);
+
+  const setDateRange = useCallback((range: { from: Date | null; to: Date | null }) => {
+    setDateRangeState(range);
+    resetPage();
+  }, [resetPage]);
+
+  const setSortBy = useCallback((sort: SortOption) => {
+    setSortByState(sort);
+    resetPage();
+  }, [resetPage]);
+
+  const setPageSize = useCallback((nextPageSize: number) => {
+    const safePageSize = LIBRARY_PAGE_SIZE_OPTIONS.includes(
+      nextPageSize as (typeof LIBRARY_PAGE_SIZE_OPTIONS)[number]
+    )
+      ? nextPageSize
+      : DEFAULT_LIBRARY_PAGE_SIZE;
+    setPageSizeState(safePageSize);
+    resetPage();
+  }, [resetPage]);
 
   // Debounce search — 300ms per spec
   useEffect(() => {
@@ -214,6 +278,7 @@ export function useBookmarks() {
   }, [categoriesQuery.data]);
 
   const selectCategory = useCallback((category: string | null, categoryId?: string | null) => {
+    resetPage();
     setSelectedCategory(category);
     if (!category) {
       setSelectedCategoryId(null);
@@ -232,7 +297,7 @@ export function useBookmarks() {
       }
     }
     setSelectedCategoryId(null);
-  }, [categoryMap]);
+  }, [categoryMap, resetPage]);
 
   // ─── Domains (from API) ───────────────────────────────────────────────────
   const domainsQuery = useQuery({
@@ -256,15 +321,16 @@ export function useBookmarks() {
 
   // ─── Bookmarks list (no search) ───────────────────────────────────────────
   const listParams = useMemo(() => ({
-    limit: 200,
+    limit: pageSize,
+    offset: pageOffset,
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategory ?? undefined,
-    date_from: dateRange.from?.toISOString().slice(0, 10),
-    date_to: dateRange.to?.toISOString().slice(0, 10),
+    date_from: dateFrom,
+    date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
-  }), [selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateRange, readLaterOnly]);
+  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -282,11 +348,12 @@ export function useBookmarks() {
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategory ?? undefined,
-    date_from: dateRange.from?.toISOString().slice(0, 10),
-    date_to: dateRange.to?.toISOString().slice(0, 10),
+    date_from: dateFrom,
+    date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
-    limit: 200,
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateRange, readLaterOnly]);
+    limit: pageSize,
+    offset: pageOffset,
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, pageSize, pageOffset]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -321,6 +388,76 @@ export function useBookmarks() {
       }
     });
   }, [bookmarks, sortBy]);
+
+  const activePagination: LibraryPaginationState = useMemo(() => {
+    const response = debouncedQuery.trim() ? searchQuery_.data : bookmarksQuery.data;
+    return response?.pagination ?? {
+      total: 0,
+      limit: pageSize,
+      offset: pageOffset,
+      has_more: false,
+    };
+  }, [debouncedQuery, searchQuery_.data, bookmarksQuery.data, pageSize, pageOffset]);
+
+  const totalPages = Math.max(1, Math.ceil(activePagination.total / pageSize));
+  const currentPage = Math.min(totalPages, Math.floor(pageOffset / pageSize) + 1);
+  const pageStart = activePagination.total === 0 ? 0 : activePagination.offset + 1;
+  const pageEnd = activePagination.total === 0
+    ? 0
+    : Math.min(activePagination.offset + filteredBookmarks.length, activePagination.total);
+  const canGoPreviousPage = pageOffset > 0;
+  const canGoNextPage = activePagination.has_more;
+  const isFetchingPage = debouncedQuery.trim() ? searchQuery_.isFetching : bookmarksQuery.isFetching;
+
+  useEffect(() => {
+    if (isFetchingPage) return;
+
+    if (activePagination.total === 0) {
+      if (pageOffset !== 0) setPageOffset(0);
+      return;
+    }
+
+    if (pageOffset >= activePagination.total) {
+      const lastValidOffset = Math.floor((activePagination.total - 1) / pageSize) * pageSize;
+      setPageOffset(lastValidOffset);
+    }
+  }, [activePagination.total, isFetchingPage, pageOffset, pageSize]);
+
+  const goToPreviousPage = useCallback(() => {
+    setPageOffset((currentOffset) => Math.max(0, currentOffset - pageSize));
+  }, [pageSize]);
+
+  const goToNextPage = useCallback(() => {
+    setPageOffset((currentOffset) => currentOffset + pageSize);
+  }, [pageSize]);
+
+  const pageSelectionKey = useMemo(() => JSON.stringify({
+    q: searchQuery.trim(),
+    mode: searchMode,
+    tag: selectedTag,
+    domain: selectedDomain,
+    category: selectedCategory,
+    categoryId: selectedCategoryId,
+    dateFrom,
+    dateTo,
+    readLaterOnly,
+    sortBy,
+    pageSize,
+    pageOffset,
+  }), [
+    searchQuery,
+    searchMode,
+    selectedTag,
+    selectedDomain,
+    selectedCategory,
+    selectedCategoryId,
+    dateFrom,
+    dateTo,
+    readLaterOnly,
+    sortBy,
+    pageSize,
+    pageOffset,
+  ]);
 
   const recentBookmarks = useMemo<UIBookmark[]>(
     () => [...bookmarks].sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()).slice(0, 5),
@@ -536,6 +673,19 @@ export function useBookmarks() {
     bookmarks,
     filteredBookmarks,
     recentBookmarks,
+    pagination: activePagination,
+    pageSize,
+    setPageSize,
+    currentPage,
+    totalPages,
+    pageStart,
+    pageEnd,
+    canGoPreviousPage,
+    canGoNextPage,
+    goToPreviousPage,
+    goToNextPage,
+    isFetchingPage,
+    pageSelectionKey,
     categories,
     categoriesLoading: categoriesQuery.isLoading,
     categoriesError: categoriesQuery.isError,
