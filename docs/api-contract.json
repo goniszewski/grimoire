@@ -4726,6 +4726,25 @@
           "type": "string",
           "description": "Creation timestamp",
           "format": "date-time"
+        },
+        "is_archived": {
+          "type": "integer",
+          "description": "Archived flag, 0 or 1; /export currently returns active rows, so emitted rows are 0",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "read_at": {
+          "type": "string",
+          "description": "Read timestamp; null means unread",
+          "format": "date-time",
+          "nullable": true
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes; null when empty",
+          "nullable": true
         }
       },
       "required": [
@@ -4740,7 +4759,10 @@
         "read_later",
         "opened_count",
         "last_opened_at",
-        "created_at"
+        "created_at",
+        "is_archived",
+        "read_at",
+        "notes"
       ],
       "additionalProperties": false
     },
@@ -7693,7 +7715,10 @@
                 "read_later": 1,
                 "opened_count": 2,
                 "last_opened_at": "2026-06-01T08:45:00.000Z",
-                "created_at": "2026-06-01T09:30:00.000Z"
+                "created_at": "2026-06-01T09:30:00.000Z",
+                "is_archived": 0,
+                "read_at": null,
+                "notes": "Compare chunking guidance with local notes."
               }
             ]
           }

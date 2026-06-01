@@ -8010,6 +8010,25 @@
             "type": "string",
             "description": "Creation timestamp",
             "format": "date-time"
+          },
+          "is_archived": {
+            "type": "integer",
+            "description": "Archived flag, 0 or 1; /export currently returns active rows, so emitted rows are 0",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "read_at": {
+            "type": "string",
+            "description": "Read timestamp; null means unread",
+            "format": "date-time",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "description": "Personal notes; null when empty",
+            "nullable": true
           }
         },
         "required": [
@@ -8024,7 +8043,10 @@
           "read_later",
           "opened_count",
           "last_opened_at",
-          "created_at"
+          "created_at",
+          "is_archived",
+          "read_at",
+          "notes"
         ],
         "additionalProperties": false
       },

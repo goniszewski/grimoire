@@ -80,7 +80,7 @@ Suggested values:
 | PAR-037 | Add category and tag remapping before committing imported bookmarks. | Medium | Approved | Not started | Backlog: `TASK-109`. |
 | PAR-038 | Add duplicate handling choices: skip active duplicates by default with merge option, restore archived duplicates with merge, restore trashed duplicates with merge or skip, and report invalid/private URLs. | High | Approved | Done | Completed in `TASK-120` with daemon preview/commit policy semantics, generated API docs, frontend API helpers, and repeated-source duplicate hardening. |
 | PAR-039 | Add import result report with created, updated, skipped, failed, and warning rows. | Medium | Approved | Done | Completed in `TASK-110`. |
-| PAR-040 | Expand JSON/CSV export to include approved parity fields such as notes, read state, archive state, pinned/starred mapping, read-later state, and opened metrics. | Medium | Approved | Not started | Backlog: `TASK-111`. |
+| PAR-040 | Expand JSON/CSV export to include approved parity fields such as notes, read state, archive state, pinned/starred mapping, read-later state, and opened metrics. | Medium | Approved | Done | Completed in `TASK-111`. |
 | PAR-041 | Add Grimoire backup import tooling only after browser/Netscape import and JSON/CSV export parity are stable. | Low | Deferred | Not started | Deferred. Current batch focuses on robust browser/Netscape import and export parity. Future record: `TASK-112`. |
 | PAR-042 | Add import/export regression tests with large files, folder nesting, duplicates, invalid URLs, and parity fields. | High | Approved | Not started | Backlog: `TASK-113`. |
 

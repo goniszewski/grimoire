@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-111 export parity fields</title>
+  <desc id="desc">Diagram showing the Little Imp export route now carrying notes, read state, archive state, pinned mapping, read-later state, and open metrics into JSON and CSV output.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#1e293b" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" fill="#f7f7fa"/>
+  <rect x="80" y="70" width="1440" height="760" rx="24" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="132" y="145" fill="#7c3aed" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">TASK-111</text>
+  <text x="132" y="205" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="800">Export parity fields</text>
+  <text x="132" y="250" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="26">Active bookmark exports now preserve approved migration fields in JSON and CSV.</text>
+
+  <g transform="translate(132 330)">
+    <rect x="0" y="0" width="385" height="300" rx="18" fill="#eef6ff" stroke="#9cc9f5"/>
+    <text x="30" y="54" fill="#0f4f78" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Bookmark row</text>
+    <text x="30" y="104" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">notes</text>
+    <text x="30" y="148" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">read_at</text>
+    <text x="30" y="192" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">is_archived</text>
+    <text x="30" y="236" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">is_pinned + read_later</text>
+    <text x="30" y="280" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">opened_count + last_opened_at</text>
+  </g>
+
+  <path d="M555 480 L735 480" stroke="#15803d" stroke-width="8" stroke-linecap="round"/>
+  <path d="M712 455 L740 480 L712 505" fill="none" stroke="#15803d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="586" y="450" fill="#15803d" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">exportAll</text>
+
+  <g transform="translate(775 330)">
+    <rect x="0" y="0" width="330" height="300" rx="18" fill="#f2f7ef" stroke="#a5d6a7"/>
+    <text x="30" y="54" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">JSON</text>
+    <text x="30" y="104" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">{</text>
+    <text x="56" y="145" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">"read_at": "...",</text>
+    <text x="56" y="186" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">"notes": "...",</text>
+    <text x="56" y="227" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">"is_archived": 0</text>
+    <text x="30" y="268" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="23">}</text>
+  </g>
+
+  <g transform="translate(1140 330)">
+    <rect x="0" y="0" width="330" height="300" rx="18" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="30" y="54" fill="#9a3412" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">CSV</text>
+    <text x="30" y="104" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="21">is_archived</text>
+    <text x="30" y="145" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="21">read_at</text>
+    <text x="30" y="186" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="21">notes</text>
+    <text x="30" y="227" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="21">opened_count</text>
+    <text x="30" y="268" fill="#1f2937" font-family="Inter, Arial, sans-serif" font-size="21">last_opened_at</text>
+  </g>
+
+  <g transform="translate(132 705)">
+    <rect x="0" y="0" width="1338" height="76" rx="18" fill="#191827"/>
+    <text x="34" y="48" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Contract source -> generated API.md, docs/api-contract.json, and docs/openapi.json stay synchronized.</text>
+  </g>
+</svg>

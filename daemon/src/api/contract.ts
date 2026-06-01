@@ -1407,6 +1407,9 @@ const schemas = {
       opened_count: integerSchema("Number of user-triggered opens", { minimum: 0 }),
       last_opened_at: nullable(stringSchema("Most recent user-triggered open timestamp", { format: "date-time" })),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
+      is_archived: integerSchema("Archived flag, 0 or 1; /export currently returns active rows, so emitted rows are 0", { enum: [0, 1] }),
+      read_at: nullable(stringSchema("Read timestamp; null means unread", { format: "date-time" })),
+      notes: nullable(stringSchema("Personal notes; null when empty")),
     },
     [
       "id",
@@ -1421,6 +1424,9 @@ const schemas = {
       "opened_count",
       "last_opened_at",
       "created_at",
+      "is_archived",
+      "read_at",
+      "notes",
     ]
   ),
   IntegrationTokenRecord: objectSchema(
@@ -2650,6 +2656,9 @@ export const apiContract = {
                 opened_count: exampleBookmark.opened_count,
                 last_opened_at: exampleBookmark.last_opened_at,
                 created_at: exampleBookmark.created_at,
+                is_archived: exampleBookmark.is_archived,
+                read_at: exampleBookmark.read_at,
+                notes: exampleBookmark.notes,
               },
             ],
           },

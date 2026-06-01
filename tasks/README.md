@@ -124,7 +124,7 @@ tasks/
 | TASK-108 | [Pre Import Review](done/TASK-108-pre-import-review.md) | Grimoire parity | high | done |
 | TASK-109 | [Import Category And Tag Remapping](done/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | done |
 | TASK-110 | [Import Result Report](done/TASK-110-import-result-report.md) | Grimoire parity | medium | done |
-| TASK-111 | [Export Parity Fields](backlog/TASK-111-export-parity-fields.md) | Grimoire parity | medium | backlog |
+| TASK-111 | [Export Parity Fields](done/TASK-111-export-parity-fields.md) | Grimoire parity | medium | done |
 | TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
 | TASK-113 | [Import Export Regression Tests](backlog/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | backlog |
 | TASK-114 | [Library Pagination](backlog/TASK-114-library-pagination.md) | Grimoire parity | high | backlog |
@@ -267,6 +267,10 @@ TASK-110 is complete with daemon import result payloads, generated API/OpenAPI
 docs, frontend completion report UI, row-level warning/failure rendering,
 focused daemon/frontend tests, e2e coverage, visual reporting, and review
 hardening for post-create row failure IDs and final SSE progress parsing.
+TASK-111 is complete with JSON and CSV export parity fields for notes, read
+state, archive state, pinned/starred mapping, read-later state, and open
+metrics, plus regenerated API/OpenAPI docs, focused daemon export coverage, and
+visual task reporting.
 TASK-120 is complete with non-mutating import preview classification, shared
 duplicate policy semantics for active merge and archived/trashed restore-merge,
 invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API

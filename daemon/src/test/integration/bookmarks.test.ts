@@ -363,18 +363,20 @@ describe("Bookmarks API", () => {
     expect(res.status).toBe(404);
   });
 
-  it("GET /export includes pinned/starred mapping and read_later state", async () => {
+  it("GET /export includes approved bookmark parity fields", async () => {
     const createRes = await app.request("/bookmarks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url: "https://example.com/exported" }),
     });
     const { data: bm } = await createRes.json() as { data: { id: string } };
+    const readAt = "2026-06-01T10:15:00.000Z";
+    const notes = 'Export note, with "quotes"';
 
     await app.request(`/bookmarks/${bm.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_pinned: 1, read_later: 1 }),
+      body: JSON.stringify({ is_pinned: 1, read_later: 1, read_at: readAt, notes }),
     });
     await app.request(`/bookmarks/${bm.id}/open`, { method: "POST" });
 
@@ -383,24 +385,47 @@ describe("Bookmarks API", () => {
     const exported = await jsonRes.json() as Array<{
       id: string;
       is_pinned: 0 | 1;
+      is_archived: 0 | 1;
       read_later: 0 | 1;
+      read_at: string | null;
       opened_count: number;
       last_opened_at: string | null;
+      notes: string | null;
     }>;
     expect(exported.find((row) => row.id === bm.id)).toMatchObject({
       is_pinned: 1,
+      is_archived: 0,
       read_later: 1,
+      read_at: readAt,
       opened_count: 1,
+      notes,
     });
     expect(exported.find((row) => row.id === bm.id)?.last_opened_at).not.toBeNull();
 
     const csvRes = await app.request("/export?format=csv");
     expect(csvRes.status).toBe(200);
     const csv = await csvRes.text();
-    expect(csv.split("\n")[0]).toContain("is_pinned");
-    expect(csv.split("\n")[0]).toContain("read_later");
-    expect(csv.split("\n")[0]).toContain("opened_count");
-    expect(csv.split("\n")[0]).toContain("last_opened_at");
+    const [header] = csv.split("\n");
+    expect(header).toBe(
+      [
+        "id",
+        "url",
+        "title",
+        "summary",
+        "tags",
+        "category",
+        "domain",
+        "is_pinned",
+        "read_later",
+        "opened_count",
+        "last_opened_at",
+        "created_at",
+        "is_archived",
+        "read_at",
+        "notes",
+      ].join(",")
+    );
+    expect(csv).toContain(`,0,${readAt},"Export note, with ""quotes"""`);
   });
 
   it("GET /export rejects invalid read_later filters", async () => {

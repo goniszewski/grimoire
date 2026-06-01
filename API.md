@@ -1954,7 +1954,10 @@ Content-Type: application/json
     "read_later": 1,
     "opened_count": 2,
     "last_opened_at": "2026-06-01T08:45:00.000Z",
-    "created_at": "2026-06-01T09:30:00.000Z"
+    "created_at": "2026-06-01T09:30:00.000Z",
+    "is_archived": 0,
+    "read_at": null,
+    "notes": "Compare chunking guidance with local notes."
   }
 ]
 ```
@@ -3805,6 +3808,9 @@ Response data
 | `opened_count` | integer | yes | Number of user-triggered opens |
 | `last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
 | `created_at` | string | yes | Creation timestamp |
+| `is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1; /export currently returns active rows, so emitted rows are 0 |
+| `read_at` | string \| null | yes | Read timestamp; null means unread |
+| `notes` | string \| null | yes | Personal notes; null when empty |
 
 ### IntegrationTokenRecord
 

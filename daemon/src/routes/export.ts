@@ -19,6 +19,9 @@ const CSV_HEADERS = [
   "opened_count",
   "last_opened_at",
   "created_at",
+  "is_archived",
+  "read_at",
+  "notes",
 ];
 
 function escapeCSV(v: string | null | undefined): string {
@@ -98,6 +101,9 @@ export function createExportRoute(deps: ExportDeps): Hono {
           escapeCSV(String(r.opened_count)),
           escapeCSV(r.last_opened_at),
           escapeCSV(r.created_at),
+          escapeCSV(String(r.is_archived)),
+          escapeCSV(r.read_at),
+          escapeCSV(r.notes),
         ].join(",")
       );
     }

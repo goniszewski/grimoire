@@ -39,6 +39,9 @@ export interface ExportBookmarkRow {
   opened_count: number;
   last_opened_at: string | null;
   created_at: string;
+  is_archived: 0 | 1;
+  read_at: string | null;
+  notes: string | null;
 }
 
 export interface FilterOptions {
@@ -305,6 +308,9 @@ export class BookmarkRepository {
       opened_count: r.opened_count,
       last_opened_at: r.last_opened_at,
       created_at: r.created_at,
+      is_archived: r.is_archived,
+      read_at: r.read_at,
+      notes: r.notes,
     }));
   }
 
