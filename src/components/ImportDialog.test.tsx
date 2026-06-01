@@ -6,6 +6,8 @@ import type { ImportPreview } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({
   importBookmarksFile: vi.fn(),
+  listCategories: vi.fn(),
+  listTags: vi.fn(),
   previewImportBookmarksFile: vi.fn(),
   subscribeToImportProgress: vi.fn(),
 }));
@@ -39,6 +41,40 @@ function mockPreview(overrides: Partial<ImportPreview["summary"]> = {}): ImportP
       archived: "skip",
       trashed: "skip",
     },
+    remapping: {
+      folders: [
+        {
+          sourcePath: ["Research"],
+          action: "create",
+          targetCategoryId: null,
+          targetPath: ["Research"],
+          status: "new",
+        },
+        {
+          sourcePath: ["Research", "AI"],
+          action: "create",
+          targetCategoryId: null,
+          targetPath: ["Research", "AI"],
+          status: "new",
+        },
+      ],
+      tags: [
+        {
+          sourceTag: "ai",
+          action: "new",
+          targetTagId: null,
+          targetName: "ai",
+          status: "new",
+        },
+        {
+          sourceTag: "typescript",
+          action: "new",
+          targetTagId: null,
+          targetName: "typescript",
+          status: "new",
+        },
+      ],
+    },
     summary: {
       totalRows: 5,
       importableRows: 3,
@@ -65,7 +101,10 @@ function mockPreview(overrides: Partial<ImportPreview["summary"]> = {}): ImportP
         title: "New Row",
         notes: null,
         tags: ["ai"],
+        targetTags: ["ai"],
         folders: ["Research"],
+        targetCategoryId: null,
+        targetCategoryPath: ["Research"],
         existingBookmarkId: null,
         existingState: null,
         skipReason: null,
@@ -77,7 +116,10 @@ function mockPreview(overrides: Partial<ImportPreview["summary"]> = {}): ImportP
         title: "Existing Row",
         notes: null,
         tags: ["typescript"],
+        targetTags: ["typescript"],
         folders: ["Research", "AI"],
+        targetCategoryId: null,
+        targetCategoryPath: ["Research", "AI"],
         existingBookmarkId: "bm-existing",
         existingState: "active",
         skipReason: "active_duplicate",
@@ -89,7 +131,10 @@ function mockPreview(overrides: Partial<ImportPreview["summary"]> = {}): ImportP
         title: "Broken Row",
         notes: null,
         tags: [],
+        targetTags: [],
         folders: [],
+        targetCategoryId: null,
+        targetCategoryPath: [],
         existingBookmarkId: null,
         existingState: null,
         skipReason: "Skipped malformed URL near position 20",
@@ -108,6 +153,35 @@ describe("ImportDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockResolved(api.previewImportBookmarksFile, { data: mockPreview() });
+    mockResolved(api.listCategories, {
+      data: [
+        {
+          id: "cat-existing",
+          name: "Existing",
+          parent_id: null,
+          color: null,
+          icon: null,
+          description: null,
+          slug: null,
+          is_archived: 0,
+          is_public: 0,
+          created_at: "2026-06-01T00:00:00.000Z",
+          updated_at: "2026-06-01T00:00:00.000Z",
+          bookmark_count: 0,
+          children: [],
+        },
+      ],
+    });
+    mockResolved(api.listTags, {
+      data: [
+        {
+          id: "tag-existing",
+          name: "existing",
+          created_at: "2026-06-01T00:00:00.000Z",
+          bookmark_count: 0,
+        },
+      ],
+    });
   });
 
   it("previews the selected import file before committing data", async () => {
@@ -122,13 +196,13 @@ describe("ImportDialog", () => {
       active: "skip",
       archived: "skip",
       trashed: "skip",
-    });
+    }, undefined);
     expect(screen.getAllByText("1 new").length).toBeGreaterThan(0);
     expect(screen.getByText("1 active duplicate")).toBeInTheDocument();
     expect(screen.getByText("1 invalid URL")).toBeInTheDocument();
     expect(screen.getByText("1 private URL")).toBeInTheDocument();
     expect(screen.getAllByText("Research / AI").length).toBeGreaterThan(0);
-    expect(screen.getByText("#typescript")).toBeInTheDocument();
+    expect(screen.getAllByText("#typescript").length).toBeGreaterThan(0);
     expect(api.importBookmarksFile).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -165,9 +239,50 @@ describe("ImportDialog", () => {
         active: "merge",
         archived: "skip",
         trashed: "skip",
-      });
+      }, undefined);
     });
     expect(await screen.findByText("1 merge")).toBeInTheDocument();
+  });
+
+  it("refreshes preview estimates when category and tag remapping changes", async () => {
+    render(<ImportDialog open onOpenChange={vi.fn()} onImport={vi.fn()} />);
+    const file = uploadFile();
+
+    await screen.findByText("Import Preview");
+    await waitFor(() => expect(api.listCategories).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText("Category action for Research"), {
+      target: { value: "existing" },
+    });
+
+    await waitFor(() => {
+      expect(api.previewImportBookmarksFile).toHaveBeenLastCalledWith(file, {
+        active: "skip",
+        archived: "skip",
+        trashed: "skip",
+      }, {
+        folders: [{ sourcePath: ["Research"], action: "existing", categoryId: "cat-existing" }],
+        tags: [],
+      });
+    });
+
+    fireEvent.change(await screen.findByLabelText("Tag action for ai"), {
+      target: { value: "renamed" },
+    });
+    const tagInput = await screen.findByLabelText("Target tag name for ai");
+    fireEvent.change(tagInput, { target: { value: "machine-learning" } });
+    fireEvent.blur(tagInput);
+
+    await waitFor(() => {
+      expect(api.previewImportBookmarksFile).toHaveBeenLastCalledWith(file, {
+        active: "skip",
+        archived: "skip",
+        trashed: "skip",
+      }, {
+        folders: [{ sourcePath: ["Research"], action: "existing", categoryId: "cat-existing" }],
+        tags: [{ sourceTag: "ai", action: "renamed", targetName: "machine-learning" }],
+      });
+    });
   });
 
   it("commits the selected policy only after confirmation and reports final progress", async () => {
@@ -178,6 +293,7 @@ describe("ImportDialog", () => {
         folders: 2,
         warnings: 1,
         duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
+        remapping: { folders: [], tags: [] },
         progressUrl: "/import/import-1/progress",
       },
     });
@@ -210,7 +326,7 @@ describe("ImportDialog", () => {
         active: "skip",
         archived: "skip",
         trashed: "skip",
-      });
+      }, undefined);
     });
     expect(api.subscribeToImportProgress).toHaveBeenCalledWith("import-1", expect.any(Function));
     expect(await screen.findByText("Import complete")).toBeInTheDocument();

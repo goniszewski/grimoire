@@ -42,6 +42,18 @@ function bookmarkByUrl<T extends Record<string, unknown>>(
     .get(url) ?? null;
 }
 
+function tagNamesForBookmark(db: Database, bookmarkId: string): string[] {
+  return db
+    .query<{ name: string }, [string]>(
+      `SELECT t.name FROM tags t
+       JOIN bookmark_tags bt ON bt.tag_id = t.id
+       WHERE bt.bookmark_id = ?
+       ORDER BY t.name`
+    )
+    .all(bookmarkId)
+    .map((tag) => tag.name);
+}
+
 describe("Import API", () => {
   let app: ReturnType<typeof createApp>;
   let db: Database;
@@ -398,6 +410,301 @@ describe("Import API", () => {
       .query<{ count: number }, []>("SELECT COUNT(*) AS count FROM bookmarks")
       .get()?.count ?? 0;
     expect(bookmarkCount).toBe(3);
+  });
+
+  it("POST /import/preview includes normalized folder and tag remapping decisions", async () => {
+    const existingCategory = db
+      .query<{ id: string }, []>("INSERT INTO categories (name) VALUES ('Existing Research') RETURNING id")
+      .get();
+    const existingTag = db
+      .query<{ id: string }, []>("INSERT INTO tags (name) VALUES ('curated') RETURNING id")
+      .get();
+    expect(existingCategory).toBeDefined();
+    expect(existingTag).toBeDefined();
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><H3>Research</H3>
+  <DL><p>
+    <DT><A HREF="https://remap.example.com" TAGS="AI,Legacy,SkipMe">Remap Row</A>
+    <DT><H3>AI</H3>
+    <DL><p>
+      <DT><A HREF="https://nested-remap.example.com" TAGS="AI">Nested Remap Row</A>
+    </DL><p>
+  </DL><p>
+</DL><p>`;
+
+    const res = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html, {
+        remapping: JSON.stringify({
+          folders: [
+            {
+              sourcePath: ["Research"],
+              action: "existing",
+              categoryId: existingCategory!.id,
+            },
+          ],
+          tags: [
+            { sourceTag: "ai", action: "renamed", targetName: "machine-learning" },
+            { sourceTag: "legacy", action: "existing", tagId: existingTag!.id },
+            { sourceTag: "skipme", action: "skipped" },
+          ],
+        }),
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        remapping: {
+          folders: Array<{
+            sourcePath: string[];
+            action: string;
+            targetCategoryId: string | null;
+            targetPath: string[];
+            status: string;
+          }>;
+          tags: Array<{
+            sourceTag: string;
+            action: string;
+            targetTagId: string | null;
+            targetName: string | null;
+            status: string;
+          }>;
+        };
+        rows: Array<{
+          targetCategoryId: string | null;
+          targetCategoryPath: string[];
+          targetTags: string[];
+        }>;
+      };
+    };
+
+    expect(json.data.remapping.folders).toEqual([
+      {
+        sourcePath: ["Research"],
+        action: "existing",
+        targetCategoryId: existingCategory!.id,
+        targetPath: ["Existing Research"],
+        status: "existing",
+      },
+      {
+        sourcePath: ["Research", "AI"],
+        action: "create",
+        targetCategoryId: null,
+        targetPath: ["Existing Research", "AI"],
+        status: "new",
+      },
+    ]);
+    expect(json.data.remapping.tags).toContainEqual({
+      sourceTag: "ai",
+      action: "renamed",
+      targetTagId: null,
+      targetName: "machine-learning",
+      status: "new",
+    });
+    expect(json.data.remapping.tags).toContainEqual({
+      sourceTag: "legacy",
+      action: "existing",
+      targetTagId: existingTag!.id,
+      targetName: "curated",
+      status: "existing",
+    });
+    expect(json.data.remapping.tags).toContainEqual({
+      sourceTag: "skipme",
+      action: "skipped",
+      targetTagId: null,
+      targetName: null,
+      status: "skipped",
+    });
+    expect(json.data.rows[0]).toMatchObject({
+      targetCategoryId: existingCategory!.id,
+      targetCategoryPath: ["Existing Research"],
+      targetTags: ["curated", "machine-learning"],
+    });
+    expect(json.data.rows[1]).toMatchObject({
+      targetCategoryId: null,
+      targetCategoryPath: ["Existing Research", "AI"],
+      targetTags: ["machine-learning"],
+    });
+  });
+
+  it("POST /import applies category and tag remapping together with duplicate policy", async () => {
+    const existingBookmarkId = await createBookmark(app, "https://merge.example.com", "Existing");
+    await app.request(`/bookmarks/${existingBookmarkId}`, {
+      method: "PUT",
+      body: JSON.stringify({ tags: ["prior"], notes: "Existing note" }),
+    });
+    const existingCategory = db
+      .query<{ id: string }, []>("INSERT INTO categories (name) VALUES ('Existing Research') RETURNING id")
+      .get();
+    const curatedTag = db
+      .query<{ id: string }, []>("INSERT INTO tags (name) VALUES ('curated') RETURNING id")
+      .get();
+    expect(existingCategory).toBeDefined();
+    expect(curatedTag).toBeDefined();
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><H3>Research</H3>
+  <DL><p>
+    <DT><A HREF="https://merge.example.com" TAGS="AI,SkipMe" DESCRIPTION="Imported note">Merge Row</A>
+    <DT><H3>AI</H3>
+    <DL><p>
+      <DT><A HREF="https://created-child.example.com" TAGS="AI">Created Child Row</A>
+    </DL><p>
+  </DL><p>
+  <DT><H3>Incoming Folder</H3>
+  <DL><p>
+    <DT><A HREF="https://created.example.com" TAGS="Legacy,Docs">Created Row</A>
+  </DL><p>
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify({ active: "merge" }),
+        remapping: JSON.stringify({
+          folders: [
+            {
+              sourcePath: ["Research"],
+              action: "existing",
+              categoryId: existingCategory!.id,
+            },
+            {
+              sourcePath: ["Incoming Folder"],
+              action: "create",
+              targetPath: ["Imported", "Docs"],
+            },
+          ],
+          tags: [
+            { sourceTag: "ai", action: "renamed", targetName: "machine-learning" },
+            { sourceTag: "skipme", action: "skipped" },
+            { sourceTag: "legacy", action: "existing", tagId: curatedTag!.id },
+          ],
+        }),
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const summary = await res.json() as {
+      data: {
+        progressUrl: string;
+        remapping: {
+          folders: Array<{
+            sourcePath: string[];
+            action: string;
+            targetCategoryId: string | null;
+            targetPath: string[];
+            status: string;
+          }>;
+          tags: Array<{ sourceTag: string; targetName: string | null; status: string }>;
+        };
+      };
+    };
+    expect(summary.data.remapping.folders).toContainEqual({
+      sourcePath: ["Incoming Folder"],
+      action: "create",
+      targetCategoryId: null,
+      targetPath: ["Imported", "Docs"],
+      status: "new",
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const progressText = await progress.text();
+    expect(progressText).toContain('"queued":2');
+    expect(progressText).toContain('"merged":1');
+
+    const merged = bookmarkByUrl<{ id: string; category_id: string | null; notes: string | null }>(
+      db,
+      "https://merge.example.com",
+      "id, category_id, notes"
+    );
+    expect(merged).toMatchObject({
+      id: existingBookmarkId,
+      category_id: existingCategory!.id,
+      notes: "Existing note\n\nImported note",
+    });
+    expect(tagNamesForBookmark(db, existingBookmarkId)).toEqual(["machine-learning", "prior"]);
+
+    const inheritedChildCategory = db
+      .query<{ id: string; parent_id: string | null }, [string]>(
+        "SELECT id, parent_id FROM categories WHERE name = 'AI' AND parent_id = ?"
+      )
+      .get(existingCategory!.id);
+    expect(inheritedChildCategory?.parent_id).toBe(existingCategory!.id);
+
+    const inheritedChild = bookmarkByUrl<{ id: string; category_id: string | null }>(
+      db,
+      "https://created-child.example.com",
+      "id, category_id"
+    );
+    expect(inheritedChild?.category_id).toBe(inheritedChildCategory!.id);
+    expect(tagNamesForBookmark(db, inheritedChild!.id)).toEqual(["machine-learning"]);
+
+    const importedDocs = db
+      .query<{ id: string; parent_id: string | null }, []>(
+        "SELECT id, parent_id FROM categories WHERE name = 'Docs'"
+      )
+      .get();
+    const importedRoot = db
+      .query<{ id: string }, []>("SELECT id FROM categories WHERE name = 'Imported'")
+      .get();
+    expect(importedRoot).toBeDefined();
+    expect(importedDocs?.parent_id).toBe(importedRoot!.id);
+
+    const created = bookmarkByUrl<{ id: string; category_id: string | null }>(
+      db,
+      "https://created.example.com",
+      "id, category_id"
+    );
+    expect(created?.category_id).toBe(importedDocs!.id);
+    expect(tagNamesForBookmark(db, created!.id)).toEqual(["curated", "docs"]);
+  });
+
+  it("POST /import/preview rejects conflicting tag remapping targets", async () => {
+    db.query("INSERT INTO tags (name) VALUES ('existing')").run();
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://conflict.example.com" TAGS="incoming">Conflict Row</A>
+</DL><p>`;
+
+    const res = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html, {
+        remapping: JSON.stringify({
+          tags: [{ sourceTag: "incoming", action: "new", targetName: "existing" }],
+        }),
+      }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { detail?: string };
+    expect(json.detail).toContain("already exists");
+  });
+
+  it("POST /import/preview rejects invalid explicit tag remapping targets", async () => {
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://invalid-tag-remap.example.com" TAGS="incoming">Invalid Tag Remap Row</A>
+</DL><p>`;
+
+    const res = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html, {
+        remapping: JSON.stringify({
+          tags: [{ sourceTag: "incoming", action: "renamed", targetName: "Machine Learning" }],
+        }),
+      }),
+    });
+
+    expect(res.status).toBe(422);
+    const json = await res.json() as { detail?: string };
+    expect(json.detail).toContain("single hyphens");
   });
 
   it("POST /import/preview treats repeated new source URLs as duplicates", async () => {

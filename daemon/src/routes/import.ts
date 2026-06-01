@@ -15,6 +15,7 @@ import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
+import { TagRepository } from "../db/tag-repository.js";
 import {
   parseNetscapeBookmarks,
   type ParsedBookmark,
@@ -71,6 +72,8 @@ const progressMap = new Map<string, ProgressState>();
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_CATEGORY_LEVELS = 3;
 const MAX_IMPORT_CATEGORY_NAME_LENGTH = 100;
+const MAX_IMPORT_TAG_NAME_LENGTH = 50;
+const IMPORT_TAG_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const IMPORT_ROW_CLASSIFICATIONS = [
   "new",
@@ -84,6 +87,10 @@ const IMPORT_ROW_CLASSIFICATIONS = [
 type ImportRowClassification = (typeof IMPORT_ROW_CLASSIFICATIONS)[number];
 type ActiveDuplicatePolicy = "skip" | "merge";
 type RestoreDuplicatePolicy = "skip" | "restore_merge";
+type ImportFolderMappingAction = "create" | "existing";
+type ImportFolderMappingStatus = "new" | "existing";
+type ImportTagMappingAction = "new" | "existing" | "renamed" | "skipped";
+type ImportTagMappingStatus = "new" | "existing" | "skipped";
 
 interface ImportDuplicatePolicy {
   active: ActiveDuplicatePolicy;
@@ -98,7 +105,10 @@ interface ImportPreviewRow {
   title: string;
   notes: string | null;
   tags: string[];
+  targetTags: string[];
   folders: string[];
+  targetCategoryId: string | null;
+  targetCategoryPath: string[];
   existingBookmarkId: string | null;
   existingState: "active" | "archived" | "trashed" | null;
   skipReason: string | null;
@@ -123,11 +133,52 @@ interface ImportPreviewSummary {
 
 interface ImportAnalysis {
   duplicatePolicy: ImportDuplicatePolicy;
+  remapping: ImportRemappingDecision;
   summary: ImportPreviewSummary;
   rows: ImportPreviewRow[];
   folders: string[][];
   tags: string[];
   warnings: string[];
+}
+
+interface ImportFolderMappingInput {
+  sourcePath: string[];
+  action: ImportFolderMappingAction;
+  categoryId?: string;
+  targetPath?: string[];
+}
+
+interface ImportTagMappingInput {
+  sourceTag: string;
+  action: ImportTagMappingAction;
+  tagId?: string;
+  targetName?: string;
+}
+
+interface ImportRemappingInput {
+  folders: ImportFolderMappingInput[];
+  tags: ImportTagMappingInput[];
+}
+
+interface ImportFolderMappingDecision {
+  sourcePath: string[];
+  action: ImportFolderMappingAction;
+  targetCategoryId: string | null;
+  targetPath: string[];
+  status: ImportFolderMappingStatus;
+}
+
+interface ImportTagMappingDecision {
+  sourceTag: string;
+  action: ImportTagMappingAction;
+  targetTagId: string | null;
+  targetName: string | null;
+  status: ImportTagMappingStatus;
+}
+
+interface ImportRemappingDecision {
+  folders: ImportFolderMappingDecision[];
+  tags: ImportTagMappingDecision[];
 }
 
 const DEFAULT_DUPLICATE_POLICY: ImportDuplicatePolicy = {
@@ -235,14 +286,370 @@ function parseDuplicatePolicy(formData: FormData): ImportDuplicatePolicy | strin
   return policy;
 }
 
+function parseImportRemapping(formData: FormData): ImportRemappingInput | string {
+  const raw = formData.get("remapping");
+  if (raw === null) {
+    return {
+      folders: [],
+      tags: [],
+    };
+  }
+  if (typeof raw !== "string") {
+    return "`remapping` must be a JSON object string";
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return "`remapping` must be valid JSON";
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return "`remapping` must be a JSON object";
+  }
+
+  const input = parsed as Record<string, unknown>;
+  const folders = input.folders === undefined ? [] : input.folders;
+  const tags = input.tags === undefined ? [] : input.tags;
+
+  if (!Array.isArray(folders)) return "`remapping.folders` must be an array";
+  if (!Array.isArray(tags)) return "`remapping.tags` must be an array";
+
+  const folderMappings: ImportFolderMappingInput[] = [];
+  for (const [index, value] of folders.entries()) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return `\`remapping.folders[${index}]\` must be an object`;
+    }
+    const mapping = value as Record<string, unknown>;
+    if (!isStringArray(mapping.sourcePath)) {
+      return `\`remapping.folders[${index}].sourcePath\` must be a string array`;
+    }
+    if (mapping.action !== "create" && mapping.action !== "existing") {
+      return `\`remapping.folders[${index}].action\` must be "create" or "existing"`;
+    }
+
+    const normalized: ImportFolderMappingInput = {
+      sourcePath: mapping.sourcePath,
+      action: mapping.action,
+    };
+
+    if (mapping.categoryId !== undefined) {
+      if (typeof mapping.categoryId !== "string") {
+        return `\`remapping.folders[${index}].categoryId\` must be a string`;
+      }
+      normalized.categoryId = mapping.categoryId;
+    }
+
+    if (mapping.targetPath !== undefined) {
+      if (!isStringArray(mapping.targetPath)) {
+        return `\`remapping.folders[${index}].targetPath\` must be a string array`;
+      }
+      normalized.targetPath = mapping.targetPath;
+    }
+
+    folderMappings.push(normalized);
+  }
+
+  const tagMappings: ImportTagMappingInput[] = [];
+  for (const [index, value] of tags.entries()) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return `\`remapping.tags[${index}]\` must be an object`;
+    }
+    const mapping = value as Record<string, unknown>;
+    if (typeof mapping.sourceTag !== "string") {
+      return `\`remapping.tags[${index}].sourceTag\` must be a string`;
+    }
+    if (
+      mapping.action !== "new" &&
+      mapping.action !== "existing" &&
+      mapping.action !== "renamed" &&
+      mapping.action !== "skipped"
+    ) {
+      return `\`remapping.tags[${index}].action\` must be "new", "existing", "renamed", or "skipped"`;
+    }
+
+    const normalized: ImportTagMappingInput = {
+      sourceTag: mapping.sourceTag,
+      action: mapping.action,
+    };
+
+    if (mapping.tagId !== undefined) {
+      if (typeof mapping.tagId !== "string") {
+        return `\`remapping.tags[${index}].tagId\` must be a string`;
+      }
+      normalized.tagId = mapping.tagId;
+    }
+
+    if (mapping.targetName !== undefined) {
+      if (typeof mapping.targetName !== "string") {
+        return `\`remapping.tags[${index}].targetName\` must be a string`;
+      }
+      normalized.targetName = mapping.targetName;
+    }
+
+    tagMappings.push(normalized);
+  }
+
+  return {
+    folders: folderMappings,
+    tags: tagMappings,
+  };
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
 function classifySkippedBookmark(skipped: ParsedSkippedBookmark): ImportRowClassification {
   return skipped.reason === "private_url" ? "private_url" : "invalid_url";
+}
+
+function folderKey(path: string[]): string {
+  return JSON.stringify(path);
+}
+
+function tagKey(tag: string): string {
+  return tag.trim().toLowerCase();
+}
+
+function uniqueImportTags(parsed: ParseResult): string[] {
+  const tagSet = new Set<string>();
+  for (const bookmark of parsed.bookmarks) {
+    for (const tag of bookmark.tags) {
+      const normalised = tagKey(tag);
+      if (normalised) tagSet.add(normalised);
+    }
+  }
+  return [...tagSet].sort((a, b) => a.localeCompare(b));
+}
+
+function normaliseImportTagName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function categoryPathForId(categoryRepo: CategoryRepository, categoryId: string): string[] | null {
+  const path: string[] = [];
+  let current = categoryRepo.findById(categoryId);
+  let steps = 0;
+
+  while (current) {
+    path.unshift(current.name);
+    if (!current.parent_id) break;
+    current = categoryRepo.findById(current.parent_id);
+    if (++steps > 10) break;
+  }
+
+  return path.length > 0 ? path : null;
+}
+
+function findCategoryIdByPath(categoryRepo: CategoryRepository, path: string[]): string | null {
+  let parentId: string | null = null;
+  let currentId: string | null = null;
+
+  for (const name of importCategorySegments(path)) {
+    const existing = categoryRepo.findByNameAndParent(name, parentId);
+    if (!existing) return null;
+    parentId = existing.id;
+    currentId = existing.id;
+  }
+
+  return currentId;
+}
+
+function buildImportRemapping(
+  parsed: ParseResult,
+  categoryRepo: CategoryRepository,
+  tagRepo: TagRepository,
+  input: ImportRemappingInput
+): ImportRemappingDecision | string {
+  const detectedFolderKeys = new Set(parsed.folders.map((folder) => folderKey(folder.path)));
+  const folderInputByKey = new Map<string, ImportFolderMappingInput>();
+
+  for (const mapping of input.folders) {
+    const key = folderKey(mapping.sourcePath);
+    if (!detectedFolderKeys.has(key)) {
+      return "`remapping.folders` contains a sourcePath that was not found in the import file";
+    }
+    if (folderInputByKey.has(key)) {
+      return "`remapping.folders` contains duplicate sourcePath entries";
+    }
+    folderInputByKey.set(key, mapping);
+  }
+
+  const folderDecisions: ImportFolderMappingDecision[] = [];
+  const folderDecisionByKey = new Map<string, ImportFolderMappingDecision>();
+
+  const nearestAncestorDecision = (sourcePath: string[]): ImportFolderMappingDecision | null => {
+    for (let depth = sourcePath.length - 1; depth > 0; depth--) {
+      const ancestor = folderDecisionByKey.get(folderKey(sourcePath.slice(0, depth)));
+      if (ancestor) return ancestor;
+    }
+    return null;
+  };
+
+  for (const folder of parsed.folders) {
+    const mapping = folderInputByKey.get(folderKey(folder.path));
+    if (mapping?.action === "existing") {
+      if (!mapping.categoryId) {
+        return "`remapping.folders[].categoryId` is required when action is \"existing\"";
+      }
+      const targetPath = categoryPathForId(categoryRepo, mapping.categoryId);
+      if (!targetPath) {
+        return "`remapping.folders[].categoryId` must reference an existing category";
+      }
+      const decision = {
+        sourcePath: folder.path,
+        action: "existing",
+        targetCategoryId: mapping.categoryId,
+        targetPath,
+        status: "existing",
+      } satisfies ImportFolderMappingDecision;
+      folderDecisions.push(decision);
+      folderDecisionByKey.set(folderKey(folder.path), decision);
+      continue;
+    }
+
+    const ancestor = mapping ? null : nearestAncestorDecision(folder.path);
+    const targetPath = importCategorySegments(
+      mapping?.targetPath ??
+        (ancestor
+          ? [...ancestor.targetPath, ...folder.path.slice(ancestor.sourcePath.length)]
+          : folder.path)
+    );
+    if (targetPath.length === 0) {
+      return "`remapping.folders[].targetPath` must contain at least one non-empty segment";
+    }
+    const targetCategoryId = findCategoryIdByPath(categoryRepo, targetPath);
+    const decision = {
+      sourcePath: folder.path,
+      action: "create",
+      targetCategoryId,
+      targetPath,
+      status: targetCategoryId ? "existing" : "new",
+    } satisfies ImportFolderMappingDecision;
+    folderDecisions.push(decision);
+    folderDecisionByKey.set(folderKey(folder.path), decision);
+  }
+
+  const detectedTags = uniqueImportTags(parsed);
+  const detectedTagKeys = new Set(detectedTags.map(tagKey));
+  const tagInputByKey = new Map<string, ImportTagMappingInput>();
+
+  for (const mapping of input.tags) {
+    const sourceTag = tagKey(mapping.sourceTag);
+    if (!sourceTag || !detectedTagKeys.has(sourceTag)) {
+      return "`remapping.tags` contains a sourceTag that was not found in the import file";
+    }
+    if (tagInputByKey.has(sourceTag)) {
+      return "`remapping.tags` contains duplicate sourceTag entries";
+    }
+    tagInputByKey.set(sourceTag, mapping);
+  }
+
+  const tagDecisions: ImportTagMappingDecision[] = [];
+  for (const sourceTag of detectedTags) {
+    const mapping = tagInputByKey.get(sourceTag);
+    const existingSourceTag = tagRepo.findByName(sourceTag);
+
+    if (!mapping) {
+      tagDecisions.push({
+        sourceTag,
+        action: existingSourceTag ? "existing" : "new",
+        targetTagId: existingSourceTag?.id ?? null,
+        targetName: sourceTag,
+        status: existingSourceTag ? "existing" : "new",
+      });
+      continue;
+    }
+
+    if (mapping.action === "skipped") {
+      tagDecisions.push({
+        sourceTag,
+        action: "skipped",
+        targetTagId: null,
+        targetName: null,
+        status: "skipped",
+      });
+      continue;
+    }
+
+    if (mapping.action === "existing") {
+      if (!mapping.tagId) {
+        return "`remapping.tags[].tagId` is required when action is \"existing\"";
+      }
+      const targetTag = tagRepo.findById(mapping.tagId);
+      if (!targetTag) {
+        return "`remapping.tags[].tagId` must reference an existing tag";
+      }
+      tagDecisions.push({
+        sourceTag,
+        action: "existing",
+        targetTagId: targetTag.id,
+        targetName: targetTag.name,
+        status: "existing",
+      });
+      continue;
+    }
+
+    const targetName = normaliseImportTagName(mapping.targetName ?? sourceTag);
+    if (!targetName) {
+      return "`remapping.tags[].targetName` must not be empty";
+    }
+    if (targetName.length > MAX_IMPORT_TAG_NAME_LENGTH) {
+      return `\`remapping.tags[].targetName\` must be at most ${MAX_IMPORT_TAG_NAME_LENGTH} characters`;
+    }
+    if (!IMPORT_TAG_NAME_PATTERN.test(targetName)) {
+      return "`remapping.tags[].targetName` must contain only lowercase letters, digits, and single hyphens";
+    }
+
+    const existingTargetTag = tagRepo.findByName(targetName);
+    if (mapping.action === "new" && existingTargetTag) {
+      return "`remapping.tags[].targetName` already exists; choose the existing-tag action instead";
+    }
+
+    tagDecisions.push({
+      sourceTag,
+      action: mapping.action,
+      targetTagId: existingTargetTag?.id ?? null,
+      targetName,
+      status: existingTargetTag ? "existing" : "new",
+    });
+  }
+
+  return {
+    folders: folderDecisions,
+    tags: tagDecisions,
+  };
+}
+
+function mappedTagsForSource(tags: string[], remapping: ImportRemappingDecision): string[] {
+  const bySource = new Map(remapping.tags.map((mapping) => [mapping.sourceTag, mapping]));
+  const targetTags = new Set<string>();
+
+  for (const tag of tags) {
+    const decision = bySource.get(tagKey(tag));
+    if (!decision || decision.action === "skipped" || !decision.targetName) continue;
+    targetTags.add(decision.targetName);
+  }
+
+  return [...targetTags].sort((a, b) => a.localeCompare(b));
+}
+
+function categoryMappingForSource(
+  folders: string[],
+  remapping: ImportRemappingDecision
+): ImportFolderMappingDecision | null {
+  if (folders.length === 0) return null;
+  const key = folderKey(folders);
+  return remapping.folders.find((mapping) => folderKey(mapping.sourcePath) === key) ?? null;
 }
 
 function analyzeImport(
   parsed: ParseResult,
   repo: BookmarkRepository,
-  duplicatePolicy: ImportDuplicatePolicy
+  duplicatePolicy: ImportDuplicatePolicy,
+  remapping: ImportRemappingDecision
 ): ImportAnalysis {
   const existingByUrl = new Map(
     repo.findByUrls(parsed.bookmarks.map((bookmark) => bookmark.url)).map((row) => [row.url, row])
@@ -266,6 +673,8 @@ function analyzeImport(
 
   for (const bookmark of parsed.bookmarks) {
     const existing = existingByUrl.get(bookmark.url);
+    const categoryMapping = categoryMappingForSource(bookmark.folders, remapping);
+    const targetTags = mappedTagsForSource(bookmark.tags, remapping);
     let classification: ImportRowClassification = "new";
     let action: ImportPreviewRow["action"] = "create";
     let existingState: ImportPreviewRow["existingState"] = null;
@@ -307,7 +716,10 @@ function analyzeImport(
       title: bookmark.title,
       notes: bookmark.notes,
       tags: bookmark.tags,
+      targetTags,
       folders: bookmark.folders,
+      targetCategoryId: categoryMapping?.targetCategoryId ?? null,
+      targetCategoryPath: categoryMapping?.targetPath ?? [],
       existingBookmarkId: existing?.id ?? null,
       existingState,
       skipReason: action === "skip" ? classification : null,
@@ -318,6 +730,7 @@ function analyzeImport(
 
   for (const skipped of parsed.skipped) {
     const classification = classifySkippedBookmark(skipped);
+    const categoryMapping = categoryMappingForSource(skipped.folders, remapping);
     if (classification === "private_url") summary.privateUrls++;
     else summary.invalidUrls++;
     summary.skipped++;
@@ -329,7 +742,10 @@ function analyzeImport(
       title: skipped.title,
       notes: null,
       tags: skipped.tags,
+      targetTags: mappedTagsForSource(skipped.tags, remapping),
       folders: skipped.folders,
+      targetCategoryId: categoryMapping?.targetCategoryId ?? null,
+      targetCategoryPath: categoryMapping?.targetPath ?? [],
       existingBookmarkId: null,
       existingState: null,
       skipReason: skipped.message,
@@ -339,17 +755,13 @@ function analyzeImport(
 
   rows.sort((a, b) => a.sourceIndex - b.sourceIndex);
 
-  const tagSet = new Set<string>();
-  for (const bookmark of parsed.bookmarks) {
-    for (const tag of bookmark.tags) tagSet.add(tag);
-  }
-
   return {
     duplicatePolicy,
+    remapping,
     summary,
     rows,
     folders: parsed.folders.map((folder) => folder.path),
-    tags: [...tagSet].sort((a, b) => a.localeCompare(b)),
+    tags: uniqueImportTags(parsed),
     warnings: parsed.warnings,
   };
 }
@@ -357,6 +769,7 @@ function analyzeImport(
 function importPreviewPayload(analysis: ImportAnalysis) {
   return {
     duplicatePolicy: analysis.duplicatePolicy,
+    remapping: analysis.remapping,
     summary: analysis.summary,
     folders: analysis.folders,
     tags: analysis.tags,
@@ -371,6 +784,7 @@ export function createImportRoute(deps: ImportDeps): Hono {
   const router = new Hono();
   const repo = new BookmarkRepository(deps.db);
   const categoryRepo = new CategoryRepository(deps.db);
+  const tagRepo = new TagRepository(deps.db);
 
   // POST /import/preview
   router.post("/import/preview", async (c) => {
@@ -387,7 +801,17 @@ export function createImportRoute(deps: ImportDeps): Hono {
       log.warn("Import preview: parser warnings", { count: parsed.warnings.length, sample: parsed.warnings.slice(0, 3) });
     }
 
-    const analysis = analyzeImport(parsed, repo, duplicatePolicy);
+    const remappingInput = parseImportRemapping(input.formData);
+    if (typeof remappingInput === "string") {
+      return problem(c, 422, "Unprocessable Entity", remappingInput);
+    }
+
+    const remapping = buildImportRemapping(parsed, categoryRepo, tagRepo, remappingInput);
+    if (typeof remapping === "string") {
+      return problem(c, 422, "Unprocessable Entity", remapping);
+    }
+
+    const analysis = analyzeImport(parsed, repo, duplicatePolicy, remapping);
     return c.json({ data: importPreviewPayload(analysis) });
   });
 
@@ -402,11 +826,22 @@ export function createImportRoute(deps: ImportDeps): Hono {
     }
 
     const parsed = parseNetscapeBookmarks(input.text);
-    const analysis = analyzeImport(parsed, repo, duplicatePolicy);
 
     if (parsed.warnings.length > 0) {
       log.warn("Import: parser warnings", { count: parsed.warnings.length, sample: parsed.warnings.slice(0, 3) });
     }
+
+    const remappingInput = parseImportRemapping(input.formData);
+    if (typeof remappingInput === "string") {
+      return problem(c, 422, "Unprocessable Entity", remappingInput);
+    }
+
+    const remapping = buildImportRemapping(parsed, categoryRepo, tagRepo, remappingInput);
+    if (typeof remapping === "string") {
+      return problem(c, 422, "Unprocessable Entity", remapping);
+    }
+
+    const analysis = analyzeImport(parsed, repo, duplicatePolicy, remapping);
 
     // Generate a stable import ID for the SSE progress stream
     const importId = crypto.randomUUID();
@@ -453,6 +888,7 @@ export function createImportRoute(deps: ImportDeps): Hono {
         folders: analysis.folders.length,
         warnings: parsed.warnings.length,
         duplicatePolicy,
+        remapping: analysis.remapping,
         progressUrl: `/import/${importId}/progress`,
       },
     });
@@ -561,8 +997,11 @@ async function processImport(
   const categoryStats = { created: 0, reused: 0 };
   const createdByUrl = new Map<string, string>();
 
-  for (const folderPath of analysis.folders) {
-    ensureImportCategoryPath(folderPath, categoryRepo, categoryPathCache, categoryStats);
+  for (const mapping of analysis.remapping.folders) {
+    if (mapping.action === "existing") {
+      continue;
+    }
+    ensureImportCategoryPath(mapping.targetPath, categoryRepo, categoryPathCache, categoryStats);
   }
 
   state.categoriesCreated = categoryStats.created;
@@ -586,9 +1025,7 @@ async function processImport(
         continue;
       }
 
-      const categoryId = bm.folders.length > 0
-        ? ensureImportCategoryPath(bm.folders, categoryRepo, categoryPathCache, categoryStats)
-        : null;
+      const categoryId = resolveImportCategoryId(row, categoryRepo, categoryPathCache, categoryStats);
 
       state.categoriesCreated = categoryStats.created;
       state.categoriesReused = categoryStats.reused;
@@ -600,7 +1037,7 @@ async function processImport(
           continue;
         }
         repo.mergeImportDuplicate(targetId, {
-          tags: bm.tags,
+          tags: row.targetTags,
           category_id: categoryId,
           notes: bm.notes,
           restore: row.action === "restore_merge",
@@ -614,7 +1051,7 @@ async function processImport(
       if (existingAtCommit) {
         if (existingAtCommit.is_trashed && analysis.duplicatePolicy.trashed === "restore_merge") {
           repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: bm.tags,
+            tags: row.targetTags,
             category_id: categoryId,
             notes: bm.notes,
             restore: true,
@@ -622,7 +1059,7 @@ async function processImport(
           state.restored++;
         } else if (existingAtCommit.is_archived && analysis.duplicatePolicy.archived === "restore_merge") {
           repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: bm.tags,
+            tags: row.targetTags,
             category_id: categoryId,
             notes: bm.notes,
             restore: true,
@@ -630,7 +1067,7 @@ async function processImport(
           state.restored++;
         } else if (!existingAtCommit.is_archived && !existingAtCommit.is_trashed && analysis.duplicatePolicy.active === "merge") {
           repo.mergeImportDuplicate(existingAtCommit.id, {
-            tags: bm.tags,
+            tags: row.targetTags,
             category_id: categoryId,
             notes: bm.notes,
           });
@@ -650,8 +1087,8 @@ async function processImport(
       }
 
       // Apply tags derived from Netscape TAGS attribute
-      if (bm.tags.length > 0) {
-        repo.setTags(created.id, bm.tags);
+      if (row.targetTags.length > 0) {
+        repo.setTags(created.id, row.targetTags);
       }
 
       // Enqueue ingest pipeline job
@@ -674,6 +1111,17 @@ async function processImport(
     categoriesCreated: state.categoriesCreated,
     categoriesReused: state.categoriesReused,
   });
+}
+
+function resolveImportCategoryId(
+  row: ImportPreviewRow,
+  categoryRepo: CategoryRepository,
+  cache: Map<string, string>,
+  stats: { created: number; reused: number }
+): string | null {
+  if (row.targetCategoryId) return row.targetCategoryId;
+  if (row.targetCategoryPath.length === 0) return null;
+  return ensureImportCategoryPath(row.targetCategoryPath, categoryRepo, cache, stats);
 }
 
 function ensureImportCategoryPath(

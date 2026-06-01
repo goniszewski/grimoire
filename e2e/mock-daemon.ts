@@ -519,6 +519,7 @@ export async function installMockDaemon(
       return fulfillJson(route, {
         data: {
           duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
+          remapping: { folders: [], tags: [] },
           summary: {
             totalRows: 1,
             importableRows: 1,
@@ -544,7 +545,10 @@ export async function installMockDaemon(
               title: "Imported",
               notes: null,
               tags: [],
+              targetTags: [],
               folders: [],
+              targetCategoryId: null,
+              targetCategoryPath: [],
               existingBookmarkId: null,
               existingState: null,
               skipReason: null,
@@ -563,6 +567,7 @@ export async function installMockDaemon(
           folders: 0,
           warnings: 0,
           duplicatePolicy: { active: "skip", archived: "skip", trashed: "skip" },
+          remapping: { folders: [], tags: [] },
           progressUrl: `${BASE}/import/import-smoke-1/progress`,
         },
       });

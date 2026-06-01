@@ -622,15 +622,17 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
     );
   });
 
-  it("refreshes tag and domain aggregates after an import completes", async () => {
+  it("refreshes category, tag, and domain aggregates after an import completes", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
 
+    const categoryCallsBeforeImport = mockedListCategories.mock.calls.length;
     const tagCallsBeforeImport = mockedListTags.mock.calls.length;
     const domainCallsBeforeImport = mockedListDomains.mock.calls.length;
 
     act(() => result.current.importBookmarks());
 
+    await waitFor(() => expect(mockedListCategories.mock.calls.length).toBeGreaterThan(categoryCallsBeforeImport));
     await waitFor(() => expect(mockedListTags.mock.calls.length).toBeGreaterThan(tagCallsBeforeImport));
     await waitFor(() => expect(mockedListDomains.mock.calls.length).toBeGreaterThan(domainCallsBeforeImport));
   });

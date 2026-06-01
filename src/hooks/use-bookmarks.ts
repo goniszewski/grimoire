@@ -488,6 +488,7 @@ export function useBookmarks() {
     // Import is handled via the ImportDialog which calls importBookmarksFile directly
     // After import completes, refresh the library and aggregate views.
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+    qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
     qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
   }, [qc]);

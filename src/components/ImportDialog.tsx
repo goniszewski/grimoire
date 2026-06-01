@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +16,20 @@ import {
   FolderTree,
   ListChecks,
   RefreshCw,
+  Route,
   Tags,
   Upload,
 } from "lucide-react";
 import {
   importBookmarksFile,
+  listCategories,
+  listTags,
   previewImportBookmarksFile,
   subscribeToImportProgress,
+  type ApiCategory,
+  type ApiTag,
   type ImportDuplicatePolicy,
+  type ImportRemappingInput,
 } from "@/lib/api";
 
 interface ImportDialogProps {
@@ -43,6 +49,26 @@ type ImportRowClassification =
   | "invalid_url"
   | "private_url";
 type ImportRowAction = "create" | "skip" | "merge" | "restore_merge";
+type ImportFolderMappingAction = "create" | "existing";
+type ImportTagMappingAction = "new" | "existing" | "renamed" | "skipped";
+
+interface CategoryOption {
+  id: string;
+  label: string;
+  path: string[];
+}
+
+interface FolderRemapState {
+  action: ImportFolderMappingAction;
+  categoryId?: string;
+  targetPath?: string;
+}
+
+interface TagRemapState {
+  action: ImportTagMappingAction;
+  tagId?: string;
+  targetName?: string;
+}
 
 interface ImportPreviewRowView {
   classification: ImportRowClassification;
@@ -51,14 +77,37 @@ interface ImportPreviewRowView {
   title: string;
   notes: string | null;
   tags: string[];
+  targetTags: string[];
   folders: string[];
+  targetCategoryId: string | null;
+  targetCategoryPath: string[];
   existingBookmarkId: string | null;
   existingState: "active" | "archived" | "trashed" | null;
   skipReason: string | null;
 }
 
+interface ImportFolderMappingView {
+  sourcePath: string[];
+  action: ImportFolderMappingAction;
+  targetCategoryId: string | null;
+  targetPath: string[];
+  status: "new" | "existing";
+}
+
+interface ImportTagMappingView {
+  sourceTag: string;
+  action: ImportTagMappingAction;
+  targetTagId: string | null;
+  targetName: string | null;
+  status: "new" | "existing" | "skipped";
+}
+
 interface ImportPreviewView {
   duplicatePolicy: FullImportDuplicatePolicy;
+  remapping: {
+    folders: ImportFolderMappingView[];
+    tags: ImportTagMappingView[];
+  };
   summary: {
     totalRows: number;
     importableRows: number;
@@ -108,8 +157,98 @@ const ACTION_LABELS: Record<ImportRowAction, string> = {
   restore_merge: "Restore and merge",
 };
 
+const TAG_ACTION_LABELS: Record<ImportTagMappingAction, string> = {
+  new: "Create tag",
+  existing: "Use existing",
+  renamed: "Rename",
+  skipped: "Skip",
+};
+
 function plural(count: number, singular: string, pluralLabel = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : pluralLabel}`;
+}
+
+function pathKey(path: string[]): string {
+  return JSON.stringify(path);
+}
+
+function formatPath(path: string[]): string {
+  return path.join(" / ");
+}
+
+function parsePathInput(value: string): string[] {
+  return value
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function flattenCategories(categories: ApiCategory[], prefix: string[] = []): CategoryOption[] {
+  return categories.flatMap((category) => {
+    const path = [...prefix, category.name];
+    return [
+      {
+        id: category.id,
+        label: formatPath(path),
+        path,
+      },
+      ...flattenCategories(category.children ?? [], path),
+    ];
+  });
+}
+
+function buildRemappingInput(
+  folderMappings: Record<string, FolderRemapState>,
+  tagMappings: Record<string, TagRemapState>
+): ImportRemappingInput | undefined {
+  const folders = Object.entries(folderMappings)
+    .map(([sourceKey, mapping]) => {
+      const sourcePath = JSON.parse(sourceKey) as string[];
+      if (mapping.action === "existing") {
+        if (!mapping.categoryId) return null;
+        return {
+          sourcePath,
+          action: "existing" as const,
+          categoryId: mapping.categoryId,
+        };
+      }
+      const targetPath = parsePathInput(mapping.targetPath ?? formatPath(sourcePath));
+      if (targetPath.length === 0) return null;
+      return {
+        sourcePath,
+        action: "create" as const,
+        targetPath,
+      };
+    })
+    .filter((mapping): mapping is NonNullable<typeof mapping> => mapping !== null);
+
+  const tags = Object.entries(tagMappings)
+    .map(([sourceTag, mapping]) => {
+      if (mapping.action === "skipped") {
+        return {
+          sourceTag,
+          action: "skipped" as const,
+        };
+      }
+      if (mapping.action === "existing") {
+        if (!mapping.tagId) return null;
+        return {
+          sourceTag,
+          action: "existing" as const,
+          tagId: mapping.tagId,
+        };
+      }
+      const targetName = (mapping.targetName ?? sourceTag).trim();
+      if (!targetName) return null;
+      return {
+        sourceTag,
+        action: mapping.action,
+        targetName,
+      };
+    })
+    .filter((mapping): mapping is NonNullable<typeof mapping> => mapping !== null);
+
+  return folders.length > 0 || tags.length > 0 ? { folders, tags } : undefined;
 }
 
 function importableActionCount(preview: ImportPreviewView | null): number {
@@ -133,13 +272,45 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [duplicatePolicy, setDuplicatePolicy] = useState<FullImportDuplicatePolicy>(DEFAULT_DUPLICATE_POLICY);
   const [preview, setPreview] = useState<ImportPreviewView | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [existingTags, setExistingTags] = useState<ApiTag[]>([]);
+  const [folderMappings, setFolderMappings] = useState<Record<string, FolderRemapState>>({});
+  const [tagMappings, setTagMappings] = useState<Record<string, TagRemapState>>({});
   const [finalProgress, setFinalProgress] = useState<FinalImportProgress | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const previewRequestRef = useRef(0);
 
-  const runPreview = async (file: File, policy: FullImportDuplicatePolicy) => {
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const categoryResponse = await listCategories();
+        const tagResponse = await listTags();
+        if (cancelled) return;
+        setCategoryOptions(flattenCategories(categoryResponse.data));
+        setExistingTags(tagResponse.data);
+      } catch {
+        if (cancelled) return;
+        setCategoryOptions([]);
+        setExistingTags([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const runPreview = async (
+    file: File,
+    policy: FullImportDuplicatePolicy,
+    nextFolderMappings = folderMappings,
+    nextTagMappings = tagMappings
+  ) => {
     const requestId = previewRequestRef.current + 1;
     previewRequestRef.current = requestId;
     setPhase("previewing");
@@ -149,7 +320,8 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     setErrorMsg("");
 
     try {
-      const result = await previewImportBookmarksFile(file, policy);
+      const remapping = buildRemappingInput(nextFolderMappings, nextTagMappings);
+      const result = await previewImportBookmarksFile(file, policy, remapping);
       if (previewRequestRef.current !== requestId) return;
       setPreview(result.data as ImportPreviewView);
       setDuplicatePolicy({ ...DEFAULT_DUPLICATE_POLICY, ...result.data.duplicatePolicy });
@@ -167,9 +339,13 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     if (!file) return;
 
     const policy = { ...DEFAULT_DUPLICATE_POLICY };
+    const emptyFolderMappings: Record<string, FolderRemapState> = {};
+    const emptyTagMappings: Record<string, TagRemapState> = {};
     setSelectedFile(file);
     setDuplicatePolicy(policy);
-    await runPreview(file, policy);
+    setFolderMappings(emptyFolderMappings);
+    setTagMappings(emptyTagMappings);
+    await runPreview(file, policy, emptyFolderMappings, emptyTagMappings);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,6 +366,51 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     if (selectedFile) void runPreview(selectedFile, nextPolicy);
   };
 
+  const handleFolderMappingChange = (
+    sourcePath: string[],
+    patch: Partial<FolderRemapState>,
+    options: { previewImmediately?: boolean } = { previewImmediately: true }
+  ) => {
+    const key = pathKey(sourcePath);
+    const current = folderMappings[key] ?? {
+      action: "create" as const,
+      targetPath: formatPath(sourcePath),
+    };
+    const next = {
+      ...folderMappings,
+      [key]: {
+        ...current,
+        ...patch,
+      },
+    };
+    setFolderMappings(next);
+    if (selectedFile && options.previewImmediately) {
+      void runPreview(selectedFile, duplicatePolicy, next, tagMappings);
+    }
+  };
+
+  const handleTagMappingChange = (
+    sourceTag: string,
+    patch: Partial<TagRemapState>,
+    options: { previewImmediately?: boolean } = { previewImmediately: true }
+  ) => {
+    const current = tagMappings[sourceTag] ?? {
+      action: "new" as const,
+      targetName: sourceTag,
+    };
+    const next = {
+      ...tagMappings,
+      [sourceTag]: {
+        ...current,
+        ...patch,
+      },
+    };
+    setTagMappings(next);
+    if (selectedFile && options.previewImmediately) {
+      void runPreview(selectedFile, duplicatePolicy, folderMappings, next);
+    }
+  };
+
   const handleCommit = async () => {
     if (!selectedFile) return;
 
@@ -198,7 +419,8 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     setErrorMsg("");
 
     try {
-      const result = await importBookmarksFile(selectedFile, duplicatePolicy);
+      const remapping = buildRemappingInput(folderMappings, tagMappings);
+      const result = await importBookmarksFile(selectedFile, duplicatePolicy, remapping);
       const { importId, total } = result.data;
 
       setProgress(30);
@@ -246,6 +468,8 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     setSelectedFile(null);
     setDuplicatePolicy(DEFAULT_DUPLICATE_POLICY);
     setPreview(null);
+    setFolderMappings({});
+    setTagMappings({});
     setFinalProgress(null);
     setErrorMsg("");
     if (fileRef.current) fileRef.current.value = "";
@@ -415,6 +639,185 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               </div>
             </div>
 
+            {(preview.remapping.folders.length > 0 || preview.remapping.tags.length > 0) && (
+              <div className="grid min-w-0 gap-2 lg:grid-cols-2">
+                {preview.remapping.folders.length > 0 && (
+                  <div className="min-w-0 space-y-3 rounded-md border border-border p-3">
+                    <p className="flex items-center gap-2 text-xs font-medium">
+                      <Route className="h-3.5 w-3.5 text-primary" />
+                      Category mapping
+                    </p>
+                    <div className="max-h-48 space-y-3 overflow-y-auto pr-1">
+                      {preview.remapping.folders.map((mapping) => {
+                        const key = pathKey(mapping.sourcePath);
+                        const state = folderMappings[key];
+                        const action = state?.action ?? mapping.action;
+                        const selectedCategoryId = state?.categoryId ?? mapping.targetCategoryId ?? categoryOptions[0]?.id ?? "";
+                        const targetPath = state?.targetPath ?? formatPath(mapping.targetPath);
+
+                        return (
+                          <div key={key} className="min-w-0 space-y-2 border-b border-border pb-3 last:border-b-0 last:pb-0">
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <p className="truncate text-xs font-medium">{formatPath(mapping.sourcePath)}</p>
+                              <Badge variant={mapping.status === "new" ? "secondary" : "outline"} className="shrink-0 text-[10px]">
+                                {mapping.status}
+                              </Badge>
+                            </div>
+                            <select
+                              aria-label={`Category action for ${formatPath(mapping.sourcePath)}`}
+                              value={action}
+                              onChange={(event) => {
+                                const nextAction = event.target.value as ImportFolderMappingAction;
+                                handleFolderMappingChange(mapping.sourcePath, nextAction === "existing"
+                                  ? {
+                                      action: "existing",
+                                      categoryId: mapping.targetCategoryId ?? categoryOptions[0]?.id,
+                                      targetPath: undefined,
+                                    }
+                                  : {
+                                      action: "create",
+                                      categoryId: undefined,
+                                      targetPath: formatPath(mapping.targetPath),
+                                    });
+                              }}
+                              className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                            >
+                              <option value="create">Create or reuse path</option>
+                              <option value="existing" disabled={categoryOptions.length === 0}>
+                                Use existing category
+                              </option>
+                            </select>
+                            {action === "existing" ? (
+                              <select
+                                aria-label={`Existing category for ${formatPath(mapping.sourcePath)}`}
+                                value={selectedCategoryId}
+                                onChange={(event) => handleFolderMappingChange(mapping.sourcePath, {
+                                  action: "existing",
+                                  categoryId: event.target.value,
+                                  targetPath: undefined,
+                                })}
+                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              >
+                                {categoryOptions.map((category) => (
+                                  <option key={category.id} value={category.id}>
+                                    {category.label}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                aria-label={`Target category path for ${formatPath(mapping.sourcePath)}`}
+                                value={targetPath}
+                                onChange={(event) => handleFolderMappingChange(mapping.sourcePath, {
+                                  action: "create",
+                                  targetPath: event.target.value,
+                                  categoryId: undefined,
+                                }, { previewImmediately: false })}
+                                onBlur={() => selectedFile && void runPreview(selectedFile, duplicatePolicy)}
+                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {preview.remapping.tags.length > 0 && (
+                  <div className="min-w-0 space-y-3 rounded-md border border-border p-3">
+                    <p className="flex items-center gap-2 text-xs font-medium">
+                      <Tags className="h-3.5 w-3.5 text-primary" />
+                      Tag mapping
+                    </p>
+                    <div className="max-h-48 space-y-3 overflow-y-auto pr-1">
+                      {preview.remapping.tags.map((mapping) => {
+                        const state = tagMappings[mapping.sourceTag];
+                        const action = state?.action ?? mapping.action;
+                        const selectedTagId = state?.tagId ?? mapping.targetTagId ?? existingTags[0]?.id ?? "";
+                        const targetName = state?.targetName ?? mapping.targetName ?? mapping.sourceTag;
+
+                        return (
+                          <div key={mapping.sourceTag} className="min-w-0 space-y-2 border-b border-border pb-3 last:border-b-0 last:pb-0">
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <p className="truncate text-xs font-medium">#{mapping.sourceTag}</p>
+                              <Badge variant={mapping.status === "new" ? "secondary" : "outline"} className="shrink-0 text-[10px]">
+                                {mapping.status}
+                              </Badge>
+                            </div>
+                            <select
+                              aria-label={`Tag action for ${mapping.sourceTag}`}
+                              value={action}
+                              onChange={(event) => {
+                                const nextAction = event.target.value as ImportTagMappingAction;
+                                if (nextAction === "existing") {
+                                  handleTagMappingChange(mapping.sourceTag, {
+                                    action: "existing",
+                                    tagId: mapping.targetTagId ?? existingTags[0]?.id,
+                                    targetName: undefined,
+                                  });
+                                  return;
+                                }
+                                if (nextAction === "skipped") {
+                                  handleTagMappingChange(mapping.sourceTag, {
+                                    action: "skipped",
+                                    tagId: undefined,
+                                    targetName: undefined,
+                                  });
+                                  return;
+                                }
+                                handleTagMappingChange(mapping.sourceTag, {
+                                  action: nextAction,
+                                  tagId: undefined,
+                                  targetName: mapping.targetName ?? mapping.sourceTag,
+                                });
+                              }}
+                              className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                            >
+                              <option value="new">{TAG_ACTION_LABELS.new}</option>
+                              <option value="existing" disabled={existingTags.length === 0}>{TAG_ACTION_LABELS.existing}</option>
+                              <option value="renamed">{TAG_ACTION_LABELS.renamed}</option>
+                              <option value="skipped">{TAG_ACTION_LABELS.skipped}</option>
+                            </select>
+                            {action === "existing" ? (
+                              <select
+                                aria-label={`Existing tag for ${mapping.sourceTag}`}
+                                value={selectedTagId}
+                                onChange={(event) => handleTagMappingChange(mapping.sourceTag, {
+                                  action: "existing",
+                                  tagId: event.target.value,
+                                  targetName: undefined,
+                                })}
+                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              >
+                                {existingTags.map((tag) => (
+                                  <option key={tag.id} value={tag.id}>
+                                    #{tag.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : action === "renamed" || action === "new" ? (
+                              <input
+                                aria-label={`Target tag name for ${mapping.sourceTag}`}
+                                value={targetName}
+                                onChange={(event) => handleTagMappingChange(mapping.sourceTag, {
+                                  action,
+                                  targetName: event.target.value,
+                                  tagId: undefined,
+                                }, { previewImmediately: false })}
+                                onBlur={() => selectedFile && void runPreview(selectedFile, duplicatePolicy)}
+                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              />
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {(preview.folders.length > 0 || preview.tags.length > 0) && (
               <div className="grid min-w-0 gap-2 sm:grid-cols-2">
                 {preview.folders.length > 0 && (
@@ -462,13 +865,14 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
 
             <div className="min-w-0 max-w-full overflow-x-auto rounded-md border border-border">
               <div className="max-h-56 overflow-y-auto">
-                <table className="w-full min-w-[560px] text-left text-xs">
+                <table className="w-full min-w-[700px] text-left text-xs">
                   <thead className="sticky top-0 bg-background">
                     <tr className="border-b border-border">
                       <th className="px-3 py-2 font-medium">Title</th>
                       <th className="px-3 py-2 font-medium">Status</th>
                       <th className="px-3 py-2 font-medium">Action</th>
                       <th className="px-3 py-2 font-medium">Folder</th>
+                      <th className="px-3 py-2 font-medium">Target</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -479,6 +883,12 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                         <td className="px-3 py-2">{ACTION_LABELS[row.action]}</td>
                         <td className="max-w-[160px] truncate px-3 py-2">
                           {row.folders.length > 0 ? row.folders.join(" / ") : "Uncategorized"}
+                        </td>
+                        <td className="max-w-[190px] truncate px-3 py-2">
+                          {[
+                            row.targetCategoryPath.length > 0 ? row.targetCategoryPath.join(" / ") : null,
+                            row.targetTags.length > 0 ? row.targetTags.map((tag) => `#${tag}`).join(", ") : null,
+                          ].filter(Boolean).join(" · ") || "No mapping"}
                         </td>
                       </tr>
                     ))}

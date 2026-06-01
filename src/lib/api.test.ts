@@ -248,6 +248,10 @@ describe("import API", () => {
         JSON.stringify({
           data: {
             duplicatePolicy: { active: "merge", archived: "restore_merge", trashed: "skip" },
+            remapping: {
+              folders: [],
+              tags: [],
+            },
             summary: {
               totalRows: 1,
               importableRows: 1,
@@ -276,8 +280,12 @@ describe("import API", () => {
     );
     const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
     const duplicatePolicy = { active: "merge", archived: "restore_merge", trashed: "skip" } as const;
+    const remapping = {
+      folders: [{ sourcePath: ["Research"], action: "create" as const, targetPath: ["Imported"] }],
+      tags: [{ sourceTag: "typescript", action: "renamed" as const, targetName: "ts" }],
+    };
 
-    const result = await previewImportBookmarksFile(file, duplicatePolicy);
+    const result = await previewImportBookmarksFile(file, duplicatePolicy, remapping);
 
     expect(fetchSpy).toHaveBeenCalledWith(
       "http://127.0.0.1:3210/import/preview",
@@ -286,6 +294,7 @@ describe("import API", () => {
     const body = fetchSpy.mock.calls[0][1]?.body as FormData;
     expect(body.get("file")).toBe(file);
     expect(body.get("duplicatePolicy")).toBe(JSON.stringify(duplicatePolicy));
+    expect(body.get("remapping")).toBe(JSON.stringify(remapping));
     expect(result.data.summary.merged).toBe(1);
   });
 
@@ -299,6 +308,10 @@ describe("import API", () => {
             folders: 0,
             warnings: 0,
             duplicatePolicy: { active: "skip", archived: "restore_merge", trashed: "restore_merge" },
+            remapping: {
+              folders: [],
+              tags: [],
+            },
             progressUrl: "/import/import-1/progress",
           },
         }),
@@ -310,8 +323,11 @@ describe("import API", () => {
     );
     const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
     const duplicatePolicy = { archived: "restore_merge", trashed: "restore_merge" } as const;
+    const remapping = {
+      tags: [{ sourceTag: "legacy", action: "skipped" as const }],
+    };
 
-    await importBookmarksFile(file, duplicatePolicy);
+    await importBookmarksFile(file, duplicatePolicy, remapping);
 
     expect(fetchSpy).toHaveBeenCalledWith(
       "http://127.0.0.1:3210/import",
@@ -320,5 +336,6 @@ describe("import API", () => {
     const body = fetchSpy.mock.calls[0][1]?.body as FormData;
     expect(body.get("file")).toBe(file);
     expect(body.get("duplicatePolicy")).toBe(JSON.stringify(duplicatePolicy));
+    expect(body.get("remapping")).toBe(JSON.stringify(remapping));
   });
 });

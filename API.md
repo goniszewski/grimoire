@@ -1148,13 +1148,14 @@ Preview a Netscape HTML bookmark export without mutating library data.
 Request body:
 
 - Content type: `multipart/form-data`
-- Multipart body with a file field and optional duplicatePolicy JSON field.
+- Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.
 - Schema: `object`
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `file` | string | yes | HTML bookmark export file |
 | `duplicatePolicy` | string | no | Optional JSON duplicate policy |
+| `remapping` | string | no | Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag. |
 
 Responses:
 
@@ -1175,7 +1176,8 @@ Request:
 ```bash
 curl -X POST http://127.0.0.1:3210/import/preview \
   -F file=@bookmarks.html \
-  -F 'duplicatePolicy={"active":"merge","archived":"restore_merge","trashed":"skip"}'
+  -F 'duplicatePolicy={"active":"merge","archived":"restore_merge","trashed":"skip"}' \
+  -F 'remapping={"folders":[{"sourcePath":["Research"],"action":"existing","categoryId":"cat_research"}],"tags":[{"sourceTag":"sqlite","action":"renamed","targetName":"database"}]}'
 ```
 
 Response:
@@ -1190,6 +1192,37 @@ Content-Type: application/json
       "active": "merge",
       "archived": "restore_merge",
       "trashed": "skip"
+    },
+    "remapping": {
+      "folders": [
+        {
+          "sourcePath": [
+            "Research"
+          ],
+          "action": "existing",
+          "targetCategoryId": "cat_research",
+          "targetPath": [
+            "Research"
+          ],
+          "status": "existing"
+        }
+      ],
+      "tags": [
+        {
+          "sourceTag": "database",
+          "action": "existing",
+          "targetTagId": "tag_database",
+          "targetName": "database",
+          "status": "existing"
+        },
+        {
+          "sourceTag": "sqlite",
+          "action": "renamed",
+          "targetTagId": "tag_database",
+          "targetName": "database",
+          "status": "existing"
+        }
+      ]
     },
     "summary": {
       "totalRows": 12,
@@ -1231,7 +1264,14 @@ Content-Type: application/json
         "tags": [
           "database"
         ],
+        "targetTags": [
+          "database"
+        ],
         "folders": [
+          "Research"
+        ],
+        "targetCategoryId": "cat_research",
+        "targetCategoryPath": [
           "Research"
         ],
         "existingBookmarkId": "bm_123",
@@ -1250,13 +1290,14 @@ Import a Netscape HTML bookmark export.
 Request body:
 
 - Content type: `multipart/form-data`
-- Multipart body with a file field and optional duplicatePolicy JSON field.
+- Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.
 - Schema: `object`
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `file` | string | yes | HTML bookmark export file |
 | `duplicatePolicy` | string | no | Optional JSON duplicate policy |
+| `remapping` | string | no | Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag. |
 
 Responses:
 
@@ -1276,7 +1317,8 @@ Request:
 
 ```bash
 curl -X POST http://127.0.0.1:3210/import \
-  -F file=@bookmarks.html
+  -F file=@bookmarks.html \
+  -F 'remapping={"folders":[{"sourcePath":["Research"],"action":"existing","categoryId":"cat_research"}],"tags":[{"sourceTag":"sqlite","action":"renamed","targetName":"database"}]}'
 ```
 
 Response:
@@ -1295,6 +1337,30 @@ Content-Type: application/json
       "active": "skip",
       "archived": "skip",
       "trashed": "skip"
+    },
+    "remapping": {
+      "folders": [
+        {
+          "sourcePath": [
+            "Research"
+          ],
+          "action": "existing",
+          "targetCategoryId": "cat_research",
+          "targetPath": [
+            "Research"
+          ],
+          "status": "existing"
+        }
+      ],
+      "tags": [
+        {
+          "sourceTag": "sqlite",
+          "action": "renamed",
+          "targetTagId": null,
+          "targetName": "database",
+          "status": "new"
+        }
+      ]
     },
     "progressUrl": "/import/import_123/progress"
   }
@@ -2761,6 +2827,70 @@ Duplicate handling policy applied to an import preview or commit
 | `archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
 | `trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
 
+### ImportFolderRemappingInput
+
+Import folder remapping request entry
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `sourcePath` | array<string> | yes | Folder path from the imported file |
+| `action` | "create" \| "existing" | yes | Folder remapping action. Use create with targetPath or existing with categoryId. |
+| `categoryId` | string | no | Existing category ID; required when action is existing |
+| `targetPath` | array<string> | no | Target path for create/reuse mappings. Child folders inherit remapped ancestor paths unless explicitly mapped. |
+
+### ImportTagRemappingInput
+
+Import tag remapping request entry
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `sourceTag` | string | yes | Source tag name from the imported file |
+| `action` | "new" \| "existing" \| "renamed" \| "skipped" | yes | Tag remapping action. Use tagId for existing, targetName for new or renamed. |
+| `tagId` | string | no | Existing tag ID; required when action is existing |
+| `targetName` | string | no | Target tag name for new or renamed mappings; lowercase hyphen format, max 50 characters |
+
+### ImportRemappingInput
+
+Optional import remapping request JSON. Omitted folders and tags use the daemon's default create/reuse decisions.
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `folders` | array<ImportFolderRemappingInput> | no | Folder remapping overrides |
+| `tags` | array<ImportTagRemappingInput> | no | Tag remapping overrides |
+
+### ImportFolderMapping
+
+Resolved import folder remapping decision
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `sourcePath` | array<string> | yes | Folder path from the imported file |
+| `action` | "create" \| "existing" | yes | Folder remapping action |
+| `targetCategoryId` | string \| null | yes | Existing target category ID when mapped to an existing category |
+| `targetPath` | array<string> | yes | Resolved target category path |
+| `status` | "new" \| "existing" | yes | Whether the target category path already exists or will be created |
+
+### ImportTagMapping
+
+Resolved import tag remapping decision
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `sourceTag` | string | yes | Source tag name from the imported file |
+| `action` | "new" \| "existing" \| "renamed" \| "skipped" | yes | Tag remapping action |
+| `targetTagId` | string \| null | yes | Existing target tag ID when reused |
+| `targetName` | string \| null | yes | Resolved target tag name; null when skipped |
+| `status` | "new" \| "existing" \| "skipped" | yes | Whether the target tag exists, will be created, or is skipped |
+
+### ImportRemapping
+
+Resolved category and tag remapping decisions applied to an import preview or commit
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
+
 ### ImportPreviewSummary
 
 | Field | Type | Required | Description |
@@ -2788,7 +2918,10 @@ Duplicate handling policy applied to an import preview or commit
 | `title` | string | yes | Source bookmark title |
 | `notes` | string \| null | yes | Source note text when the import format provides note-like metadata |
 | `tags` | array<string> | yes | Source tag names |
+| `targetTags` | array<string> | yes | Target tag names after remapping |
 | `folders` | array<string> | yes | Source folder path |
+| `targetCategoryId` | string \| null | yes | Mapped target category ID when it already exists |
+| `targetCategoryPath` | array<string> | yes | Target category path after remapping |
 | `existingBookmarkId` | string \| null | yes | Matching existing bookmark ID |
 | `existingState` | "active" \| "archived" \| "trashed" \| null | yes | Matching existing bookmark state |
 | `skipReason` | string \| null | yes | Reason the row would be skipped |
@@ -2803,6 +2936,9 @@ Non-mutating import preview
 | `duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
 | `duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
 | `duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `remapping` | ImportRemapping | yes |  |
+| `remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
 | `summary` | ImportPreviewSummary | yes |  |
 | `summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
 | `summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
@@ -2832,6 +2968,9 @@ Response data
 | `data.duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
 | `data.duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
 | `data.duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `data.remapping` | ImportRemapping | yes |  |
+| `data.remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `data.remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
 | `data.summary` | ImportPreviewSummary | yes |  |
 | `data.summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
 | `data.summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
@@ -2862,6 +3001,9 @@ Response data
 | `duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
 | `duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
 | `duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `remapping` | ImportRemapping | yes |  |
+| `remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
 | `progressUrl` | string | yes | SSE progress URL |
 
 ### ImportSummaryResponse
@@ -2879,6 +3021,9 @@ Response data
 | `data.duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
 | `data.duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
 | `data.duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `data.remapping` | ImportRemapping | yes |  |
+| `data.remapping.folders` | array<ImportFolderMapping> | yes | Resolved folder remapping decisions |
+| `data.remapping.tags` | array<ImportTagMapping> | yes | Resolved tag remapping decisions |
 | `data.progressUrl` | string | yes | SSE progress URL |
 
 ### ImportProgressEvent

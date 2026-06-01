@@ -122,7 +122,7 @@ tasks/
 | TASK-106 | [Integration CORS And Origin Controls](done/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | done |
 | TASK-107 | [Preserve Import Folder Hierarchy](done/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | done |
 | TASK-108 | [Pre Import Review](done/TASK-108-pre-import-review.md) | Grimoire parity | high | done |
-| TASK-109 | [Import Category And Tag Remapping](backlog/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | backlog |
+| TASK-109 | [Import Category And Tag Remapping](done/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | done |
 | TASK-110 | [Import Result Report](backlog/TASK-110-import-result-report.md) | Grimoire parity | medium | backlog |
 | TASK-111 | [Export Parity Fields](backlog/TASK-111-export-parity-fields.md) | Grimoire parity | medium | backlog |
 | TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
@@ -257,6 +257,12 @@ TASK-108 is complete with a cancelable preview-first import dialog, TASK-120
 duplicate policy controls, detected folders/tags/duplicate/invalid/private row
 summaries, confirm-before-commit behavior, focused frontend tests, e2e smoke
 coverage, and visual reporting.
+TASK-109 is complete with daemon-owned category/tag remapping for import
+preview and commit, normalized remapping result data, row-level target category
+and tag fields, import-dialog mapping controls, regenerated API/OpenAPI docs,
+focused daemon/frontend tests, e2e coverage, visual reporting, and review
+hardening for nested folder inheritance, explicit tag target validation, and
+category aggregate refresh after import.
 TASK-120 is complete with non-mutating import preview classification, shared
 duplicate policy semantics for active merge and archived/trashed restore-merge,
 invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API

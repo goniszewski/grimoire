@@ -499,6 +499,78 @@ const schemas = {
     ["active", "archived", "trashed"],
     "Duplicate handling policy applied to an import preview or commit"
   ),
+  ImportFolderRemappingInput: objectSchema(
+    {
+      sourcePath: arrayOf(stringSchema("Source folder segment"), "Folder path from the imported file"),
+      action: stringSchema("Folder remapping action. Use create with targetPath or existing with categoryId.", {
+        enum: ["create", "existing"],
+      }),
+      categoryId: stringSchema("Existing category ID; required when action is existing"),
+      targetPath: arrayOf(
+        stringSchema("Target category path segment"),
+        "Target path for create/reuse mappings. Child folders inherit remapped ancestor paths unless explicitly mapped."
+      ),
+    },
+    ["sourcePath", "action"],
+    "Import folder remapping request entry"
+  ),
+  ImportTagRemappingInput: objectSchema(
+    {
+      sourceTag: stringSchema("Source tag name from the imported file"),
+      action: stringSchema("Tag remapping action. Use tagId for existing, targetName for new or renamed.", {
+        enum: ["new", "existing", "renamed", "skipped"],
+      }),
+      tagId: stringSchema("Existing tag ID; required when action is existing"),
+      targetName: stringSchema("Target tag name for new or renamed mappings; lowercase hyphen format, max 50 characters", {
+        maxLength: 50,
+        pattern: "^[a-z0-9]+(-[a-z0-9]+)*$",
+      }),
+    },
+    ["sourceTag", "action"],
+    "Import tag remapping request entry"
+  ),
+  ImportRemappingInput: objectSchema(
+    {
+      folders: arrayOf(ref("ImportFolderRemappingInput"), "Folder remapping overrides"),
+      tags: arrayOf(ref("ImportTagRemappingInput"), "Tag remapping overrides"),
+    },
+    [],
+    "Optional import remapping request JSON. Omitted folders and tags use the daemon's default create/reuse decisions."
+  ),
+  ImportFolderMapping: objectSchema(
+    {
+      sourcePath: arrayOf(stringSchema("Source folder segment"), "Folder path from the imported file"),
+      action: stringSchema("Folder remapping action", { enum: ["create", "existing"] }),
+      targetCategoryId: nullable(stringSchema("Existing target category ID when mapped to an existing category")),
+      targetPath: arrayOf(stringSchema("Target category path segment"), "Resolved target category path"),
+      status: stringSchema("Whether the target category path already exists or will be created", {
+        enum: ["new", "existing"],
+      }),
+    },
+    ["sourcePath", "action", "targetCategoryId", "targetPath", "status"],
+    "Resolved import folder remapping decision"
+  ),
+  ImportTagMapping: objectSchema(
+    {
+      sourceTag: stringSchema("Source tag name from the imported file"),
+      action: stringSchema("Tag remapping action", { enum: ["new", "existing", "renamed", "skipped"] }),
+      targetTagId: nullable(stringSchema("Existing target tag ID when reused")),
+      targetName: nullable(stringSchema("Resolved target tag name; null when skipped")),
+      status: stringSchema("Whether the target tag exists, will be created, or is skipped", {
+        enum: ["new", "existing", "skipped"],
+      }),
+    },
+    ["sourceTag", "action", "targetTagId", "targetName", "status"],
+    "Resolved import tag remapping decision"
+  ),
+  ImportRemapping: objectSchema(
+    {
+      folders: arrayOf(ref("ImportFolderMapping"), "Resolved folder remapping decisions"),
+      tags: arrayOf(ref("ImportTagMapping"), "Resolved tag remapping decisions"),
+    },
+    ["folders", "tags"],
+    "Resolved category and tag remapping decisions applied to an import preview or commit"
+  ),
   ImportPreviewSummary: objectSchema(
     {
       totalRows: integerSchema("Total parsed bookmark rows, including skipped invalid/private rows", { minimum: 0 }),
@@ -541,7 +613,10 @@ const schemas = {
       title: stringSchema("Source bookmark title"),
       notes: nullable(stringSchema("Source note text when the import format provides note-like metadata")),
       tags: arrayOf(stringSchema("Source tag name"), "Source tag names"),
+      targetTags: arrayOf(stringSchema("Mapped target tag name"), "Target tag names after remapping"),
       folders: arrayOf(stringSchema("Source folder name"), "Source folder path"),
+      targetCategoryId: nullable(stringSchema("Mapped target category ID when it already exists")),
+      targetCategoryPath: arrayOf(stringSchema("Mapped target category path segment"), "Target category path after remapping"),
       existingBookmarkId: nullable(stringSchema("Matching existing bookmark ID")),
       existingState: nullable(stringSchema("Matching existing bookmark state", { enum: ["active", "archived", "trashed"] })),
       skipReason: nullable(stringSchema("Reason the row would be skipped")),
@@ -553,7 +628,10 @@ const schemas = {
       "title",
       "notes",
       "tags",
+      "targetTags",
       "folders",
+      "targetCategoryId",
+      "targetCategoryPath",
       "existingBookmarkId",
       "existingState",
       "skipReason",
@@ -562,13 +640,14 @@ const schemas = {
   ImportPreview: objectSchema(
     {
       duplicatePolicy: ref("ImportDuplicatePolicy"),
+      remapping: ref("ImportRemapping"),
       summary: ref("ImportPreviewSummary"),
       folders: arrayOf(arrayOf(stringSchema("Folder segment"), "Folder path"), "Detected Netscape folder paths"),
       tags: arrayOf(stringSchema("Detected tag name"), "Detected tag names"),
       warnings: arrayOf(stringSchema("Parser warning"), "Parser warnings"),
       rows: arrayOf(ref("ImportPreviewRow"), "Preview rows"),
     },
-    ["duplicatePolicy", "summary", "folders", "tags", "warnings", "rows"],
+    ["duplicatePolicy", "remapping", "summary", "folders", "tags", "warnings", "rows"],
     "Non-mutating import preview"
   ),
   ImportPreviewResponse: envelope(ref("ImportPreview")),
@@ -579,9 +658,10 @@ const schemas = {
       folders: integerSchema("Parsed Netscape folder count", { minimum: 0 }),
       warnings: integerSchema("Parser warning count", { minimum: 0 }),
       duplicatePolicy: ref("ImportDuplicatePolicy"),
+      remapping: ref("ImportRemapping"),
       progressUrl: stringSchema("SSE progress URL"),
     },
-    ["importId", "total", "folders", "warnings", "duplicatePolicy", "progressUrl"]
+    ["importId", "total", "folders", "warnings", "duplicatePolicy", "remapping", "progressUrl"]
   ),
   ImportSummaryResponse: envelope(ref("ImportSummary")),
   ImportProgressEvent: objectSchema(
@@ -1956,11 +2036,14 @@ export const apiContract = {
       request: {
         body: {
           contentType: "multipart/form-data",
-          description: "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          description: "Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.",
           schema: objectSchema(
             {
               file: stringSchema("HTML bookmark export file"),
               duplicatePolicy: stringSchema("Optional JSON duplicate policy"),
+              remapping: stringSchema(
+                "Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag."
+              ),
             },
             ["file"]
           ),
@@ -1977,7 +2060,7 @@ export const apiContract = {
         {
           title: "Preview Netscape bookmarks",
           request:
-            "curl -X POST http://127.0.0.1:3210/import/preview \\\n  -F file=@bookmarks.html \\\n  -F 'duplicatePolicy={\"active\":\"merge\",\"archived\":\"restore_merge\",\"trashed\":\"skip\"}'",
+            "curl -X POST http://127.0.0.1:3210/import/preview \\\n  -F file=@bookmarks.html \\\n  -F 'duplicatePolicy={\"active\":\"merge\",\"archived\":\"restore_merge\",\"trashed\":\"skip\"}' \\\n  -F 'remapping={\"folders\":[{\"sourcePath\":[\"Research\"],\"action\":\"existing\",\"categoryId\":\"cat_research\"}],\"tags\":[{\"sourceTag\":\"sqlite\",\"action\":\"renamed\",\"targetName\":\"database\"}]}'",
           response: {
             status: 200,
             contentType: "application/json",
@@ -1987,6 +2070,33 @@ export const apiContract = {
                   active: "merge",
                   archived: "restore_merge",
                   trashed: "skip",
+                },
+                remapping: {
+                  folders: [
+                    {
+                      sourcePath: ["Research"],
+                      action: "existing",
+                      targetCategoryId: "cat_research",
+                      targetPath: ["Research"],
+                      status: "existing",
+                    },
+                  ],
+                  tags: [
+                    {
+                      sourceTag: "database",
+                      action: "existing",
+                      targetTagId: "tag_database",
+                      targetName: "database",
+                      status: "existing",
+                    },
+                    {
+                      sourceTag: "sqlite",
+                      action: "renamed",
+                      targetTagId: "tag_database",
+                      targetName: "database",
+                      status: "existing",
+                    },
+                  ],
                 },
                 summary: {
                   totalRows: 12,
@@ -2013,7 +2123,10 @@ export const apiContract = {
                     title: "RAG Vector Search Notes",
                     notes: null,
                     tags: ["database"],
+                    targetTags: ["database"],
                     folders: ["Research"],
+                    targetCategoryId: "cat_research",
+                    targetCategoryPath: ["Research"],
                     existingBookmarkId: "bm_123",
                     existingState: "active",
                     skipReason: null,
@@ -2033,11 +2146,14 @@ export const apiContract = {
       request: {
         body: {
           contentType: "multipart/form-data",
-          description: "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          description: "Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.",
           schema: objectSchema(
             {
               file: stringSchema("HTML bookmark export file"),
               duplicatePolicy: stringSchema("Optional JSON duplicate policy"),
+              remapping: stringSchema(
+                "Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag."
+              ),
             },
             ["file"]
           ),
@@ -2054,7 +2170,7 @@ export const apiContract = {
         {
           title: "Import Netscape bookmarks",
           request:
-            "curl -X POST http://127.0.0.1:3210/import \\\n  -F file=@bookmarks.html",
+            "curl -X POST http://127.0.0.1:3210/import \\\n  -F file=@bookmarks.html \\\n  -F 'remapping={\"folders\":[{\"sourcePath\":[\"Research\"],\"action\":\"existing\",\"categoryId\":\"cat_research\"}],\"tags\":[{\"sourceTag\":\"sqlite\",\"action\":\"renamed\",\"targetName\":\"database\"}]}'",
           response: {
             status: 200,
             contentType: "application/json",
@@ -2068,6 +2184,26 @@ export const apiContract = {
                   active: "skip",
                   archived: "skip",
                   trashed: "skip",
+                },
+                remapping: {
+                  folders: [
+                    {
+                      sourcePath: ["Research"],
+                      action: "existing",
+                      targetCategoryId: "cat_research",
+                      targetPath: ["Research"],
+                      status: "existing",
+                    },
+                  ],
+                  tags: [
+                    {
+                      sourceTag: "sqlite",
+                      action: "renamed",
+                      targetTagId: null,
+                      targetName: "database",
+                      status: "new",
+                    },
+                  ],
                 },
                 progressUrl: "/import/import_123/progress",
               },

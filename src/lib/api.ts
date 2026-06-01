@@ -36,9 +36,13 @@ import type {
   EncryptedBackupPackageVerificationResultDto,
   HealthResponseDto,
   ImportDuplicatePolicyDto,
+  ImportFolderRemappingInputDto,
   ImportProgressEventDto,
+  ImportRemappingInputDto,
+  ImportRemappingDto,
   ImportPreviewResponseDto,
   ImportSummaryResponseDto,
+  ImportTagRemappingInputDto,
   PaginationDto,
   RelatedBookmarksResponseDto,
   ReprocessBatchResponseDto,
@@ -670,21 +674,38 @@ export async function deleteTag(id: string): Promise<void> {
 
 export type ImportResult = ImportSummaryResponseDto["data"];
 export type ImportDuplicatePolicy = Partial<ImportDuplicatePolicyDto>;
+export type ApiImportRemapping = ImportRemappingDto;
 export type ImportPreview = ImportPreviewResponseDto["data"];
 
-function importFormData(file: File, duplicatePolicy?: ImportDuplicatePolicy): FormData {
+export type ImportFolderRemappingInput = ImportFolderRemappingInputDto;
+export type ImportTagRemappingInput = ImportTagRemappingInputDto;
+export type ImportRemappingInput = ImportRemappingInputDto;
+
+function importFormData(
+  file: File,
+  duplicatePolicy?: ImportDuplicatePolicy,
+  remapping?: ImportRemappingInput
+): FormData {
   const form = new FormData();
   form.append("file", file);
   if (duplicatePolicy) {
     form.append("duplicatePolicy", JSON.stringify(duplicatePolicy));
   }
+  if (remapping) {
+    form.append("remapping", JSON.stringify(remapping));
+  }
   return form;
 }
 
-async function fetchImportForm<T>(path: string, file: File, duplicatePolicy?: ImportDuplicatePolicy): Promise<T> {
+async function fetchImportForm<T>(
+  path: string,
+  file: File,
+  duplicatePolicy?: ImportDuplicatePolicy,
+  remapping?: ImportRemappingInput
+): Promise<T> {
   const res = await fetch(`${DAEMON_URL}${path}`, {
     method: "POST",
-    body: importFormData(file, duplicatePolicy),
+    body: importFormData(file, duplicatePolicy, remapping),
   });
   if (!res.ok) {
     let title = `HTTP ${res.status}`;
@@ -704,16 +725,18 @@ async function fetchImportForm<T>(path: string, file: File, duplicatePolicy?: Im
 
 export async function previewImportBookmarksFile(
   file: File,
-  duplicatePolicy?: ImportDuplicatePolicy
+  duplicatePolicy?: ImportDuplicatePolicy,
+  remapping?: ImportRemappingInput
 ): Promise<ImportPreviewResponseDto> {
-  return fetchImportForm<ImportPreviewResponseDto>("/import/preview", file, duplicatePolicy);
+  return fetchImportForm<ImportPreviewResponseDto>("/import/preview", file, duplicatePolicy, remapping);
 }
 
 export async function importBookmarksFile(
   file: File,
-  duplicatePolicy?: ImportDuplicatePolicy
+  duplicatePolicy?: ImportDuplicatePolicy,
+  remapping?: ImportRemappingInput
 ): Promise<ImportSummaryResponseDto> {
-  return fetchImportForm<ImportSummaryResponseDto>("/import", file, duplicatePolicy);
+  return fetchImportForm<ImportSummaryResponseDto>("/import", file, duplicatePolicy, remapping);
 }
 
 /** Subscribe to import progress via SSE. Returns a cleanup function. */

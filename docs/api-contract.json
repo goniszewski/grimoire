@@ -1804,6 +1804,225 @@
       "additionalProperties": false,
       "description": "Duplicate handling policy applied to an import preview or commit"
     },
+    "ImportFolderRemappingInput": {
+      "type": "object",
+      "properties": {
+        "sourcePath": {
+          "type": "array",
+          "description": "Folder path from the imported file",
+          "items": {
+            "type": "string",
+            "description": "Source folder segment"
+          }
+        },
+        "action": {
+          "type": "string",
+          "description": "Folder remapping action. Use create with targetPath or existing with categoryId.",
+          "enum": [
+            "create",
+            "existing"
+          ]
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Existing category ID; required when action is existing"
+        },
+        "targetPath": {
+          "type": "array",
+          "description": "Target path for create/reuse mappings. Child folders inherit remapped ancestor paths unless explicitly mapped.",
+          "items": {
+            "type": "string",
+            "description": "Target category path segment"
+          }
+        }
+      },
+      "required": [
+        "sourcePath",
+        "action"
+      ],
+      "additionalProperties": false,
+      "description": "Import folder remapping request entry"
+    },
+    "ImportTagRemappingInput": {
+      "type": "object",
+      "properties": {
+        "sourceTag": {
+          "type": "string",
+          "description": "Source tag name from the imported file"
+        },
+        "action": {
+          "type": "string",
+          "description": "Tag remapping action. Use tagId for existing, targetName for new or renamed.",
+          "enum": [
+            "new",
+            "existing",
+            "renamed",
+            "skipped"
+          ]
+        },
+        "tagId": {
+          "type": "string",
+          "description": "Existing tag ID; required when action is existing"
+        },
+        "targetName": {
+          "type": "string",
+          "description": "Target tag name for new or renamed mappings; lowercase hyphen format, max 50 characters",
+          "maxLength": 50,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      },
+      "required": [
+        "sourceTag",
+        "action"
+      ],
+      "additionalProperties": false,
+      "description": "Import tag remapping request entry"
+    },
+    "ImportRemappingInput": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "description": "Folder remapping overrides",
+          "items": {
+            "ref": "ImportFolderRemappingInput"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag remapping overrides",
+          "items": {
+            "ref": "ImportTagRemappingInput"
+          }
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Optional import remapping request JSON. Omitted folders and tags use the daemon's default create/reuse decisions."
+    },
+    "ImportFolderMapping": {
+      "type": "object",
+      "properties": {
+        "sourcePath": {
+          "type": "array",
+          "description": "Folder path from the imported file",
+          "items": {
+            "type": "string",
+            "description": "Source folder segment"
+          }
+        },
+        "action": {
+          "type": "string",
+          "description": "Folder remapping action",
+          "enum": [
+            "create",
+            "existing"
+          ]
+        },
+        "targetCategoryId": {
+          "type": "string",
+          "description": "Existing target category ID when mapped to an existing category",
+          "nullable": true
+        },
+        "targetPath": {
+          "type": "array",
+          "description": "Resolved target category path",
+          "items": {
+            "type": "string",
+            "description": "Target category path segment"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Whether the target category path already exists or will be created",
+          "enum": [
+            "new",
+            "existing"
+          ]
+        }
+      },
+      "required": [
+        "sourcePath",
+        "action",
+        "targetCategoryId",
+        "targetPath",
+        "status"
+      ],
+      "additionalProperties": false,
+      "description": "Resolved import folder remapping decision"
+    },
+    "ImportTagMapping": {
+      "type": "object",
+      "properties": {
+        "sourceTag": {
+          "type": "string",
+          "description": "Source tag name from the imported file"
+        },
+        "action": {
+          "type": "string",
+          "description": "Tag remapping action",
+          "enum": [
+            "new",
+            "existing",
+            "renamed",
+            "skipped"
+          ]
+        },
+        "targetTagId": {
+          "type": "string",
+          "description": "Existing target tag ID when reused",
+          "nullable": true
+        },
+        "targetName": {
+          "type": "string",
+          "description": "Resolved target tag name; null when skipped",
+          "nullable": true
+        },
+        "status": {
+          "type": "string",
+          "description": "Whether the target tag exists, will be created, or is skipped",
+          "enum": [
+            "new",
+            "existing",
+            "skipped"
+          ]
+        }
+      },
+      "required": [
+        "sourceTag",
+        "action",
+        "targetTagId",
+        "targetName",
+        "status"
+      ],
+      "additionalProperties": false,
+      "description": "Resolved import tag remapping decision"
+    },
+    "ImportRemapping": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "description": "Resolved folder remapping decisions",
+          "items": {
+            "ref": "ImportFolderMapping"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Resolved tag remapping decisions",
+          "items": {
+            "ref": "ImportTagMapping"
+          }
+        }
+      },
+      "required": [
+        "folders",
+        "tags"
+      ],
+      "additionalProperties": false,
+      "description": "Resolved category and tag remapping decisions applied to an import preview or commit"
+    },
     "ImportPreviewSummary": {
       "type": "object",
       "properties": {
@@ -1931,12 +2150,33 @@
             "description": "Source tag name"
           }
         },
+        "targetTags": {
+          "type": "array",
+          "description": "Target tag names after remapping",
+          "items": {
+            "type": "string",
+            "description": "Mapped target tag name"
+          }
+        },
         "folders": {
           "type": "array",
           "description": "Source folder path",
           "items": {
             "type": "string",
             "description": "Source folder name"
+          }
+        },
+        "targetCategoryId": {
+          "type": "string",
+          "description": "Mapped target category ID when it already exists",
+          "nullable": true
+        },
+        "targetCategoryPath": {
+          "type": "array",
+          "description": "Target category path after remapping",
+          "items": {
+            "type": "string",
+            "description": "Mapped target category path segment"
           }
         },
         "existingBookmarkId": {
@@ -1967,7 +2207,10 @@
         "title",
         "notes",
         "tags",
+        "targetTags",
         "folders",
+        "targetCategoryId",
+        "targetCategoryPath",
         "existingBookmarkId",
         "existingState",
         "skipReason"
@@ -1979,6 +2222,9 @@
       "properties": {
         "duplicatePolicy": {
           "ref": "ImportDuplicatePolicy"
+        },
+        "remapping": {
+          "ref": "ImportRemapping"
         },
         "summary": {
           "ref": "ImportPreviewSummary"
@@ -2021,6 +2267,7 @@
       },
       "required": [
         "duplicatePolicy",
+        "remapping",
         "summary",
         "folders",
         "tags",
@@ -2068,6 +2315,9 @@
         "duplicatePolicy": {
           "ref": "ImportDuplicatePolicy"
         },
+        "remapping": {
+          "ref": "ImportRemapping"
+        },
         "progressUrl": {
           "type": "string",
           "description": "SSE progress URL"
@@ -2079,6 +2329,7 @@
         "folders",
         "warnings",
         "duplicatePolicy",
+        "remapping",
         "progressUrl"
       ],
       "additionalProperties": false
@@ -5997,7 +6248,7 @@
       "request": {
         "body": {
           "contentType": "multipart/form-data",
-          "description": "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          "description": "Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.",
           "schema": {
             "type": "object",
             "properties": {
@@ -6008,6 +6259,10 @@
               "duplicatePolicy": {
                 "type": "string",
                 "description": "Optional JSON duplicate policy"
+              },
+              "remapping": {
+                "type": "string",
+                "description": "Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag."
               }
             },
             "required": [
@@ -6057,7 +6312,7 @@
       "examples": [
         {
           "title": "Preview Netscape bookmarks",
-          "request": "curl -X POST http://127.0.0.1:3210/import/preview \\\n  -F file=@bookmarks.html \\\n  -F 'duplicatePolicy={\"active\":\"merge\",\"archived\":\"restore_merge\",\"trashed\":\"skip\"}'",
+          "request": "curl -X POST http://127.0.0.1:3210/import/preview \\\n  -F file=@bookmarks.html \\\n  -F 'duplicatePolicy={\"active\":\"merge\",\"archived\":\"restore_merge\",\"trashed\":\"skip\"}' \\\n  -F 'remapping={\"folders\":[{\"sourcePath\":[\"Research\"],\"action\":\"existing\",\"categoryId\":\"cat_research\"}],\"tags\":[{\"sourceTag\":\"sqlite\",\"action\":\"renamed\",\"targetName\":\"database\"}]}'",
           "response": {
             "status": 200,
             "contentType": "application/json",
@@ -6067,6 +6322,37 @@
                   "active": "merge",
                   "archived": "restore_merge",
                   "trashed": "skip"
+                },
+                "remapping": {
+                  "folders": [
+                    {
+                      "sourcePath": [
+                        "Research"
+                      ],
+                      "action": "existing",
+                      "targetCategoryId": "cat_research",
+                      "targetPath": [
+                        "Research"
+                      ],
+                      "status": "existing"
+                    }
+                  ],
+                  "tags": [
+                    {
+                      "sourceTag": "database",
+                      "action": "existing",
+                      "targetTagId": "tag_database",
+                      "targetName": "database",
+                      "status": "existing"
+                    },
+                    {
+                      "sourceTag": "sqlite",
+                      "action": "renamed",
+                      "targetTagId": "tag_database",
+                      "targetName": "database",
+                      "status": "existing"
+                    }
+                  ]
                 },
                 "summary": {
                   "totalRows": 12,
@@ -6108,7 +6394,14 @@
                     "tags": [
                       "database"
                     ],
+                    "targetTags": [
+                      "database"
+                    ],
                     "folders": [
+                      "Research"
+                    ],
+                    "targetCategoryId": "cat_research",
+                    "targetCategoryPath": [
                       "Research"
                     ],
                     "existingBookmarkId": "bm_123",
@@ -6130,7 +6423,7 @@
       "request": {
         "body": {
           "contentType": "multipart/form-data",
-          "description": "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          "description": "Multipart body with a file field plus optional duplicatePolicy JSON and remapping JSON fields.",
           "schema": {
             "type": "object",
             "properties": {
@@ -6141,6 +6434,10 @@
               "duplicatePolicy": {
                 "type": "string",
                 "description": "Optional JSON duplicate policy"
+              },
+              "remapping": {
+                "type": "string",
+                "description": "Optional JSON ImportRemappingInput. Folder create mappings use sourcePath and targetPath; folder existing mappings use sourcePath and categoryId. Tag existing mappings use sourceTag and tagId; new/renamed mappings use sourceTag and targetName; skipped mappings use only sourceTag."
               }
             },
             "required": [
@@ -6190,7 +6487,7 @@
       "examples": [
         {
           "title": "Import Netscape bookmarks",
-          "request": "curl -X POST http://127.0.0.1:3210/import \\\n  -F file=@bookmarks.html",
+          "request": "curl -X POST http://127.0.0.1:3210/import \\\n  -F file=@bookmarks.html \\\n  -F 'remapping={\"folders\":[{\"sourcePath\":[\"Research\"],\"action\":\"existing\",\"categoryId\":\"cat_research\"}],\"tags\":[{\"sourceTag\":\"sqlite\",\"action\":\"renamed\",\"targetName\":\"database\"}]}'",
           "response": {
             "status": 200,
             "contentType": "application/json",
@@ -6204,6 +6501,30 @@
                   "active": "skip",
                   "archived": "skip",
                   "trashed": "skip"
+                },
+                "remapping": {
+                  "folders": [
+                    {
+                      "sourcePath": [
+                        "Research"
+                      ],
+                      "action": "existing",
+                      "targetCategoryId": "cat_research",
+                      "targetPath": [
+                        "Research"
+                      ],
+                      "status": "existing"
+                    }
+                  ],
+                  "tags": [
+                    {
+                      "sourceTag": "sqlite",
+                      "action": "renamed",
+                      "targetTagId": null,
+                      "targetName": "database",
+                      "status": "new"
+                    }
+                  ]
                 },
                 "progressUrl": "/import/import_123/progress"
               }
