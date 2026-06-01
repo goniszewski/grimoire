@@ -1141,6 +1141,108 @@ Responses:
 
 ### Import
 
+#### POST /import/preview
+
+Preview a Netscape HTML bookmark export without mutating library data.
+
+Request body:
+
+- Content type: `multipart/form-data`
+- Multipart body with a file field and optional duplicatePolicy JSON field.
+- Schema: `object`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `file` | string | yes | HTML bookmark export file |
+| `duplicatePolicy` | string | no | Optional JSON duplicate policy |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `ImportPreviewResponse` | Import preview |
+| `400` | application/problem+json | `ProblemDetails` | Multipart parsing failed |
+| `413` | application/problem+json | `ProblemDetails` | File exceeds 10 MB |
+| `415` | application/problem+json | `ProblemDetails` | Request is not multipart/form-data |
+| `422` | application/problem+json | `ProblemDetails` | Missing file, invalid bookmark export, or invalid duplicate policy |
+
+Examples:
+
+**Preview Netscape bookmarks**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/import/preview \
+  -F file=@bookmarks.html \
+  -F 'duplicatePolicy={"active":"merge","archived":"restore_merge","trashed":"skip"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "duplicatePolicy": {
+      "active": "merge",
+      "archived": "restore_merge",
+      "trashed": "skip"
+    },
+    "summary": {
+      "totalRows": 12,
+      "importableRows": 10,
+      "new": 7,
+      "activeDuplicates": 1,
+      "archivedDuplicates": 1,
+      "trashedDuplicates": 1,
+      "invalidUrls": 1,
+      "privateUrls": 1,
+      "created": 7,
+      "merged": 1,
+      "restored": 1,
+      "skipped": 3
+    },
+    "folders": [
+      [
+        "Research"
+      ],
+      [
+        "Research",
+        "Databases"
+      ]
+    ],
+    "tags": [
+      "database",
+      "sqlite"
+    ],
+    "warnings": [
+      "Skipped private/internal URL: http://127.0.0.1/admin"
+    ],
+    "rows": [
+      {
+        "classification": "active_duplicate",
+        "action": "merge",
+        "url": "https://example.com/rag-vector-search",
+        "title": "RAG Vector Search Notes",
+        "notes": null,
+        "tags": [
+          "database"
+        ],
+        "folders": [
+          "Research"
+        ],
+        "existingBookmarkId": "bm_123",
+        "existingState": "active",
+        "skipReason": null
+      }
+    ]
+  }
+}
+```
+
 #### POST /import
 
 Import a Netscape HTML bookmark export.
@@ -1148,12 +1250,13 @@ Import a Netscape HTML bookmark export.
 Request body:
 
 - Content type: `multipart/form-data`
-- Multipart body with a file field containing a .html bookmark export.
+- Multipart body with a file field and optional duplicatePolicy JSON field.
 - Schema: `object`
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `file` | string | yes | HTML bookmark export file |
+| `duplicatePolicy` | string | no | Optional JSON duplicate policy |
 
 Responses:
 
@@ -1188,6 +1291,11 @@ Content-Type: application/json
     "total": 12,
     "folders": 4,
     "warnings": 1,
+    "duplicatePolicy": {
+      "active": "skip",
+      "archived": "skip",
+      "trashed": "skip"
+    },
     "progressUrl": "/import/import_123/progress"
   }
 }
@@ -2643,14 +2751,117 @@ Response data
 |---|---|---:|---|
 | `data` | array<Domain> | yes | Domains |
 
+### ImportDuplicatePolicy
+
+Duplicate handling policy applied to an import preview or commit
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+
+### ImportPreviewSummary
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `new` | integer | yes | Rows that would create new bookmarks |
+| `activeDuplicates` | integer | yes | Rows matching active bookmarks |
+| `archivedDuplicates` | integer | yes | Rows matching archived bookmarks |
+| `trashedDuplicates` | integer | yes | Rows matching trashed bookmarks |
+| `invalidUrls` | integer | yes | Rows skipped because the URL is malformed or not HTTP(S) |
+| `privateUrls` | integer | yes | Rows skipped because the URL targets a private or loopback host |
+| `created` | integer | yes | Estimated rows created under the selected policy |
+| `merged` | integer | yes | Estimated active duplicate rows merged under the selected policy |
+| `restored` | integer | yes | Estimated archived or trashed duplicate rows restored and merged |
+| `skipped` | integer | yes | Estimated rows skipped under the selected policy |
+
+### ImportPreviewRow
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Action that the selected policy would apply |
+| `url` | string \| null | yes | Source bookmark URL |
+| `title` | string | yes | Source bookmark title |
+| `notes` | string \| null | yes | Source note text when the import format provides note-like metadata |
+| `tags` | array<string> | yes | Source tag names |
+| `folders` | array<string> | yes | Source folder path |
+| `existingBookmarkId` | string \| null | yes | Matching existing bookmark ID |
+| `existingState` | "active" \| "archived" \| "trashed" \| null | yes | Matching existing bookmark state |
+| `skipReason` | string \| null | yes | Reason the row would be skipped |
+
+### ImportPreview
+
+Non-mutating import preview
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `summary` | ImportPreviewSummary | yes |  |
+| `summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `summary.new` | integer | yes | Rows that would create new bookmarks |
+| `summary.activeDuplicates` | integer | yes | Rows matching active bookmarks |
+| `summary.archivedDuplicates` | integer | yes | Rows matching archived bookmarks |
+| `summary.trashedDuplicates` | integer | yes | Rows matching trashed bookmarks |
+| `summary.invalidUrls` | integer | yes | Rows skipped because the URL is malformed or not HTTP(S) |
+| `summary.privateUrls` | integer | yes | Rows skipped because the URL targets a private or loopback host |
+| `summary.created` | integer | yes | Estimated rows created under the selected policy |
+| `summary.merged` | integer | yes | Estimated active duplicate rows merged under the selected policy |
+| `summary.restored` | integer | yes | Estimated archived or trashed duplicate rows restored and merged |
+| `summary.skipped` | integer | yes | Estimated rows skipped under the selected policy |
+| `folders` | array<array<string>> | yes | Detected Netscape folder paths |
+| `tags` | array<string> | yes | Detected tag names |
+| `warnings` | array<string> | yes | Parser warnings |
+| `rows` | array<ImportPreviewRow> | yes | Preview rows |
+
+### ImportPreviewResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | ImportPreview | yes |  |
+| `data.duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `data.duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `data.duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `data.duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
+| `data.summary` | ImportPreviewSummary | yes |  |
+| `data.summary.totalRows` | integer | yes | Total parsed bookmark rows, including skipped invalid/private rows |
+| `data.summary.importableRows` | integer | yes | Valid public HTTP(S) bookmark rows |
+| `data.summary.new` | integer | yes | Rows that would create new bookmarks |
+| `data.summary.activeDuplicates` | integer | yes | Rows matching active bookmarks |
+| `data.summary.archivedDuplicates` | integer | yes | Rows matching archived bookmarks |
+| `data.summary.trashedDuplicates` | integer | yes | Rows matching trashed bookmarks |
+| `data.summary.invalidUrls` | integer | yes | Rows skipped because the URL is malformed or not HTTP(S) |
+| `data.summary.privateUrls` | integer | yes | Rows skipped because the URL targets a private or loopback host |
+| `data.summary.created` | integer | yes | Estimated rows created under the selected policy |
+| `data.summary.merged` | integer | yes | Estimated active duplicate rows merged under the selected policy |
+| `data.summary.restored` | integer | yes | Estimated archived or trashed duplicate rows restored and merged |
+| `data.summary.skipped` | integer | yes | Estimated rows skipped under the selected policy |
+| `data.folders` | array<array<string>> | yes | Detected Netscape folder paths |
+| `data.tags` | array<string> | yes | Detected tag names |
+| `data.warnings` | array<string> | yes | Parser warnings |
+| `data.rows` | array<ImportPreviewRow> | yes | Preview rows |
+
 ### ImportSummary
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `importId` | string | yes | Import ID for progress stream |
-| `total` | integer | yes | Parsed bookmark count |
+| `total` | integer | yes | Parsed bookmark row count |
 | `folders` | integer | yes | Parsed Netscape folder count |
 | `warnings` | integer | yes | Parser warning count |
+| `duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
 | `progressUrl` | string | yes | SSE progress URL |
 
 ### ImportSummaryResponse
@@ -2661,9 +2872,13 @@ Response data
 |---|---|---:|---|
 | `data` | ImportSummary | yes |  |
 | `data.importId` | string | yes | Import ID for progress stream |
-| `data.total` | integer | yes | Parsed bookmark count |
+| `data.total` | integer | yes | Parsed bookmark row count |
 | `data.folders` | integer | yes | Parsed Netscape folder count |
 | `data.warnings` | integer | yes | Parser warning count |
+| `data.duplicatePolicy` | ImportDuplicatePolicy | yes |  |
+| `data.duplicatePolicy.active` | "skip" \| "merge" | yes | Policy for active duplicate URLs |
+| `data.duplicatePolicy.archived` | "skip" \| "restore_merge" | yes | Policy for archived duplicate URLs |
+| `data.duplicatePolicy.trashed` | "skip" \| "restore_merge" | yes | Policy for trashed duplicate URLs |
 | `data.progressUrl` | string | yes | SSE progress URL |
 
 ### ImportProgressEvent
@@ -2672,6 +2887,8 @@ Response data
 |---|---|---:|---|
 | `queued` | integer | yes | Queued bookmarks |
 | `skipped` | integer | yes | Skipped bookmarks |
+| `merged` | integer | yes | Existing active bookmarks merged |
+| `restored` | integer | yes | Existing archived or trashed bookmarks restored and merged |
 | `total` | integer | yes | Total parsed bookmarks |
 | `folders` | integer | yes | Total parsed Netscape folders |
 | `categoriesCreated` | integer | yes | Categories created from imported folder paths |

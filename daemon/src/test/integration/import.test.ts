@@ -13,6 +13,35 @@ const NETSCAPE_HTML = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
     <DT><A HREF="https://bun.sh" ADD_DATE="1600000001" TAGS="javascript,runtime">Bun</A>
 </DL>`;
 
+function formWithHtml(html: string, extraFields: Record<string, string> = {}): FormData {
+  const formData = new FormData();
+  formData.append("file", new Blob([html], { type: "text/html" }), "bookmarks.html");
+  for (const [key, value] of Object.entries(extraFields)) {
+    formData.append(key, value);
+  }
+  return formData;
+}
+
+async function createBookmark(app: ReturnType<typeof createApp>, url: string, title: string): Promise<string> {
+  const res = await app.request("/bookmarks", {
+    method: "POST",
+    body: JSON.stringify({ url, title }),
+  });
+  expect(res.status).toBe(201);
+  const json = await res.json() as { data: { id: string } };
+  return json.data.id;
+}
+
+function bookmarkByUrl<T extends Record<string, unknown>>(
+  db: Database,
+  url: string,
+  fields = "*"
+): T | null {
+  return db
+    .query<T, [string]>(`SELECT ${fields} FROM bookmarks WHERE url = ?`)
+    .get(url) ?? null;
+}
+
 describe("Import API", () => {
   let app: ReturnType<typeof createApp>;
   let db: Database;
@@ -26,12 +55,7 @@ describe("Import API", () => {
   // ─── POST /import ─────────────────────────────────────────────────────────
 
   it("POST /import with valid Netscape HTML returns 200 with total and importId", async () => {
-    const formData = new FormData();
-    formData.append(
-      "file",
-      new Blob([NETSCAPE_HTML], { type: "text/html" }),
-      "bookmarks.html"
-    );
+    const formData = formWithHtml(NETSCAPE_HTML);
 
     const res = await app.request("/import", { method: "POST", body: formData });
     expect(res.status).toBe(200);
@@ -64,12 +88,7 @@ describe("Import API", () => {
   // ─── Background processing ────────────────────────────────────────────────
 
   it("after import + small await, bookmarks are persisted in the DB", async () => {
-    const formData = new FormData();
-    formData.append(
-      "file",
-      new Blob([NETSCAPE_HTML], { type: "text/html" }),
-      "bookmarks.html"
-    );
+    const formData = formWithHtml(NETSCAPE_HTML);
 
     await app.request("/import", { method: "POST", body: formData });
 
@@ -83,12 +102,7 @@ describe("Import API", () => {
   });
 
   it("imported Netscape bookmarks default pinned and read-later parity flags off", async () => {
-    const formData = new FormData();
-    formData.append(
-      "file",
-      new Blob([NETSCAPE_HTML], { type: "text/html" }),
-      "bookmarks.html"
-    );
+    const formData = formWithHtml(NETSCAPE_HTML);
 
     await app.request("/import", { method: "POST", body: formData });
 
@@ -296,5 +310,331 @@ describe("Import API", () => {
       )
       .get();
     expect(bookmark?.category_id).toBe(category!.id);
+  });
+
+  it("POST /import/preview classifies new, duplicate, invalid, and private rows without mutating data", async () => {
+    const activeId = await createBookmark(app, "https://active.example.com", "Active");
+    const archivedId = await createBookmark(app, "https://archived.example.com", "Archived");
+    const trashedId = await createBookmark(app, "https://trashed.example.com", "Trashed");
+    await app.request(`/bookmarks/${archivedId}`, {
+      method: "PUT",
+      body: JSON.stringify({ is_archived: 1 }),
+    });
+    await app.request(`/bookmarks/${trashedId}`, { method: "DELETE" });
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><H3>Research</H3>
+  <DL><p>
+    <DT><A HREF="https://new.example.com" TAGS="fresh,review">New Row</A>
+    <DT><A HREF="https://active.example.com" TAGS="incoming">Active Duplicate</A>
+    <DT><A HREF="https://archived.example.com" TAGS="incoming">Archived Duplicate</A>
+    <DT><A HREF="https://trashed.example.com" TAGS="incoming">Trashed Duplicate</A>
+    <DT><A HREF="notaurl">Broken Row</A>
+    <DT><A HREF="http://127.0.0.1/admin">Private Row</A>
+  </DL><p>
+</DL><p>`;
+
+    const res = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        duplicatePolicy: { active: string; archived: string; trashed: string };
+        summary: {
+          totalRows: number;
+          new: number;
+          activeDuplicates: number;
+          archivedDuplicates: number;
+          trashedDuplicates: number;
+          invalidUrls: number;
+          privateUrls: number;
+          skipped: number;
+        };
+        folders: string[][];
+        tags: string[];
+        rows: Array<{
+          classification: string;
+          url: string | null;
+          title: string;
+          existingBookmarkId: string | null;
+        }>;
+      };
+    };
+    expect(json.data.duplicatePolicy).toEqual({
+      active: "skip",
+      archived: "skip",
+      trashed: "skip",
+    });
+    expect(json.data.summary).toMatchObject({
+      totalRows: 6,
+      new: 1,
+      activeDuplicates: 1,
+      archivedDuplicates: 1,
+      trashedDuplicates: 1,
+      invalidUrls: 1,
+      privateUrls: 1,
+      skipped: 5,
+    });
+    expect(json.data.folders).toEqual([["Research"]]);
+    expect(json.data.tags).toEqual(["fresh", "incoming", "review"]);
+    expect(json.data.rows.map((row) => row.classification)).toEqual([
+      "new",
+      "active_duplicate",
+      "archived_duplicate",
+      "trashed_duplicate",
+      "invalid_url",
+      "private_url",
+    ]);
+    expect(json.data.rows[1]).toMatchObject({
+      url: "https://active.example.com",
+      existingBookmarkId: activeId,
+    });
+
+    const bookmarkCount = db
+      .query<{ count: number }, []>("SELECT COUNT(*) AS count FROM bookmarks")
+      .get()?.count ?? 0;
+    expect(bookmarkCount).toBe(3);
+  });
+
+  it("POST /import/preview treats repeated new source URLs as duplicates", async () => {
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://source-duplicate.example.com" TAGS="first">First Source Row</A>
+  <DT><A HREF="https://source-duplicate.example.com" TAGS="second">Second Source Row</A>
+</DL><p>`;
+
+    const res = await app.request("/import/preview", {
+      method: "POST",
+      body: formWithHtml(html),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        summary: {
+          totalRows: number;
+          new: number;
+          activeDuplicates: number;
+          created: number;
+          skipped: number;
+        };
+        rows: Array<{ classification: string; action: string; existingBookmarkId: string | null }>;
+      };
+    };
+    expect(json.data.summary).toMatchObject({
+      totalRows: 2,
+      new: 1,
+      activeDuplicates: 1,
+      created: 1,
+      skipped: 1,
+    });
+    expect(json.data.rows).toMatchObject([
+      { classification: "new", action: "create", existingBookmarkId: null },
+      { classification: "active_duplicate", action: "skip", existingBookmarkId: null },
+    ]);
+  });
+
+  it("POST /import handles repeated source URLs without unique constraint failures", async () => {
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://source-duplicate.example.com/default" TAGS="first">First Source Row</A>
+  <DT><A HREF="https://source-duplicate.example.com/default" TAGS="second">Second Source Row</A>
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const progressText = await progress.text();
+    expect(progressText).toContain('"queued":1');
+    expect(progressText).toContain('"skipped":1');
+    expect(progressText).toContain('"error":null');
+
+    const rowsForUrl = db
+      .query<{ count: number }, [string]>("SELECT COUNT(*) AS count FROM bookmarks WHERE url = ?")
+      .get("https://source-duplicate.example.com/default")?.count ?? 0;
+    expect(rowsForUrl).toBe(1);
+  });
+
+  it("POST /import can merge repeated source URLs into the first created bookmark", async () => {
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://source-duplicate.example.com/merge" TAGS="first">First Source Row</A>
+  <DD>First imported note
+  <DT><A HREF="https://source-duplicate.example.com/merge" TAGS="second">Second Source Row</A>
+  <DD>Second imported note
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify({ active: "merge" }),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    const progressText = await progress.text();
+    expect(progressText).toContain('"queued":1');
+    expect(progressText).toContain('"merged":1');
+    expect(progressText).toContain('"error":null');
+
+    const bookmark = bookmarkByUrl<{ id: string; notes: string | null }>(
+      db,
+      "https://source-duplicate.example.com/merge",
+      "id, notes"
+    );
+    expect(bookmark?.notes).toBe("First imported note\n\nSecond imported note");
+
+    const tags = db
+      .query<{ name: string }, [string]>(
+        `SELECT t.name FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id = ?
+         ORDER BY t.name`
+      )
+      .all(bookmark?.id ?? "")
+      .map((tag) => tag.name);
+    expect(tags).toEqual(["first", "second"]);
+  });
+
+  it("POST /import merges active duplicates when active duplicate policy is merge", async () => {
+    const existingId = await createBookmark(app, "https://active.example.com/merge", "Existing");
+    await app.request(`/bookmarks/${existingId}`, {
+      method: "PUT",
+      body: JSON.stringify({ tags: ["existing"], notes: "Existing note" }),
+    });
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><H3>Imported Folder</H3>
+  <DL><p>
+    <DT><A HREF="https://active.example.com/merge" TAGS="incoming,existing" DESCRIPTION="Imported note">Imported Active Duplicate</A>
+  </DL><p>
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify({ active: "merge" }),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    expect(await progress.text()).toContain('"merged":1');
+
+    const rowsForUrl = db
+      .query<{ count: number }, [string]>("SELECT COUNT(*) AS count FROM bookmarks WHERE url = ?")
+      .get("https://active.example.com/merge")?.count ?? 0;
+    expect(rowsForUrl).toBe(1);
+
+    const bookmark = bookmarkByUrl<{ id: string; category_id: string | null; notes: string | null }>(
+      db,
+      "https://active.example.com/merge",
+      "id, category_id, notes"
+    );
+    expect(bookmark?.id).toBe(existingId);
+    expect(bookmark?.notes).toBe("Existing note\n\nImported note");
+    const tags = db
+      .query<{ name: string }, [string]>(
+        `SELECT t.name FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id = ?
+         ORDER BY t.name`
+      )
+      .all(existingId)
+      .map((tag) => tag.name);
+    expect(tags).toEqual(["existing", "incoming"]);
+
+    const category = db
+      .query<{ name: string }, [string | null]>("SELECT name FROM categories WHERE id = ?")
+      .get(bookmark?.category_id ?? null);
+    expect(category?.name).toBe("Imported Folder");
+  });
+
+  it("POST /import restores and merges archived and trashed duplicates when selected", async () => {
+    const archivedId = await createBookmark(app, "https://archived.example.com/restore", "Archived");
+    const trashedId = await createBookmark(app, "https://trashed.example.com/restore", "Trashed");
+    await app.request(`/bookmarks/${archivedId}`, {
+      method: "PUT",
+      body: JSON.stringify({ is_archived: 1, tags: ["archived-old"] }),
+    });
+    await app.request(`/bookmarks/${trashedId}`, {
+      method: "PUT",
+      body: JSON.stringify({ tags: ["trashed-old"] }),
+    });
+    await app.request(`/bookmarks/${trashedId}`, { method: "DELETE" });
+
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://archived.example.com/restore" TAGS="archived-new">Archived Import</A>
+  <DT><A HREF="https://trashed.example.com/restore" TAGS="trashed-new">Trashed Import</A>
+</DL><p>`;
+
+    const res = await app.request("/import", {
+      method: "POST",
+      body: formWithHtml(html, {
+        duplicatePolicy: JSON.stringify({
+          archived: "restore_merge",
+          trashed: "restore_merge",
+        }),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as { data: { progressUrl: string } };
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    const progress = await app.request(summary.data.progressUrl);
+    expect(progress.status).toBe(200);
+    expect(await progress.text()).toContain('"restored":2');
+
+    const archived = bookmarkByUrl<{
+      id: string;
+      is_archived: 0 | 1;
+      is_trashed: 0 | 1;
+      trashed_at: string | null;
+    }>(db, "https://archived.example.com/restore", "id, is_archived, is_trashed, trashed_at");
+    const trashed = bookmarkByUrl<{
+      id: string;
+      is_archived: 0 | 1;
+      is_trashed: 0 | 1;
+      trashed_at: string | null;
+    }>(db, "https://trashed.example.com/restore", "id, is_archived, is_trashed, trashed_at");
+    expect(archived).toMatchObject({ id: archivedId, is_archived: 0, is_trashed: 0, trashed_at: null });
+    expect(trashed).toMatchObject({ id: trashedId, is_archived: 0, is_trashed: 0, trashed_at: null });
+
+    const tags = db
+      .query<{ bookmark_id: string; name: string }, [string, string]>(
+        `SELECT bt.bookmark_id, t.name FROM tags t
+         JOIN bookmark_tags bt ON bt.tag_id = t.id
+         WHERE bt.bookmark_id IN (?, ?)
+         ORDER BY bt.bookmark_id, t.name`
+      )
+      .all(archivedId, trashedId);
+    expect(tags).toContainEqual({ bookmark_id: archivedId, name: "archived-new" });
+    expect(tags).toContainEqual({ bookmark_id: archivedId, name: "archived-old" });
+    expect(tags).toContainEqual({ bookmark_id: trashedId, name: "trashed-new" });
+    expect(tags).toContainEqual({ bookmark_id: trashedId, name: "trashed-old" });
   });
 });

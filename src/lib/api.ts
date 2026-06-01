@@ -35,7 +35,9 @@ import type {
   EncryptedBackupPackageResultDto,
   EncryptedBackupPackageVerificationResultDto,
   HealthResponseDto,
+  ImportDuplicatePolicyDto,
   ImportProgressEventDto,
+  ImportPreviewResponseDto,
   ImportSummaryResponseDto,
   PaginationDto,
   RelatedBookmarksResponseDto,
@@ -667,13 +669,22 @@ export async function deleteTag(id: string): Promise<void> {
 // ─── Import ───────────────────────────────────────────────────────────────────
 
 export type ImportResult = ImportSummaryResponseDto["data"];
+export type ImportDuplicatePolicy = Partial<ImportDuplicatePolicyDto>;
+export type ImportPreview = ImportPreviewResponseDto["data"];
 
-export async function importBookmarksFile(file: File): Promise<ImportSummaryResponseDto> {
+function importFormData(file: File, duplicatePolicy?: ImportDuplicatePolicy): FormData {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${DAEMON_URL}/import`, {
+  if (duplicatePolicy) {
+    form.append("duplicatePolicy", JSON.stringify(duplicatePolicy));
+  }
+  return form;
+}
+
+async function fetchImportForm<T>(path: string, file: File, duplicatePolicy?: ImportDuplicatePolicy): Promise<T> {
+  const res = await fetch(`${DAEMON_URL}${path}`, {
     method: "POST",
-    body: form,
+    body: importFormData(file, duplicatePolicy),
   });
   if (!res.ok) {
     let title = `HTTP ${res.status}`;
@@ -688,7 +699,21 @@ export async function importBookmarksFile(file: File): Promise<ImportSummaryResp
     }
     throw new ApiError(res.status, title, detail);
   }
-  return res.json() as Promise<ImportSummaryResponseDto>;
+  return res.json() as Promise<T>;
+}
+
+export async function previewImportBookmarksFile(
+  file: File,
+  duplicatePolicy?: ImportDuplicatePolicy
+): Promise<ImportPreviewResponseDto> {
+  return fetchImportForm<ImportPreviewResponseDto>("/import/preview", file, duplicatePolicy);
+}
+
+export async function importBookmarksFile(
+  file: File,
+  duplicatePolicy?: ImportDuplicatePolicy
+): Promise<ImportSummaryResponseDto> {
+  return fetchImportForm<ImportSummaryResponseDto>("/import", file, duplicatePolicy);
 }
 
 /** Subscribe to import progress via SSE. Returns a cleanup function. */

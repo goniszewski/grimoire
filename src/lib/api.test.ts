@@ -4,6 +4,8 @@ import {
   checkHealthAfterRestore,
   createTag,
   deleteTag,
+  importBookmarksFile,
+  previewImportBookmarksFile,
   recordBookmarkOpen,
   renameTag,
   resolveDaemonUrl,
@@ -232,5 +234,91 @@ describe("tag management API", () => {
       })
     );
     expect(result.data.name).toBe("react-query");
+  });
+});
+
+describe("import API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("previews imports through the non-mutating preview endpoint with duplicate policy", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            duplicatePolicy: { active: "merge", archived: "restore_merge", trashed: "skip" },
+            summary: {
+              totalRows: 1,
+              importableRows: 1,
+              new: 0,
+              activeDuplicates: 1,
+              archivedDuplicates: 0,
+              trashedDuplicates: 0,
+              invalidUrls: 0,
+              privateUrls: 0,
+              created: 0,
+              merged: 1,
+              restored: 0,
+              skipped: 0,
+            },
+            folders: [],
+            tags: ["typescript"],
+            warnings: [],
+            rows: [],
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+    const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
+    const duplicatePolicy = { active: "merge", archived: "restore_merge", trashed: "skip" } as const;
+
+    const result = await previewImportBookmarksFile(file, duplicatePolicy);
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/import/preview",
+      expect.objectContaining({ method: "POST" })
+    );
+    const body = fetchSpy.mock.calls[0][1]?.body as FormData;
+    expect(body.get("file")).toBe(file);
+    expect(body.get("duplicatePolicy")).toBe(JSON.stringify(duplicatePolicy));
+    expect(result.data.summary.merged).toBe(1);
+  });
+
+  it("commits imports with the selected duplicate policy", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            importId: "import-1",
+            total: 1,
+            folders: 0,
+            warnings: 0,
+            duplicatePolicy: { active: "skip", archived: "restore_merge", trashed: "restore_merge" },
+            progressUrl: "/import/import-1/progress",
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+    const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
+    const duplicatePolicy = { archived: "restore_merge", trashed: "restore_merge" } as const;
+
+    await importBookmarksFile(file, duplicatePolicy);
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:3210/import",
+      expect.objectContaining({ method: "POST" })
+    );
+    const body = fetchSpy.mock.calls[0][1]?.body as FormData;
+    expect(body.get("file")).toBe(file);
+    expect(body.get("duplicatePolicy")).toBe(JSON.stringify(duplicatePolicy));
   });
 });

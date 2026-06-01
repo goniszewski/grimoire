@@ -133,7 +133,7 @@ tasks/
 | TASK-117 | [Persist Library View Preferences](backlog/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | backlog |
 | TASK-118 | [Aggregate Count Endpoints](backlog/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | backlog |
 | TASK-119 | [Large Library Performance Tests](backlog/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | backlog |
-| TASK-120 | [Import Duplicate Handling Policy](backlog/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | backlog |
+| TASK-120 | [Import Duplicate Handling Policy](done/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | done |
 
 ## Current Status
 
@@ -253,6 +253,11 @@ categories, empty folder creation, duplicate folder names scoped by parent,
 bookmark category assignment, generated import summary/progress fields, and
 focused daemon import coverage for nested folders, empty folders, duplicates,
 re-import behavior, and category route limit parity.
+TASK-120 is complete with non-mutating import preview classification, shared
+duplicate policy semantics for active merge and archived/trashed restore-merge,
+invalid/private skip reporting, generated API docs/OpenAPI updates, frontend API
+helpers, SSE merged/restored progress fields, full daemon and frontend test
+coverage, and visual task reporting.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

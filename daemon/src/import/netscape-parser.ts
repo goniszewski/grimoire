@@ -16,14 +16,35 @@
 import { isPrivateHost } from "../lib/network.js";
 
 export interface ParsedBookmark {
+  /** Source bookmark row order among <A> tags. */
+  index: number;
   url: string;
   title: string;
   /** Unix timestamp (seconds) from ADD_DATE attribute, if present. */
   addDate: number | null;
   /** Raw comma-separated TAGS attribute value, if present. */
   tags: string[];
+  /** Optional note-like metadata from DESCRIPTION/NOTES attributes or a following <DD>, when present. */
+  notes: string | null;
   /** Folder hierarchy from outermost → innermost (empty if not in a folder). */
   folders: string[];
+}
+
+export type ParsedSkippedBookmarkReason =
+  | "missing_href"
+  | "invalid_url"
+  | "non_http_url"
+  | "private_url";
+
+export interface ParsedSkippedBookmark {
+  /** Source bookmark row order among <A> tags. */
+  index: number;
+  url: string | null;
+  title: string;
+  tags: string[];
+  folders: string[];
+  reason: ParsedSkippedBookmarkReason;
+  message: string;
 }
 
 export interface ParsedFolder {
@@ -33,6 +54,7 @@ export interface ParsedFolder {
 
 export interface ParseResult {
   bookmarks: ParsedBookmark[];
+  skipped: ParsedSkippedBookmark[];
   /** Unique folder paths discovered in document order, including empty folders. */
   folders: ParsedFolder[];
   /** Parsing warnings (non-fatal). */
@@ -71,6 +93,13 @@ function stripTags(s: string): string {
   return s.replace(/<[^>]*>/g, "").trim();
 }
 
+function noteAfterAnchor(html: string, anchorEnd: number): string | null {
+  const rest = html.slice(anchorEnd);
+  const match = /^\s*<DD>([\s\S]*?)(?=\s*<DT\b|\s*<\/DL\b|\s*<DL\b|$)/i.exec(rest);
+  const note = match ? decodeHtmlEntities(stripTags(match[1])) : "";
+  return note || null;
+}
+
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 /**
@@ -81,6 +110,7 @@ function stripTags(s: string): string {
  */
 export function parseNetscapeBookmarks(html: string): ParseResult {
   const bookmarks: ParsedBookmark[] = [];
+  const skipped: ParsedSkippedBookmark[] = [];
   const folders: ParsedFolder[] = [];
   const folderKeys = new Set<string>();
   const warnings: string[] = [];
@@ -98,11 +128,13 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
     title?: string;
     addDate?: string | undefined;
     tags?: string | undefined;
+    notes?: string | undefined;
   }
 
   const tokens: Token[] = [];
 
   for (const m of html.matchAll(new RegExp(A_TAG_SRC, "gi"))) {
+    const anchorEnd = (m.index ?? 0) + m[0].length;
     tokens.push({
       pos: m.index ?? 0,
       type: "a",
@@ -111,6 +143,7 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
       title: decodeHtmlEntities(stripTags(m[2])),
       addDate: attr(m[1], "ADD_DATE") ?? undefined,
       tags: attr(m[1], "TAGS") ?? undefined,
+      notes: attr(m[1], "DESCRIPTION") ?? attr(m[1], "NOTES") ?? noteAfterAnchor(html, anchorEnd) ?? undefined,
     });
   }
 
@@ -138,6 +171,7 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
   const folderStack: string[] = [];
   // Pending H3 seen before a DL_OPEN — will become a folder level
   let pendingFolder: string | null = null;
+  let bookmarkIndex = 0;
 
   function registerFolder(path: string[]): void {
     const key = JSON.stringify(path);
@@ -167,35 +201,8 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
         break;
 
       case "a": {
+        const index = bookmarkIndex++;
         const href = tok.href;
-        if (!href) {
-          warnings.push(`Skipped <A> with no HREF near position ${tok.pos}`);
-          break;
-        }
-
-        // Validate URL: must be http/https and must not point to a private/loopback host
-        let valid = false;
-        let skipReason = "";
-        try {
-          const u = new URL(href);
-          if (u.protocol !== "http:" && u.protocol !== "https:") {
-            skipReason = `Skipped non-http(s) URL: ${href.slice(0, 80)}`;
-          } else if (isPrivateHost(u.hostname)) {
-            // Reject private/loopback URLs to prevent SSRF via batch import
-            skipReason = `Skipped private/internal URL: ${href.slice(0, 80)}`;
-          } else {
-            valid = true;
-          }
-        } catch {
-          skipReason = `Skipped malformed URL near position ${tok.pos}`;
-        }
-
-        if (!valid) {
-          warnings.push(skipReason);
-          break;
-        }
-
-        const addDate = tok.addDate ? parseInt(tok.addDate, 10) : null;
         const rawTags = tok.tags ?? undefined;
         const tagList = rawTags
           ? rawTags
@@ -204,11 +211,65 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
               .filter(Boolean)
           : [];
 
+        if (!href) {
+          const message = `Skipped <A> with no HREF near position ${tok.pos}`;
+          warnings.push(message);
+          skipped.push({
+            index,
+            url: null,
+            title: tok.title || "Untitled bookmark",
+            tags: tagList,
+            folders: [...folderStack],
+            reason: "missing_href",
+            message,
+          });
+          break;
+        }
+
+        // Validate URL: must be http/https and must not point to a private/loopback host
+        let valid = false;
+        let skipReason: ParsedSkippedBookmarkReason | null = null;
+        let skipMessage = "";
+        try {
+          const u = new URL(href);
+          if (u.protocol !== "http:" && u.protocol !== "https:") {
+            skipReason = "non_http_url";
+            skipMessage = `Skipped non-http(s) URL: ${href.slice(0, 80)}`;
+          } else if (isPrivateHost(u.hostname)) {
+            // Reject private/loopback URLs to prevent SSRF via batch import
+            skipReason = "private_url";
+            skipMessage = `Skipped private/internal URL: ${href.slice(0, 80)}`;
+          } else {
+            valid = true;
+          }
+        } catch {
+          skipReason = "invalid_url";
+          skipMessage = `Skipped malformed URL near position ${tok.pos}`;
+        }
+
+        if (!valid) {
+          warnings.push(skipMessage);
+          skipped.push({
+            index,
+            url: href,
+            title: tok.title || href,
+            tags: tagList,
+            folders: [...folderStack],
+            reason: skipReason ?? "invalid_url",
+            message: skipMessage,
+          });
+          break;
+        }
+
+        const addDate = tok.addDate ? parseInt(tok.addDate, 10) : null;
+
         bookmarks.push({
+          index,
           url: href,
           title: tok.title || href,
           addDate: addDate && !isNaN(addDate) ? addDate : null,
           tags: tagList,
+          notes: tok.notes?.trim() || null,
           folders: [...folderStack],
         });
         break;
@@ -216,5 +277,5 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
     }
   }
 
-  return { bookmarks, folders, warnings };
+  return { bookmarks, skipped, folders, warnings };
 }

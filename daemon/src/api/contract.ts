@@ -490,21 +490,106 @@ const schemas = {
     ["domain", "count"]
   ),
   DomainListResponse: envelope(arrayOf(ref("Domain"), "Domains")),
+  ImportDuplicatePolicy: objectSchema(
+    {
+      active: stringSchema("Policy for active duplicate URLs", { enum: ["skip", "merge"] }),
+      archived: stringSchema("Policy for archived duplicate URLs", { enum: ["skip", "restore_merge"] }),
+      trashed: stringSchema("Policy for trashed duplicate URLs", { enum: ["skip", "restore_merge"] }),
+    },
+    ["active", "archived", "trashed"],
+    "Duplicate handling policy applied to an import preview or commit"
+  ),
+  ImportPreviewSummary: objectSchema(
+    {
+      totalRows: integerSchema("Total parsed bookmark rows, including skipped invalid/private rows", { minimum: 0 }),
+      importableRows: integerSchema("Valid public HTTP(S) bookmark rows", { minimum: 0 }),
+      new: integerSchema("Rows that would create new bookmarks", { minimum: 0 }),
+      activeDuplicates: integerSchema("Rows matching active bookmarks", { minimum: 0 }),
+      archivedDuplicates: integerSchema("Rows matching archived bookmarks", { minimum: 0 }),
+      trashedDuplicates: integerSchema("Rows matching trashed bookmarks", { minimum: 0 }),
+      invalidUrls: integerSchema("Rows skipped because the URL is malformed or not HTTP(S)", { minimum: 0 }),
+      privateUrls: integerSchema("Rows skipped because the URL targets a private or loopback host", { minimum: 0 }),
+      created: integerSchema("Estimated rows created under the selected policy", { minimum: 0 }),
+      merged: integerSchema("Estimated active duplicate rows merged under the selected policy", { minimum: 0 }),
+      restored: integerSchema("Estimated archived or trashed duplicate rows restored and merged", { minimum: 0 }),
+      skipped: integerSchema("Estimated rows skipped under the selected policy", { minimum: 0 }),
+    },
+    [
+      "totalRows",
+      "importableRows",
+      "new",
+      "activeDuplicates",
+      "archivedDuplicates",
+      "trashedDuplicates",
+      "invalidUrls",
+      "privateUrls",
+      "created",
+      "merged",
+      "restored",
+      "skipped",
+    ]
+  ),
+  ImportPreviewRow: objectSchema(
+    {
+      classification: stringSchema("Import row classification", {
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+      }),
+      action: stringSchema("Action that the selected policy would apply", {
+        enum: ["create", "skip", "merge", "restore_merge"],
+      }),
+      url: nullable(stringSchema("Source bookmark URL")),
+      title: stringSchema("Source bookmark title"),
+      notes: nullable(stringSchema("Source note text when the import format provides note-like metadata")),
+      tags: arrayOf(stringSchema("Source tag name"), "Source tag names"),
+      folders: arrayOf(stringSchema("Source folder name"), "Source folder path"),
+      existingBookmarkId: nullable(stringSchema("Matching existing bookmark ID")),
+      existingState: nullable(stringSchema("Matching existing bookmark state", { enum: ["active", "archived", "trashed"] })),
+      skipReason: nullable(stringSchema("Reason the row would be skipped")),
+    },
+    [
+      "classification",
+      "action",
+      "url",
+      "title",
+      "notes",
+      "tags",
+      "folders",
+      "existingBookmarkId",
+      "existingState",
+      "skipReason",
+    ]
+  ),
+  ImportPreview: objectSchema(
+    {
+      duplicatePolicy: ref("ImportDuplicatePolicy"),
+      summary: ref("ImportPreviewSummary"),
+      folders: arrayOf(arrayOf(stringSchema("Folder segment"), "Folder path"), "Detected Netscape folder paths"),
+      tags: arrayOf(stringSchema("Detected tag name"), "Detected tag names"),
+      warnings: arrayOf(stringSchema("Parser warning"), "Parser warnings"),
+      rows: arrayOf(ref("ImportPreviewRow"), "Preview rows"),
+    },
+    ["duplicatePolicy", "summary", "folders", "tags", "warnings", "rows"],
+    "Non-mutating import preview"
+  ),
+  ImportPreviewResponse: envelope(ref("ImportPreview")),
   ImportSummary: objectSchema(
     {
       importId: stringSchema("Import ID for progress stream"),
-      total: integerSchema("Parsed bookmark count", { minimum: 0 }),
+      total: integerSchema("Parsed bookmark row count", { minimum: 0 }),
       folders: integerSchema("Parsed Netscape folder count", { minimum: 0 }),
       warnings: integerSchema("Parser warning count", { minimum: 0 }),
+      duplicatePolicy: ref("ImportDuplicatePolicy"),
       progressUrl: stringSchema("SSE progress URL"),
     },
-    ["importId", "total", "folders", "warnings", "progressUrl"]
+    ["importId", "total", "folders", "warnings", "duplicatePolicy", "progressUrl"]
   ),
   ImportSummaryResponse: envelope(ref("ImportSummary")),
   ImportProgressEvent: objectSchema(
     {
       queued: integerSchema("Queued bookmarks", { minimum: 0 }),
       skipped: integerSchema("Skipped bookmarks", { minimum: 0 }),
+      merged: integerSchema("Existing active bookmarks merged", { minimum: 0 }),
+      restored: integerSchema("Existing archived or trashed bookmarks restored and merged", { minimum: 0 }),
       total: integerSchema("Total parsed bookmarks", { minimum: 0 }),
       folders: integerSchema("Total parsed Netscape folders", { minimum: 0 }),
       categoriesCreated: integerSchema("Categories created from imported folder paths", { minimum: 0 }),
@@ -512,7 +597,7 @@ const schemas = {
       done: booleanSchema("Whether import processing is complete"),
       error: nullable(stringSchema("Background import error")),
     },
-    ["queued", "skipped", "total", "folders", "categoriesCreated", "categoriesReused", "done", "error"]
+    ["queued", "skipped", "merged", "restored", "total", "folders", "categoriesCreated", "categoriesReused", "done", "error"]
   ),
   RuntimeLlmCapability: objectSchema(
     {
@@ -1865,14 +1950,97 @@ export const apiContract = {
     },
     {
       method: "POST",
+      path: "/import/preview",
+      tag: "Import",
+      summary: "Preview a Netscape HTML bookmark export without mutating library data.",
+      request: {
+        body: {
+          contentType: "multipart/form-data",
+          description: "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          schema: objectSchema(
+            {
+              file: stringSchema("HTML bookmark export file"),
+              duplicatePolicy: stringSchema("Optional JSON duplicate policy"),
+            },
+            ["file"]
+          ),
+        },
+      },
+      responses: {
+        "200": jsonResponse("Import preview", ref("ImportPreviewResponse")),
+        "400": problemResponse("Multipart parsing failed"),
+        "413": problemResponse("File exceeds 10 MB"),
+        "415": problemResponse("Request is not multipart/form-data"),
+        "422": problemResponse("Missing file, invalid bookmark export, or invalid duplicate policy"),
+      },
+      examples: [
+        {
+          title: "Preview Netscape bookmarks",
+          request:
+            "curl -X POST http://127.0.0.1:3210/import/preview \\\n  -F file=@bookmarks.html \\\n  -F 'duplicatePolicy={\"active\":\"merge\",\"archived\":\"restore_merge\",\"trashed\":\"skip\"}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                duplicatePolicy: {
+                  active: "merge",
+                  archived: "restore_merge",
+                  trashed: "skip",
+                },
+                summary: {
+                  totalRows: 12,
+                  importableRows: 10,
+                  new: 7,
+                  activeDuplicates: 1,
+                  archivedDuplicates: 1,
+                  trashedDuplicates: 1,
+                  invalidUrls: 1,
+                  privateUrls: 1,
+                  created: 7,
+                  merged: 1,
+                  restored: 1,
+                  skipped: 3,
+                },
+                folders: [["Research"], ["Research", "Databases"]],
+                tags: ["database", "sqlite"],
+                warnings: ["Skipped private/internal URL: http://127.0.0.1/admin"],
+                rows: [
+                  {
+                    classification: "active_duplicate",
+                    action: "merge",
+                    url: "https://example.com/rag-vector-search",
+                    title: "RAG Vector Search Notes",
+                    notes: null,
+                    tags: ["database"],
+                    folders: ["Research"],
+                    existingBookmarkId: "bm_123",
+                    existingState: "active",
+                    skipReason: null,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    },
+    {
+      method: "POST",
       path: "/import",
       tag: "Import",
       summary: "Import a Netscape HTML bookmark export.",
       request: {
         body: {
           contentType: "multipart/form-data",
-          description: "Multipart body with a file field containing a .html bookmark export.",
-          schema: objectSchema({ file: stringSchema("HTML bookmark export file") }, ["file"]),
+          description: "Multipart body with a file field and optional duplicatePolicy JSON field.",
+          schema: objectSchema(
+            {
+              file: stringSchema("HTML bookmark export file"),
+              duplicatePolicy: stringSchema("Optional JSON duplicate policy"),
+            },
+            ["file"]
+          ),
         },
       },
       responses: {
@@ -1896,6 +2064,11 @@ export const apiContract = {
                 total: 12,
                 folders: 4,
                 warnings: 1,
+                duplicatePolicy: {
+                  active: "skip",
+                  archived: "skip",
+                  trashed: "skip",
+                },
                 progressUrl: "/import/import_123/progress",
               },
             },

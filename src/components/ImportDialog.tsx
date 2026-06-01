@@ -43,8 +43,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
 
       // Subscribe to SSE progress
       cleanupRef.current = subscribeToImportProgress(importId, (state) => {
+        const completed = state.queued + state.skipped + state.merged + state.restored;
         const pct = total > 0
-          ? 30 + Math.round(((state.queued + state.skipped) / total) * 70)
+          ? 30 + Math.round((completed / total) * 70)
           : 100;
         setProgress(Math.min(pct, 100));
 

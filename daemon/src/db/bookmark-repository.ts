@@ -100,6 +100,25 @@ export class BookmarkRepository {
     );
   }
 
+  /** Find bookmarks by URL, including archived and trashed rows. */
+  findByUrls(urls: string[]): BookmarkRow[] {
+    const uniqueUrls = [...new Set(urls)];
+    if (uniqueUrls.length === 0) return [];
+
+    const rows: BookmarkRow[] = [];
+    const chunkSize = 900;
+    for (let i = 0; i < uniqueUrls.length; i += chunkSize) {
+      const chunk = uniqueUrls.slice(i, i + chunkSize);
+      const placeholders = chunk.map(() => "?").join(",");
+      rows.push(
+        ...this.db
+          .query<BookmarkRow, string[]>(`SELECT * FROM bookmarks WHERE url IN (${placeholders})`)
+          .all(...chunk)
+      );
+    }
+    return rows;
+  }
+
   /** Find bookmark with full content. */
   findByIdWithContent(id: string): BookmarkWithContent | null {
     const bookmark = this.findById(id);
@@ -352,6 +371,59 @@ export class BookmarkRepository {
 
       if (patch.tags !== undefined) {
         this.setTags(id, patch.tags!);
+      }
+    })();
+
+    return this.findById(id);
+  }
+
+  /** Merge an imported duplicate into an existing row, optionally restoring it first. */
+  mergeImportDuplicate(
+    id: string,
+    patch: {
+      tags?: string[];
+      category_id?: string | null;
+      notes?: string | null;
+      restore?: boolean;
+    }
+  ): BookmarkWithTags | null {
+    const existing = this.db
+      .query<BookmarkRow, [string]>("SELECT * FROM bookmarks WHERE id = ?")
+      .get(id);
+    if (!existing) return null;
+
+    this.db.transaction(() => {
+      const sets: string[] = [];
+      const params: (string | number | null)[] = [];
+
+      if (patch.category_id !== undefined && patch.category_id !== null) {
+        sets.push("category_id = ?");
+        params.push(patch.category_id);
+      }
+
+      if (patch.restore) {
+        sets.push("is_archived = 0", "is_trashed = 0", "trashed_at = NULL");
+      }
+
+      if (typeof patch.notes === "string" && patch.notes.trim()) {
+        const importedNotes = patch.notes.trim();
+        const existingNotes = existing.notes?.trim() ?? "";
+        const mergedNotes = existingNotes
+          ? existingNotes.includes(importedNotes)
+            ? existingNotes
+            : `${existingNotes}\n\n${importedNotes}`
+          : importedNotes;
+        sets.push("notes = ?");
+        params.push(mergedNotes);
+      }
+
+      if (sets.length > 0) {
+        this.db.query(`UPDATE bookmarks SET ${sets.join(", ")} WHERE id = ?`).run(...params, id);
+      }
+
+      if (patch.tags !== undefined) {
+        const mergedTags = [...new Set([...this.getTagNames(id), ...patch.tags])];
+        this.setTags(id, mergedTags);
       }
     })();
 
