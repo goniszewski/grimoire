@@ -1,9 +1,10 @@
 import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { JobQueue } from "../queue.js";
-import { BookmarkRepository } from "../db/bookmark-repository.js";
+import { BookmarkRepository, type BookmarkWithTags } from "../db/bookmark-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
-import { CaptureRepository, type CaptureMetadataInput } from "../db/capture-repository.js";
+import { CaptureRepository, type CaptureMetadataInput, type BookmarkCaptureMetadataRow } from "../db/capture-repository.js";
+import { IntegrationTokenRepository } from "../db/integration-token-repository.js";
 import { requireIntegrationToken } from "../lib/integration-auth.js";
 import { isPrivateHost } from "../lib/network.js";
 import { log } from "../logger.js";
@@ -216,6 +217,111 @@ function resolveCategoryId(selection: CategorySelection, categoryRepo: CategoryR
   return null;
 }
 
+// ─── Core capture logic ──────────────────────────────────────────────────────
+
+type CaptureOutcome =
+  | { kind: "success"; bookmark: ReturnType<BookmarkRepository["findById"]>; capture: ReturnType<CaptureRepository["findByBookmarkId"]>; created: boolean; job_id: string | null }
+  | { kind: "validation_error"; message: string }
+  | { kind: "conflict_trash" }
+  | { kind: "conflict_archive" }
+  | { kind: "internal_error"; message: string };
+
+type DoCaptureInput = {
+  url: string;
+  title?: string | null;
+  categoryId?: string | null;
+  resolveCategory?: () => string | null;
+  tags?: string[];
+  notes?: string | null;
+  source?: CaptureMetadataInput;
+};
+
+function doCapture(
+  input: DoCaptureInput,
+  repos: {
+    bookmarkRepo: BookmarkRepository;
+    categoryRepo: CategoryRepository;
+    captureRepo: CaptureRepository;
+  },
+  deps: { db: Database; queue: JobQueue }
+): CaptureOutcome {
+  const { bookmarkRepo, captureRepo } = repos;
+
+  const existing = bookmarkRepo.findByUrl(input.url);
+  if (existing) {
+    if (existing.is_trashed) {
+      return { kind: "conflict_trash" };
+    }
+    if (existing.is_archived) {
+      return { kind: "conflict_archive" };
+    }
+
+    const bookmark = bookmarkRepo.findById(existing.id);
+    if (!bookmark) return { kind: "internal_error", message: "Existing bookmark could not be fetched" };
+    return {
+      kind: "success",
+      bookmark,
+      capture: captureRepo.findByBookmarkId(bookmark.id),
+      created: false,
+      job_id: null,
+    };
+  }
+
+  let bookmarkOut = null as BookmarkWithTags | null;
+  let captureOut = null as BookmarkCaptureMetadataRow | null;
+  let jobIdOut = "";
+
+  deps.db.transaction(() => {
+    const categoryId = input.resolveCategory ? input.resolveCategory() : (input.categoryId ?? null);
+    const created = bookmarkRepo.create(
+      input.url,
+      input.title ?? undefined,
+      categoryId
+    );
+    let fetched = bookmarkRepo.findById(created.id);
+    if (!fetched) throw new Error("Captured bookmark could not be fetched");
+
+    // Apply tags and notes after creation if provided
+    if (input.tags !== undefined || input.notes !== undefined) {
+      const updated = bookmarkRepo.update(fetched.id, {
+        ...(input.tags !== undefined ? { tags: input.tags } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      });
+      if (!updated) throw new Error("Captured bookmark could not be updated");
+      fetched = updated;
+    }
+
+    const cap = captureRepo.upsert(fetched.id, input.source ?? {});
+    const job = deps.queue.enqueue("ingest", {
+      bookmarkId: fetched.id,
+      url: fetched.url,
+    });
+    bookmarkOut = fetched;
+    captureOut = cap;
+    jobIdOut = job.id;
+  })();
+
+  if (!bookmarkOut) return { kind: "internal_error", message: "Captured bookmark could not be fetched" };
+
+  log.info("Bookmark captured", {
+    bookmarkId: bookmarkOut.id,
+    url: input.url,
+    jobId: jobIdOut,
+  });
+
+  return { kind: "success", bookmark: bookmarkOut, capture: captureOut, created: true, job_id: jobIdOut };
+}
+
+// ─── HTML response helpers for bookmarklet ────────────────────────────────────
+
+function htmlPage(title: string, body: string): string {
+  return `<!DOCTYPE html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><body style="font:14px/1.5 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center;padding:2em">${body}</div></body></html>`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // ─── Route factory ────────────────────────────────────────────────────────────
 
 export function createCaptureRoute(deps: CaptureDeps): Hono {
@@ -224,10 +330,8 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
   const categoryRepo = new CategoryRepository(deps.db);
   const captureRepo = new CaptureRepository(deps.db);
 
-  router.use("/capture", requireIntegrationToken(deps.db));
-
   // POST /capture — protected local integration one-click bookmark capture
-  router.post("/capture", async (c) => {
+  router.post("/capture", requireIntegrationToken(deps.db), async (c) => {
     let body: unknown;
     try {
       body = await c.req.json();
@@ -270,79 +374,134 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
       throw err;
     }
 
-    const existing = bookmarkRepo.findByUrl(url);
-    if (existing) {
-      if (existing.is_trashed) {
+    const outcome = doCapture(
+      {
+        url,
+        title,
+        tags,
+        notes,
+        resolveCategory: () => resolveCategoryId(categorySelection, categoryRepo),
+        source,
+      },
+      { bookmarkRepo, categoryRepo, captureRepo },
+      deps
+    );
+
+    switch (outcome.kind) {
+      case "success":
+        log.info("Bookmark captured by local integration", {
+          bookmarkId: outcome.bookmark?.id,
+          url,
+          jobId: outcome.job_id,
+        });
+        return ok(c, {
+          bookmark: outcome.bookmark,
+          capture: outcome.capture,
+          created: outcome.created,
+          job_id: outcome.job_id,
+        }, outcome.created ? 201 : 200);
+      case "validation_error":
+        return problem(c, 422, "Unprocessable Entity", outcome.message);
+      case "conflict_trash":
         return problem(
           c,
           409,
           "Conflict",
           "This URL is already in your trash. Restore or permanently delete it before re-adding."
         );
-      }
-      if (existing.is_archived) {
+      case "conflict_archive":
         return problem(
           c,
           409,
           "Conflict",
           "This URL is already in your archive. Restore it from the archive before re-adding."
         );
+      case "internal_error":
+        return problem(c, 500, "Internal Server Error", outcome.message);
+      default: {
+        const _exhaustive: never = outcome;
+        return _exhaustive;
       }
+    }
+  });
 
-      const bookmark = bookmarkRepo.findById(existing.id);
-      if (!bookmark) return problem(c, 500, "Internal Server Error", "Existing bookmark could not be fetched");
-      return ok(c, {
-        bookmark,
-        capture: captureRepo.findByBookmarkId(bookmark.id),
-        created: false,
-        job_id: null,
-      });
+  // GET /capture/bookmarklet — bookmarklet iframe endpoint (token via query param)
+  router.get("/capture/bookmarklet", async (c) => {
+    const token = c.req.query("token");
+    if (!token) {
+      return c.html(htmlPage("Error", '<p style="color:#dc2626">Missing token</p>'), 400);
     }
 
-    let bookmark = null as ReturnType<BookmarkRepository["findById"]>;
-    let capture = null as ReturnType<CaptureRepository["upsert"]>;
-    let jobId: string | null = null;
-    deps.db.transaction(() => {
-      const created = bookmarkRepo.create(
-        url,
-        title ?? undefined,
-        resolveCategoryId(categorySelection, categoryRepo)
+    const tokenRepo = new IntegrationTokenRepository(deps.db);
+    const record = tokenRepo.verify(token);
+    if (!record) {
+      return c.html(htmlPage("Error", '<p style="color:#dc2626">Invalid or revoked token</p>'), 401);
+    }
+
+    const url = c.req.query("url");
+    if (!url) {
+      return c.html(htmlPage("Error", '<p style="color:#dc2626">Missing url</p>'), 400);
+    }
+
+    let parsedUrl: string;
+    try {
+      parsedUrl = parsePublicUrl(url, "url");
+    } catch (err) {
+      const msg = err instanceof ValidationError ? err.message : "Invalid URL";
+      return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(msg)}</p>`), 422);
+    }
+
+    const title = c.req.query("title") || undefined;
+    const selection = c.req.query("selection") || undefined;
+
+    const source: CaptureMetadataInput = {
+      source_client: "bookmarklet",
+      selected_text: selection ? selection.slice(0, MAX_SELECTED_TEXT_LENGTH) : null,
+    };
+
+    const result = doCapture(
+      { url: parsedUrl, title, source },
+      { bookmarkRepo, categoryRepo, captureRepo },
+      deps
+    );
+
+    if (result.kind === "success") {
+      log.info("Bookmark captured via bookmarklet", {
+        bookmarkId: result.bookmark?.id,
+        url: parsedUrl,
+        jobId: result.job_id,
+      });
+
+      const label = result.created ? "Saved" : "Already saved";
+      return c.html(
+        htmlPage(
+          label,
+          `<p style="color:#16a34a;font-weight:600">${label}</p><p style="color:#666;font-size:13px">${escapeHtml(parsedUrl)}</p>`
+        ),
+        result.created ? 201 : 200
       );
-      bookmark = bookmarkRepo.findById(created.id);
-      if (!bookmark) throw new Error("Captured bookmark could not be fetched");
-
-      if (tags !== undefined || notes !== undefined) {
-        const updated = bookmarkRepo.update(bookmark.id, {
-          ...(tags !== undefined ? { tags } : {}),
-          ...(notes !== undefined ? { notes } : {}),
-        });
-        if (!updated) throw new Error("Captured bookmark could not be updated");
-        bookmark = updated;
-      }
-      capture = captureRepo.upsert(bookmark.id, source);
-      const job = deps.queue.enqueue("ingest", {
-        bookmarkId: bookmark.id,
-        url: bookmark.url,
-      });
-      jobId = job.id;
-    })();
-
-    if (!bookmark) {
-      return problem(c, 500, "Internal Server Error", "Captured bookmark could not be fetched");
     }
 
-    log.info("Bookmark captured by local integration", {
-      bookmarkId: bookmark.id,
-      url,
-      jobId,
-    });
-
-    return ok(c, {
-      bookmark,
-      capture,
-      created: true,
-      job_id: jobId,
-    }, 201);
+    switch (result.kind) {
+      case "validation_error":
+        return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(result.message)}</p>`), 422);
+      case "conflict_trash":
+        return c.html(
+          htmlPage("Already saved", '<p>This URL is in your trash. Restore it before re-adding.</p>'),
+          409
+        );
+      case "conflict_archive":
+        return c.html(
+          htmlPage("Already saved", '<p>This URL is in your archive. Restore it before re-adding.</p>'),
+          409
+        );
+      case "internal_error":
+        return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(result.message)}</p>`), 500);
+      default: {
+        const _exhaustive: never = result;
+        return _exhaustive;
+      }
+    }
   });
 
   return router;

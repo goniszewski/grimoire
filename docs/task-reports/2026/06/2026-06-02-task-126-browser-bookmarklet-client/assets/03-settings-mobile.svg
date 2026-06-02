@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 780" fill="none">
+  <rect width="400" height="780" rx="16" fill="#f8fafc"/>
+  <style>
+    .card { fill:#fff; stroke:#e2e8f0; stroke-width:1; rx:8; }
+    .title { font:600 13px/1.4 system-ui,sans-serif; fill:#0f172a; }
+    .desc { font:11px/1.4 system-ui,sans-serif; fill:#64748b; }
+    .code { font:10px/1.4 ui-monospace,monospace; fill:#0f7fbf; }
+    .btn { fill:#fff; stroke:#cbd5e1; stroke-width:1; rx:6; }
+    .btn-text { font:11px/1 system-ui,sans-serif; fill:#334155; font-weight:600; }
+    .heading { font:700 11px/1.4 system-ui,sans-serif; fill:#334155; text-transform:uppercase; letter-spacing:0.5; }
+    .separator { stroke:#e2e8f0; stroke-width:1; }
+  </style>
+
+  <!-- Phone chrome -->
+  <rect x="10" y="10" width="380" height="760" rx="16" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="160" y="22" width="80" height="6" rx="3" fill="#1e293b"/>
+
+  <!-- Back link -->
+  <text x="30" y="55" class="desc" font-size="12">← Settings</text>
+
+  <!-- Header -->
+  <text x="30" y="90" class="title" font-size="18">Browser Integration</text>
+  <text x="30" y="110" class="desc" font-size="11">Create an integration token and install the bookmarklet to save pages from any browser.</text>
+
+  <!-- Setup guide trigger -->
+  <rect x="270" y="75" width="100" height="28" rx="6" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="320" y="94" text-anchor="middle" class="btn-text">🌐 Setup guide</text>
+
+  <!-- Setup guide -->
+  <rect x="20" y="125" width="360" height="170" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="36" y="148" class="title" font-size="12">Installing the bookmarklet</text>
+  <text x="36" y="168" class="desc" font-size="10">1. Create a new token below</text>
+  <text x="36" y="184" class="desc" font-size="10">2. Click "Copy bookmarklet"</text>
+  <text x="36" y="200" class="desc" font-size="10">3. Paste code as bookmark URL</text>
+  <text x="36" y="216" class="desc" font-size="10">4. Or drag to bookmarks bar</text>
+  <rect x="36" y="235" width="330" height="24" rx="4" fill="#fef3c7"/>
+  <text x="36" y="252" class="desc" font-size="9" fill="#92400e">⚠️ Token embedded in bookmarklet — treat like a password</text>
+  <text x="36" y="280" class="desc" font-size="10" fill="#475569">Chrome: Ctrl+Shift+B → drag link<br/>Firefox: Right-click bar → Add Bookmark<br/>Safari: View → Favorites Bar</text>
+
+  <line x1="20" y1="308" x2="380" y2="308" class="separator"/>
+
+  <!-- Token section -->
+  <text x="30" y="332" class="heading">Integration Tokens</text>
+
+  <!-- Token row -->
+  <rect class="card" x="20" y="345" width="360" height="70"/>
+  <rect x="32" y="358" width="20" height="20" rx="5" fill="#eef2ff"/>
+  <text x="42" y="373" text-anchor="middle" class="desc" fill="#4338ca" font-size="10">🔑</text>
+  <text x="60" y="370" class="title" font-size="11">Bookmarklet Demo</text>
+  <text x="60" y="386" class="code" font-size="9">limp_it_abc123def...</text>
+  <text x="60" y="400" class="desc" font-size="9">Created Jun 2, 2026</text>
+
+  <rect x="240" y="358" width="80" height="24" rx="6" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="280" y="375" text-anchor="middle" class="btn-text" font-size="10">🌐 Copy</text>
+  <rect x="328" y="358" width="24" height="24" rx="6" fill="#fff" stroke="#fecaca" stroke-width="1"/>
+  <text x="340" y="375" text-anchor="middle" font-size="11" fill="#dc2626">🗑</text>
+
+  <!-- Create token -->
+  <rect x="20" y="430" width="140" height="30" rx="6" fill="#4338ca"/>
+  <text x="90" y="450" text-anchor="middle" class="btn-text" fill="#fff">+ Create token</text>
+
+  <!-- New token -->
+  <rect class="card" x="20" y="478" width="360" height="65" fill="#f0fdf4" stroke="#86efac"/>
+  <rect x="32" y="492" width="20" height="20" rx="5" fill="#dcfce7"/>
+  <text x="42" y="507" text-anchor="middle" class="desc" fill="#166534" font-size="10">✅</text>
+  <text x="60" y="505" class="title" font-size="11" fill="#166534">New Token</text>
+  <text x="60" y="520" class="desc" font-size="9" fill="#166534">Full token shown only once.</text>
+  <rect x="240" y="495" width="120" height="28" rx="6" fill="#166534"/>
+  <text x="300" y="514" text-anchor="middle" class="btn-text" fill="#fff">📋 Copy bookmarklet</text>
+
+  <!-- Note -->
+  <text x="30" y="570" class="desc" font-size="9">Existing tokens only show the prefix. Create a fresh token to generate a bookmarklet URL.</text>
+
+  <!-- Bottom nav -->
+  <rect x="10" y="720" width="380" height="50" rx="0" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="80" y="750" text-anchor="middle" class="desc" font-size="10">Library</text>
+  <text x="200" y="750" text-anchor="middle" class="desc" font-size="10" fill="#4338ca" font-weight="700">Settings</text>
+  <text x="320" y="750" text-anchor="middle" class="desc" font-size="10">Search</text>
+</svg>

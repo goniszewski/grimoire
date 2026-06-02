@@ -21,7 +21,7 @@ Little Imp has two runtime parts:
 
 ### Bookmark Capture
 
-Users can save public `http` or `https` URLs from the add dialog, by pasting a URL into the main page, through browser bookmark import, through the REST API, or through the MCP tool endpoint.
+Users can save public `http` or `https` URLs from the add dialog, by pasting a URL into the main page, through browser bookmark import, through the REST API, through the MCP tool endpoint, or via the **browser bookmarklet** (Settings → Browser Integration → drag to bookmarks bar).
 
 Implemented behavior:
 

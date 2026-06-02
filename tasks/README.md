@@ -139,7 +139,7 @@ tasks/
 | TASK-123 | [Homebrew Live Install Validation](backlog/TASK-123-homebrew-live-install-validation.md) | Release unblocking | critical | backlog |
 | TASK-124 | [Public-Artifact Installed-App E2E](backlog/TASK-124-public-artifact-installed-e2e.md) | Release unblocking | critical | backlog |
 | TASK-125 | [macOS x64 Validation or Documented Acceptance](todo/TASK-125-macos-x64-validation.md) | Release unblocking | high | todo |
-| TASK-126 | [Browser Bookmarklet Client](todo/TASK-126-browser-bookmarklet-client.md) | First-user experience | high | todo |
+| TASK-126 | [Browser Bookmarklet Client](done/TASK-126-browser-bookmarklet-client.md) | First-user experience | high | done |
 | TASK-127 | [In-App Update Notification](todo/TASK-127-in-app-update-notification.md) | First-user experience | high | todo |
 | TASK-128 | [In-App Backup Verify from Arbitrary Paths](todo/TASK-128-in-app-backup-verify-arbitrary-paths.md) | First-user experience | medium | todo |
 | TASK-129 | [First-Run Guided Tour and Demo Content](todo/TASK-129-first-run-guided-tour.md) | First-user experience | medium | todo |

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Bookmarklet Client — Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --amber: #b45309;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row span:nth-child(3) {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.hero-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #eef2f7;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+figcaption {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 11px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.summary-grid,
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.section,
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+details > *:not(summary) { margin-top: 12px; }
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1080px);
+    padding: 32px 0;
+  }
+  .task-card { padding: 20px; }
+}
+/* task-report-lightbox:start — see docs/task-reports/assets/task-report-lightbox.js */
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">Month</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>TASK-126: Browser Bookmarklet Client</h1>
+      <div class="meta-row">
+        <span>2026-06-02</span>
+        <span>TASK-126</span>
+        <span>Done</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/02-settings-browser-integration.svg" alt="Settings Browser Integration section with token management and setup guide" class="task-report-lightbox-source">
+      <figcaption>Settings → Browser Integration: token management, setup guide, and one-click bookmarklet URL generation.</figcaption>
+    </figure>
+
+    <div class="summary-grid">
+      <section class="section">
+        <h2>Before</h2>
+        <p>The only way to save a bookmark required opening the Little Imp app (add dialog, paste URL, or import). There was no browser-based one-click save mechanism. Integration tokens existed but were only used for the MCP server and <code>POST /capture</code> API endpoint — no bookmarklet client or Settings UI for browser integration existed.</p>
+      </section>
+
+      <section class="section">
+        <h2>Problem</h2>
+        <p>Bookmark managers live or die by how easily users can save content. Without a browser bookmarklet, every save required context-switching to the app. This was the single highest-impact UX gap for a bookmark manager.</p>
+      </section>
+    </div>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Created a self-contained minified bookmarklet template that reads page URL, title, and selected text, shows an in-page toast overlay, and uses a hidden iframe to POST to the daemon via <code>GET /capture/bookmarklet</code> (iframe avoids CORS)</li>
+        <li>Added <code>GET /capture/bookmarklet</code> daemon endpoint with query-param token authentication, URL validation, duplicate detection, and HTML responses (success/error/info pages rendered inside the iframe)</li>
+        <li>Refactored the existing <code>POST /capture</code> handler to share capture logic with the bookmarklet endpoint via a unified <code>doCapture()</code> helper (eliminated code duplication)</li>
+        <li>Added "Browser Integration" section to Settings UI: token creation/revocation, expanded setup guide (Chrome, Firefox, Safari, Edge instructions), one-click bookmarklet URL generation for newly-created tokens</li>
+        <li>Added <code>generateBookmarkletUrl()</code> in <code>src/lib/bookmarklet.ts</code> with placeholder-based token/daemon URL injection</li>
+        <li>Added API client methods for integration token management: <code>listIntegrationTokens</code>, <code>createIntegrationToken</code>, <code>revokeIntegrationToken</code>, <code>rotateIntegrationToken</code></li>
+        <li>Registered the bookmarklet endpoint in the API contract and regenerated all API docs</li>
+        <li>Documented the bookmarklet in README.md ("Browser bookmarklet" section) and <code>docs/overview.md</code></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Users can now save any web page to Little Imp in one click without opening the app. The flow: go to Settings → Browser Integration → create a token → click "Copy bookmarklet" → paste as a browser bookmark URL → click the bookmarklet on any page to save it. A toast overlay confirms success, and the page is queued for ingestion like any other capture.</p>
+    </section>
+
+    <div class="shot-grid">
+      <figure>
+        <img src="assets/01-bookmarklet-flow.svg" alt="Bookmarklet capture flow diagram" class="task-report-lightbox-source">
+        <figcaption>Capture flow: bookmarklet in-page script creates a hidden iframe that posts to the daemon, avoiding CORS entirely.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/03-settings-mobile.svg" alt="Mobile view of Browser Integration settings" class="task-report-lightbox-source">
+        <figcaption>Mobile/narrow view of the Browser Integration section in Settings.</figcaption>
+      </figure>
+    </div>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>npm run type-check</code> — frontend + daemon pass</li>
+        <li><code>npm run lint</code> — 0 errors, 8 pre-existing warnings</li>
+        <li><code>npx vitest run</code> — 287 tests across 33 files, all passing</li>
+        <li><code>npm run test:daemon</code> — 465 tests (6 new bookmarklet integration tests), all passing</li>
+        <li><code>npm run docs:api:check</code> — API docs up to date</li>
+        <li>6 new integration tests for <code>GET /capture/bookmarklet</code>: missing token (400), missing URL (400), invalid token (401), private URL (422), successful capture (201 with DB persistence), duplicate URL (200)</li>
+        <li>11 new unit tests for <code>generateBookmarkletUrl()</code>: URI structure, token embedding, daemon URL, special characters, IIFE validation</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Links</h2>
+      <ul>
+        <li><a href="../../../../../src/lib/bookmarklet.ts"><code>src/lib/bookmarklet.ts</code></a> — Bookmarklet URL generator</li>
+        <li><a href="../../../../../src/bookmarklet/bookmarklet.ts"><code>src/bookmarklet/bookmarklet.ts</code></a> — Human-readable bookmarklet source</li>
+        <li><a href="../../../../../daemon/src/routes/capture.ts"><code>daemon/src/routes/capture.ts</code></a> — <code>GET /capture/bookmarklet</code> endpoint + <code>doCapture</code></li>
+        <li><a href="../../../../../src/pages/Settings.tsx"><code>src/pages/Settings.tsx</code></a> — Browser Integration section UI</li>
+        <li><a href="../../../../../src/lib/api.ts"><code>src/lib/api.ts</code></a> — Integration token API client methods</li>
+        <li><a href="../../../../../daemon/src/api/contract.ts"><code>daemon/src/api/contract.ts</code></a> — API contract with bookmarklet endpoint</li>
+        <li><a href="../../../../../daemon/src/test/integration/capture.test.ts"><code>daemon/src/test/integration/capture.test.ts</code></a> — Bookmarklet integration tests</li>
+        <li><a href="../../../../../README.md"><code>README.md</code></a> — "Browser bookmarklet" section</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The bookmarklet uses a hidden iframe (not <code>XMLHttpRequest</code> or <code>fetch</code>) to communicate with the daemon because CORS preflight would fail — the bookmarklet runs on arbitrary web pages while the daemon is on <code>127.0.0.1:3210</code>. The iframe loads an HTML page from the daemon, which renders silently. The daemon returns HTML pages with status codes that the iframe doesn't expose to the host page (by design — the host page cannot read the iframe content due to cross-origin restrictions). The toast overlay provides the only user feedback.</p>
+      <p>Token authentication uses a query parameter (<code>?token=...</code>) rather than the <code>Authorization</code> header because the iframe <code>src</code> cannot set headers. The token is embedded in the bookmarklet <code>javascript:</code> URI at generation time. Security model: treat the bookmarklet like a password — it grants capture access to the daemon.</p>
+      <p>The <code>doCapture()</code> refactoring eliminated ~60 lines of duplicated create-bookmark logic between the POST handler and the GET bookmarklet handler. Category resolution uses a lazy callback to avoid side effects when a duplicate URL is detected.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/routes/capture.ts</code> — <code>doCapture</code> helper, <code>GET /capture/bookmarklet</code> endpoint, HTML response helpers</li>
+        <li><code>daemon/src/api/types.ts</code> — Integration token DTO types</li>
+        <li><code>daemon/src/api/contract.ts</code> — Bookmarklet endpoint definition</li>
+        <li><code>daemon/src/test/integration/capture.test.ts</code> — 6 new bookmarklet integration tests</li>
+        <li><code>src/lib/bookmarklet.ts</code> — <code>generateBookmarkletUrl</code> with minified template</li>
+        <li><code>src/lib/bookmarklet.test.ts</code> — 11 new unit tests</li>
+        <li><code>src/lib/api.ts</code> — Integration token API client methods</li>
+        <li><code>src/pages/Settings.tsx</code> — Browser Integration section</li>
+        <li><code>src/pages/Settings.test.tsx</code> — Mock updates for BrowserIntegration</li>
+        <li><code>scripts/api-docs-generator.test.ts</code> — Updated test expectations for bookmarklet endpoint</li>
+        <li><code>README.md</code> — Browser bookmarklet documentation</li>
+        <li><code>docs/overview.md</code> — Bookmarklet capture mention</li>
+        <li><code>API.md</code>, <code>docs/api-contract.json</code>, <code>docs/openapi.json</code> — Regenerated docs</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Review Findings</summary>
+      <p>A separate code review was conducted after implementation. Key findings:</p>
+      <ul>
+        <li><strong>Critical:</strong> <code>resolveCategoryId()</code> was running before the duplicate check, causing side-effect category creation even for existing bookmarks — fixed by using a deferred callback</li>
+        <li><strong>Structural:</strong> <code>doCapture</code> and <code>POST /capture</code> had diverging creation logic — unified by adding tags/notes support to <code>doCapture</code></li>
+        <li><strong>Security:</strong> Token embedded in <code>javascript:</code> URI — documented in README and Settings UI</li>
+        <li><strong>UX:</strong> Bookmarklet button on existing token rows was confusing — now opens the create-token dialog</li>
+        <li>All issues were fixed before the task was marked done.</li>
+      </ul>
+    </details>
+  </article>
+</main>
+
+<!-- task-report-lightbox loaded from ../../../assets/task-report-lightbox.js -->
+</body>
+</html>

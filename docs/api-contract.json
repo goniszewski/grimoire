@@ -8537,6 +8537,76 @@
     },
     {
       "method": "GET",
+      "path": "/capture/bookmarklet",
+      "tag": "Integrations",
+      "summary": "Bookmarklet capture page (hidden iframe target, no auth header).",
+      "description": "The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "description": "Integration bearer token (query-param auth)"
+            },
+            "url": {
+              "type": "string",
+              "description": "The URL to capture"
+            },
+            "title": {
+              "type": "string",
+              "description": "Page title",
+              "optional": true
+            },
+            "selection": {
+              "type": "string",
+              "description": "User-selected text",
+              "optional": true
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Bookmark already exists (not duplicated)"
+        },
+        "201": {
+          "description": "Bookmark captured successfully"
+        },
+        "400": {
+          "description": "Missing token or url",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "401": {
+          "description": "Invalid or revoked token",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "URL exists in trash or archive",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Invalid URL",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
       "path": "/integration-tokens",
       "tag": "Integrations",
       "summary": "List managed local integration tokens with secret values redacted.",

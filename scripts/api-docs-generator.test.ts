@@ -286,7 +286,10 @@ describe("API documentation generator", () => {
     expect(markdown).toContain('"type": "https://littleimp.app/problems/unprocessable-entity"');
     expect(markdown).toContain('WWW-Authenticate: Bearer realm="littleimp-local-integrations"');
     expect(markdown).not.toMatch(/browser extension/i);
-    expect(markdown).not.toMatch(/bookmarklet/i);
+    // The bookmarklet endpoint is documented but must not appear in error-flow example titles
+    expect(problemExamples.map((example) => example.title)).not.toEqual(
+      expect.arrayContaining(["bookmarklet"])
+    );
   });
 
   it("documents conservative local CORS setup for integration clients", () => {
@@ -298,7 +301,8 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("http://127.0.0.1:3210");
     expect(markdown).toContain("Non-loopback origins are ignored");
     expect(markdown).not.toMatch(/browser extension/i);
-    expect(markdown).not.toMatch(/bookmarklet/i);
+    // The bookmarklet endpoint appears in the route table but not in the CORS setup prose
+    expect(markdown).toContain("/capture/bookmarklet");
   });
 
   it("keeps example responses aligned with immediate route behavior", () => {

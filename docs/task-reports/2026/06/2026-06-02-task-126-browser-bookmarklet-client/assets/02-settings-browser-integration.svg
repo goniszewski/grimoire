@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <rect width="800" height="600" rx="12" fill="#f8fafc"/>
+  <style>
+    .card { fill:#fff; stroke:#e2e8f0; stroke-width:1; rx:8; }
+    .title { font:600 14px/1.4 system-ui,sans-serif; fill:#0f172a; }
+    .desc { font:12px/1.4 system-ui,sans-serif; fill:#64748b; }
+    .code { font:11px/1.4 ui-monospace,monospace; fill:#0f7fbf; }
+    .heading { font:700 13px/1.4 system-ui,sans-serif; fill:#334155; text-transform:uppercase; letter-spacing:0.5; }
+    .pill { fill:#f1f5f9; rx:999; }
+    .pill-text { font:10px/1 system-ui,sans-serif; fill:#475569; font-weight:700; }
+    .green-pill { fill:#dcfce7; rx:999; }
+    .green-text { font:10px/1 system-ui,sans-serif; fill:#166534; font-weight:700; }
+    .btn { fill:#fff; stroke:#cbd5e1; stroke-width:1; rx:6; }
+    .btn-text { font:11px/1 system-ui,sans-serif; fill:#334155; font-weight:600; }
+    .danger-btn { fill:#fff; stroke:#fecaca; stroke-width:1; rx:6; }
+    .danger-text { font:11px/1 system-ui,sans-serif; fill:#dc2626; font-weight:600; }
+    .separator { stroke:#e2e8f0; stroke-width:1; }
+  </style>
+
+  <!-- Page chrome -->
+  <rect x="20" y="20" width="760" height="560" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <rect x="20" y="20" width="760" height="40" rx="10" fill="#f1f5f9"/>
+  <rect x="20" y="50" width="760" height="10" fill="#f1f5f9"/>
+  <circle cx="44" cy="40" r="6" fill="#ef4444"/>
+  <circle cx="62" cy="40" r="6" fill="#eab308"/>
+  <circle cx="80" cy="40" r="6" fill="#22c55e"/>
+  <text x="400" y="45" text-anchor="middle" class="desc" font-size="11">Settings — Little Imp</text>
+
+  <!-- Sidebar -->
+  <text x="48" y="82" class="desc" font-size="11">← Settings</text>
+  <text x="48" y="108" class="desc" font-size="11">General</text>
+  <text x="48" y="128" class="desc" font-size="11">AI Providers</text>
+  <text x="48" y="148" class="desc" font-size="11">Library Maintenance</text>
+  <rect x="36" y="162" width="160" height="26" rx="6" fill="#eef2ff"/>
+  <text x="48" y="180" class="title" font-size="12" fill="#4338ca">Browser Integration</text>
+  <text x="48" y="200" class="desc" font-size="11">Backup &amp; Restore</text>
+  <text x="48" y="220" class="desc" font-size="11">Updates</text>
+  <text x="48" y="240" class="desc" font-size="11">Diagnostics</text>
+
+  <!-- Main content -->
+  <line x1="220" y1="60" x2="220" y2="560" class="separator"/>
+
+  <!-- Browser Integration header -->
+  <text x="240" y="90" class="title" font-size="16">Browser Integration</text>
+  <text x="240" y="110" class="desc">Create an integration token and install the bookmarklet to save pages from any browser.</text>
+
+  <rect x="560" y="80" width="100" height="28" rx="6" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="610" y="99" text-anchor="middle" class="btn-text">🌐 Setup guide</text>
+
+  <!-- Setup guide (expanded) -->
+  <rect x="240" y="125" width="520" height="150" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="256" y="148" class="title" font-size="12">Installing the bookmarklet</text>
+
+  <text x="256" y="170" class="desc" font-size="11">1. Create a new token below</text>
+  <text x="256" y="186" class="desc" font-size="11">2. Click "Copy bookmarklet" on the just-created token</text>
+  <text x="256" y="202" class="desc" font-size="11">3. Create a new bookmark in your browser and paste the code as the URL</text>
+  <text x="256" y="218" class="desc" font-size="11">4. Or drag the bookmarklet link to your bookmarks bar</text>
+  <text x="256" y="240" class="desc" font-size="11">Browser tips: Chrome/Edge (Ctrl+Shift+B), Firefox (Right-click bar → Add Bookmark), Safari (View → Favorites Bar)</text>
+
+  <rect x="256" y="248" width="490" height="20" rx="4" fill="#fef3c7"/>
+  <text x="268" y="263" class="desc" font-size="10" fill="#92400e">⚠️ Security: The bookmarklet embeds your integration token. Anyone with access to the bookmark can capture pages.</text>
+
+  <!-- Token list section -->
+  <text x="240" y="300" class="heading">Integration Tokens</text>
+
+  <!-- Token row -->
+  <rect class="card" x="240" y="315" width="520" height="60"/>
+  <rect x="256" y="328" width="24" height="24" rx="6" fill="#eef2ff"/>
+  <text x="268" y="345" text-anchor="middle" class="desc" fill="#4338ca" font-size="12">🔑</text>
+  <text x="290" y="340" class="title" font-size="12">Bookmarklet Demo</text>
+  <text x="420" y="340" class="code" font-size="10">limp_it_abc123def...</text>
+  <rect x="538" y="328" width="90" height="24" rx="6" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="583" y="345" text-anchor="middle" class="btn-text">🌐 Bookmarklet</text>
+  <rect x="636" y="328" width="28" height="24" rx="6" fill="#fff" stroke="#fecaca" stroke-width="1"/>
+  <text x="650" y="345" text-anchor="middle" class="danger-text" font-size="12">🗑</text>
+  <text x="290" y="358" class="desc" font-size="10">Created Jun 2, 2026</text>
+
+  <!-- Create token button -->
+  <rect x="240" y="390" width="160" height="32" rx="6" fill="#4338ca"/>
+  <text x="320" y="411" text-anchor="middle" class="btn-text" fill="#fff">+ Create token</text>
+
+  <!-- Newly created token section (expanded) -->
+  <rect class="card" x="240" y="440" width="520" height="70" fill="#f0fdf4" stroke="#86efac"/>
+  <rect x="256" y="455" width="24" height="24" rx="6" fill="#dcfce7"/>
+  <text x="268" y="472" text-anchor="middle" class="desc" fill="#166534" font-size="12">✅</text>
+  <text x="290" y="470" class="title" font-size="12" fill="#166534">New Token — copy this now</text>
+  <text x="290" y="486" class="desc" font-size="10" fill="#166534">The full token is shown only once.</text>
+  <rect x="450" y="455" width="130" height="24" rx="6" fill="#166534"/>
+  <text x="515" y="472" text-anchor="middle" class="btn-text" fill="#fff">📋 Copy bookmarklet</text>
+
+  <!-- Note at bottom -->
+  <text x="240" y="545" class="desc" font-size="10">Existing tokens only show the prefix. Create a fresh token to generate a bookmarklet URL.</text>
+</svg>

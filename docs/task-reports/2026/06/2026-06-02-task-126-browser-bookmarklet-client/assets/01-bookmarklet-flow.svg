@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" fill="none">
+  <rect width="800" height="520" rx="12" fill="#f8fafc"/>
+  <style>
+    .box { fill:#fff; stroke:#dedfec; stroke-width:1.5; rx:8; }
+    .arrow { stroke:#94a3b8; stroke-width:1.5; fill:none; marker-end:url(#arrowhead); }
+    .label { font:600 13px/1.4 system-ui,sans-serif; fill:#191827; }
+    .sublabel { font:12px/1.4 system-ui,sans-serif; fill:#626475; }
+    .code { font:11px/1.4 ui-monospace,monospace; fill:#0f7fbf; }
+    .badge { fill:#eef2ff; stroke:#c7d2fe; stroke-width:1; rx:999; }
+    .badge-text { font:10px/1 system-ui,sans-serif; fill:#4338ca; font-weight:700; }
+  </style>
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Flow title -->
+  <text x="400" y="32" text-anchor="middle" class="label" font-size="15">Browser Bookmarklet — Capture Flow</text>
+
+  <!-- Step 1: User clicks bookmarklet -->
+  <rect class="box" x="40" y="55" width="220" height="100"/>
+  <text x="150" y="80" text-anchor="middle" class="label">1. User clicks bookmarklet</text>
+  <text x="150" y="100" text-anchor="middle" class="sublabel">Reads page URL, title,</text>
+  <text x="150" y="116" text-anchor="middle" class="sublabel">and selected text</text>
+  <text x="150" y="136" text-anchor="middle" class="code">document.location.href</text>
+  <text x="150" y="150" text-anchor="middle" class="code">document.title</text>
+
+  <!-- Arrow 1→2 -->
+  <path class="arrow" d="M260,105 L320,105"/>
+
+  <!-- Step 2: Hidden iframe -->
+  <rect class="box" x="330" y="55" width="200" height="100"/>
+  <text x="430" y="80" text-anchor="middle" class="label">2. Hidden iframe created</text>
+  <text x="430" y="100" text-anchor="middle" class="sublabel">Points to daemon endpoint</text>
+  <text x="430" y="116" text-anchor="middle" class="code">GET /capture/bookmarklet</text>
+  <text x="430" y="136" text-anchor="middle" class="sublabel">?token=...&amp;url=...&amp;title=...</text>
+
+  <!-- Arrow 2→3 -->
+  <path class="arrow" d="M530,105 L590,105"/>
+
+  <!-- Step 3: Daemon validates -->
+  <rect class="box" x="600" y="55" width="170" height="100"/>
+  <text x="685" y="80" text-anchor="middle" class="label">3. Daemon validates</text>
+  <text x="685" y="100" text-anchor="middle" class="sublabel">Token verification</text>
+  <text x="685" y="116" text-anchor="middle" class="sublabel">URL validation</text>
+  <text x="685" y="136" text-anchor="middle" class="sublabel">Duplicate check</text>
+
+  <!-- Success path -->
+  <rect class="box" x="40" y="205" width="220" height="120"/>
+  <text x="150" y="230" text-anchor="middle" class="label" fill="#15803d">4a. New bookmark created</text>
+  <text x="150" y="250" text-anchor="middle" class="sublabel">Bookmark created in SQLite</text>
+  <text x="150" y="266" text-anchor="middle" class="sublabel">Ingestion job enqueued</text>
+  <text x="150" y="286" text-anchor="middle" class="sublabel">Returns HTML page</text>
+  <text x="150" y="302" text-anchor="middle" class="code">&lt;title&gt;Saved&lt;/title&gt;</text>
+
+  <!-- Arrow 3→4a -->
+  <path class="arrow" d="M685,155 L685,185 L265,185 L265,205"/>
+
+  <!-- Duplicate path -->
+  <rect class="box" x="330" y="205" width="220" height="120"/>
+  <text x="440" y="230" text-anchor="middle" class="label" fill="#b45309">4b. Duplicate URL</text>
+  <text x="440" y="250" text-anchor="middle" class="sublabel">Existing bookmark returned</text>
+  <text x="440" y="266" text-anchor="middle" class="sublabel">No ingestion re-queued</text>
+  <text x="440" y="286" text-anchor="middle" class="sublabel">No metadata merged</text>
+  <text x="440" y="302" text-anchor="middle" class="code">&lt;title&gt;Already saved&lt;/title&gt;</text>
+
+  <!-- Error path -->
+  <rect class="box" x="600" y="205" width="170" height="120"/>
+  <text x="685" y="230" text-anchor="middle" class="label" fill="#dc2626">4c. Error</text>
+  <text x="685" y="250" text-anchor="middle" class="sublabel">400: Missing param</text>
+  <text x="685" y="266" text-anchor="middle" class="sublabel">401: Bad token</text>
+  <text x="685" y="282" text-anchor="middle" class="sublabel">409: Trash/archive</text>
+  <text x="685" y="298" text-anchor="middle" class="sublabel">422: Invalid URL</text>
+
+  <!-- Arrow 3→4b -->
+  <path class="arrow" d="M685,155 L685,185 L440,185 L440,205"/>
+
+  <!-- Toast feedback -->
+  <rect class="box" x="40" y="375" width="730" height="100" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="405" y="400" text-anchor="middle" class="label">5. In-page toast overlay (on the original page)</text>
+  <text x="405" y="420" text-anchor="middle" class="sublabel">The bookmarklet script shows a non-blocking confirmation toast:</text>
+  <rect x="180" y="435" width="160" height="28" rx="14" fill="#16a34a"/>
+  <text x="260" y="454" text-anchor="middle" class="badge-text" fill="#fff">✅ Saved!</text>
+  <text x="405" y="454" text-anchor="middle" class="sublabel">Toast auto-dismisses after 5 seconds</text>
+  <text x="405" y="470" text-anchor="middle" class="sublabel">No page reload needed</text>
+
+  <!-- Labels for Error → 4c -->
+  <path class="arrow" d="M685,155 L685,205"/>
+
+  <!-- Security note -->
+  <rect x="40" y="488" width="730" height="22" rx="6" fill="#fef3c7"/>
+  <text x="405" y="503" text-anchor="middle" class="sublabel" fill="#92400e">⚠️ Token is embedded in the javascript: URI at generation time — treat it like a password</text>
+</svg>

@@ -2911,6 +2911,30 @@ export const apiContract = {
     },
     {
       method: "GET",
+      path: "/capture/bookmarklet",
+      tag: "Integrations",
+      summary: "Bookmarklet capture page (hidden iframe target, no auth header).",
+      description:
+        "The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.",
+      request: {
+        query: objectSchema({
+          token: stringSchema("Integration bearer token (query-param auth)"),
+          url: stringSchema("The URL to capture"),
+          title: stringSchema("Page title"),
+          selection: stringSchema("User-selected text"),
+        }, ["token", "url"]),
+      },
+      responses: {
+        "200": { description: "Bookmark already exists (not duplicated)" },
+        "201": { description: "Bookmark captured successfully" },
+        "400": problemResponse("Missing token or url"),
+        "401": problemResponse("Invalid or revoked token"),
+        "409": problemResponse("URL exists in trash or archive"),
+        "422": problemResponse("Invalid URL"),
+      },
+    },
+    {
+      method: "GET",
       path: "/integration-tokens",
       tag: "Integrations",
       summary: "List managed local integration tokens with secret values redacted.",

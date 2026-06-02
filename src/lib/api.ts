@@ -38,6 +38,11 @@ import type {
   ImportDuplicatePolicyDto,
   ImportFolderRemappingInputDto,
   ImportProgressEventDto,
+  IntegrationTokenCreateRequestDto,
+  IntegrationTokenCreateResultDto,
+  IntegrationTokenCreateResponseDto,
+  IntegrationTokenListResponseDto,
+  IntegrationTokenRecordDto,
   ImportRemappingInputDto,
   ImportRemappingDto,
   ImportPreviewResponseDto,
@@ -1076,5 +1081,31 @@ export async function updateBackupDestination(path: string): Promise<BackupDesti
   return apiFetch<BackupDestinationResponseDto>("/backup/destination", {
     method: "PUT",
     body: JSON.stringify(patch),
+  });
+}
+
+// ─── Integration tokens ───────────────────────────────────────────────────────
+
+export type ApiIntegrationTokenRecord = Simplify<IntegrationTokenRecordDto>;
+export type ApiIntegrationTokenCreateResult = IntegrationTokenCreateResultDto;
+
+export async function listIntegrationTokens(): Promise<IntegrationTokenListResponseDto> {
+  return apiFetch<IntegrationTokenListResponseDto>("/integration-tokens");
+}
+
+export async function createIntegrationToken(name?: string): Promise<IntegrationTokenCreateResponseDto> {
+  return apiFetch<IntegrationTokenCreateResponseDto>("/integration-tokens", {
+    method: "POST",
+    ...(name ? { body: JSON.stringify({ name } satisfies IntegrationTokenCreateRequestDto) } : {}),
+  });
+}
+
+export async function revokeIntegrationToken(id: string): Promise<void> {
+  await apiFetch<void>(`/integration-tokens/${id}`, { method: "DELETE" });
+}
+
+export async function rotateIntegrationToken(id: string): Promise<IntegrationTokenCreateResponseDto> {
+  return apiFetch<IntegrationTokenCreateResponseDto>(`/integration-tokens/${id}/rotate`, {
+    method: "POST",
   });
 }

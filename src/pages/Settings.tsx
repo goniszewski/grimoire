@@ -9,6 +9,9 @@ import {
   getSettings,
   reprocessBookmarks,
   updateSettings,
+  listIntegrationTokens,
+  createIntegrationToken,
+  revokeIntegrationToken,
   DAEMON_URL,
   ApiError,
 } from "@/lib/api";
@@ -40,7 +43,11 @@ import {
   LockKeyhole,
   RefreshCw,
   ExternalLink,
+  Key,
+  Trash2,
+  Globe,
 } from "lucide-react";
+import { generateBookmarkletUrl } from "@/lib/bookmarklet";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -1287,6 +1294,11 @@ const Settings = () => {
 
             <div className="border-t" />
 
+            {/* Browser Integration */}
+            <BrowserIntegration />
+
+            <div className="border-t" />
+
             {/* Diagnostics */}
             <section className="space-y-4">
               <div className="flex items-start justify-between gap-4">
@@ -2100,5 +2112,311 @@ const Settings = () => {
     </div>
   );
 };
+
+// ─── Browser Integration ──────────────────────────────────────────────────────
+
+const TOKEN_QUERY_KEY = ["integration-tokens"] as const;
+
+function BrowserIntegration() {
+  const qc = useQueryClient();
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [createdToken, setCreatedToken] = useState<{ token: string } | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+
+  const tokensQuery = useQuery({
+    queryKey: TOKEN_QUERY_KEY,
+    queryFn: listIntegrationTokens,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createIntegrationToken(name || undefined),
+    onSuccess: (result) => {
+      setCreatedToken(result.data);
+      setShowCreate(false);
+      setNewTokenName("");
+      void qc.invalidateQueries({ queryKey: TOKEN_QUERY_KEY });
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to create token", { description: err.message });
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (id: string) => revokeIntegrationToken(id),
+    onSuccess: () => {
+      setRevokeTarget(null);
+      toast.success("Token revoked");
+      void qc.invalidateQueries({ queryKey: TOKEN_QUERY_KEY });
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to revoke token", { description: err.message });
+    },
+  });
+
+  // The full token is only shown once at creation — the list endpoint only returns the prefix.
+  // So the bookmarklet button is only actionable on the newly-created token (see createdToken state).
+  // On existing token rows, the button uses this stub that opens the create dialog instead.
+  function fallbackBookmarklet() {
+    setShowCreate(true);
+    toast.info("Create a new token for a fresh bookmarklet", {
+      description: "The full token is shown only when you create it. Generate a new one.",
+    });
+  }
+
+  const tokens = (tokensQuery.data?.data ?? []) as Array<{ id: string; name: string; token_prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }>;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold">Browser Integration</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Create an integration token and install the bookmarklet to save pages from any browser.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowInstructions(!showInstructions)}
+          className="shrink-0"
+        >
+          <Globe className="h-3.5 w-3.5 mr-1.5" />
+          {showInstructions ? "Hide" : "Setup guide"}
+        </Button>
+      </div>
+
+      {/* Setup instructions */}
+      {showInstructions && (
+        <div className="rounded border px-4 py-3 text-xs bg-muted/30 space-y-2">
+          <p className="font-medium text-sm">Installing the bookmarklet</p>
+          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+            <li>Create an integration token below (or use an existing one).</li>
+            <li>Copy the full token shown after creation — it is only displayed once.</li>
+            <li>Click the "Copy bookmarklet" button next to a token row to copy the bookmarklet link.</li>
+            <li>Paste the bookmarklet code into a browser bookmark's URL field, or drag the link to your bookmarks bar.</li>
+          </ol>
+          <p className="font-medium text-sm mt-3">Browser notes</p>
+          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+            <li><strong>Chrome / Edge:</strong> Show the bookmarks bar (Ctrl+Shift+B / Cmd+Shift+B), then drag the bookmarklet link onto it.</li>
+            <li><strong>Firefox:</strong> Right-click the bookmarks bar and choose "Add Bookmark". Paste the bookmarklet code as the URL.</li>
+            <li><strong>Safari:</strong> Show the Favorites bar (View → Show Favorites Bar), then drag the bookmarklet link onto it.</li>
+          </ul>
+          <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200">
+            <strong>Security note:</strong> The bookmarklet embeds your integration token. Anyone with access to
+            your browser bookmarks can capture pages to your Little Imp library. Treat it like a password.
+          </div>
+        </div>
+      )}
+
+      {/* Created token notification */}
+      {createdToken && (
+        <Alert>
+          <Key className="h-4 w-4" />
+          <AlertDescription className="space-y-1.5">
+            <p className="font-medium text-sm">Token created — copy it now</p>
+            <p className="text-xs">
+              This token will not be shown again. If you lose it, create a new one.
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <code className="rounded bg-muted px-2 py-1 text-xs break-all select-all">
+                {createdToken.token}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  void navigator.clipboard.writeText(createdToken.token);
+                  toast.success("Token copied");
+                }}
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Copy
+              </Button>
+            </div>
+            <p className="text-xs mt-1">
+              Then{" "}
+              <button
+                className="text-primary underline"
+                onClick={() => {
+                  const bookmarkletUrl = generateBookmarkletUrl(createdToken.token, DAEMON_URL);
+                  void navigator.clipboard.writeText(bookmarkletUrl);
+                  toast.success("Bookmarklet URL copied — paste it into a new bookmark");
+                }}
+              >
+                copy the bookmarklet URL
+              </button>{" "}
+              and add it as a browser bookmark.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Create token dialog */}
+      {showCreate && (
+        <div className="rounded border p-3 space-y-3">
+          <Label className="text-xs">Token name (optional)</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              value={newTokenName}
+              onChange={(e) => setNewTokenName(e.target.value)}
+              placeholder="e.g. My browser"
+              className="text-xs h-8"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  createMutation.mutate(newTokenName);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              onClick={() => createMutation.mutate(newTokenName)}
+              disabled={createMutation.isPending}
+              className="shrink-0"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+              ) : null}
+              Create
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowCreate(false);
+                setNewTokenName("");
+              }}
+              className="shrink-0"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Token list */}
+      <div className="space-y-2">
+        {tokensQuery.isLoading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Loading tokens...
+          </div>
+        ) : tokens.length === 0 && !showCreate ? (
+          <div className="text-xs text-muted-foreground">
+            No integration tokens yet. Create one to use the bookmarklet.
+          </div>
+        ) : (
+          tokens.map((token) => (
+            <div
+              key={token.id}
+              className="rounded border px-3 py-2 text-xs bg-muted/30 flex items-center justify-between gap-2"
+            >
+              <div className="flex-1 min-w-0 space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Key className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span className="font-medium">{token.name}</span>
+                  <code className="text-[10px] text-muted-foreground">
+                    {token.token_prefix}...
+                  </code>
+                  {token.revoked_at && (
+                    <span className="text-[10px] text-red-500 font-medium">Revoked</span>
+                  )}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Created {new Date(token.created_at).toLocaleDateString()}
+                  {token.last_used_at && (
+                    <> &middot; Last used {new Date(token.last_used_at).toLocaleDateString()}</>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {!token.revoked_at && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[11px] px-2"
+                      onClick={() => {
+                        // Only the just-created token has the full secret — existing rows have
+                        // only the prefix, so guide the user to create a fresh token.
+                        if (createdToken && token.token_prefix === createdToken.token.slice(0, token.token_prefix.length)) {
+                          const bookmarkletUrl = generateBookmarkletUrl(createdToken.token, DAEMON_URL);
+                          void navigator.clipboard.writeText(bookmarkletUrl);
+                          setCopiedTokenId(token.id);
+                          toast.success("Bookmarklet URL copied — paste it into a new bookmark");
+                        } else {
+                          fallbackBookmarklet();
+                        }
+                      }}
+                      title={createdToken?.token?.startsWith(token.token_prefix) ? "Copy bookmarklet URL" : "Create a new token first"}
+                    >
+                      {copiedTokenId === token.id ? (
+                        <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
+                      ) : (
+                        <Globe className="h-3 w-3 mr-1" />
+                      )}
+                      Bookmarklet
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
+                      onClick={() => setRevokeTarget(token.id)}
+                      title="Revoke token"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+        {!showCreate && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCreate(true)}
+            className="text-xs"
+          >
+            <Key className="h-3.5 w-3.5 mr-1.5" />
+            New token
+          </Button>
+        )}
+      </div>
+
+      {/* Revoke confirmation */}
+      <AlertDialog
+        open={revokeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRevokeTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke integration token?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bookmarks saved with this token in browser bookmarklets will stop working.
+              This cannot be undone. Create a new token to replace it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeTarget) revokeMutation.mutate(revokeTarget);
+              }}
+            >
+              {revokeMutation.isPending ? "Revoking..." : "Revoke"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
+  );
+}
 
 export default Settings;

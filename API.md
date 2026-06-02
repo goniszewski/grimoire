@@ -2210,6 +2210,32 @@ Content-Type: application/json
 }
 ```
 
+#### GET /capture/bookmarklet
+
+Bookmarklet capture page (hidden iframe target, no auth header).
+
+The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `token` | string | no | Integration bearer token (query-param auth) |
+| `url` | string | no | The URL to capture |
+| `title` | string | no | Page title |
+| `selection` | string | no | User-selected text |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | - | - | Bookmark already exists (not duplicated) |
+| `201` | - | - | Bookmark captured successfully |
+| `400` | application/problem+json | `ProblemDetails` | Missing token or url |
+| `401` | application/problem+json | `ProblemDetails` | Invalid or revoked token |
+| `409` | application/problem+json | `ProblemDetails` | URL exists in trash or archive |
+| `422` | application/problem+json | `ProblemDetails` | Invalid URL |
+
 #### GET /integration-tokens
 
 List managed local integration tokens with secret values redacted.

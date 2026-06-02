@@ -3630,6 +3630,107 @@
         "x-little-imp-source-method": "POST"
       }
     },
+    "/capture/bookmarklet": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Bookmarklet capture page (hidden iframe target, no auth header).",
+        "description": "The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.",
+        "operationId": "getCaptureBookmarklet",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Integration bearer token (query-param auth)",
+            "schema": {
+              "type": "string",
+              "description": "Integration bearer token (query-param auth)"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The URL to capture",
+            "schema": {
+              "type": "string",
+              "description": "The URL to capture"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Page title",
+            "schema": {
+              "type": "string",
+              "description": "Page title"
+            }
+          },
+          {
+            "name": "selection",
+            "in": "query",
+            "required": false,
+            "description": "User-selected text",
+            "schema": {
+              "type": "string",
+              "description": "User-selected text"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bookmark already exists (not duplicated)"
+          },
+          "201": {
+            "description": "Bookmark captured successfully"
+          },
+          "400": {
+            "description": "Missing token or url",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or revoked token",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "URL exists in trash or archive",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid URL",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-little-imp-source-method": "GET"
+      }
+    },
     "/integration-tokens": {
       "get": {
         "tags": [

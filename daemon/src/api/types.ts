@@ -101,3 +101,9 @@ export type UpdateReleaseDto = ApiDto<"UpdateRelease">;
 export type UpdateCheckResultDto = ApiDto<"UpdateCheckResult">;
 export type UpdateCheckResponseDto = ApiDto<"UpdateCheckResponse">;
 export type ExportBookmarkDto = ApiDto<"ExportBookmark">;
+
+export type IntegrationTokenRecordDto = ApiDto<"IntegrationTokenRecord">;
+export type IntegrationTokenCreateRequestDto = ApiDto<"IntegrationTokenCreateRequest">;
+export type IntegrationTokenCreateResultDto = ApiDto<"IntegrationTokenCreateResult">;
+export type IntegrationTokenCreateResponseDto = ApiDto<"IntegrationTokenCreateResponse">;
+export type IntegrationTokenListResponseDto = ApiDto<"IntegrationTokenListResponse">;

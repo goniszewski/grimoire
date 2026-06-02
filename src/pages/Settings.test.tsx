@@ -19,6 +19,14 @@ vi.mock("@/lib/api", () => ({
   reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
   checkHealthAfterRestore: vi.fn(),
+  listIntegrationTokens: vi.fn(),
+  createIntegrationToken: vi.fn(),
+  revokeIntegrationToken: vi.fn(),
+  rotateIntegrationToken: vi.fn(),
+}));
+
+vi.mock("@/lib/bookmarklet", () => ({
+  generateBookmarkletUrl: vi.fn(() => "javascript:void(0)"),
 }));
 
 vi.mock("@/hooks/use-backup", () => ({

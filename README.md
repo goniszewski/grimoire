@@ -534,6 +534,20 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ---
 
+## Browser bookmarklet
+
+Save any web page to Little Imp without opening the app:
+
+1. Go to **Settings → Browser Integration**
+2. Create or select an integration token
+3. Drag the **bookmarklet link** to your browser's bookmarks bar
+
+Click the bookmarklet on any page to send its URL, title, and selected text to your daemon. A toast overlay confirms when it's saved.
+
+> **Security:** The bookmarklet embeds your integration token at generation time. Treat it like a password — it grants access to the capture endpoint. The bookmarklet only works while the daemon is running on `127.0.0.1:3210`.
+
+---
+
 ## Documentation
 
 - [API Reference](./API.md) - Generated daemon API documentation
