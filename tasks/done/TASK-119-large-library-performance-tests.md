@@ -37,7 +37,7 @@ filters, import, and pagination.
 
 - June 2, 2026: Started as the next logical actionable task. TASK-078 and
   TASK-079 remain blocked on public artifact visibility, TASK-097 and TASK-098
-  are already in review, and the other backlog records are deferred or rejected.
+  had already reached review, and the other backlog records are deferred or rejected.
 - Added a separate `npm run test:performance` command so large-library checks do
   not slow the default daemon suite. The script builds an in-memory daemon app
   with 2,000 bookmarks, 12 categories, 24 tags, searchable content, open/read

@@ -2,7 +2,7 @@
 
 **Phase:** Grimoire parity
 **Priority:** high
-**Status:** in-review
+**Status:** done
 **Area:** tags / frontend
 **Source:** PAR-017
 **Labels:** grimoire-parity, tags, ui
@@ -43,3 +43,9 @@ browsing tags outside bookmark detail.
 - TASK-099 follow-up changed tag management row navigation from direct filtered
   library links to stable tag detail routes. The tag detail page keeps the
   filtered-library action available.
+- June 2, 2026 closeout: Verified the tag management surface after the later
+  tag detail and rename follow-ups. Focused frontend coverage
+  (`src/pages/Tags.test.tsx`, `src/components/AppSidebar.test.tsx`,
+  `src/pages/TagDetail.test.tsx`, `src/lib/api.test.ts`) and daemon tag route
+  coverage (`daemon/src/test/integration/tags.test.ts`) passed, so the task was
+  moved from `in-review` to `done`.

@@ -30,8 +30,8 @@ local daemon pipeline.
 The largest in-scope gaps were local integration authentication, human/API
 client documentation, import review and duplicate handling, read-later/open
 metrics, dedicated tag/category surfaces, explicit pagination/filtering, and
-richer bookmark detail presentation. Those implementation tasks are complete
-or in review, with TASK-098 tag management still the current review item. The
+richer bookmark detail presentation. Those implementation tasks are complete,
+including the TASK-098 tag management closeout. The
 workspace includes a protected local `/capture` endpoint for explicit
 integration clients. Grimoire's multi-user/account model, profile/admin
 surfaces, public-server deployment posture, endpoint aliases, packaged
@@ -83,7 +83,7 @@ This batch keeps Little Imp's product model intact:
 | Flagged/starred | Flagged bookmark state | Pinning exists and maps to Grimoire starred/favorite; read-later is a separate flag | Intentional mapping | PAR-007 maps Grimoire starred/favorite state to existing Little Imp pinning. TASK-089 adds separate read-later persistence and UI controls. |
 | Importance | Importance score/rating | None | Rejected non-goal | TASK-090 rejects manual importance for this parity batch. |
 | Open tracking | Open count and last-opened timestamp | Persisted open count, last-opened timestamp, tracked open endpoint, shared UI open tracking, export fields, sorting, and filters | At parity | Implemented by TASK-091, exported by TASK-111, sorted by TASK-115, and filtered by TASK-116. |
-| Tags | Tag CRUD and bookmark assignment | Tag API list/create/delete/attach/detach/rename; UI assign/remove/filter, dedicated management page, and tag detail pages | Partial | Tag management is in review through TASK-098, while tag detail pages, tag rename, and category/tag regression coverage are complete through TASK-099, TASK-100, and TASK-101. |
+| Tags | Tag CRUD and bookmark assignment | Tag API list/create/delete/attach/detach/rename; UI assign/remove/filter, dedicated management page, and tag detail pages | At parity | Tag management, tag detail pages, tag rename, and category/tag regression coverage are complete through TASK-098, TASK-099, TASK-100, and TASK-101. |
 | Categories | Category CRUD, metadata fields, category pages | Category API create/update/delete/tree; UI create/rename/delete/move/drag/filter, category detail pages, and local metadata fields | At parity | Category detail pages are complete through TASK-096 and rich local metadata fields are complete through TASK-097. Public visibility remains local metadata only. |
 | Search | Fuzzy search with filters | Keyword FTS plus optional semantic/hybrid search, server-side filtering, sorting, pagination, and aggregate counts | Little Imp ahead | TASK-114 through TASK-119 completed pagination, server-driven sorting, approved parity filters, persisted view preferences, aggregate counts, and large-library checks. |
 | Filters | Unread, flagged, sort/domain/opened count and related filters | Category, tag, domain, date range, read/read-later, pinned/starred, opened-count, last-opened, and server-driven sort controls | At parity | TASK-116 added approved parity filters. Importance filters are rejected for this batch. |
@@ -101,12 +101,10 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Close out TASK-098 tag management review so the dedicated tag surface joins
-   the already-complete tag detail, rename, and regression coverage.
-2. Keep recurring release checks on closed parity gaps, especially generated API
+1. Keep recurring release checks on closed parity gaps, especially generated API
    docs, import/export behavior, category/tag management, filters, pagination,
    and local integration token/CORS behavior.
-3. Treat URL/summary bookmark mutation, direct Grimoire backup import tooling,
+2. Treat URL/summary bookmark mutation, direct Grimoire backup import tooling,
    and packaged browser-extension/bookmarklet clients as explicit future
    product decisions rather than unfinished current-batch work.
 
@@ -152,6 +150,6 @@ visual, Playwright e2e, and performance verification where relevant.
 
 1. Local integration API examples, OpenAPI output, protected capture, and CORS/origin controls are complete through TASK-103, TASK-104, TASK-105, and TASK-106.
 2. Bookmark mutation/detail correctness and approved bookmark fields are complete through TASK-089, TASK-091, TASK-092, and TASK-094.
-3. Category/tag surfaces and regression coverage are complete for TASK-095 through TASK-101, except TASK-098, which remains in review.
+3. Category/tag surfaces and regression coverage are complete for TASK-095 through TASK-101.
 4. Browser/Netscape import, export parity, duplicate policy, and import/export regression tests are complete for TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
 5. Pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification are complete for TASK-114 through TASK-119.

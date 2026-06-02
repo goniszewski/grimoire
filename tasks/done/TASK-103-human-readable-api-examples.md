@@ -41,7 +41,7 @@ including request and response examples.
 
 - June 1, 2026: Started as the next unblocked high-priority Grimoire parity
   backlog task after TASK-102. TASK-078 and TASK-079 remain blocked on public
-  artifact visibility, while TASK-097 and TASK-098 are already in review.
+  artifact visibility, while TASK-097 and TASK-098 had already reached review.
 - Added response-aware API examples to the source contract and generator:
   examples now support status, content type, headers, and JSON/text bodies.
 - Added generated request/response examples for integration tokens, MCP token

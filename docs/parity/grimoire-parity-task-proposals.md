@@ -42,7 +42,7 @@ Suggested values:
 | PAR-014 | Render category navigation from the full `/categories` tree so empty categories and hierarchy are visible, not only categories from loaded bookmarks. | High | Approved | Done | Done: `TASK-095`. |
 | PAR-015 | Add a dedicated category detail page with category metadata, child categories, and paginated bookmark list. | Medium | Approved | Done | Done: `TASK-096`. |
 | PAR-016 | Add optional category fields from Grimoire parity: color, icon, description, slug, archived, and public visibility after product approval. | Medium | Approved | Done | Done: `TASK-097`. |
-| PAR-017 | Add a dedicated tag management surface for listing, creating, deleting, and browsing tags outside bookmark detail. | High | Approved | In review | In review: `TASK-098`. |
+| PAR-017 | Add a dedicated tag management surface for listing, creating, deleting, and browsing tags outside bookmark detail. | High | Approved | Done | Done: `TASK-098`. |
 | PAR-018 | Add tag detail pages with tag metadata and paginated bookmark lists. | Medium | Approved | Done | Done: `TASK-099`. |
 | PAR-019 | Add tag rename API and UI if Grimoire-compatible tag management is approved. | Medium | Approved | Done | Done: `TASK-100`. |
 | PAR-020 | Add category/tag regression tests for empty rows, counts, drag reparenting, delete behavior, and filter refresh. | High | Approved | Done | Done: `TASK-101`. |
