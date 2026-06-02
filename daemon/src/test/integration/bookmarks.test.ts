@@ -74,6 +74,184 @@ describe("Bookmarks API", () => {
     expect(json.pagination).toBeDefined();
   });
 
+  it("GET /bookmarks/aggregates returns page-independent counts for the active library", async () => {
+    const research = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Research")!;
+    const guides = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Guides")!;
+
+    const activeA = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://alpha.example.com/a" }),
+    });
+    const { data: bmA } = await activeA.json() as { data: { id: string } };
+    const activeB = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://beta.example.com/b" }),
+    });
+    const { data: bmB } = await activeB.json() as { data: { id: string } };
+    const archived = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://archived.example.com/c" }),
+    });
+    const { data: archivedBm } = await archived.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${bmA.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category_id: research.id,
+        tags: ["typescript", "react"],
+        is_pinned: 1,
+        read_later: 1,
+        read_at: "2026-06-02T09:00:00.000Z",
+      }),
+    });
+    await app.request(`/bookmarks/${bmB.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category_id: guides.id,
+        tags: ["typescript"],
+      }),
+    });
+    await app.request(`/bookmarks/${archivedBm.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tags: ["archived-only"],
+        is_archived: 1,
+      }),
+    });
+
+    const pageRes = await app.request("/bookmarks?limit=1");
+    expect(pageRes.status).toBe(200);
+    const pageJson = await pageRes.json() as { data: Array<{ id: string }>; pagination: { total: number } };
+    expect(pageJson.data).toHaveLength(1);
+    expect(pageJson.pagination.total).toBe(2);
+
+    const res = await app.request("/bookmarks/aggregates");
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        total: number;
+        categories: Array<{ id: string; name: string; count: number }>;
+        tags: Array<{ name: string; count: number }>;
+        domains: Array<{ domain: string; count: number }>;
+        read: { read: number; unread: number };
+        pinned: { pinned: number; unpinned: number };
+        read_later: { yes: number; no: number };
+      };
+    };
+
+    expect(json.data.total).toBe(2);
+    expect(json.data.categories).toEqual([
+      { id: guides.id, name: "Guides", count: 1 },
+      { id: research.id, name: "Research", count: 1 },
+    ]);
+    expect(json.data.tags).toEqual([
+      { name: "typescript", count: 2 },
+      { name: "react", count: 1 },
+    ]);
+    expect(json.data.domains).toEqual([
+      { domain: "alpha.example.com", count: 1 },
+      { domain: "beta.example.com", count: 1 },
+    ]);
+    expect(json.data.read).toEqual({ read: 1, unread: 1 });
+    expect(json.data.pinned).toEqual({ pinned: 1, unpinned: 1 });
+    expect(json.data.read_later).toEqual({ yes: 1, no: 1 });
+  });
+
+  it("GET /bookmarks/aggregates applies approved library filters without pagination", async () => {
+    const research = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Research")!;
+
+    for (const [url, readLater] of [
+      ["https://filter.example.com/a", 1],
+      ["https://filter.example.com/b", 1],
+      ["https://other.example.com/c", 0],
+    ] as const) {
+      const createRes = await app.request("/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const { data: bm } = await createRes.json() as { data: { id: string } };
+      await app.request(`/bookmarks/${bm.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category_id: research.id,
+          tags: ["filtered"],
+          read_later: readLater,
+        }),
+      });
+    }
+
+    const res = await app.request(`/bookmarks/aggregates?category_id=${research.id}&read_later=true&limit=1`);
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        total: number;
+        domains: Array<{ domain: string; count: number }>;
+        tags: Array<{ name: string; count: number }>;
+        read_later: { yes: number; no: number };
+      };
+    };
+
+    expect(json.data.total).toBe(2);
+    expect(json.data.domains).toEqual([{ domain: "filter.example.com", count: 2 }]);
+    expect(json.data.tags).toEqual([{ name: "filtered", count: 2 }]);
+    expect(json.data.read_later).toEqual({ yes: 2, no: 0 });
+  });
+
+  it("GET /bookmarks/aggregates counts larger libraries beyond normal page size", async () => {
+    const category = db
+      .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
+      .get("Large Library")!;
+
+    for (let i = 0; i < 150; i += 1) {
+      db.query(
+        `INSERT INTO bookmarks (url, domain, title, category_id, read_later, is_pinned)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(
+        `https://large.example.com/item-${i}`,
+        "large.example.com",
+        `Large item ${i}`,
+        category.id,
+        i % 3 === 0 ? 1 : 0,
+        i % 10 === 0 ? 1 : 0
+      );
+    }
+
+    const res = await app.request("/bookmarks/aggregates?limit=1&offset=100");
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: {
+        total: number;
+        categories: Array<{ id: string; name: string; count: number }>;
+        domains: Array<{ domain: string; count: number }>;
+        pinned: { pinned: number; unpinned: number };
+        read_later: { yes: number; no: number };
+      };
+    };
+
+    expect(json.data.total).toBe(150);
+    expect(json.data.categories).toEqual([{ id: category.id, name: "Large Library", count: 150 }]);
+    expect(json.data.domains).toEqual([{ domain: "large.example.com", count: 150 }]);
+    expect(json.data.pinned).toEqual({ pinned: 15, unpinned: 135 });
+    expect(json.data.read_later).toEqual({ yes: 50, no: 100 });
+  });
+
   it("PUT /bookmarks/:id updates read_later without changing pinned state", async () => {
     const createRes = await app.request("/bookmarks", {
       method: "POST",

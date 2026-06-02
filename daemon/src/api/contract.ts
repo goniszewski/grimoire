@@ -284,6 +284,69 @@ const schemas = {
   BookmarkResponse: envelope(ref("Bookmark"), "Single bookmark response"),
   BookmarkListResponse: paginatedEnvelope(ref("Bookmark"), "Paginated bookmark list"),
   BookmarkArrayResponse: envelope(arrayOf(ref("Bookmark"), "Bookmarks"), "Bookmark array response"),
+  BookmarkAggregateCategory: objectSchema(
+    {
+      id: stringSchema("Category ID"),
+      name: stringSchema("Category name"),
+      count: integerSchema("Matching active bookmark count", { minimum: 0 }),
+    },
+    ["id", "name", "count"],
+    "Category aggregate count under the requested library filter context"
+  ),
+  BookmarkAggregateTag: objectSchema(
+    {
+      name: stringSchema("Tag name"),
+      count: integerSchema("Matching active bookmark count", { minimum: 0 }),
+    },
+    ["name", "count"],
+    "Tag aggregate count under the requested library filter context"
+  ),
+  BookmarkAggregateDomain: objectSchema(
+    {
+      domain: stringSchema("Domain"),
+      count: integerSchema("Matching active bookmark count", { minimum: 0 }),
+    },
+    ["domain", "count"],
+    "Domain aggregate count under the requested library filter context"
+  ),
+  BookmarkReadAggregate: objectSchema(
+    {
+      read: integerSchema("Matching active bookmarks marked read", { minimum: 0 }),
+      unread: integerSchema("Matching active bookmarks not marked read", { minimum: 0 }),
+    },
+    ["read", "unread"],
+    "Read state aggregate counts"
+  ),
+  BookmarkPinnedAggregate: objectSchema(
+    {
+      pinned: integerSchema("Matching active bookmarks pinned/starred", { minimum: 0 }),
+      unpinned: integerSchema("Matching active bookmarks not pinned/starred", { minimum: 0 }),
+    },
+    ["pinned", "unpinned"],
+    "Pinned/starred aggregate counts"
+  ),
+  BookmarkReadLaterAggregate: objectSchema(
+    {
+      yes: integerSchema("Matching active bookmarks marked read-later", { minimum: 0 }),
+      no: integerSchema("Matching active bookmarks not marked read-later", { minimum: 0 }),
+    },
+    ["yes", "no"],
+    "Read-later aggregate counts"
+  ),
+  BookmarkAggregates: objectSchema(
+    {
+      total: integerSchema("Total active bookmarks matching the requested library filter context", { minimum: 0 }),
+      categories: arrayOf(ref("BookmarkAggregateCategory"), "Category counts"),
+      tags: arrayOf(ref("BookmarkAggregateTag"), "Tag counts"),
+      domains: arrayOf(ref("BookmarkAggregateDomain"), "Domain counts"),
+      read: ref("BookmarkReadAggregate"),
+      pinned: ref("BookmarkPinnedAggregate"),
+      read_later: ref("BookmarkReadLaterAggregate"),
+    },
+    ["total", "categories", "tags", "domains", "read", "pinned", "read_later"],
+    "Page-independent active-library aggregate counts"
+  ),
+  BookmarkAggregatesResponse: envelope(ref("BookmarkAggregates"), "Bookmark aggregate counts response"),
   BookmarkCreateRequest: objectSchema(
     {
       url: stringSchema("HTTP or HTTPS URL to save", { format: "uri" }),
@@ -1541,6 +1604,25 @@ const examplePagination = {
   has_more: false,
 } as const;
 
+const exampleBookmarkAggregates = {
+  total: 12,
+  categories: [
+    { id: "cat_ai", name: "AI Research", count: 7 },
+    { id: "cat_docs", name: "Documentation", count: 5 },
+  ],
+  tags: [
+    { name: "rag", count: 6 },
+    { name: "typescript", count: 4 },
+  ],
+  domains: [
+    { domain: "example.com", count: 8 },
+    { domain: "docs.example.com", count: 4 },
+  ],
+  read: { read: 3, unread: 9 },
+  pinned: { pinned: 2, unpinned: 10 },
+  read_later: { yes: 5, no: 7 },
+} as const;
+
 const exampleCategory = {
   id: "cat_ai",
   name: "AI Research",
@@ -1713,6 +1795,35 @@ export const apiContract = {
               data: [exampleBookmark],
               pagination: examplePagination,
             },
+          },
+        },
+      ],
+    },
+    {
+      method: "GET",
+      path: "/bookmarks/aggregates",
+      tag: "Bookmarks",
+      summary: "Return page-independent active-library aggregate counts.",
+      description:
+        "Counts categories, tags, domains, read state, pinned/starred state, and read-later state for active bookmarks under the same approved library filter context as bookmark listing. Pagination and sorting are intentionally ignored.",
+      request: {
+        query: objectSchema({
+          ...bookmarkFilters,
+        }),
+      },
+      responses: {
+        "200": jsonResponse("Bookmark aggregate counts", ref("BookmarkAggregatesResponse")),
+        "422": problemResponse("Invalid aggregate filter"),
+      },
+      examples: [
+        {
+          title: "Read library aggregate counts",
+          request:
+            'curl "http://127.0.0.1:3210/bookmarks/aggregates?read_later=true&is_pinned=false"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: { data: exampleBookmarkAggregates },
           },
         },
       ],

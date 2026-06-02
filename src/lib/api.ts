@@ -532,6 +532,22 @@ export interface ListBookmarksParams extends LibraryParityFilterParams, LibraryS
   archived?: boolean;
 }
 
+export type LibraryAggregatesParams = Omit<
+  ListBookmarksParams,
+  "limit" | "offset" | "sort" | "direction" | "archived"
+>;
+export interface LibraryAggregatesResponse {
+  data: {
+    total: number;
+    categories: Array<{ id: string; name: string; count: number }>;
+    tags: Array<{ name: string; count: number }>;
+    domains: Array<{ domain: string; count: number }>;
+    read: { read: number; unread: number };
+    pinned: { pinned: number; unpinned: number };
+    read_later: { yes: number; no: number };
+  };
+}
+
 export async function listBookmarks(params: ListBookmarksParams = {}): Promise<BookmarkListResponseDto> {
   const q = new URLSearchParams();
   if (params.limit != null) q.set("limit", String(params.limit));
@@ -548,6 +564,22 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   if (params.archived) q.set("archived", "true");
   const qs = q.toString();
   return apiFetch<BookmarkListResponseDto>(`/bookmarks${qs ? `?${qs}` : ""}`);
+}
+
+export async function listLibraryAggregates(
+  params: LibraryAggregatesParams = {}
+): Promise<LibraryAggregatesResponse> {
+  const q = new URLSearchParams();
+  if (params.tag) q.set("tag", params.tag);
+  if (params.domain) q.set("domain", params.domain);
+  if (params.category_id) q.set("category_id", params.category_id);
+  if (params.category) q.set("category", params.category);
+  if (params.date_from) q.set("date_from", params.date_from);
+  if (params.date_to) q.set("date_to", params.date_to);
+  if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
+  appendLibraryParityFilters(q, params);
+  const qs = q.toString();
+  return apiFetch<LibraryAggregatesResponse>(`/bookmarks/aggregates${qs ? `?${qs}` : ""}`);
 }
 
 export async function getBookmark(id: string): Promise<BookmarkDetailResponseDto> {

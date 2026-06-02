@@ -484,6 +484,189 @@
         "x-little-imp-source-method": "GET"
       }
     },
+    "/bookmarks/aggregates": {
+      "get": {
+        "tags": [
+          "Bookmarks"
+        ],
+        "summary": "Return page-independent active-library aggregate counts.",
+        "description": "Counts categories, tags, domains, read state, pinned/starred state, and read-later state for active bookmarks under the same approved library filter context as bookmark listing. Pagination and sorting are intentionally ignored.",
+        "operationId": "getBookmarksAggregates",
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "description": "Filter by tag name",
+            "schema": {
+              "type": "string",
+              "description": "Filter by tag name"
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Filter by exact domain",
+            "schema": {
+              "type": "string",
+              "description": "Filter by exact domain"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "Filter by exact category ID; takes precedence over category",
+            "schema": {
+              "type": "string",
+              "description": "Filter by exact category ID; takes precedence over category"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Filter by category name",
+            "schema": {
+              "type": "string",
+              "description": "Filter by category name"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time lower bound",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time upper bound",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound"
+            }
+          },
+          {
+            "name": "read_later",
+            "in": "query",
+            "required": false,
+            "description": "Filter by read-later state; accepts boolean strings or numeric flags",
+            "schema": {
+              "type": "string",
+              "description": "Filter by read-later state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            }
+          },
+          {
+            "name": "read_state",
+            "in": "query",
+            "required": false,
+            "description": "Filter by read state",
+            "schema": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            }
+          },
+          {
+            "name": "is_pinned",
+            "in": "query",
+            "required": false,
+            "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+            "schema": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            }
+          },
+          {
+            "name": "opened_count_min",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened at least this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "opened_count_max",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened no more than this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "last_opened_from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time lower bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            }
+          },
+          {
+            "name": "last_opened_to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time upper bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bookmark aggregate counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmarkAggregatesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid aggregate filter",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-little-imp-source-method": "GET"
+      }
+    },
     "/bookmarks/{id}": {
       "get": {
         "tags": [
@@ -4181,6 +4364,198 @@
             "items": {
               "$ref": "#/components/schemas/Bookmark"
             }
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkAggregateCategory": {
+        "type": "object",
+        "description": "Category aggregate count under the requested library filter context",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Category ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Category name"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Matching active bookmark count",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkAggregateTag": {
+        "type": "object",
+        "description": "Tag aggregate count under the requested library filter context",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Tag name"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Matching active bookmark count",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkAggregateDomain": {
+        "type": "object",
+        "description": "Domain aggregate count under the requested library filter context",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Domain"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Matching active bookmark count",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "domain",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkReadAggregate": {
+        "type": "object",
+        "description": "Read state aggregate counts",
+        "properties": {
+          "read": {
+            "type": "integer",
+            "description": "Matching active bookmarks marked read",
+            "minimum": 0
+          },
+          "unread": {
+            "type": "integer",
+            "description": "Matching active bookmarks not marked read",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "read",
+          "unread"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkPinnedAggregate": {
+        "type": "object",
+        "description": "Pinned/starred aggregate counts",
+        "properties": {
+          "pinned": {
+            "type": "integer",
+            "description": "Matching active bookmarks pinned/starred",
+            "minimum": 0
+          },
+          "unpinned": {
+            "type": "integer",
+            "description": "Matching active bookmarks not pinned/starred",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "pinned",
+          "unpinned"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkReadLaterAggregate": {
+        "type": "object",
+        "description": "Read-later aggregate counts",
+        "properties": {
+          "yes": {
+            "type": "integer",
+            "description": "Matching active bookmarks marked read-later",
+            "minimum": 0
+          },
+          "no": {
+            "type": "integer",
+            "description": "Matching active bookmarks not marked read-later",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "yes",
+          "no"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkAggregates": {
+        "type": "object",
+        "description": "Page-independent active-library aggregate counts",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Total active bookmarks matching the requested library filter context",
+            "minimum": 0
+          },
+          "categories": {
+            "type": "array",
+            "description": "Category counts",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkAggregateCategory"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Tag counts",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkAggregateTag"
+            }
+          },
+          "domains": {
+            "type": "array",
+            "description": "Domain counts",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkAggregateDomain"
+            }
+          },
+          "read": {
+            "$ref": "#/components/schemas/BookmarkReadAggregate"
+          },
+          "pinned": {
+            "$ref": "#/components/schemas/BookmarkPinnedAggregate"
+          },
+          "read_later": {
+            "$ref": "#/components/schemas/BookmarkReadLaterAggregate"
+          }
+        },
+        "required": [
+          "total",
+          "categories",
+          "tags",
+          "domains",
+          "read",
+          "pinned",
+          "read_later"
+        ],
+        "additionalProperties": false
+      },
+      "BookmarkAggregatesResponse": {
+        "type": "object",
+        "description": "Bookmark aggregate counts response",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BookmarkAggregates"
           }
         },
         "required": [

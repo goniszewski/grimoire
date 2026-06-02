@@ -612,6 +612,198 @@
       "additionalProperties": false,
       "description": "Bookmark array response"
     },
+    "BookmarkAggregateCategory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Category ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "count": {
+          "type": "integer",
+          "description": "Matching active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "count"
+      ],
+      "additionalProperties": false,
+      "description": "Category aggregate count under the requested library filter context"
+    },
+    "BookmarkAggregateTag": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Tag name"
+        },
+        "count": {
+          "type": "integer",
+          "description": "Matching active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "name",
+        "count"
+      ],
+      "additionalProperties": false,
+      "description": "Tag aggregate count under the requested library filter context"
+    },
+    "BookmarkAggregateDomain": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Domain"
+        },
+        "count": {
+          "type": "integer",
+          "description": "Matching active bookmark count",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "domain",
+        "count"
+      ],
+      "additionalProperties": false,
+      "description": "Domain aggregate count under the requested library filter context"
+    },
+    "BookmarkReadAggregate": {
+      "type": "object",
+      "properties": {
+        "read": {
+          "type": "integer",
+          "description": "Matching active bookmarks marked read",
+          "minimum": 0
+        },
+        "unread": {
+          "type": "integer",
+          "description": "Matching active bookmarks not marked read",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "read",
+        "unread"
+      ],
+      "additionalProperties": false,
+      "description": "Read state aggregate counts"
+    },
+    "BookmarkPinnedAggregate": {
+      "type": "object",
+      "properties": {
+        "pinned": {
+          "type": "integer",
+          "description": "Matching active bookmarks pinned/starred",
+          "minimum": 0
+        },
+        "unpinned": {
+          "type": "integer",
+          "description": "Matching active bookmarks not pinned/starred",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "pinned",
+        "unpinned"
+      ],
+      "additionalProperties": false,
+      "description": "Pinned/starred aggregate counts"
+    },
+    "BookmarkReadLaterAggregate": {
+      "type": "object",
+      "properties": {
+        "yes": {
+          "type": "integer",
+          "description": "Matching active bookmarks marked read-later",
+          "minimum": 0
+        },
+        "no": {
+          "type": "integer",
+          "description": "Matching active bookmarks not marked read-later",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "yes",
+        "no"
+      ],
+      "additionalProperties": false,
+      "description": "Read-later aggregate counts"
+    },
+    "BookmarkAggregates": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total active bookmarks matching the requested library filter context",
+          "minimum": 0
+        },
+        "categories": {
+          "type": "array",
+          "description": "Category counts",
+          "items": {
+            "ref": "BookmarkAggregateCategory"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tag counts",
+          "items": {
+            "ref": "BookmarkAggregateTag"
+          }
+        },
+        "domains": {
+          "type": "array",
+          "description": "Domain counts",
+          "items": {
+            "ref": "BookmarkAggregateDomain"
+          }
+        },
+        "read": {
+          "ref": "BookmarkReadAggregate"
+        },
+        "pinned": {
+          "ref": "BookmarkPinnedAggregate"
+        },
+        "read_later": {
+          "ref": "BookmarkReadLaterAggregate"
+        }
+      },
+      "required": [
+        "total",
+        "categories",
+        "tags",
+        "domains",
+        "read",
+        "pinned",
+        "read_later"
+      ],
+      "additionalProperties": false,
+      "description": "Page-independent active-library aggregate counts"
+    },
+    "BookmarkAggregatesResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BookmarkAggregates"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Bookmark aggregate counts response"
+    },
     "BookmarkCreateRequest": {
       "type": "object",
       "properties": {
@@ -5251,6 +5443,167 @@
                 "limit": 10,
                 "offset": 0,
                 "has_more": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/bookmarks/aggregates",
+      "tag": "Bookmarks",
+      "summary": "Return page-independent active-library aggregate counts.",
+      "description": "Counts categories, tags, domains, read state, pinned/starred state, and read-later state for active bookmarks under the same approved library filter context as bookmark listing. Pagination and sorting are intentionally ignored.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string",
+              "description": "Filter by tag name"
+            },
+            "domain": {
+              "type": "string",
+              "description": "Filter by exact domain"
+            },
+            "category_id": {
+              "type": "string",
+              "description": "Filter by exact category ID; takes precedence over category"
+            },
+            "category": {
+              "type": "string",
+              "description": "Filter by category name"
+            },
+            "date_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound"
+            },
+            "date_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound"
+            },
+            "read_later": {
+              "type": "string",
+              "description": "Filter by read-later state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            },
+            "read_state": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            },
+            "is_pinned": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            },
+            "opened_count_min": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            },
+            "opened_count_max": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            },
+            "last_opened_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            },
+            "last_opened_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Bookmark aggregate counts",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BookmarkAggregatesResponse"
+          }
+        },
+        "422": {
+          "description": "Invalid aggregate filter",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Read library aggregate counts",
+          "request": "curl \"http://127.0.0.1:3210/bookmarks/aggregates?read_later=true&is_pinned=false\"",
+          "response": {
+            "status": 200,
+            "contentType": "application/json",
+            "body": {
+              "data": {
+                "total": 12,
+                "categories": [
+                  {
+                    "id": "cat_ai",
+                    "name": "AI Research",
+                    "count": 7
+                  },
+                  {
+                    "id": "cat_docs",
+                    "name": "Documentation",
+                    "count": 5
+                  }
+                ],
+                "tags": [
+                  {
+                    "name": "rag",
+                    "count": 6
+                  },
+                  {
+                    "name": "typescript",
+                    "count": 4
+                  }
+                ],
+                "domains": [
+                  {
+                    "domain": "example.com",
+                    "count": 8
+                  },
+                  {
+                    "domain": "docs.example.com",
+                    "count": 4
+                  }
+                ],
+                "read": {
+                  "read": 3,
+                  "unread": 9
+                },
+                "pinned": {
+                  "pinned": 2,
+                  "unpinned": 10
+                },
+                "read_later": {
+                  "yes": 5,
+                  "no": 7
+                }
               }
             }
           }

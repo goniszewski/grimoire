@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-118 aggregate count endpoint flow</title>
+  <desc id="desc">A diagram showing aggregate requests flowing into the daemon aggregate endpoint, SQLite grouped count queries, and sidebar navigation badges.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#1f2937" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="70" y="70" width="1140" height="580" rx="24" fill="#ffffff" stroke="#d8dee9" filter="url(#shadow)"/>
+  <text x="110" y="128" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">Page-independent library counts</text>
+  <text x="110" y="166" fill="#6b7280" font-family="Inter, Arial, sans-serif" font-size="20">GET /bookmarks/aggregates returns requested counts without loading a bookmark page.</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="110" y="245" width="250" height="190" rx="18" fill="#f0f9ff" stroke="#7dd3fc"/>
+    <text x="135" y="292" fill="#075985" font-size="24" font-weight="800">Aggregate Request</text>
+    <text x="135" y="330" fill="#164e63" font-size="18">optional filters</text>
+    <text x="135" y="360" fill="#164e63" font-size="18">no page window</text>
+    <text x="135" y="390" fill="#164e63" font-size="18">navigation uses all active</text>
+
+    <rect x="490" y="245" width="300" height="190" rx="18" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="520" y="292" fill="#5b21b6" font-size="24" font-weight="800">Daemon Endpoint</text>
+    <text x="520" y="330" fill="#4c1d95" font-size="18">shared filter parsing</text>
+    <text x="520" y="360" fill="#4c1d95" font-size="18">no limit or offset</text>
+    <text x="520" y="390" fill="#4c1d95" font-size="18">active bookmarks only</text>
+
+    <rect x="920" y="245" width="250" height="190" rx="18" fill="#ecfdf5" stroke="#86efac"/>
+    <text x="950" y="292" fill="#166534" font-size="24" font-weight="800">Navigation Counts</text>
+    <text x="950" y="330" fill="#14532d" font-size="18">categories</text>
+    <text x="950" y="360" fill="#14532d" font-size="18">tags and domains</text>
+    <text x="950" y="390" fill="#14532d" font-size="18">read, pinned, read-later</text>
+
+    <path d="M375 340 H470" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M455 324 L475 340 L455 356" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M810 340 H900" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M885 324 L905 340 L885 356" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="238" y="502" width="846" height="74" rx="14" fill="#111827"/>
+    <text x="270" y="548" fill="#f9fafb" font-size="22" font-weight="700">SQLite grouped counts: total, category, tag, domain, read, pinned, read_later</text>
+  </g>
+</svg>

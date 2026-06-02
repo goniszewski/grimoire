@@ -5,6 +5,7 @@ import {
   createTag,
   deleteTag,
   importBookmarksFile,
+  listLibraryAggregates,
   listBookmarks,
   previewImportBookmarksFile,
   recordBookmarkOpen,
@@ -13,6 +14,7 @@ import {
   searchBookmarks,
   updateBookmark,
 } from "./api";
+import type { LibraryAggregatesParams, ListBookmarksParams } from "./api";
 
 describe("daemon URL resolution", () => {
   it("defaults to the packaged daemon URL when no override is configured", () => {
@@ -259,6 +261,63 @@ describe("library filter API", () => {
     expect(url.searchParams.get("is_pinned")).toBe("false");
     expect(url.searchParams.get("opened_count_min")).toBe("2");
     expect(url.searchParams.get("last_opened_from")).toBe("2026-06-01");
+  });
+
+  it("serializes library aggregate filters without pagination or sorting", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            total: 0,
+            categories: [],
+            tags: [],
+            domains: [],
+            read: { read: 0, unread: 0 },
+            pinned: { pinned: 0, unpinned: 0 },
+            read_later: { yes: 0, no: 0 },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    await listLibraryAggregates({
+      tag: "typescript",
+      domain: "example.com",
+      category_id: "cat-1",
+      read_later: true,
+      read_state: "unread",
+      is_pinned: false,
+      opened_count_min: 1,
+      last_opened_to: "2026-06-02",
+      limit: 10,
+      offset: 20,
+      sort: "created_at",
+      direction: "asc",
+      archived: true,
+    } as LibraryAggregatesParams & Pick<
+      ListBookmarksParams,
+      "limit" | "offset" | "sort" | "direction" | "archived"
+    >);
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.pathname).toBe("/bookmarks/aggregates");
+    expect(url.searchParams.get("tag")).toBe("typescript");
+    expect(url.searchParams.get("domain")).toBe("example.com");
+    expect(url.searchParams.get("category_id")).toBe("cat-1");
+    expect(url.searchParams.get("read_later")).toBe("true");
+    expect(url.searchParams.get("read_state")).toBe("unread");
+    expect(url.searchParams.get("is_pinned")).toBe("false");
+    expect(url.searchParams.get("opened_count_min")).toBe("1");
+    expect(url.searchParams.get("last_opened_to")).toBe("2026-06-02");
+    expect(url.searchParams.get("limit")).toBeNull();
+    expect(url.searchParams.get("offset")).toBeNull();
+    expect(url.searchParams.get("sort")).toBeNull();
+    expect(url.searchParams.get("direction")).toBeNull();
+    expect(url.searchParams.get("archived")).toBeNull();
   });
 
   it("serializes server sort params for search requests", async () => {

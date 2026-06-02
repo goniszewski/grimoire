@@ -294,6 +294,104 @@ Content-Type: application/json
 }
 ```
 
+#### GET /bookmarks/aggregates
+
+Return page-independent active-library aggregate counts.
+
+Counts categories, tags, domains, read state, pinned/starred state, and read-later state for active bookmarks under the same approved library filter context as bookmark listing. Pagination and sorting are intentionally ignored.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `tag` | string | no | Filter by tag name |
+| `domain` | string | no | Filter by exact domain |
+| `category_id` | string | no | Filter by exact category ID; takes precedence over category |
+| `category` | string | no | Filter by category name |
+| `date_from` | string | no | Inclusive ISO date or date-time lower bound |
+| `date_to` | string | no | Inclusive ISO date or date-time upper bound |
+| `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
+| `read_state` | "read" \| "unread" | no | Filter by read state |
+| `is_pinned` | "true" \| "false" \| "1" \| "0" | no | Filter by pinned/starred state; accepts boolean strings or numeric flags |
+| `opened_count_min` | integer | no | Filter to bookmarks opened at least this many times |
+| `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
+| `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
+| `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BookmarkAggregatesResponse` | Bookmark aggregate counts |
+| `422` | application/problem+json | `ProblemDetails` | Invalid aggregate filter |
+
+Examples:
+
+**Read library aggregate counts**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/bookmarks/aggregates?read_later=true&is_pinned=false"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "total": 12,
+    "categories": [
+      {
+        "id": "cat_ai",
+        "name": "AI Research",
+        "count": 7
+      },
+      {
+        "id": "cat_docs",
+        "name": "Documentation",
+        "count": 5
+      }
+    ],
+    "tags": [
+      {
+        "name": "rag",
+        "count": 6
+      },
+      {
+        "name": "typescript",
+        "count": 4
+      }
+    ],
+    "domains": [
+      {
+        "domain": "example.com",
+        "count": 8
+      },
+      {
+        "domain": "docs.example.com",
+        "count": 4
+      }
+    ],
+    "read": {
+      "read": 3,
+      "unread": 9
+    },
+    "pinned": {
+      "pinned": 2,
+      "unpinned": 10
+    },
+    "read_later": {
+      "yes": 5,
+      "no": 7
+    }
+  }
+}
+```
+
 #### GET /bookmarks/:id
 
 Get one bookmark with extracted content.
@@ -2489,6 +2587,102 @@ Bookmark array response
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | array<Bookmark> | yes | Bookmarks |
+
+### BookmarkAggregateCategory
+
+Category aggregate count under the requested library filter context
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Category ID |
+| `name` | string | yes | Category name |
+| `count` | integer | yes | Matching active bookmark count |
+
+### BookmarkAggregateTag
+
+Tag aggregate count under the requested library filter context
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | yes | Tag name |
+| `count` | integer | yes | Matching active bookmark count |
+
+### BookmarkAggregateDomain
+
+Domain aggregate count under the requested library filter context
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `domain` | string | yes | Domain |
+| `count` | integer | yes | Matching active bookmark count |
+
+### BookmarkReadAggregate
+
+Read state aggregate counts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `read` | integer | yes | Matching active bookmarks marked read |
+| `unread` | integer | yes | Matching active bookmarks not marked read |
+
+### BookmarkPinnedAggregate
+
+Pinned/starred aggregate counts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `pinned` | integer | yes | Matching active bookmarks pinned/starred |
+| `unpinned` | integer | yes | Matching active bookmarks not pinned/starred |
+
+### BookmarkReadLaterAggregate
+
+Read-later aggregate counts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `yes` | integer | yes | Matching active bookmarks marked read-later |
+| `no` | integer | yes | Matching active bookmarks not marked read-later |
+
+### BookmarkAggregates
+
+Page-independent active-library aggregate counts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `total` | integer | yes | Total active bookmarks matching the requested library filter context |
+| `categories` | array<BookmarkAggregateCategory> | yes | Category counts |
+| `tags` | array<BookmarkAggregateTag> | yes | Tag counts |
+| `domains` | array<BookmarkAggregateDomain> | yes | Domain counts |
+| `read` | BookmarkReadAggregate | yes |  |
+| `read.read` | integer | yes | Matching active bookmarks marked read |
+| `read.unread` | integer | yes | Matching active bookmarks not marked read |
+| `pinned` | BookmarkPinnedAggregate | yes |  |
+| `pinned.pinned` | integer | yes | Matching active bookmarks pinned/starred |
+| `pinned.unpinned` | integer | yes | Matching active bookmarks not pinned/starred |
+| `read_later` | BookmarkReadLaterAggregate | yes |  |
+| `read_later.yes` | integer | yes | Matching active bookmarks marked read-later |
+| `read_later.no` | integer | yes | Matching active bookmarks not marked read-later |
+
+### BookmarkAggregatesResponse
+
+Bookmark aggregate counts response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BookmarkAggregates | yes |  |
+| `data.total` | integer | yes | Total active bookmarks matching the requested library filter context |
+| `data.categories` | array<BookmarkAggregateCategory> | yes | Category counts |
+| `data.tags` | array<BookmarkAggregateTag> | yes | Tag counts |
+| `data.domains` | array<BookmarkAggregateDomain> | yes | Domain counts |
+| `data.read` | BookmarkReadAggregate | yes |  |
+| `data.read.read` | integer | yes | Matching active bookmarks marked read |
+| `data.read.unread` | integer | yes | Matching active bookmarks not marked read |
+| `data.pinned` | BookmarkPinnedAggregate | yes |  |
+| `data.pinned.pinned` | integer | yes | Matching active bookmarks pinned/starred |
+| `data.pinned.unpinned` | integer | yes | Matching active bookmarks not pinned/starred |
+| `data.read_later` | BookmarkReadLaterAggregate | yes |  |
+| `data.read_later.yes` | integer | yes | Matching active bookmarks marked read-later |
+| `data.read_later.no` | integer | yes | Matching active bookmarks not marked read-later |
 
 ### BookmarkCreateRequest
 

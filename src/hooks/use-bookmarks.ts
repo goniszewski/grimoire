@@ -9,14 +9,14 @@ import {
   deleteBookmark,
   restoreBookmark as apiRestoreBookmark,
   listCategories,
-  listDomains,
-  listTags,
+  listLibraryAggregates,
 } from "@/lib/api";
 import type {
   ApiBookmark,
   ApiBookmarkWithContent,
   ApiCategory,
   LibrarySortParams,
+  LibraryAggregatesParams,
   LibraryParityFilterParams,
 } from "@/lib/api";
 import {
@@ -346,12 +346,12 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
   };
 }
 
-function toUICategories(categories: ApiCategory[], depth = 0): UICategory[] {
+function toUICategories(categories: ApiCategory[], depth = 0, counts?: Map<string, number>): UICategory[] {
   return categories.flatMap((category) => [
     {
       id: category.id,
       name: category.name,
-      count: category.bookmark_count,
+      count: counts ? (counts.get(category.id) ?? 0) : category.bookmark_count,
       parentId: category.parent_id,
       depth,
       color: category.color,
@@ -361,7 +361,7 @@ function toUICategories(categories: ApiCategory[], depth = 0): UICategory[] {
       is_archived: category.is_archived,
       is_public: category.is_public,
     },
-    ...toUICategories(category.children ?? [], depth + 1),
+    ...toUICategories(category.children ?? [], depth + 1, counts),
   ]);
 }
 
@@ -407,6 +407,7 @@ export const bookmarkKeys = {
   categories: ["categories"] as const,
   tags: ["tags"] as const,
   domains: ["domains"] as const,
+  aggregates: (filters: object) => [...bookmarkKeys.all, "aggregates", filters] as const,
 };
 
 // ─── Main hook ────────────────────────────────────────────────────────────────
@@ -583,26 +584,6 @@ export function useBookmarks() {
     });
   }, [categoryMap, resetPage, updateLibraryPreferences]);
 
-  // ─── Domains (from API) ───────────────────────────────────────────────────
-  const domainsQuery = useQuery({
-    queryKey: bookmarkKeys.domains,
-    queryFn: async () => {
-      const res = await listDomains();
-      return res.data;
-    },
-    staleTime: 30_000,
-  });
-
-  // ─── Tags (from API) ──────────────────────────────────────────────────────
-  const tagsQuery = useQuery({
-    queryKey: bookmarkKeys.tags,
-    queryFn: async () => {
-      const res = await listTags();
-      return res.data;
-    },
-    staleTime: 30_000,
-  });
-
   // ─── Bookmarks list (no search) ───────────────────────────────────────────
   const parityFilterParams = useMemo<LibraryParityFilterParams>(() => {
     const params: LibraryParityFilterParams = {};
@@ -616,6 +597,14 @@ export function useBookmarks() {
     if (lastOpenedTo) params.last_opened_to = lastOpenedTo;
     return params;
   }, [readStateFilter, pinnedFilter, openActivityFilter, lastOpenedFrom, lastOpenedTo]);
+
+  const aggregateParams = useMemo<LibraryAggregatesParams>(() => ({}), []);
+
+  const aggregatesQuery = useQuery({
+    queryKey: bookmarkKeys.aggregates(aggregateParams),
+    queryFn: () => listLibraryAggregates(aggregateParams),
+    staleTime: 30_000,
+  });
 
   const listParams = useMemo(() => ({
     limit: pageSize,
@@ -764,25 +753,33 @@ export function useBookmarks() {
   );
 
   // ─── Sidebar aggregates ───────────────────────────────────────────────────
+  const aggregateCategoryCounts = useMemo(() => {
+    if (!aggregatesQuery.data) return undefined;
+    const counts = new Map<string, number>();
+    for (const category of aggregatesQuery.data?.data.categories ?? []) {
+      counts.set(category.id, category.count);
+    }
+    return counts;
+  }, [aggregatesQuery.data]);
+
   const categories = useMemo<UICategory[]>(
-    () => toUICategories(categoriesQuery.data ?? []),
-    [categoriesQuery.data]
+    () => toUICategories(categoriesQuery.data ?? [], 0, aggregateCategoryCounts),
+    [categoriesQuery.data, aggregateCategoryCounts]
   );
 
   const tags = useMemo<UITagCount[]>(() => {
-    return (tagsQuery.data ?? [])
-      .map((tag) => ({ tag: tag.name, count: tag.bookmark_count }))
+    return (aggregatesQuery.data?.data.tags ?? [])
+      .map((tag) => ({ tag: tag.name, count: tag.count }))
       .sort((a, b) => b.count - a.count);
-  }, [tagsQuery.data]);
+  }, [aggregatesQuery.data]);
 
-  const domainRows = domainsQuery.data as unknown as Array<{ domain: string; count: number }> | undefined;
   const domains = useMemo<UIDomainCount[]>(() => {
     const result: UIDomainCount[] = [];
-    for (const d of domainRows ?? []) {
+    for (const d of aggregatesQuery.data?.data.domains ?? []) {
       result.push({ domain: d.domain, count: d.count });
     }
     return result;
-  }, [domainRows]);
+  }, [aggregatesQuery.data]);
 
   // ─── Mutations ────────────────────────────────────────────────────────────
 
@@ -790,8 +787,7 @@ export function useBookmarks() {
     mutationFn: (url: string) => createBookmark(url),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-      qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
-      qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
+      qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
     },
   });
 
@@ -808,8 +804,7 @@ export function useBookmarks() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
-      qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
-      qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
+      qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
     },
   });
 
@@ -875,6 +870,7 @@ export function useBookmarks() {
       qc.invalidateQueries({ queryKey: bookmarkKeys.archive });
       qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
       qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
+      qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
     },
   });
 
@@ -895,6 +891,7 @@ export function useBookmarks() {
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
     qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
     qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
+    qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
   }, [qc]);
 
   const updateBookmarkTags = useCallback((id: string, tags: string[]) => {
@@ -927,6 +924,7 @@ export function useBookmarks() {
     qc.invalidateQueries({ queryKey: bookmarkKeys.categories });
     qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     qc.invalidateQueries({ queryKey: bookmarkKeys.domains });
+    qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
   }, [qc]);
 
   const pinBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {

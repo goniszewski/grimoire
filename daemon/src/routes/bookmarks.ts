@@ -192,6 +192,24 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     });
   });
 
+  // GET /bookmarks/aggregates — page-independent active-library counts
+  router.get("/bookmarks/aggregates", (c) => {
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    if (!parsedFilters.ok) {
+      return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
+    }
+
+    return ok(c, repo.aggregates({
+      tag: c.req.query("tag") ?? undefined,
+      domain: c.req.query("domain") ?? undefined,
+      category_id: c.req.query("category_id") ?? undefined,
+      category: c.req.query("category") ?? undefined,
+      date_from: c.req.query("date_from") ?? undefined,
+      date_to: c.req.query("date_to") ?? undefined,
+      ...parsedFilters.filters,
+    }));
+  });
+
   // GET /bookmarks/:id — single bookmark with content
   router.get("/bookmarks/:id", (c) => {
     const bm = repo.findByIdWithContent(c.req.param("id"));

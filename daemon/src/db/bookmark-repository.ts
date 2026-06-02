@@ -60,6 +60,16 @@ export interface FilterOptions extends BookmarkParityFilters {
   read_later?: 0 | 1;
 }
 
+export interface BookmarkAggregates {
+  total: number;
+  categories: Array<{ id: string; name: string; count: number }>;
+  tags: Array<{ name: string; count: number }>;
+  domains: Array<{ domain: string; count: number }>;
+  read: { read: number; unread: number };
+  pinned: { pinned: number; unpinned: number };
+  read_later: { yes: number; no: number };
+}
+
 export interface ListResult {
   items: BookmarkWithTags[];
   total: number;
@@ -145,47 +155,7 @@ export class BookmarkRepository {
 
   /** Paginated list with optional filters. */
   list(opts: ListBookmarksOptions): ListResult {
-    // Always exclude trashed bookmarks; archived flag controls which archived state to show
-    const conditions: string[] = [
-      "b.is_trashed = 0",
-      opts.archived ? "b.is_archived = 1" : "b.is_archived = 0",
-    ];
-    const params: (string | number)[] = [];
-
-    if (opts.tag) {
-      conditions.push(
-        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
-      );
-      params.push(opts.tag);
-    }
-    if (opts.domain) {
-      conditions.push("b.domain = ?");
-      params.push(opts.domain);
-    }
-    if (opts.category_id) {
-      conditions.push("b.category_id = ?");
-      params.push(opts.category_id);
-    } else if (opts.category) {
-      conditions.push(
-        "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
-      );
-      params.push(opts.category);
-    }
-    if (opts.date_from) {
-      conditions.push("b.created_at >= ?");
-      params.push(opts.date_from);
-    }
-    if (opts.date_to) {
-      conditions.push("b.created_at <= ?");
-      params.push(normalizeDateUpperBound(opts.date_to));
-    }
-    if (opts.read_later !== undefined) {
-      conditions.push("b.read_later = ?");
-      params.push(opts.read_later);
-    }
-    appendBookmarkParityFilterConditions(conditions, params, opts);
-
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const { where, params } = this.buildBookmarkWhere(opts);
     const orderBy = buildBookmarkOrderBy(
       opts,
       "b.is_pinned DESC, b.created_at DESC, b.id ASC"
@@ -235,43 +205,7 @@ export class BookmarkRepository {
 
   /** Export all active bookmarks (not archived, not trashed) with optional filters. */
   exportAll(filters: FilterOptions = {}): ExportBookmarkRow[] {
-    const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
-    const params: (string | number)[] = [];
-
-    if (filters.tag) {
-      conditions.push(
-        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
-      );
-      params.push(filters.tag);
-    }
-    if (filters.domain) {
-      conditions.push("b.domain = ?");
-      params.push(filters.domain);
-    }
-    if (filters.category_id) {
-      conditions.push("b.category_id = ?");
-      params.push(filters.category_id);
-    } else if (filters.category) {
-      conditions.push(
-        "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
-      );
-      params.push(filters.category);
-    }
-    if (filters.date_from) {
-      conditions.push("b.created_at >= ?");
-      params.push(filters.date_from);
-    }
-    if (filters.date_to) {
-      conditions.push("b.created_at <= ?");
-      params.push(normalizeDateUpperBound(filters.date_to));
-    }
-    if (filters.read_later !== undefined) {
-      conditions.push("b.read_later = ?");
-      params.push(filters.read_later);
-    }
-    appendBookmarkParityFilterConditions(conditions, params, filters);
-
-    const where = `WHERE ${conditions.join(" AND ")}`;
+    const { where, params } = this.buildBookmarkWhere(filters);
 
     const rows = this.db
       .query<
@@ -324,6 +258,88 @@ export class BookmarkRepository {
       read_at: r.read_at,
       notes: r.notes,
     }));
+  }
+
+  /** Aggregate active-library counts under the same filter context as bookmark listing. */
+  aggregates(filters: FilterOptions = {}): BookmarkAggregates {
+    const { where, params } = this.buildBookmarkWhere(filters);
+
+    const summary = this.db
+      .query<
+        {
+          total: number;
+          read_count: number | null;
+          unread_count: number | null;
+          pinned_count: number | null;
+          unpinned_count: number | null;
+          read_later_yes_count: number | null;
+          read_later_no_count: number | null;
+        },
+        (string | number)[]
+      >(
+        `SELECT
+           COUNT(*) AS total,
+           SUM(CASE WHEN b.read_at IS NOT NULL THEN 1 ELSE 0 END) AS read_count,
+           SUM(CASE WHEN b.read_at IS NULL THEN 1 ELSE 0 END) AS unread_count,
+           SUM(CASE WHEN b.is_pinned = 1 THEN 1 ELSE 0 END) AS pinned_count,
+           SUM(CASE WHEN b.is_pinned = 0 THEN 1 ELSE 0 END) AS unpinned_count,
+           SUM(CASE WHEN b.read_later = 1 THEN 1 ELSE 0 END) AS read_later_yes_count,
+           SUM(CASE WHEN b.read_later = 0 THEN 1 ELSE 0 END) AS read_later_no_count
+         FROM bookmarks b ${where}`
+      )
+      .get(...params);
+
+    const categories = this.db
+      .query<{ id: string; name: string; count: number }, (string | number)[]>(
+        `SELECT c.id, c.name, COUNT(b.id) AS count
+         FROM bookmarks b
+         JOIN categories c ON c.id = b.category_id
+         ${where}
+         GROUP BY c.id, c.name
+         ORDER BY count DESC, c.name ASC`
+      )
+      .all(...params);
+
+    const tags = this.db
+      .query<{ name: string; count: number }, (string | number)[]>(
+        `SELECT t.name, COUNT(DISTINCT b.id) AS count
+         FROM bookmarks b
+         JOIN bookmark_tags bt ON bt.bookmark_id = b.id
+         JOIN tags t ON t.id = bt.tag_id
+         ${where}
+         GROUP BY t.id, t.name
+         ORDER BY count DESC, t.name ASC`
+      )
+      .all(...params);
+
+    const domains = this.db
+      .query<{ domain: string; count: number }, (string | number)[]>(
+        `SELECT b.domain, COUNT(*) AS count
+         FROM bookmarks b
+         ${where}
+         GROUP BY b.domain
+         ORDER BY count DESC, b.domain ASC`
+      )
+      .all(...params);
+
+    return {
+      total: summary?.total ?? 0,
+      categories,
+      tags,
+      domains,
+      read: {
+        read: summary?.read_count ?? 0,
+        unread: summary?.unread_count ?? 0,
+      },
+      pinned: {
+        pinned: summary?.pinned_count ?? 0,
+        unpinned: summary?.unpinned_count ?? 0,
+      },
+      read_later: {
+        yes: summary?.read_later_yes_count ?? 0,
+        no: summary?.read_later_no_count ?? 0,
+      },
+    };
   }
 
   /** Partial update: title, tags, category_id, is_pinned, read_later, is_archived, read_at, notes. */
@@ -620,6 +636,55 @@ export class BookmarkRepository {
   }
 
   // ─── Private helpers ────────────────────────────────────────────────────────
+
+  private buildBookmarkWhere(filters: FilterOptions & { archived?: boolean } = {}): {
+    where: string;
+    params: (string | number)[];
+  } {
+    const conditions: string[] = [
+      "b.is_trashed = 0",
+      filters.archived ? "b.is_archived = 1" : "b.is_archived = 0",
+    ];
+    const params: (string | number)[] = [];
+
+    if (filters.tag) {
+      conditions.push(
+        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
+      );
+      params.push(filters.tag);
+    }
+    if (filters.domain) {
+      conditions.push("b.domain = ?");
+      params.push(filters.domain);
+    }
+    if (filters.category_id) {
+      conditions.push("b.category_id = ?");
+      params.push(filters.category_id);
+    } else if (filters.category) {
+      conditions.push(
+        "b.category_id = (SELECT id FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1)"
+      );
+      params.push(filters.category);
+    }
+    if (filters.date_from) {
+      conditions.push("b.created_at >= ?");
+      params.push(filters.date_from);
+    }
+    if (filters.date_to) {
+      conditions.push("b.created_at <= ?");
+      params.push(normalizeDateUpperBound(filters.date_to));
+    }
+    if (filters.read_later !== undefined) {
+      conditions.push("b.read_later = ?");
+      params.push(filters.read_later);
+    }
+    appendBookmarkParityFilterConditions(conditions, params, filters);
+
+    return {
+      where: `WHERE ${conditions.join(" AND ")}`,
+      params,
+    };
+  }
 
   private getTagNames(bookmarkId: string): string[] {
     return this.db

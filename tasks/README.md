@@ -131,7 +131,7 @@ tasks/
 | TASK-115 | [Server Driven Sorting](done/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | done |
 | TASK-116 | [Library Parity Filters](done/TASK-116-library-parity-filters.md) | Grimoire parity | high | done |
 | TASK-117 | [Persist Library View Preferences](done/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | done |
-| TASK-118 | [Aggregate Count Endpoints](backlog/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | backlog |
+| TASK-118 | [Aggregate Count Endpoints](done/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | done |
 | TASK-119 | [Large Library Performance Tests](backlog/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | backlog |
 | TASK-120 | [Import Duplicate Handling Policy](done/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | done |
 
@@ -288,6 +288,12 @@ TASK-117 is complete with local-only library filter/sort/search-mode/page-size
 preference persistence, page-offset exclusion, route-tag precedence for shared
 links, a toolbar reset command that also resets bookmark view mode, focused hook
 and page tests, and desktop/mobile visual reporting.
+TASK-118 is done with page-independent active-library aggregate counts for
+categories, tags, domains, read state, pinned/starred state, and read-later
+state; sidebar category, tag, and domain badges now use daemon-owned aggregate
+data without collapsing under selected facets, generated API/OpenAPI docs are
+refreshed, and focused daemon/frontend tests cover filtered and larger-count
+scenarios.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension
