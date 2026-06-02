@@ -12,7 +12,8 @@
     "start": "bun src/index.ts",
     "check": "bun tsc --noEmit",
     "db:seed": "bun run src/db/seed/dev-seed.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "test:performance": "bun run src/test/performance/large-library-performance.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

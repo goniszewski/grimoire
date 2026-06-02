@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:daemon": "cd daemon && bun test",
+    "test:performance": "cd daemon && bun run test:performance",
     "test:e2e:install": "npx playwright install --with-deps",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
