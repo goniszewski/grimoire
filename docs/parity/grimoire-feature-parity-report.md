@@ -1,6 +1,6 @@
 # Little Imp vs Grimoire Feature Parity Report
 
-Date: 2026-05-31
+Date: 2026-06-02
 
 ## Scope
 
@@ -19,17 +19,24 @@ decisions for this batch rather than hidden unfinished work.
 
 ## Executive Summary
 
-Little Imp is not at full Grimoire server parity, but the current workspace has already closed several gaps that were present in earlier snapshots. Little Imp now has bookmark notes, read state, archive/trash flows, category CRUD with reparenting, tag CRUD APIs, generated API contract data, richer release/install documentation, backups, diagnostics, updates, timeline events, suggestions, and a stronger local daemon pipeline.
+Little Imp is not at full Grimoire server parity, but the current workspace has
+closed nearly all approved local-first parity gaps from the current batch.
+Little Imp now has bookmark notes, read state, archive/trash flows, category
+CRUD with reparenting and local metadata, tag CRUD APIs and management
+surfaces, generated API contract data, richer release/install documentation,
+backups, diagnostics, updates, timeline events, suggestions, and a stronger
+local daemon pipeline.
 
 The largest in-scope gaps were local integration authentication, human/API
 client documentation, import review and duplicate handling, read-later/open
 metrics, dedicated tag/category surfaces, explicit pagination/filtering, and
-richer bookmark detail presentation. The current workspace now includes a
-protected local `/capture` endpoint for explicit integration clients. Grimoire's
-multi-user/account model, profile/admin surfaces, public-server deployment
-posture, endpoint aliases, packaged browser-extension/bookmarklet clients, and
-extension compatibility smoke tests remain deliberate non-goals or deferred
-decisions for this batch.
+richer bookmark detail presentation. Those implementation tasks are complete
+or in review, with TASK-098 tag management still the current review item. The
+workspace includes a protected local `/capture` endpoint for explicit
+integration clients. Grimoire's multi-user/account model, profile/admin
+surfaces, public-server deployment posture, endpoint aliases, packaged
+browser-extension/bookmarklet clients, and extension compatibility smoke tests
+remain deliberate non-goals or deferred decisions for this batch.
 
 ## Current Parity Batch Scope
 
@@ -68,24 +75,24 @@ This batch keeps Little Imp's product model intact:
 | Sessions and API auth | Lucia sessions plus bearer-token API patterns | First-party REST remains loopback-trusted; MCP and protected capture use managed bearer tokens | Partial local integration parity | Grimoire-style sessions are out of scope. TASK-102 adds scoped local integration-token auth without turning Little Imp into a multi-user server. |
 | Admin panel | User list, counts, disable/delete users | None | Deferred non-goal | Admin roles only matter if multi-user/server mode is reopened. |
 | Profile page | User info, password editing, profile stats | Preferences and app lock only | Deferred non-goal | Local preferences are not account profile management; account profiles are deferred with multi-user support. |
-| Bookmark CRUD | Add, edit, delete, list, detail | Add, list, detail, soft delete, restore, permanent delete, update selected fields | Partial | Little Imp updates title, category, tags, pin, archive, read state, and notes. URL/summary edit UI is still not backed by API mutation. |
-| Bookmark fields | URL, title, description, author, content, note, images, icon, screenshot, importance, flagged, read, archive, opened counts | URL, title, description, content table, author, published date, favicon/screenshot columns, pinned, read-later, archived, trashed, read_at, notes, tags, category, opened count, last-opened timestamp | Partial | Notes/read/archive/read-later/opened metrics are present. Starred/favorite maps to pinned, and importance is rejected for this batch. |
+| Bookmark CRUD | Add, edit, delete, list, detail | Add, list, detail, soft delete, restore, permanent delete, update selected fields | Partial by deferred scope | Little Imp updates title, category, tags, pin, archive, read state, read-later state, open metrics, and notes. URL and extracted summary mutation remain deferred, and unsupported edit affordances were removed by TASK-094. |
+| Bookmark fields | URL, title, description, author, content, note, images, icon, screenshot, importance, flagged, read, archive, opened counts | URL, title, description, content table, author, published date, favicon/screenshot columns, pinned, read-later, archived, trashed, read_at, notes, tags, category, opened count, last-opened timestamp | At parity for approved fields | Notes/read/archive/read-later/opened metrics are present. Starred/favorite maps to pinned, and importance is rejected for this batch. |
 | Metadata and extraction | Metadata fetch plus article extraction | Async fetch/extract/AI/embed/index pipeline with site-specific extractors | Little Imp ahead | Little Imp has stronger background processing and recovery behavior. |
 | Bookmark notes | Markdown-like personal notes | Markdown notes in API and detail UI | At parity | Implemented through `bookmarks.notes` and detail editor. |
-| Read state | Read/unread flag | `read_at` API field plus card/detail controls | Partial | Read state exists; list-level unread/read filters are not exposed. |
+| Read state | Read/unread flag | `read_at` API field plus card/detail controls and list/search filters | At parity | TASK-116 added read/unread filters that combine with existing search, category, tag, domain, and date filters. |
 | Flagged/starred | Flagged bookmark state | Pinning exists and maps to Grimoire starred/favorite; read-later is a separate flag | Intentional mapping | PAR-007 maps Grimoire starred/favorite state to existing Little Imp pinning. TASK-089 adds separate read-later persistence and UI controls. |
 | Importance | Importance score/rating | None | Rejected non-goal | TASK-090 rejects manual importance for this parity batch. |
-| Open tracking | Open count and last-opened timestamp | Persisted open count, last-opened timestamp, tracked open endpoint, and shared UI open tracking | At parity | Implemented by TASK-091. Future sorting/filtering by open metrics remains covered by the filter/sort backlog. |
+| Open tracking | Open count and last-opened timestamp | Persisted open count, last-opened timestamp, tracked open endpoint, shared UI open tracking, export fields, sorting, and filters | At parity | Implemented by TASK-091, exported by TASK-111, sorted by TASK-115, and filtered by TASK-116. |
 | Tags | Tag CRUD and bookmark assignment | Tag API list/create/delete/attach/detach/rename; UI assign/remove/filter, dedicated management page, and tag detail pages | Partial | Tag management is in review through TASK-098, while tag detail pages, tag rename, and category/tag regression coverage are complete through TASK-099, TASK-100, and TASK-101. |
-| Categories | Category CRUD, metadata fields, category pages | Category API create/update/delete/tree; UI create/rename/delete/move/drag/filter, category detail pages, and local metadata fields in review | Partial | Category detail pages are complete through TASK-096. Rich local metadata fields are in review through TASK-097; public visibility remains local metadata only. |
-| Search | Fuzzy search with filters | Keyword FTS plus optional semantic/hybrid search | Little Imp ahead in backend | UI still lacks several Grimoire-style filters. |
-| Filters | Unread, flagged, sort/domain/opened count and related filters | Category, tag, domain, date range, read-later, sort by date/title/domain | Partial | Missing unread/read, pinned/starred, opened-count, and last-opened filters. Importance filters are rejected for this batch. |
-| Pagination | Paginated app pages | API supports pagination; UI requests up to 200 results | Partial | Need pagination or infinite scroll for large libraries. |
-| Bookmark detail | Rich metadata, media carousel, content tabs, note, stats | Detail drawer with summary, notes, tags, category, URL/date/actions, related bookmarks | Partial | Missing content tabs, media carousel, opened stats, and richer metadata editing. |
-| Import | Browser import with review-oriented workflow | Netscape HTML import with SSE progress, tags parsed, folder hierarchy imported as categories, and duplicate-policy preview/commit semantics | Partial | Need the visible pre-import review UI, category/tag remapping, final result reporting, and broader import/export regression coverage. |
+| Categories | Category CRUD, metadata fields, category pages | Category API create/update/delete/tree; UI create/rename/delete/move/drag/filter, category detail pages, and local metadata fields | At parity | Category detail pages are complete through TASK-096 and rich local metadata fields are complete through TASK-097. Public visibility remains local metadata only. |
+| Search | Fuzzy search with filters | Keyword FTS plus optional semantic/hybrid search, server-side filtering, sorting, pagination, and aggregate counts | Little Imp ahead | TASK-114 through TASK-119 completed pagination, server-driven sorting, approved parity filters, persisted view preferences, aggregate counts, and large-library checks. |
+| Filters | Unread, flagged, sort/domain/opened count and related filters | Category, tag, domain, date range, read/read-later, pinned/starred, opened-count, last-opened, and server-driven sort controls | At parity | TASK-116 added approved parity filters. Importance filters are rejected for this batch. |
+| Pagination | Paginated app pages | Explicit daemon-backed pagination in library, search, category detail, tag detail, and related scoped lists | At parity | TASK-114 added visible pagination and page-size controls. |
+| Bookmark detail | Rich metadata, media carousel, content tabs, note, stats | Detail drawer with summary, notes, tags, category, source metadata, extracted content, local media preview, URL/date/actions, related bookmarks, and open metrics | At parity for approved local scope | TASK-092, TASK-093, and TASK-091 completed the approved metadata, content, media, and stats work. URL/summary mutation remains deferred by PAR-006. |
+| Import | Browser import with review-oriented workflow | Netscape HTML import with SSE progress, tags parsed, folder hierarchy imported as categories, duplicate-policy preview/commit semantics, remapping, result reports, and regression coverage | At parity | TASK-107, TASK-108, TASK-109, TASK-110, TASK-113, and TASK-120 completed the approved browser/Netscape import hardening. |
 | Export | Export/migration capabilities | JSON/CSV export with filters plus notes, read state, archive state, pinned/starred mapping, read-later state, and opened metrics | At parity | TASK-111 completed approved export parity fields for active-library JSON/CSV exports. Direct Grimoire backup import remains deferred separately. |
 | Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 defers direct Grimoire/PocketBase import until normal import/export parity is stable. Browser/Netscape import hardening remains in scope. |
-| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` | Partial | Human-readable local client examples, OpenAPI-compatible output, local CORS setup docs, and protected `/capture` examples are complete through TASK-103, TASK-104, TASK-105, and TASK-106. |
+| Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` with local client examples | At parity for local integrations | Human-readable local client examples, OpenAPI-compatible output, local CORS setup docs, and protected `/capture` examples are complete through TASK-103, TASK-104, TASK-105, and TASK-106. |
 | Browser extension support | Companion extension supported by API | Protected local `/capture` endpoint exists; no packaged browser client is shipped | Partial local integration parity | TASK-105 adds the token-protected capture endpoint. Packaged browser-extension/bookmarklet clients and extension smoke tests remain out of scope for this batch. |
 | Deployment | Docker/self-hosting-oriented docs | Native installer, Homebrew, local daemon, Docker guidance, update docs | Intentional product difference | Little Imp is stronger for local install. Public-server and multi-user deployment modes are out of scope for this parity batch. |
 | Backups and restore | Not a primary parity strength | Local/S3 backups, encrypted packages, restore recovery | Little Imp ahead | This is beyond Grimoire parity. |
@@ -94,12 +101,14 @@ This batch keeps Little Imp's product model intact:
 
 ## Key Remaining Gaps
 
-1. Keep human-readable API examples, OpenAPI-compatible output, and CORS/origin documentation generated from the daemon contract for local scripts and integration clients.
-2. Add open metrics while preserving the starred/favorite-to-pinned mapping and the separate read-later flag.
-3. Fix the bookmark detail edit mismatch for URL and summary, then add richer metadata/content sections.
-4. Add dedicated tag/category management and detail pages, plus approved category metadata.
-5. Add import review, duplicate handling, folder-to-category mapping, remapping, result reporting, and export parity fields.
-6. Add explicit UI pagination, server-driven sorting, additional approved filters, aggregate counts, and large-library performance checks.
+1. Close out TASK-098 tag management review so the dedicated tag surface joins
+   the already-complete tag detail, rename, and regression coverage.
+2. Keep recurring release checks on closed parity gaps, especially generated API
+   docs, import/export behavior, category/tag management, filters, pagination,
+   and local integration token/CORS behavior.
+3. Treat URL/summary bookmark mutation, direct Grimoire backup import tooling,
+   and packaged browser-extension/bookmarklet clients as explicit future
+   product decisions rather than unfinished current-batch work.
 
 ## Notable Little Imp Advantages
 
@@ -139,10 +148,10 @@ release planning. Use it before every parity-facing beta or release-candidate
 build to confirm closed parity gaps still have passing API, daemon, frontend,
 visual, Playwright e2e, and performance verification where relevant.
 
-## Recommended Implementation Order
+## Implementation Order Status
 
-1. Keep completed local integration API examples, OpenAPI output, protected capture, and CORS/origin controls stable: TASK-103, TASK-104, TASK-105, and TASK-106.
-2. Fix existing bookmark mutation/detail correctness and add approved bookmark fields: TASK-089, TASK-091, TASK-092, and TASK-094.
-3. Expand category/tag surfaces and regression coverage: TASK-095 through TASK-101.
-4. Improve browser/Netscape import, export parity, duplicate policy, and import/export regression tests: TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
-5. Add pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification: TASK-114 through TASK-119.
+1. Local integration API examples, OpenAPI output, protected capture, and CORS/origin controls are complete through TASK-103, TASK-104, TASK-105, and TASK-106.
+2. Bookmark mutation/detail correctness and approved bookmark fields are complete through TASK-089, TASK-091, TASK-092, and TASK-094.
+3. Category/tag surfaces and regression coverage are complete for TASK-095 through TASK-101, except TASK-098, which remains in review.
+4. Browser/Netscape import, export parity, duplicate policy, and import/export regression tests are complete for TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
+5. Pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification are complete for TASK-114 through TASK-119.

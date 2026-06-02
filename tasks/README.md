@@ -110,7 +110,7 @@ tasks/
 | TASK-094 | [Bookmark Mutation And Detail Regression Tests](done/TASK-094-bookmark-mutation-detail-regression-tests.md) | Grimoire parity | high | done |
 | TASK-095 | [Sidebar Categories From Full Tree](done/TASK-095-sidebar-categories-full-tree.md) | Grimoire parity | high | done |
 | TASK-096 | [Category Detail Page](done/TASK-096-category-detail-page.md) | Grimoire parity | medium | done |
-| TASK-097 | [Category Metadata Fields](in-review/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | in-review |
+| TASK-097 | [Category Metadata Fields](done/TASK-097-category-metadata-fields.md) | Grimoire parity | medium | done |
 | TASK-098 | [Tag Management Surface](in-review/TASK-098-tag-management-surface.md) | Grimoire parity | high | in-review |
 | TASK-099 | [Tag Detail Pages](done/TASK-099-tag-detail-pages.md) | Grimoire parity | medium | done |
 | TASK-100 | [Tag Rename API And UI](done/TASK-100-tag-rename-api-ui.md) | Grimoire parity | medium | done |
@@ -213,13 +213,13 @@ regression coverage, and TASK-095 is complete with full-tree sidebar category
 navigation for empty and nested categories. TASK-096 is complete with a
 stable category detail route, metadata and child-category rendering,
 category-scoped daemon pagination, sidebar route navigation, focused frontend
-tests, e2e coverage, and visual reporting. TASK-097 is in review with local
+tests, e2e coverage, and visual reporting. TASK-097 is complete with local
 category metadata persistence, validation, generated API docs, category detail
-rendering/editing, focused tests, and visual reporting. TASK-098 is in review
-with a dedicated tag management page, API-backed active tag counts, create and
-delete flows, sidebar navigation, tag detail browsing links, filtered-library
-hydration, focused frontend tests, daemon tag route coverage, and visual
-reporting.
+rendering/editing, focused tests, closeout verification, and visual reporting.
+TASK-098 is in review with a dedicated tag management page, API-backed active
+tag counts, create and delete flows, sidebar navigation, tag detail browsing
+links, filtered-library hydration, focused frontend tests, daemon tag route
+coverage, and visual reporting.
 TASK-099 is complete with stable tag detail routes, tag metadata, bookmark
 chip navigation, focused tag management links, daemon-paginated scoped bookmark
 lists, focused tests, e2e coverage, and visual reporting.

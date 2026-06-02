@@ -1,6 +1,6 @@
 # Grimoire Parity Task Proposals
 
-Date: 2026-05-30
+Date: 2026-06-02
 
 This document turns the remaining Little Imp vs Grimoire parity gaps into proposed implementation tasks. Use it as an approval worksheet before creating concrete task files under `tasks/`.
 
@@ -32,7 +32,7 @@ Suggested values:
 | PAR-009 | Add bookmark importance rating with schema migration, API update support, editor control, sort, filter, import/export coverage, and tests. | Medium | Rejected | Not started | Rejected for this parity batch. It does not directly improve vector search and adds schema/API/UI/filter/export complexity without clear current workflow value. Record: `TASK-090`. |
 | PAR-010 | Track opened count and last-opened timestamp when users open bookmark URLs from cards, detail, search, and related-bookmark surfaces. | Medium | Approved | Done | Done: `TASK-091`. |
 | PAR-011 | Add richer bookmark detail sections for extracted markdown/content, author, published date, word count, language, and pipeline metadata. | High | Approved | Done | Done: `TASK-092`. |
-| PAR-012 | Define media handling for favicon, screenshot, and extracted images, then add a detail media preview if it fits the local storage model. | Medium | Approved | Not started | Backlog: `TASK-093`. |
+| PAR-012 | Define media handling for favicon, screenshot, and extracted images, then add a detail media preview if it fits the local storage model. | Medium | Approved | Done | Done: `TASK-093`. |
 | PAR-013 | Add regression tests for all bookmark field mutations and visible detail controls. | High | Approved | Done | Done: `TASK-094`. |
 
 ## Epic 3: Category And Tag Parity
@@ -41,7 +41,7 @@ Suggested values:
 | --- | --- | --- | --- | --- | --- |
 | PAR-014 | Render category navigation from the full `/categories` tree so empty categories and hierarchy are visible, not only categories from loaded bookmarks. | High | Approved | Done | Done: `TASK-095`. |
 | PAR-015 | Add a dedicated category detail page with category metadata, child categories, and paginated bookmark list. | Medium | Approved | Done | Done: `TASK-096`. |
-| PAR-016 | Add optional category fields from Grimoire parity: color, icon, description, slug, archived, and public visibility after product approval. | Medium | Approved | In review | In review: `TASK-097`. |
+| PAR-016 | Add optional category fields from Grimoire parity: color, icon, description, slug, archived, and public visibility after product approval. | Medium | Approved | Done | Done: `TASK-097`. |
 | PAR-017 | Add a dedicated tag management surface for listing, creating, deleting, and browsing tags outside bookmark detail. | High | Approved | In review | In review: `TASK-098`. |
 | PAR-018 | Add tag detail pages with tag metadata and paginated bookmark lists. | Medium | Approved | Done | Done: `TASK-099`. |
 | PAR-019 | Add tag rename API and UI if Grimoire-compatible tag management is approved. | Medium | Approved | Done | Done: `TASK-100`. |
@@ -76,31 +76,31 @@ Suggested values:
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
 | PAR-035 | Preserve Netscape folder hierarchy as Little Imp categories during import, using the parser's existing `folders` data. | High | Approved | Done | Completed in `TASK-107`. |
-| PAR-036 | Add pre-import review with detected folders, tags, duplicates, invalid URLs, skipped private URLs, and estimated changes. | High | Approved | Not started | Backlog: `TASK-108`. |
-| PAR-037 | Add category and tag remapping before committing imported bookmarks. | Medium | Approved | Not started | Backlog: `TASK-109`. |
+| PAR-036 | Add pre-import review with detected folders, tags, duplicates, invalid URLs, skipped private URLs, and estimated changes. | High | Approved | Done | Done: `TASK-108`. |
+| PAR-037 | Add category and tag remapping before committing imported bookmarks. | Medium | Approved | Done | Done: `TASK-109`. |
 | PAR-038 | Add duplicate handling choices: skip active duplicates by default with merge option, restore archived duplicates with merge, restore trashed duplicates with merge or skip, and report invalid/private URLs. | High | Approved | Done | Completed in `TASK-120` with daemon preview/commit policy semantics, generated API docs, frontend API helpers, and repeated-source duplicate hardening. |
 | PAR-039 | Add import result report with created, updated, skipped, failed, and warning rows. | Medium | Approved | Done | Completed in `TASK-110`. |
 | PAR-040 | Expand JSON/CSV export to include approved parity fields such as notes, read state, archive state, pinned/starred mapping, read-later state, and opened metrics. | Medium | Approved | Done | Completed in `TASK-111`. |
 | PAR-041 | Add Grimoire backup import tooling only after browser/Netscape import and JSON/CSV export parity are stable. | Low | Deferred | Not started | Deferred. Current batch focuses on robust browser/Netscape import and export parity. Future record: `TASK-112`. |
-| PAR-042 | Add import/export regression tests with large files, folder nesting, duplicates, invalid URLs, and parity fields. | High | Approved | Not started | Backlog: `TASK-113`. |
+| PAR-042 | Add import/export regression tests with large files, folder nesting, duplicates, invalid URLs, and parity fields. | High | Approved | Done | Done: `TASK-113`. |
 
 ## Epic 7: Search, Filters, Pagination, And Scale
 
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
-| PAR-043 | Add explicit UI pagination backed by existing daemon pagination. | High | Approved | Not started | Backlog: `TASK-114`. |
-| PAR-044 | Move sort options to server-driven ordering for created date, updated date, title, domain, opened count, and last-opened date. | Medium | Approved | Not started | Backlog: `TASK-115`. |
-| PAR-045 | Add filters for unread/read, pinned/starred, read-later, opened count, and last-opened date after fields are approved. | High | Approved | Not started | Backlog: `TASK-116`. |
-| PAR-046 | Persist saved filter, sort, view, and page-size preferences locally. | Medium | Approved | Not started | Backlog: `TASK-117`. |
-| PAR-047 | Add aggregate endpoints for category, tag, domain, read, pinned/starred, and read-later counts independent of currently loaded result pages. | Medium | Approved | Not started | Backlog: `TASK-118`. |
-| PAR-048 | Add large-library performance tests for list, search, category filters, tag filters, import, and pagination. | Medium | Approved | Not started | Backlog: `TASK-119`. |
+| PAR-043 | Add explicit UI pagination backed by existing daemon pagination. | High | Approved | Done | Done: `TASK-114`. |
+| PAR-044 | Move sort options to server-driven ordering for created date, updated date, title, domain, opened count, and last-opened date. | Medium | Approved | Done | Done: `TASK-115`. |
+| PAR-045 | Add filters for unread/read, pinned/starred, read-later, opened count, and last-opened date after fields are approved. | High | Approved | Done | Done: `TASK-116`. |
+| PAR-046 | Persist saved filter, sort, view, and page-size preferences locally. | Medium | Approved | Done | Done: `TASK-117`. |
+| PAR-047 | Add aggregate endpoints for category, tag, domain, read, pinned/starred, and read-later counts independent of currently loaded result pages. | Medium | Approved | Done | Done: `TASK-118`. |
+| PAR-048 | Add large-library performance tests for list, search, category filters, tag filters, import, and pagination. | Medium | Approved | Done | Done: `TASK-119`. |
 
 ## Epic 8: Documentation, Verification, And Release Readiness
 
 | ID | Proposed Task | Priority | Approval | Development Status | My Comment |
 | --- | --- | --- | --- | --- | --- |
-| PAR-049 | Add parity-driven API examples for local token auth, bookmark CRUD/update, search/list/filter/sort/pagination, import/export, categories, and tags. | High | Approved | Not started | Covered by `TASK-103`; no separate task file. Browser extension/bookmarklet examples are deferred. |
-| PAR-050 | Update README, roadmap, and release docs with approved Grimoire parity goals and explicit non-goals. | High | Pending | Not started |  |
+| PAR-049 | Add parity-driven API examples for local token auth, bookmark CRUD/update, search/list/filter/sort/pagination, import/export, categories, and tags. | High | Approved | Done | Covered by `TASK-103`; no separate task file. Browser extension/bookmarklet examples are deferred. |
+| PAR-050 | Update README, roadmap, and release docs with approved Grimoire parity goals and explicit non-goals. | High | Approved | Done | Covered by `TASK-085` and recurring release review coverage in `TASK-088`. |
 | PAR-051 | Add task reports for visible parity work and link them from `docs/task-reports/index.html`. | Medium | Pending | Not started |  |
 | PAR-052 | Add visual verification coverage for category/tag management, bookmark detail, import review, and pagination once implemented. | Medium | Pending | Not started |  |
 | PAR-053 | Add contract checks that fail when daemon route behavior diverges from `docs/api-contract.json`. | High | Pending | Not started |  |

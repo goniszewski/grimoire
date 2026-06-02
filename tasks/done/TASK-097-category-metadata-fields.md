@@ -2,7 +2,7 @@
 
 **Phase:** Grimoire parity
 **Priority:** medium
-**Status:** in-review
+**Status:** done
 **Area:** categories / daemon / frontend
 **Source:** PAR-016
 **Labels:** grimoire-parity, categories, api, ui
@@ -52,3 +52,8 @@ slug, archived, and public visibility.
   tightened generated metadata constraints, refreshed the edit-form screenshot,
   and re-ran docs, lint, type-check, frontend, daemon, build, e2e, and
   whitespace verification successfully.
+- June 2, 2026: Closeout verification re-ran focused category detail UI tests,
+  focused daemon category repository/API tests, and API documentation check
+  successfully before moving the task to `done`. Review follow-up also reran
+  the full `npm run check` gate successfully while aligning adjacent parity
+  status documentation.
