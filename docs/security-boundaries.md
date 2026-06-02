@@ -27,12 +27,13 @@ The supported default posture is:
   the configured `DATA_DIR`.
 
 The daemon now has a scoped authentication layer for explicit local integration
-surfaces such as MCP. The first-party loopback browser app remains tokenless
-inside the local origin boundary. General REST routes are still loopback-only,
-and tokenless for first-party use, but presented `Authorization` headers are
-validated as integration bearer tokens. Any process on the same machine that can
-reach the loopback port remains in the local trust model unless a route is
-explicitly protected by integration token middleware.
+surfaces such as MCP and protected local bookmark capture. The first-party
+loopback browser app remains tokenless inside the local origin boundary.
+General REST routes are still loopback-only, and tokenless for first-party use,
+but presented `Authorization` headers are validated as integration bearer
+tokens. Any process on the same machine that can reach the loopback port remains
+in the local trust model unless a route is explicitly protected by integration
+token middleware.
 
 ## In Scope
 
@@ -41,6 +42,8 @@ These clients are in scope for the current parity batch:
 - The first-party React app served by the daemon or by local Vite dev origins.
 - The packaged `littleimp` CLI talking to the local daemon.
 - MCP clients intentionally configured by the user against `/mcp`.
+- Local capture clients intentionally configured by the user against
+  protected `/capture`.
 - Local scripts or tools explicitly pointed at `http://127.0.0.1:3210`.
 
 These controls are in scope:
@@ -59,7 +62,8 @@ The current parity batch does not include:
 - Binding the native daemon to `0.0.0.0`, a LAN address, or a public interface.
 - Public reverse-proxy examples that pass requests directly to Little Imp.
 - Multi-user accounts, sessions, admin roles, or per-user data partitions.
-- Browser-extension or bookmarklet capture endpoints.
+- Packaged browser-extension or bookmarklet clients and compatibility smoke
+  tests.
 - Grimoire-compatible endpoint aliases.
 - Public MCP, backup, diagnostics, update, or Settings endpoints.
 
@@ -72,7 +76,7 @@ operator-owned wrapper, not a Little Imp public-server mode.
 | Boundary | Assets | Current trust assumption | Required controls |
 | --- | --- | --- | --- |
 | Browser UI to daemon | Bookmarks, notes, categories, tags, settings, backups | First-party loopback browser origins are trusted | Unsafe browser requests require an allowed loopback `Origin`; non-loopback configured CORS origins are ignored |
-| Local non-browser clients to daemon | API and MCP operations | Explicit same-machine clients are intended; untrusted local processes remain part of the loopback trust model | MCP and future integration-specific routes require managed bearer tokens; general REST routes remain loopback-only unless separately protected |
+| Local non-browser clients to daemon | API, MCP, and protected capture operations | Explicit same-machine clients are intended; untrusted local processes remain part of the loopback trust model | `/mcp` and `/capture` require managed bearer tokens; general REST routes remain loopback-only unless separately protected |
 | Daemon to SQLite | Bookmark library, content, embeddings, jobs, timeline, settings references | Local daemon owns the database | SQLite remains under `DATA_DIR`; migrations preserve user data |
 | Daemon to filesystem | Backups, logs, settings, restore rollbacks | Local user controls filesystem permissions | Path traversal checks, safe backup names, checksum verification, rollback directories |
 | Daemon to fetched bookmark URLs | Extracted content and metadata | User-supplied public URLs can be hostile | Private and loopback host blocking, request timeouts, response size and content-type limits |
@@ -85,8 +89,8 @@ operator-owned wrapper, not a Little Imp public-server mode.
 ### Local process access
 
 Any local process that can reach `127.0.0.1:3210` can call unprotected daemon
-REST routes. Protected integration surfaces, including `/mcp`, require managed
-bearer tokens, but general loopback process trust remains part of the
+REST routes. Protected integration surfaces, including `/mcp` and `/capture`,
+require managed bearer tokens, but general loopback process trust remains part of the
 local-first threat model. On multi-user machines, local access can include
 processes outside the active desktop session if the host allows them to connect
 to loopback. Users should protect their OS account, avoid untrusted local

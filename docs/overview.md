@@ -141,6 +141,8 @@ Integration points:
 - Generated API documentation in [../API.md](../API.md).
 - Source API contract in `daemon/src/api/contract.ts`.
 - Streamable HTTP MCP endpoint at `/mcp` protected by managed local integration bearer tokens, with tools for bookmark search, reading, listing, creation, and category listing.
+- Protected local capture endpoint at `/capture` for explicit integration
+  clients with managed bearer tokens.
 
 ## User Flows
 
@@ -424,7 +426,8 @@ erDiagram
 
 ### Security Model
 
-- The first-party loopback browser app remains tokenless; MCP and future local integration surfaces use managed bearer tokens.
+- The first-party loopback browser app remains tokenless; MCP and protected
+  local capture use managed bearer tokens.
 - The supported network posture is loopback-only, typically `127.0.0.1:3210`.
 - Docker examples intentionally bind the host port to `127.0.0.1`.
 - Public reverse-proxy deployment still requires an external authenticated tunnel, VPN, or reverse proxy because the general REST API is loopback-trusted.

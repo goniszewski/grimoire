@@ -118,7 +118,7 @@ tasks/
 | TASK-102 | [Integration Token Authentication](done/TASK-102-integration-token-authentication.md) | Grimoire parity | critical | done |
 | TASK-103 | [Human Readable API Examples](done/TASK-103-human-readable-api-examples.md) | Grimoire parity | high | done |
 | TASK-104 | [OpenAPI Contract Output](done/TASK-104-openapi-contract-output.md) | Grimoire parity | high | done |
-| TASK-105 | [One Click Capture Endpoint (Deferred)](backlog/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | deferred |
+| TASK-105 | [One Click Capture Endpoint](done/TASK-105-one-click-capture-endpoint.md) | Grimoire parity | high | done |
 | TASK-106 | [Integration CORS And Origin Controls](done/TASK-106-integration-cors-origin-controls.md) | Grimoire parity | high | done |
 | TASK-107 | [Preserve Import Folder Hierarchy](done/TASK-107-preserve-import-folder-hierarchy.md) | Grimoire parity | high | done |
 | TASK-108 | [Pre Import Review](done/TASK-108-pre-import-review.md) | Grimoire parity | high | done |
@@ -298,10 +298,11 @@ TASK-119 is done with a separate large-library performance command,
 2,000-bookmark deterministic fixtures, 240-row import preview/commit coverage,
 explicit budgets for list/search/filter/import/pagination paths, and documented
 heavy-check usage in `docs/performance.md`.
-Bookmark importance is rejected for this batch, one-click browser capture is
-deferred, future Grimoire backup import is deferred, multi-user/server account
-parity remains deferred, and Grimoire endpoint aliases plus browser extension
-smoke tests remain rejected for the current parity batch.
+Bookmark importance is rejected for this batch, TASK-105 protected local
+capture is complete, future Grimoire backup import is deferred,
+multi-user/server account parity remains deferred, and Grimoire endpoint
+aliases plus packaged browser-extension clients and extension smoke tests remain
+rejected or out of scope for the current parity batch.
 
 Completed release validation evidence:
 

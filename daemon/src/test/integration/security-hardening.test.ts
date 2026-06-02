@@ -206,6 +206,16 @@ describe("Security hardening", () => {
       body: "{}",
     });
     expect(integrationTokenRes.status).toBe(413);
+
+    const captureRes = await app.request("/capture", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": String(256 * 1024 + 1),
+      },
+      body: "{}",
+    });
+    expect(captureRes.status).toBe(413);
   });
 
   it("rejects invalid declared body lengths on guarded endpoints", async () => {

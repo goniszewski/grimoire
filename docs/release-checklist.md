@@ -221,5 +221,6 @@ Apply these thresholds consistently:
 - Confirm any Grimoire parity release notes or roadmap updates describe the
   current batch as local-first, single-user, loopback-first, and
   local-integrations-only, and do not claim multi-user/server parity, endpoint
-  aliases, browser-extension/bookmarklet capture, or direct Grimoire backup
-  import unless those decisions are explicitly reopened and validated.
+  aliases, packaged browser-extension/bookmarklet clients, extension smoke
+  tests, or direct Grimoire backup import unless those decisions are explicitly
+  reopened and validated.

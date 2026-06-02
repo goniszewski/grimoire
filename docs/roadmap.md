@@ -93,7 +93,7 @@ local-first, single-user, loopback-first, and local-integrations-only.
 In scope:
 
 - local integration security boundaries, token auth, origin policy, API
-  examples, and OpenAPI-compatible output;
+  examples, OpenAPI-compatible output, and protected local capture;
 - bookmark read-later state, open metrics, richer detail metadata/content, and
   regression coverage for supported bookmark mutations;
 - category and tag navigation, management, detail pages, metadata, and
@@ -110,7 +110,7 @@ Intentional non-goals for this batch:
   and per-user backup scoping;
 - public-server or non-loopback deployment mode;
 - Grimoire-compatible endpoint aliases or adapter routes;
-- browser-extension/bookmarklet one-click capture and extension smoke tests;
+- packaged browser-extension/bookmarklet clients and extension smoke tests;
 - bookmark importance ratings;
 - direct Grimoire/PocketBase backup import tooling.
 
@@ -123,8 +123,8 @@ implications, diagnostics posture, and release gates before implementation.
 
 These are not part of `0.1.0-beta`:
 
-- Browser extension or bookmarklet for one-click saves, after local
-  integration auth and origin policy are stable.
+- Packaged browser extension or bookmarklet client for one-click saves,
+  building on the protected local capture endpoint.
 - Multi-device sync of live data.
 - Multi-user or public-network deployment mode, tracked as post-MVP direction
   research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
@@ -196,4 +196,4 @@ These are not part of `0.1.0-beta`:
 | 12 | Cloud backup scope | S3-compatible storage is the first remote target. Cloud-synced folders are supported as local destinations. |
 | 13 | Docker network model | Docker binds the host port to `127.0.0.1`; container-internal `HOST=0.0.0.0` only enables Docker forwarding. |
 | 14 | API documentation | `daemon/src/api/contract.ts` is the source of truth; `API.md` and `docs/api-contract.json` are generated artifacts. |
-| 15 | Grimoire parity mode | The current parity batch is local-first, single-user, loopback-first, and local-integrations-only. Multi-user/server mode, endpoint aliases, and browser-extension/bookmarklet capture are deferred or rejected as documented in the parity report. |
+| 15 | Grimoire parity mode | The current parity batch is local-first, single-user, loopback-first, and local-integrations-only. Multi-user/server mode, endpoint aliases, packaged browser-extension/bookmarklet clients, and extension smoke tests are deferred or rejected as documented in the parity report. |

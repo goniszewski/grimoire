@@ -18,8 +18,8 @@ including request and response examples.
    or contract-adjacent fixtures.
 2. Cover local token auth, bookmark CRUD/update, search/list/filter/sort/
    pagination, import/export, categories, tags, backup, and common error flows.
-3. Explicitly omit browser-extension/bookmarklet capture examples from this
-   parity batch.
+3. Explicitly omit packaged browser-extension/bookmarklet client examples from
+   this parity batch.
 4. Ensure generated docs remain checked for drift.
 5. Avoid hand-editing generated API docs.
 
@@ -46,9 +46,9 @@ including request and response examples.
   examples now support status, content type, headers, and JSON/text bodies.
 - Added generated request/response examples for integration tokens, MCP token
   failure, bookmark create/list/detail/update, search filtering and pagination,
-  import/export, categories, tags, backup, and common 4xx flows. Browser
-  extension and bookmarklet capture examples remain omitted for this parity
-  batch.
+  import/export, categories, tags, backup, and common 4xx flows. Packaged
+  browser extension and bookmarklet client examples remain omitted for this
+  parity batch.
 - Current generated examples do not invent sort query parameters because the
   API contract does not expose server-driven sorting yet; TASK-115 owns that
   future surface.

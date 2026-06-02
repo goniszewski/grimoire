@@ -15,7 +15,7 @@
 
 The daemon is intended to bind to localhost. The first-party loopback browser app uses the local origin boundary and does not need to send an API token.
 
-Local integration surfaces such as `/mcp` require a managed bearer token. Create one with `POST /integration-tokens`, store the returned token immediately, and send it as `Authorization: Bearer <token>`. Regular REST routes remain tokenless for the first-party app, but if a client presents an `Authorization` header it must be a valid integration token. List responses only include redacted token prefixes. Missing required tokens, invalid tokens, rotated tokens, or revoked tokens return `401` with `application/problem+json` and a `WWW-Authenticate` bearer challenge.
+Local integration surfaces such as `/mcp` and `/capture` require a managed bearer token. Create one with `POST /integration-tokens`, store the returned token immediately, and send it as `Authorization: Bearer <token>`. Regular REST routes remain tokenless for the first-party app, but if a client presents an `Authorization` header it must be a valid integration token. List responses only include redacted token prefixes. Missing required tokens, invalid tokens, rotated tokens, or revoked tokens return `401` with `application/problem+json` and a `WWW-Authenticate` bearer challenge.
 
 ## Browser Origin And CORS
 
@@ -27,7 +27,7 @@ Configure additional local browser clients with `CORS_ORIGINS` as a comma-separa
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4321 littleimpd
 ```
 
-Only full `http` or `https` origins are accepted, including scheme, host, and any port used by the client. Non-loopback origins are ignored even when configured, unsafe browser writes from rejected origins return `403`, and rejected preflight requests return `403` without reflecting `Access-Control-Allow-Origin`. One-click capture examples are deliberately out of scope for this batch.
+Only full `http` or `https` origins are accepted, including scheme, host, and any port used by the client. Non-loopback origins are ignored even when configured, unsafe browser writes from rejected origins return `403`, and rejected preflight requests return `403` without reflecting `Access-Control-Allow-Origin`. Protected local capture clients must use loopback origins and a managed integration bearer token.
 
 ## Response Conventions
 
@@ -2111,6 +2111,105 @@ Content-Type: application/json
 
 ### Integrations
 
+#### POST /capture
+
+Capture a bookmark from an explicit local integration.
+
+This protected local integration endpoint requires `Authorization: Bearer <integration-token>`. It creates a normal bookmark, optionally applies tags, notes, category assignment, and capture metadata, then enqueues the standard ingestion pipeline. Existing active URLs are returned idempotently without merging metadata or queueing duplicate work.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `CaptureRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `url` | string | yes | HTTP or HTTPS URL to save |
+| `title` | string | no | Optional title override |
+| `tags` | array<string> | no | Optional replacement tag names |
+| `category_id` | string \| null | no | Existing category ID to assign |
+| `category` | string | no | Root category name to resolve or create when category_id is omitted |
+| `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `source` | CaptureSource | no |  |
+| `source.client` | string \| null | no | Optional local integration client label |
+| `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
+| `source.referrer_url` | string \| null | no | Optional public HTTP or HTTPS referrer URL |
+| `source.selected_text` | string \| null | no | Optional selected text or short capture context |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `CaptureResponse` | Existing active bookmark returned idempotently |
+| `201` | application/json | `CaptureResponse` | Bookmark captured and ingest queued |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `401` | application/problem+json | `ProblemDetails` | Missing, invalid, rotated, or revoked integration token |
+| `409` | application/problem+json | `ProblemDetails` | URL already exists in trash or archive |
+| `413` | application/json | `LegacyError` | Request body exceeds local JSON limit |
+| `422` | application/problem+json | `ProblemDetails` | Invalid capture request |
+
+Examples:
+
+**Capture a bookmark from a local integration**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/capture \
+  -H "Authorization: Bearer limp_it_example" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/rag-vector-search","title":"RAG Vector Search Notes","tags":["rag","search"],"category":"AI Research","notes":"Compare chunking guidance with local notes.","source":{"client":"local-capture","source_url":"https://example.com/rag-vector-search","referrer_url":"https://example.com/","selected_text":"Hybrid retrieval combines exact and semantic matching."}}'
+```
+
+Response:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "data": {
+    "bookmark": {
+      "id": "bm_123",
+      "url": "https://example.com/rag-vector-search",
+      "domain": "example.com",
+      "title": "RAG Vector Search Notes",
+      "description": null,
+      "status": "saved",
+      "category_id": "cat_ai",
+      "favicon_url": null,
+      "screenshot_url": null,
+      "is_pinned": 0,
+      "is_archived": 0,
+      "is_trashed": 0,
+      "trashed_at": null,
+      "read_later": 0,
+      "read_at": null,
+      "opened_count": 0,
+      "last_opened_at": null,
+      "notes": "Compare chunking guidance with local notes.",
+      "created_at": "2026-06-01T09:30:00.000Z",
+      "updated_at": "2026-06-01T09:30:00.000Z",
+      "tags": [
+        "rag",
+        "search"
+      ]
+    },
+    "capture": {
+      "bookmark_id": "bm_123",
+      "source_client": "local-capture",
+      "source_url": "https://example.com/rag-vector-search",
+      "referrer_url": "https://example.com/",
+      "selected_text": "Hybrid retrieval combines exact and semantic matching.",
+      "captured_at": "2026-06-01T09:30:00.000Z",
+      "updated_at": "2026-06-01T09:30:00.000Z"
+    },
+    "created": true,
+    "job_id": "job_123"
+  }
+}
+```
+
 #### GET /integration-tokens
 
 List managed local integration tokens with secret values redacted.
@@ -2690,6 +2789,128 @@ Bookmark aggregate counts response
 |---|---|---:|---|
 | `url` | string | yes | HTTP or HTTPS URL to save |
 | `title` | string | no | Optional title override |
+
+### CaptureSource
+
+Optional metadata recorded for a local integration capture request
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `client` | string \| null | no | Optional local integration client label |
+| `source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
+| `referrer_url` | string \| null | no | Optional public HTTP or HTTPS referrer URL |
+| `selected_text` | string \| null | no | Optional selected text or short capture context |
+
+### BookmarkCaptureMetadata
+
+Stored local integration capture metadata
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmark_id` | string | yes | Captured bookmark ID |
+| `source_client` | string \| null | yes | Local integration client label |
+| `source_url` | string \| null | yes | Stored source/context URL |
+| `referrer_url` | string \| null | yes | Stored referrer URL |
+| `selected_text` | string \| null | yes | Stored selected text or capture context |
+| `captured_at` | string | yes | First capture timestamp |
+| `updated_at` | string | yes | Most recent metadata update timestamp |
+
+### CaptureRequest
+
+Protected one-click capture request for explicit local integrations
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `url` | string | yes | HTTP or HTTPS URL to save |
+| `title` | string | no | Optional title override |
+| `tags` | array<string> | no | Optional replacement tag names |
+| `category_id` | string \| null | no | Existing category ID to assign |
+| `category` | string | no | Root category name to resolve or create when category_id is omitted |
+| `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `source` | CaptureSource | no |  |
+| `source.client` | string \| null | no | Optional local integration client label |
+| `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
+| `source.referrer_url` | string \| null | no | Optional public HTTP or HTTPS referrer URL |
+| `source.selected_text` | string \| null | no | Optional selected text or short capture context |
+
+### CaptureResult
+
+One-click capture result
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmark` | Bookmark | yes |  |
+| `bookmark.id` | string | yes | Bookmark ID |
+| `bookmark.url` | string | yes | Original bookmark URL |
+| `bookmark.domain` | string | yes | URL hostname |
+| `bookmark.title` | string \| null | yes | Page title |
+| `bookmark.description` | string \| null | yes | Page description |
+| `bookmark.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `bookmark.category_id` | string \| null | yes | Assigned category ID |
+| `bookmark.favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `bookmark.screenshot_url` | string \| null | yes | Cached page preview media path or URL |
+| `bookmark.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
+| `bookmark.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `bookmark.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `bookmark.trashed_at` | string \| null | yes | Trash timestamp |
+| `bookmark.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
+| `bookmark.read_at` | string \| null | yes | Read timestamp |
+| `bookmark.opened_count` | integer | yes | Number of user-triggered opens |
+| `bookmark.last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
+| `bookmark.notes` | string \| null | yes | Personal notes |
+| `bookmark.created_at` | string | yes | Creation timestamp |
+| `bookmark.updated_at` | string | yes | Update timestamp |
+| `bookmark.tags` | array<string> | yes | Tag names attached to the bookmark |
+| `capture` | BookmarkCaptureMetadata \| null | yes |  |
+| `capture.bookmark_id` | string | yes | Captured bookmark ID |
+| `capture.source_client` | string \| null | yes | Local integration client label |
+| `capture.source_url` | string \| null | yes | Stored source/context URL |
+| `capture.referrer_url` | string \| null | yes | Stored referrer URL |
+| `capture.selected_text` | string \| null | yes | Stored selected text or capture context |
+| `capture.captured_at` | string | yes | First capture timestamp |
+| `capture.updated_at` | string | yes | Most recent metadata update timestamp |
+| `created` | boolean | yes | Whether a new bookmark was created |
+| `job_id` | string \| null | yes | Queued ingest job ID for new bookmarks |
+
+### CaptureResponse
+
+One-click capture response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | CaptureResult | yes |  |
+| `data.bookmark` | Bookmark | yes |  |
+| `data.bookmark.id` | string | yes | Bookmark ID |
+| `data.bookmark.url` | string | yes | Original bookmark URL |
+| `data.bookmark.domain` | string | yes | URL hostname |
+| `data.bookmark.title` | string \| null | yes | Page title |
+| `data.bookmark.description` | string \| null | yes | Page description |
+| `data.bookmark.status` | "saved" \| "fetched" \| "extracted" \| "ai_enriched" \| "indexed" | yes | Pipeline status |
+| `data.bookmark.category_id` | string \| null | yes | Assigned category ID |
+| `data.bookmark.favicon_url` | string \| null | yes | Cached favicon media path or URL |
+| `data.bookmark.screenshot_url` | string \| null | yes | Cached page preview media path or URL |
+| `data.bookmark.is_pinned` | 0 \| 1 | yes | Pinned flag, 0 or 1; maps Grimoire starred/favorite state |
+| `data.bookmark.is_archived` | 0 \| 1 | yes | Archived flag, 0 or 1 |
+| `data.bookmark.is_trashed` | 0 \| 1 | yes | Trash flag, 0 or 1 |
+| `data.bookmark.trashed_at` | string \| null | yes | Trash timestamp |
+| `data.bookmark.read_later` | 0 \| 1 | yes | Read-later flag, 0 or 1 |
+| `data.bookmark.read_at` | string \| null | yes | Read timestamp |
+| `data.bookmark.opened_count` | integer | yes | Number of user-triggered opens |
+| `data.bookmark.last_opened_at` | string \| null | yes | Most recent user-triggered open timestamp |
+| `data.bookmark.notes` | string \| null | yes | Personal notes |
+| `data.bookmark.created_at` | string | yes | Creation timestamp |
+| `data.bookmark.updated_at` | string | yes | Update timestamp |
+| `data.bookmark.tags` | array<string> | yes | Tag names attached to the bookmark |
+| `data.capture` | BookmarkCaptureMetadata \| null | yes |  |
+| `data.capture.bookmark_id` | string | yes | Captured bookmark ID |
+| `data.capture.source_client` | string \| null | yes | Local integration client label |
+| `data.capture.source_url` | string \| null | yes | Stored source/context URL |
+| `data.capture.referrer_url` | string \| null | yes | Stored referrer URL |
+| `data.capture.selected_text` | string \| null | yes | Stored selected text or capture context |
+| `data.capture.captured_at` | string | yes | First capture timestamp |
+| `data.capture.updated_at` | string | yes | Most recent metadata update timestamp |
+| `data.created` | boolean | yes | Whether a new bookmark was created |
+| `data.job_id` | string \| null | yes | Queued ingest job ID for new bookmarks |
 
 ### BookmarkUpdateRequest
 

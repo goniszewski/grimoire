@@ -25,6 +25,7 @@ import { createUpdatesRoute } from "./routes/updates.js";
 import { createReprocessRoute } from "./routes/reprocess.js";
 import { createMediaRoute } from "./routes/media.js";
 import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
+import { createCaptureRoute } from "./routes/capture.js";
 import { validatePresentedIntegrationToken } from "./lib/integration-auth.js";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -40,6 +41,7 @@ export interface AppDeps {
 
 const IMPORT_MAX_BYTES = 10 * 1024 * 1024;
 const LOCAL_JSON_BODY_MAX_BYTES = 64 * 1024;
+const CAPTURE_JSON_BODY_MAX_BYTES = 256 * 1024;
 
 const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/backup",
@@ -143,6 +145,7 @@ function securityHeaders(): Record<string, string> {
 function bodyLimitFor(path: string, method: string): number | null {
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return null;
   if (path === "/import") return IMPORT_MAX_BYTES;
+  if (path === "/capture") return CAPTURE_JSON_BODY_MAX_BYTES;
   if (LOCAL_JSON_BODY_LIMIT_PATHS.has(path)) return LOCAL_JSON_BODY_MAX_BYTES;
   return null;
 }
@@ -228,7 +231,7 @@ export function createApp(deps: AppDeps): Hono {
       allowHeaders: ["Content-Type", "Authorization"],
     })
   );
-  app.use("*", validatePresentedIntegrationToken(deps.db, new Set(["/mcp"])));
+  app.use("*", validatePresentedIntegrationToken(deps.db, new Set(["/mcp", "/capture"])));
 
   // JSON error handler — never leak internal details in production
   app.onError((err, c) => {
@@ -248,6 +251,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createHealthRoute(deps));
   app.route("/", createDiagnosticsRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
+  app.route("/", createCaptureRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));

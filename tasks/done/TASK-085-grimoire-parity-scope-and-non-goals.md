@@ -19,7 +19,8 @@ release planning.
    local integrations only.
 2. Document non-goals for this batch: multi-user accounts, admin roles, signup,
    login, profile management, per-user backup scoping, public-server deployment
-   mode, Grimoire endpoint aliases, and browser-extension/bookmarklet capture.
+   mode, Grimoire endpoint aliases, and packaged browser-extension/bookmarklet
+   clients.
 3. Link each non-goal to a rationale, a future reconsideration trigger, or a
    rejected/deferred proposal row.
 4. Update the parity report, roadmap, and release docs if they imply a stronger
@@ -33,7 +34,7 @@ release planning.
       release scope.
 - [x] Rejected integration aliases and extension smoke tests are documented as
       intentional omissions.
-- [x] One-click browser extension/bookmarklet capture is documented as deferred.
+- [x] Packaged browser extension/bookmarklet clients are documented as deferred.
 - [x] Roadmap and release docs no longer imply unsupported Grimoire parity.
 - [x] Any future reconsideration criteria are concrete.
 

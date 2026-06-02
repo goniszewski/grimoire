@@ -103,18 +103,18 @@ These are explicit and should not be represented as completed release evidence:
 These limitations are acceptable for an MVP beta if the release remains framed
 as local-first, single-user software:
 
-- Little Imp has scoped local integration-token auth for MCP, but the general
-  first-party REST API remains loopback-trusted and must not be exposed on a
-  public network without an authenticated tunnel, VPN, or reverse proxy in
-  front of it.
+- Little Imp has scoped local integration-token auth for MCP and protected
+  local capture, but the general first-party REST API remains loopback-trusted
+  and must not be exposed on a public network without an authenticated tunnel,
+  VPN, or reverse proxy in front of it.
 - The app is single-user and local-first; multi-user support, multi-device sync,
-  browser extension capture, optional authentication, and public-network
-  deployment modes are post-MVP work.
+  packaged browser extension clients, optional authentication, and
+  public-network deployment modes are post-MVP work.
 - The Grimoire parity follow-up batch is scoped to local-first, single-user,
   loopback-first, local-integration compatibility. It does not include
   multi-user accounts/admin, public-server mode, Grimoire endpoint aliases,
-  browser-extension/bookmarklet capture, or direct Grimoire/PocketBase backup
-  import.
+  packaged browser-extension/bookmarklet clients, extension smoke tests, or
+  direct Grimoire/PocketBase backup import.
 - Update checks and installs are explicit and user-controlled. Automatic update
   checks, background notifications, one-click in-app install, and automatic
   rollback are not shipped.

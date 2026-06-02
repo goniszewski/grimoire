@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-105 protected local capture endpoint flow</title>
+  <desc id="desc">Diagram showing a local integration client using a bearer token to call POST /capture, create a bookmark, persist optional metadata, and enqueue ingestion while duplicates stay side-effect-free.</desc>
+  <rect width="1280" height="640" fill="#f7f7fa"/>
+  <rect x="54" y="52" width="1172" height="536" rx="18" fill="#ffffff" stroke="#dedfec"/>
+  <text x="90" y="112" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">Protected Local Capture</text>
+  <text x="90" y="148" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">One-click bookmark capture for explicit local integrations without changing tokenless first-party app routes.</text>
+
+  <g transform="translate(90 218)">
+    <rect width="235" height="132" rx="12" fill="#eef6ff" stroke="#0f7fbf"/>
+    <text x="24" y="42" fill="#0b5c87" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Local Client</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">POST /capture</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">URL, tags, notes, source</text>
+  </g>
+
+  <path d="M338 284 H432" stroke="#626475" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <g transform="translate(446 218)">
+    <rect width="235" height="132" rx="12" fill="#f3efff" stroke="#7c3aed"/>
+    <text x="24" y="42" fill="#5b21b6" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Bearer Gate</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Managed token required</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Invalid tokens get 401</text>
+  </g>
+
+  <path d="M696 284 H790" stroke="#626475" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <g transform="translate(804 218)">
+    <rect width="332" height="132" rx="12" fill="#eefbf3" stroke="#15803d"/>
+    <text x="24" y="42" fill="#166534" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">Create And Queue</text>
+    <text x="24" y="76" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Bookmark + capture metadata</text>
+    <text x="24" y="104" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="15">Normal ingest job is enqueued</text>
+  </g>
+
+  <g transform="translate(90 420)">
+    <rect width="335" height="104" rx="12" fill="#fff7ed" stroke="#c2410c"/>
+    <text x="24" y="40" fill="#9a3412" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">URL Safety</text>
+    <text x="24" y="70" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Only public HTTP/HTTPS targets</text>
+  </g>
+
+  <g transform="translate(474 420)">
+    <rect width="335" height="104" rx="12" fill="#f8fafc" stroke="#64748b"/>
+    <text x="24" y="40" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">Duplicate Policy</text>
+    <text x="24" y="70" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">Active duplicates return 200 without writes</text>
+  </g>
+
+  <g transform="translate(858 420)">
+    <rect width="278" height="104" rx="12" fill="#ecfeff" stroke="#0891b2"/>
+    <text x="24" y="40" fill="#0e7490" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">Generated Docs</text>
+    <text x="24" y="70" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="16">API.md + OpenAPI include /capture</text>
+  </g>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#626475"/>
+    </marker>
+  </defs>
+</svg>

@@ -50,6 +50,7 @@ describe("API documentation generator", () => {
     expect(routes).toContain("POST /integration-tokens");
     expect(routes).toContain("POST /integration-tokens/:id/rotate");
     expect(routes).toContain("DELETE /integration-tokens/:id");
+    expect(routes).toContain("POST /capture");
     expect(routes).toContain("ALL /mcp");
 
     const settingsPatch = document.schemas.SettingsPatch;
@@ -181,6 +182,7 @@ describe("API documentation generator", () => {
 
     expect(openapi.paths["/mcp"].post.security).toEqual([{ localIntegrationBearer: [] }]);
     expect(openapi.paths["/mcp"].post["x-little-imp-source-method"]).toBe("ALL");
+    expect(openapi.paths["/capture"].post.security).toEqual([{ localIntegrationBearer: [] }]);
   });
 
   it("distinguishes CRUD row responses from count-bearing list responses", () => {
@@ -210,6 +212,7 @@ describe("API documentation generator", () => {
     const markdown = buildApiMarkdown(document);
     const requiredExamples = [
       ["POST", "/integration-tokens", "Create an integration token"],
+      ["POST", "/capture", "Capture a bookmark from a local integration"],
       ["GET", "/integration-tokens", "List integration tokens"],
       ["POST", "/bookmarks", "Save a bookmark"],
       ["GET", "/bookmarks", "List filtered bookmarks"],

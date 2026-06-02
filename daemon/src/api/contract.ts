@@ -354,6 +354,53 @@ const schemas = {
     },
     ["url"]
   ),
+  CaptureSource: objectSchema(
+    {
+      client: nullable(stringSchema("Optional local integration client label", { maxLength: 80 })),
+      source_url: nullable(stringSchema("Optional public HTTP or HTTPS page/context URL", { format: "uri", maxLength: 2000 })),
+      referrer_url: nullable(stringSchema("Optional public HTTP or HTTPS referrer URL", { format: "uri", maxLength: 2000 })),
+      selected_text: nullable(stringSchema("Optional selected text or short capture context", { maxLength: 10000 })),
+    },
+    [],
+    "Optional metadata recorded for a local integration capture request"
+  ),
+  BookmarkCaptureMetadata: objectSchema(
+    {
+      bookmark_id: stringSchema("Captured bookmark ID"),
+      source_client: nullable(stringSchema("Local integration client label")),
+      source_url: nullable(stringSchema("Stored source/context URL", { format: "uri" })),
+      referrer_url: nullable(stringSchema("Stored referrer URL", { format: "uri" })),
+      selected_text: nullable(stringSchema("Stored selected text or capture context")),
+      captured_at: stringSchema("First capture timestamp", { format: "date-time" }),
+      updated_at: stringSchema("Most recent metadata update timestamp", { format: "date-time" }),
+    },
+    ["bookmark_id", "source_client", "source_url", "referrer_url", "selected_text", "captured_at", "updated_at"],
+    "Stored local integration capture metadata"
+  ),
+  CaptureRequest: objectSchema(
+    {
+      url: stringSchema("HTTP or HTTPS URL to save", { format: "uri" }),
+      title: stringSchema("Optional title override", { maxLength: 2000 }),
+      tags: arrayOf(stringSchema("Normalized tag name", { maxLength: 50, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }), "Optional replacement tag names"),
+      category_id: nullable(stringSchema("Existing category ID to assign")),
+      category: stringSchema("Root category name to resolve or create when category_id is omitted", { maxLength: 100 }),
+      notes: nullable(stringSchema("Personal notes, or null to leave empty", { maxLength: 100000 })),
+      source: ref("CaptureSource"),
+    },
+    ["url"],
+    "Protected one-click capture request for explicit local integrations"
+  ),
+  CaptureResult: objectSchema(
+    {
+      bookmark: ref("Bookmark"),
+      capture: nullable(ref("BookmarkCaptureMetadata")),
+      created: booleanSchema("Whether a new bookmark was created"),
+      job_id: nullable(stringSchema("Queued ingest job ID for new bookmarks")),
+    },
+    ["bookmark", "capture", "created", "job_id"],
+    "One-click capture result"
+  ),
+  CaptureResponse: envelope(ref("CaptureResult"), "One-click capture response"),
   BookmarkUpdateRequest: objectSchema({
     title: nullable(stringSchema("New title, or null to clear", { maxLength: 2000 })),
     category_id: nullable(stringSchema("Category ID, or null to clear")),
@@ -1575,6 +1622,29 @@ const exampleCreatedBookmark = {
   last_opened_at: null,
   notes: null,
   tags: [],
+} as const;
+
+const exampleCaptureMetadata = {
+  bookmark_id: "bm_123",
+  source_client: "local-capture",
+  source_url: "https://example.com/rag-vector-search",
+  referrer_url: "https://example.com/",
+  selected_text: "Hybrid retrieval combines exact and semantic matching.",
+  captured_at: exampleTimestamp,
+  updated_at: exampleTimestamp,
+} as const;
+
+const exampleCaptureResult = {
+  bookmark: {
+    ...exampleCreatedBookmark,
+    title: "RAG Vector Search Notes",
+    category_id: "cat_ai",
+    notes: "Compare chunking guidance with local notes.",
+    tags: ["rag", "search"],
+  },
+  capture: exampleCaptureMetadata,
+  created: true,
+  job_id: "job_123",
 } as const;
 
 const exampleBookmarkDetail = {
@@ -2805,6 +2875,36 @@ export const apiContract = {
             status: 422,
             contentType: "application/json",
             body: { error: "`read_state` must be read or unread" },
+          },
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/capture",
+      tag: "Integrations",
+      summary: "Capture a bookmark from an explicit local integration.",
+      description:
+        "This protected local integration endpoint requires `Authorization: Bearer <integration-token>`. It creates a normal bookmark, optionally applies tags, notes, category assignment, and capture metadata, then enqueues the standard ingestion pipeline. Existing active URLs are returned idempotently without merging metadata or queueing duplicate work.",
+      request: { body: { contentType: "application/json", schema: ref("CaptureRequest") } },
+      responses: {
+        "200": jsonResponse("Existing active bookmark returned idempotently", ref("CaptureResponse")),
+        "201": jsonResponse("Bookmark captured and ingest queued", ref("CaptureResponse")),
+        "400": problemResponse("Malformed JSON"),
+        "401": problemResponse("Missing, invalid, rotated, or revoked integration token"),
+        "409": problemResponse("URL already exists in trash or archive"),
+        "413": legacyErrorResponse("Request body exceeds local JSON limit"),
+        "422": problemResponse("Invalid capture request"),
+      },
+      examples: [
+        {
+          title: "Capture a bookmark from a local integration",
+          request:
+            'curl -X POST http://127.0.0.1:3210/capture \\\n  -H "Authorization: Bearer limp_it_example" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"url":"https://example.com/rag-vector-search","title":"RAG Vector Search Notes","tags":["rag","search"],"category":"AI Research","notes":"Compare chunking guidance with local notes.","source":{"client":"local-capture","source_url":"https://example.com/rag-vector-search","referrer_url":"https://example.com/","selected_text":"Hybrid retrieval combines exact and semantic matching."}}\'',
+          response: {
+            status: 201,
+            contentType: "application/json",
+            body: { data: exampleCaptureResult },
           },
         },
       ],

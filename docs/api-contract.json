@@ -822,6 +822,183 @@
       ],
       "additionalProperties": false
     },
+    "CaptureSource": {
+      "type": "object",
+      "properties": {
+        "client": {
+          "type": "string",
+          "description": "Optional local integration client label",
+          "maxLength": 80,
+          "nullable": true
+        },
+        "source_url": {
+          "type": "string",
+          "description": "Optional public HTTP or HTTPS page/context URL",
+          "format": "uri",
+          "maxLength": 2000,
+          "nullable": true
+        },
+        "referrer_url": {
+          "type": "string",
+          "description": "Optional public HTTP or HTTPS referrer URL",
+          "format": "uri",
+          "maxLength": 2000,
+          "nullable": true
+        },
+        "selected_text": {
+          "type": "string",
+          "description": "Optional selected text or short capture context",
+          "maxLength": 10000,
+          "nullable": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Optional metadata recorded for a local integration capture request"
+    },
+    "BookmarkCaptureMetadata": {
+      "type": "object",
+      "properties": {
+        "bookmark_id": {
+          "type": "string",
+          "description": "Captured bookmark ID"
+        },
+        "source_client": {
+          "type": "string",
+          "description": "Local integration client label",
+          "nullable": true
+        },
+        "source_url": {
+          "type": "string",
+          "description": "Stored source/context URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "referrer_url": {
+          "type": "string",
+          "description": "Stored referrer URL",
+          "format": "uri",
+          "nullable": true
+        },
+        "selected_text": {
+          "type": "string",
+          "description": "Stored selected text or capture context",
+          "nullable": true
+        },
+        "captured_at": {
+          "type": "string",
+          "description": "First capture timestamp",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Most recent metadata update timestamp",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "bookmark_id",
+        "source_client",
+        "source_url",
+        "referrer_url",
+        "selected_text",
+        "captured_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "description": "Stored local integration capture metadata"
+    },
+    "CaptureRequest": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "HTTP or HTTPS URL to save",
+          "format": "uri"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional title override",
+          "maxLength": 2000
+        },
+        "tags": {
+          "type": "array",
+          "description": "Optional replacement tag names",
+          "items": {
+            "type": "string",
+            "description": "Normalized tag name",
+            "maxLength": 50,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "category_id": {
+          "type": "string",
+          "description": "Existing category ID to assign",
+          "nullable": true
+        },
+        "category": {
+          "type": "string",
+          "description": "Root category name to resolve or create when category_id is omitted",
+          "maxLength": 100
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal notes, or null to leave empty",
+          "maxLength": 100000,
+          "nullable": true
+        },
+        "source": {
+          "ref": "CaptureSource"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false,
+      "description": "Protected one-click capture request for explicit local integrations"
+    },
+    "CaptureResult": {
+      "type": "object",
+      "properties": {
+        "bookmark": {
+          "ref": "Bookmark"
+        },
+        "capture": {
+          "ref": "BookmarkCaptureMetadata",
+          "nullable": true
+        },
+        "created": {
+          "type": "boolean",
+          "description": "Whether a new bookmark was created"
+        },
+        "job_id": {
+          "type": "string",
+          "description": "Queued ingest job ID for new bookmarks",
+          "nullable": true
+        }
+      },
+      "required": [
+        "bookmark",
+        "capture",
+        "created",
+        "job_id"
+      ],
+      "additionalProperties": false,
+      "description": "One-click capture result"
+    },
+    "CaptureResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "CaptureResult"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "One-click capture response"
+    },
     "BookmarkUpdateRequest": {
       "type": "object",
       "properties": {
@@ -8236,6 +8413,123 @@
             "contentType": "application/json",
             "body": {
               "error": "`read_state` must be read or unread"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/capture",
+      "tag": "Integrations",
+      "summary": "Capture a bookmark from an explicit local integration.",
+      "description": "This protected local integration endpoint requires `Authorization: Bearer <integration-token>`. It creates a normal bookmark, optionally applies tags, notes, category assignment, and capture metadata, then enqueues the standard ingestion pipeline. Existing active URLs are returned idempotently without merging metadata or queueing duplicate work.",
+      "request": {
+        "body": {
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CaptureRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Existing active bookmark returned idempotently",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CaptureResponse"
+          }
+        },
+        "201": {
+          "description": "Bookmark captured and ingest queued",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "CaptureResponse"
+          }
+        },
+        "400": {
+          "description": "Malformed JSON",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "401": {
+          "description": "Missing, invalid, rotated, or revoked integration token",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "URL already exists in trash or archive",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "413": {
+          "description": "Request body exceeds local JSON limit",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyError"
+          }
+        },
+        "422": {
+          "description": "Invalid capture request",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Capture a bookmark from a local integration",
+          "request": "curl -X POST http://127.0.0.1:3210/capture \\\n  -H \"Authorization: Bearer limp_it_example\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"url\":\"https://example.com/rag-vector-search\",\"title\":\"RAG Vector Search Notes\",\"tags\":[\"rag\",\"search\"],\"category\":\"AI Research\",\"notes\":\"Compare chunking guidance with local notes.\",\"source\":{\"client\":\"local-capture\",\"source_url\":\"https://example.com/rag-vector-search\",\"referrer_url\":\"https://example.com/\",\"selected_text\":\"Hybrid retrieval combines exact and semantic matching.\"}}'",
+          "response": {
+            "status": 201,
+            "contentType": "application/json",
+            "body": {
+              "data": {
+                "bookmark": {
+                  "id": "bm_123",
+                  "url": "https://example.com/rag-vector-search",
+                  "domain": "example.com",
+                  "title": "RAG Vector Search Notes",
+                  "description": null,
+                  "status": "saved",
+                  "category_id": "cat_ai",
+                  "favicon_url": null,
+                  "screenshot_url": null,
+                  "is_pinned": 0,
+                  "is_archived": 0,
+                  "is_trashed": 0,
+                  "trashed_at": null,
+                  "read_later": 0,
+                  "read_at": null,
+                  "opened_count": 0,
+                  "last_opened_at": null,
+                  "notes": "Compare chunking guidance with local notes.",
+                  "created_at": "2026-06-01T09:30:00.000Z",
+                  "updated_at": "2026-06-01T09:30:00.000Z",
+                  "tags": [
+                    "rag",
+                    "search"
+                  ]
+                },
+                "capture": {
+                  "bookmark_id": "bm_123",
+                  "source_client": "local-capture",
+                  "source_url": "https://example.com/rag-vector-search",
+                  "referrer_url": "https://example.com/",
+                  "selected_text": "Hybrid retrieval combines exact and semantic matching.",
+                  "captured_at": "2026-06-01T09:30:00.000Z",
+                  "updated_at": "2026-06-01T09:30:00.000Z"
+                },
+                "created": true,
+                "job_id": "job_123"
+              }
             }
           }
         }

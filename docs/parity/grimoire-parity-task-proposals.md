@@ -4,7 +4,7 @@ Date: 2026-05-30
 
 This document turns the remaining Little Imp vs Grimoire parity gaps into proposed implementation tasks. Use it as an approval worksheet before creating concrete task files under `tasks/`.
 
-Conversion status: rows that had `x` or `X` in **My Comment** were initially treated as approved and converted to backlog tasks. Follow-up refinement on 2026-05-31 locked the current batch as local-first, single-user, and local-integrations-only; rejected bookmark importance; deferred browser-extension/bookmarklet capture; deferred Grimoire backup import tooling; and approved import duplicate handling as `TASK-120`.
+Conversion status: rows that had `x` or `X` in **My Comment** were initially treated as approved and converted to backlog tasks. Follow-up refinement on 2026-05-31 locked the current batch as local-first, single-user, and local-integrations-only; rejected bookmark importance; implemented protected local capture; deferred packaged browser-extension/bookmarklet clients; deferred Grimoire backup import tooling; and approved import duplicate handling as `TASK-120`.
 
 Suggested values:
 
@@ -54,10 +54,10 @@ Suggested values:
 | PAR-021 | Add optional integration-token authentication for non-browser clients while preserving secure loopback defaults. | Critical | Approved | Done | Done: `TASK-102`. |
 | PAR-022 | Generate human-readable API documentation from `docs/api-contract.json`, including request and response examples. | High | Approved | Done | Done: `TASK-103`. |
 | PAR-023 | Add OpenAPI-compatible output for local integration clients. | High | Approved | Done | Done: `TASK-104`. |
-| PAR-024 | Add a one-click capture endpoint for bookmarklet or extension saves with title, tags, category, notes, and source metadata. | High | Deferred | Not started | Deferred. Current scope is local API integrations only, not bookmarklet/browser-extension capture. Record: `TASK-105`. |
+| PAR-024 | Add a one-click capture endpoint for bookmarklet or extension saves with title, tags, category, notes, and source metadata. | High | Approved | Done | Done: `TASK-105` implements a protected local `/capture` endpoint for explicit integration clients. Packaged browser-extension/bookmarklet clients remain out of scope. |
 | PAR-025 | Add Grimoire-compatible endpoint aliases or adapters only where they reduce migration or extension work. | Medium | Rejected | Not started | Not needed for the current parity batch. |
 | PAR-026 | Add CORS/origin policy controls and documentation for integration clients. | High | Approved | Done | Done: `TASK-106`. |
-| PAR-027 | Add browser-extension compatibility smoke tests for save, update, categorize, tag, and auth failure flows. | Medium | Rejected | Not started | Not needed for the current parity batch. |
+| PAR-027 | Add browser-extension compatibility smoke tests for save, update, categorize, tag, and auth failure flows. | Medium | Rejected | Not started | Not needed for the current parity batch because no packaged browser-extension/bookmarklet client is shipped. |
 
 ## Epic 5: Accounts, Profile, And Admin
 

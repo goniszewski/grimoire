@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Click Capture Endpoint - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 56px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+.breadcrumbs {
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 28px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 12px 14px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 18px;
+}
+h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0 0 10px; }
+ul { margin: 0; padding-left: 20px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+details {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 16px;
+}
+summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 800;
+}
+.status { color: var(--green); }
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1040px);
+    padding: 36px 0;
+  }
+  .task-card { padding: 20px; }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="../index.html">June 2026</a>
+    </nav>
+
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>One Click Capture Endpoint</h1>
+      <div class="meta-row">
+        <span>2026-06-02</span>
+        <span>TASK-105</span>
+        <span class="status">Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-capture-endpoint-flow.svg" alt="Diagram of protected local capture request, bearer-token gate, bookmark creation, metadata persistence, and ingest queueing">
+      <figcaption>After: explicit local clients can save through protected <code>POST /capture</code> while first-party bookmark routes remain unchanged.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Bookmark creation existed through the first-party app, normal <code>POST /bookmarks</code>, imports, and MCP tools. The parity task for one-click local capture was deferred until token auth, CORS/origin policy, and generated API docs were stable.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Explicit local integrations needed a single protected endpoint that can save a URL with optional title, tags, category, notes, and capture context without making the first-party app token-based or exposing a public browser-client surface.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added <code>POST /capture</code> protected by managed local integration bearer tokens.</li>
+        <li>Added append-only migration <code>0017_bookmark_capture_metadata.sql</code> and a focused capture metadata repository.</li>
+        <li>Validated URL safety, payload shape, tags, category assignment, notes, source metadata, and ambiguous category fields.</li>
+        <li>Kept active duplicate captures side-effect-free and preserved archive/trash conflict behavior.</li>
+        <li>Regenerated <code>API.md</code>, <code>docs/api-contract.json</code>, and <code>docs/openapi.json</code> with bearer security for <code>/capture</code>.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Local clients can now deliberately capture bookmarks through a documented, bearer-protected endpoint. New captures create normal bookmarks and enqueue the same durable ingestion pipeline; duplicates return the existing active bookmark without merging replacement metadata or queueing duplicate work.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test src/test/integration/capture.test.ts</code> failed RED with <code>404</code> for missing <code>/capture</code>, then passed with 6/6 tests including the documented notes-size boundary.</li>
+        <li><code>bun test src/test/integration/security-hardening.test.ts</code> passed with 9/9 tests, including the endpoint-specific capture body limit.</li>
+        <li><code>npx vitest run scripts/api-docs-generator.test.ts</code> passed with 10/10 tests after contract updates.</li>
+        <li><code>npm run docs:api</code> regenerated API docs and OpenAPI output.</li>
+        <li><code>npm run type-check:daemon</code> passed after route and repository wiring.</li>
+        <li><code>npm run check</code> passed with existing lint and build warnings only.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The endpoint is intentionally separate from <code>POST /bookmarks</code>. Existing first-party app flows remain tokenless inside the loopback origin boundary, while <code>/capture</code> requires a managed integration token. Packaged browser-extension or bookmarklet clients and extension smoke tests remain future work.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/routes/capture.ts</code></li>
+        <li><code>daemon/src/db/capture-repository.ts</code></li>
+        <li><code>daemon/src/db/migrations/0017_bookmark_capture_metadata.sql</code></li>
+        <li><code>daemon/src/server.ts</code></li>
+        <li><code>daemon/src/api/contract.ts</code></li>
+        <li><code>daemon/src/test/integration/capture.test.ts</code></li>
+        <li><code>daemon/src/test/integration/security-hardening.test.ts</code></li>
+        <li><code>API.md</code>, <code>docs/api-contract.json</code>, <code>docs/openapi.json</code></li>
+        <li><code>tasks/done/TASK-105-one-click-capture-endpoint.md</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

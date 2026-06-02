@@ -92,8 +92,8 @@ Docker is also supported for local-only use with the host port bound to
 
 ## What's Included
 
-- Local bookmark capture through the app, API, import flow, global paste, and
-  MCP tools.
+- Local bookmark capture through the app, API, import flow, global paste, MCP
+  tools, and protected local capture integrations.
 - Content extraction for web pages, PDFs, GitHub repositories, StackOverflow
   and StackExchange pages, and YouTube metadata/transcripts where available.
 - SQLite storage with keyword, semantic, and hybrid search.
@@ -150,13 +150,14 @@ be promoted.
 - Settings can verify or restore encrypted backup packages only when the
   package path is under the configured backup folder. Use the packaged CLI for
   encrypted package files stored elsewhere.
-- Multi-device sync, browser extension capture, multi-user support, optional
-  authentication, and public-network deployment modes are post-MVP work.
+- Multi-device sync, packaged browser extension clients, multi-user support,
+  optional authentication, and public-network deployment modes are post-MVP
+  work.
 - Grimoire parity follow-up work is scoped to local-first, single-user,
   loopback-first, local-integration compatibility. It does not include
   multi-user accounts/admin, public-server mode, Grimoire endpoint aliases,
-  browser-extension/bookmarklet capture, or direct Grimoire/PocketBase backup
-  import in the current batch.
+  packaged browser-extension/bookmarklet clients, extension smoke tests, or
+  direct Grimoire/PocketBase backup import in the current batch.
 
 ## Support And Troubleshooting
 
