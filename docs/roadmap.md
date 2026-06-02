@@ -130,7 +130,9 @@ These are not part of `0.1.0-beta`:
   research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
 - Optional authentication/rate limiting for non-local deployments.
 - Direct Grimoire/PocketBase backup import tooling after browser/Netscape
-  import and JSON/CSV export parity are stable.
+  import and JSON/CSV export parity are stable, starting from the documented
+  source shape and field mapping in
+  [docs/parity/grimoire-backup-import-shape.md](./parity/grimoire-backup-import-shape.md).
 - Plugin system.
 - GitHub Issues extractor.
 - Provider-specific consumer cloud APIs for Google Drive, Dropbox, OneDrive, or iCloud beyond normal synced folders.

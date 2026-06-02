@@ -64,7 +64,7 @@ This batch keeps Little Imp's product model intact:
 | Packaged browser-extension/bookmarklet client | PAR-027 follow-up | The protected local `/capture` endpoint exists, but this batch does not ship or validate a packaged browser client. | Reopen only with a concrete client distribution and setup design that uses integration tokens and loopback-only origins. |
 | Browser-extension compatibility smoke tests | PAR-027 | Extension flows are excluded while no packaged browser client is shipped. | Add smoke coverage only when a packaged browser-extension/bookmarklet client is reopened. |
 | Bookmark importance rating | PAR-009, TASK-090 | Manual importance adds schema, API, UI, filter, sort, import, and export complexity without clear current workflow value. | Reconsider only if a future ranking or personalization design proves a manual importance signal materially improves retrieval. |
-| Direct Grimoire/PocketBase backup import tooling | PAR-041, TASK-112 | Current import/export work should first stabilize browser/Netscape import review, duplicate handling, remapping, result reports, and approved parity fields. | Reopen after TASK-108, TASK-109, TASK-110, TASK-120, and approved bookmark parity fields are stable and the Grimoire backup data shape is documented. |
+| Direct Grimoire/PocketBase backup import tooling | PAR-041, TASK-112 | Current import/export work has stabilized browser/Netscape import review, duplicate handling, remapping, result reports, and approved parity fields. TASK-112 now documents the source backup shape and field mapping, but direct import remains future scope. | Reopen only through a dedicated implementation task based on [grimoire-backup-import-shape.md](./grimoire-backup-import-shape.md), with explicit owner, media, duplicate, remapping, and security decisions. |
 
 ## Parity Table
 
@@ -91,7 +91,7 @@ This batch keeps Little Imp's product model intact:
 | Bookmark detail | Rich metadata, media carousel, content tabs, note, stats | Detail drawer with summary, notes, tags, category, source metadata, extracted content, local media preview, URL/date/actions, related bookmarks, and open metrics | At parity for approved local scope | TASK-092, TASK-093, and TASK-091 completed the approved metadata, content, media, and stats work. URL/summary mutation remains deferred by PAR-006. |
 | Import | Browser import with review-oriented workflow | Netscape HTML import with SSE progress, tags parsed, folder hierarchy imported as categories, duplicate-policy preview/commit semantics, remapping, result reports, and regression coverage | At parity | TASK-107, TASK-108, TASK-109, TASK-110, TASK-113, and TASK-120 completed the approved browser/Netscape import hardening. |
 | Export | Export/migration capabilities | JSON/CSV export with filters plus notes, read state, archive state, pinned/starred mapping, read-later state, and opened metrics | At parity | TASK-111 completed approved export parity fields for active-library JSON/CSV exports. Direct Grimoire backup import remains deferred separately. |
-| Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 defers direct Grimoire/PocketBase import until normal import/export parity is stable. Browser/Netscape import hardening remains in scope. |
+| Migration | PocketBase/Grimoire migration helpers | None | Deferred non-goal for direct Grimoire backup import | TASK-112 documents the source data shape and Little Imp field mapping in [grimoire-backup-import-shape.md](./grimoire-backup-import-shape.md). Runtime direct import remains future scope. |
 | Public API docs | OpenAPI-style schema/docs for integration clients | Generated `API.md`, `docs/api-contract.json`, and `docs/openapi.json` with local client examples | At parity for local integrations | Human-readable local client examples, OpenAPI-compatible output, local CORS setup docs, and protected `/capture` examples are complete through TASK-103, TASK-104, TASK-105, and TASK-106. |
 | Browser extension support | Companion extension supported by API | Protected local `/capture` endpoint exists; no packaged browser client is shipped | Partial local integration parity | TASK-105 adds the token-protected capture endpoint. Packaged browser-extension/bookmarklet clients and extension smoke tests remain out of scope for this batch. |
 | Deployment | Docker/self-hosting-oriented docs | Native installer, Homebrew, local daemon, Docker guidance, update docs | Intentional product difference | Little Imp is stronger for local install. Public-server and multi-user deployment modes are out of scope for this parity batch. |
@@ -106,7 +106,9 @@ This batch keeps Little Imp's product model intact:
    and local integration token/CORS behavior.
 2. Treat URL/summary bookmark mutation, direct Grimoire backup import tooling,
    and packaged browser-extension/bookmarklet clients as explicit future
-   product decisions rather than unfinished current-batch work.
+   product decisions rather than unfinished current-batch work. Direct import
+   should start from [grimoire-backup-import-shape.md](./grimoire-backup-import-shape.md)
+   if it is reopened.
 
 ## Notable Little Imp Advantages
 
@@ -151,5 +153,5 @@ visual, Playwright e2e, and performance verification where relevant.
 1. Local integration API examples, OpenAPI output, protected capture, and CORS/origin controls are complete through TASK-103, TASK-104, TASK-105, and TASK-106.
 2. Bookmark mutation/detail correctness and approved bookmark fields are complete through TASK-089, TASK-091, TASK-092, and TASK-094.
 3. Category/tag surfaces and regression coverage are complete for TASK-095 through TASK-101.
-4. Browser/Netscape import, export parity, duplicate policy, and import/export regression tests are complete for TASK-107 through TASK-113 and TASK-120, excluding deferred TASK-112 implementation.
+4. Browser/Netscape import, export parity, duplicate policy, and import/export regression tests are complete for TASK-107, TASK-108, TASK-109, TASK-110, TASK-111, TASK-113, and TASK-120. TASK-112 is complete as a future direct-import shape and mapping record; runtime direct import implementation remains deferred.
 5. Pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification are complete for TASK-114 through TASK-119.

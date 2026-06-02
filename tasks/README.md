@@ -125,7 +125,7 @@ tasks/
 | TASK-109 | [Import Category And Tag Remapping](done/TASK-109-import-category-tag-remapping.md) | Grimoire parity | medium | done |
 | TASK-110 | [Import Result Report](done/TASK-110-import-result-report.md) | Grimoire parity | medium | done |
 | TASK-111 | [Export Parity Fields](done/TASK-111-export-parity-fields.md) | Grimoire parity | medium | done |
-| TASK-112 | [Future Grimoire Backup Import](backlog/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | deferred |
+| TASK-112 | [Future Grimoire Backup Import](done/TASK-112-future-grimoire-backup-import.md) | Grimoire parity | low | done |
 | TASK-113 | [Import Export Regression Tests](done/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | done |
 | TASK-114 | [Library Pagination](done/TASK-114-library-pagination.md) | Grimoire parity | high | done |
 | TASK-115 | [Server Driven Sorting](done/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | done |
@@ -299,7 +299,8 @@ TASK-119 is done with a separate large-library performance command,
 explicit budgets for list/search/filter/import/pagination paths, and documented
 heavy-check usage in `docs/performance.md`.
 Bookmark importance is rejected for this batch, TASK-105 protected local
-capture is complete, future Grimoire backup import is deferred,
+capture is complete, TASK-112 is complete as the documented future Grimoire
+backup import source-shape and field-mapping handoff,
 multi-user/server account parity remains deferred, and Grimoire endpoint
 aliases plus packaged browser-extension clients and extension smoke tests remain
 rejected or out of scope for the current parity batch.

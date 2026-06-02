@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">TASK-112 Grimoire backup import handoff</title>
+  <desc id="desc">A diagram showing Grimoire backup source shapes mapped into future Little Imp import preview, remapping, commit, and result report gates.</desc>
+  <rect width="1280" height="720" fill="#f7f7fa"/>
+  <rect x="64" y="58" width="1152" height="604" rx="18" fill="#ffffff" stroke="#dedfec" stroke-width="2"/>
+  <text x="96" y="124" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="42" font-weight="800">TASK-112: Grimoire Backup Import Handoff</text>
+  <text x="96" y="166" fill="#626475" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="21">Runtime importer remains future scope; source shape and field mapping are documented.</text>
+
+  <g transform="translate(96 226)">
+    <rect width="278" height="204" rx="12" fill="#eef6ff" stroke="#93c5fd" stroke-width="2"/>
+    <text x="24" y="44" fill="#0f4c81" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="23" font-weight="800">Source Shapes</text>
+    <text x="24" y="84" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">PocketBase backup ZIP</text>
+    <text x="24" y="116" fill="#626475" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">data.db plus storage files</text>
+    <text x="24" y="154" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Current Grimoire SQLite</text>
+    <text x="24" y="186" fill="#626475" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">user, category, tag, bookmark, file</text>
+  </g>
+
+  <g transform="translate(426 226)">
+    <rect width="278" height="204" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+    <text x="24" y="44" fill="#166534" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="23" font-weight="800">Field Mapping</text>
+    <text x="24" y="84" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Bookmarks, content, notes</text>
+    <text x="24" y="116" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Categories and tags</text>
+    <text x="24" y="148" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Pinned, read, archive, opens</text>
+    <text x="24" y="180" fill="#626475" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">Importance stays rejected</text>
+  </g>
+
+  <g transform="translate(756 226)">
+    <rect width="278" height="204" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+    <text x="24" y="44" fill="#9a3412" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="23" font-weight="800">Future Gates</text>
+    <text x="24" y="84" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Owner selection</text>
+    <text x="24" y="116" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Media safety checks</text>
+    <text x="24" y="148" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Duplicate/remap preview</text>
+    <text x="24" y="180" fill="#626475" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">Dedicated implementation task</text>
+  </g>
+
+  <path d="M384 328 H416" fill="none" stroke="#626475" stroke-width="3" stroke-linecap="round"/>
+  <path d="M408 318 L420 328 L408 338" fill="none" stroke="#626475" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M714 328 H746" fill="none" stroke="#626475" stroke-width="3" stroke-linecap="round"/>
+  <path d="M738 318 L750 328 L738 338" fill="none" stroke="#626475" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(96 492)">
+    <rect width="1036" height="88" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="24" y="36" fill="#191827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="800">Required future flow</text>
+    <text x="24" y="66" fill="#475569" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Parse source data - preview rows - choose duplicate policy - remap categories/tags - commit - report results - verify exports.</text>
+  </g>
+</svg>
