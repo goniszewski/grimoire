@@ -6,6 +6,7 @@ import {
   buildApiDocOutputs,
   buildApiMarkdown,
   findRouteImplementationDrift,
+  findRouteStatusCodeDrift,
 } from "./api-docs-generator";
 
 const routesDir = join(process.cwd(), "daemon", "src", "routes");
@@ -18,6 +19,32 @@ describe("API documentation generator", () => {
       missingFromContract: [],
       extraInContract: [],
     });
+  });
+
+  it("detects status code drift between daemon handlers and the contract", () => {
+    const drift = findRouteStatusCodeDrift(apiContract, routesDir);
+
+    // The check runs without throwing and produces a deterministic result.
+    expect(drift).toHaveProperty("mismatches");
+    expect(Array.isArray(drift.mismatches)).toBe(true);
+
+    // Every mismatch has the expected shape.
+    for (const m of drift.mismatches) {
+      expect(m).toMatchObject({
+        route: expect.any(String),
+        file: expect.stringContaining("daemon/src/routes/"),
+        daemonCodes: expect.any(Array),
+        contractCodes: expect.any(Array),
+        missingFromContract: expect.any(Array),
+        missingFromDaemon: expect.any(Array),
+      });
+    }
+
+    // Known limitation: the test does not assert zero mismatches because
+    // regex-based extraction cannot detect computed status codes (e.g.
+    // `problem(c, status, ...)`) or codes inside nested parentheses.
+    // The drift report is a warning in the check pipeline rather than a
+    // hard failure, and mismatches should be reviewed during contract updates.
   });
 
   it("generates docs from the contract instead of stale route prose", () => {

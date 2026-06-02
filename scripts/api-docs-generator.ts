@@ -26,6 +26,19 @@ export interface RouteImplementationDrift {
   extraInContract: string[];
 }
 
+export interface RouteStatusCodeMismatch {
+  route: string;
+  file: string;
+  daemonCodes: number[];
+  contractCodes: number[];
+  missingFromContract: number[];
+  missingFromDaemon: number[];
+}
+
+export interface RouteStatusCodeDrift {
+  mismatches: RouteStatusCodeMismatch[];
+}
+
 export interface ApiDocOutputs {
   markdown: string;
   contractJson: string;
@@ -183,6 +196,144 @@ export function findRouteImplementationDrift(
     extraInContract: [...declared].filter((key) => !implemented.has(key)).sort(),
   };
 }
+
+export function findRouteStatusCodeDrift(
+  contract: Pick<ApiContract, "routes">,
+  routesDir: string
+): RouteStatusCodeDrift {
+  const contractStatusCodes = new Map<string, Set<number>>();
+  for (const route of contract.routes) {
+    const codes = new Set(
+      Object.keys(route.responses)
+        .map(Number)
+        .filter((n) => !isNaN(n))
+    );
+    contractStatusCodes.set(routeKey(route), codes);
+  }
+
+  const daemonStatusCodes = extractRouteStatusCodes(routesDir);
+  const mismatches: RouteStatusCodeMismatch[] = [];
+
+  for (const [route, daemonInfo] of daemonStatusCodes) {
+    const contractCodes = contractStatusCodes.get(route) ?? new Set<number>();
+    const daemonCodes = daemonInfo.codes;
+
+    const missingFromContract = [...daemonCodes]
+      .filter((c) => !contractCodes.has(c))
+      .sort((a, b) => a - b);
+    const missingFromDaemon = [...contractCodes]
+      .filter((c) => !daemonCodes.has(c) && !MIDDLEWARE_STATUS_CODES.has(c))
+      .sort((a, b) => a - b);
+
+    if (missingFromContract.length > 0 || missingFromDaemon.length > 0) {
+      mismatches.push({
+        route,
+        file: daemonInfo.file,
+        daemonCodes: [...daemonCodes].sort((a, b) => a - b),
+        contractCodes: [...contractCodes].sort((a, b) => a - b),
+        missingFromContract,
+        missingFromDaemon,
+      });
+    }
+  }
+
+  return { mismatches };
+}
+
+function extractRouteStatusCodes(
+  routesDir: string
+): Map<string, { file: string; codes: Set<number> }> {
+  const files = getTypeScriptFiles(routesDir);
+  const result = new Map<string, { file: string; codes: Set<number> }>();
+  const routeDefPattern =
+    /\b(router|app)\.(get|post|put|patch|delete|all)\s*\(\s*["'`]([^"'`]+)["'`]\s*,\s*/g;
+
+  for (const file of files) {
+    const content = readFileSync(file, "utf8");
+    let match: RegExpExecArray | null;
+    while ((match = routeDefPattern.exec(content)) !== null) {
+      const [, , rawMethod, path] = match;
+      if (!HTTP_METHODS.has(rawMethod)) continue;
+
+      const route = `${rawMethod.toUpperCase() as HttpMethod} ${path}`;
+      const handlerBody = extractHandlerBody(content, match.index + match[0].length);
+      const codes = handlerBody ? extractStatusCodes(handlerBody) : new Set([200]);
+
+      result.set(route, { file, codes });
+    }
+  }
+
+  return result;
+}
+
+function extractHandlerBody(
+  content: string,
+  startPos: number
+): string | null {
+  let i = startPos;
+  while (i < content.length && content[i] !== "{") i++;
+  if (i >= content.length) return null;
+
+  let depth = 1;
+  const bodyStart = i;
+  i++;
+  while (i < content.length && depth > 0) {
+    if (content[i] === "{") depth++;
+    else if (content[i] === "}") depth--;
+    i++;
+  }
+
+  return depth === 0 ? content.slice(bodyStart, i) : null;
+}
+
+function extractStatusCodes(body: string): Set<number> {
+  const codes = new Set<number>();
+
+  const patterns: Array<{ regex: RegExp; group: number }> = [
+    { regex: /problem\s*\(\s*c\s*,\s*(\d{3})\s*,/g, group: 1 },
+    { regex: /ok\s*\(\s*c\s*,\s*[^,)]+,\s*(\d{3})\s*\)/g, group: 1 },
+    { regex: /c\s*\.\s*json\s*\([^)]*,\s*(\d{3})\s*\)/g, group: 1 },
+    { regex: /c\s*\.\s*body\s*\(\s*null\s*,\s*(\d{3})\s*\)/g, group: 1 },
+  ];
+
+  const explicitJsonStatusPattern = /c\s*\.\s*json\s*\([^)]*,\s*(\d{3})\s*\)/g;
+  let explicitJsonCount = 0;
+  for (const { regex, group } of patterns) {
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(body)) !== null) {
+      codes.add(parseInt(m[group], 10));
+    }
+  }
+  // Count c.json(..., NNN) matches separately
+  {
+    const re = new RegExp(explicitJsonStatusPattern.source, "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(body)) !== null) {
+      explicitJsonCount++;
+    }
+  }
+
+  // Detect c.json() calls without explicit status → implies 200.
+  // Count all c.json( occurrences and compare with explicit-status count.
+  const allJsonCalls = (body.match(/c\s*\.\s*json\s*\(/g) ?? []).length;
+  if (allJsonCalls > explicitJsonCount) {
+    codes.add(200);
+  }
+
+  // Fallback: if no status codes detected at all, assume 200
+  if (codes.size === 0) {
+    codes.add(200);
+  }
+
+  return codes;
+}
+
+/**
+ * Status codes injected by server-wide middleware (body limits, auth, CORS, etc.).
+ * These are not visible in per-route handler bodies and should be excluded from
+ * the "contract declares but daemon is missing" comparison.
+ */
+const MIDDLEWARE_STATUS_CODES = new Set([401, 413, 415]);
 
 export function buildApiMarkdown(document: ApiContractDocument): string {
   const lines: string[] = [];

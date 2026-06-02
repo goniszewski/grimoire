@@ -134,6 +134,7 @@ tasks/
 | TASK-118 | [Aggregate Count Endpoints](done/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | done |
 | TASK-119 | [Large Library Performance Tests](done/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | done |
 | TASK-120 | [Import Duplicate Handling Policy](done/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | done |
+| TASK-121 | [Contract Route Behavior Checks](done/TASK-121-contract-route-behavior-checks.md) | Grimoire parity | high | done |
 
 ## Current Status
 

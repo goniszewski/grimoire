@@ -6,6 +6,7 @@ import {
   buildApiDocOutputs,
   findApiDocDrift,
   findRouteImplementationDrift,
+  findRouteStatusCodeDrift,
   writeApiDocOutputs,
   type ApiDocOutputPaths,
 } from "./api-docs-generator";
@@ -34,6 +35,27 @@ if (routeDrift.missingFromContract.length > 0 || routeDrift.extraInContract.leng
     for (const route of routeDrift.extraInContract) console.error(`  - ${route}`);
   }
   process.exit(1);
+}
+
+const statusDrift = findRouteStatusCodeDrift(apiContract, routesDir);
+if (statusDrift.mismatches.length > 0) {
+  console.error("API contract status code drift detected (warning — static analysis limitations apply):");
+  for (const m of statusDrift.mismatches) {
+    console.error(`  ${m.route} (${m.file}):`);
+    if (m.missingFromContract.length > 0) {
+      console.error(
+        `    Daemon returns but contract missing: ${m.missingFromContract.join(", ")}`
+      );
+    }
+    if (m.missingFromDaemon.length > 0) {
+      console.error(
+        `    Contract declares but daemon missing: ${m.missingFromDaemon.join(", ")}`
+      );
+    }
+  }
+  console.error(
+    "  Note: regex-based extraction cannot detect computed status codes or codes inside nested parentheses."
+  );
 }
 
 if (process.argv.includes("--check")) {

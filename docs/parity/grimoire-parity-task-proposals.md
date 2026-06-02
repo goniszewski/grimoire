@@ -103,5 +103,5 @@ Suggested values:
 | PAR-050 | Update README, roadmap, and release docs with approved Grimoire parity goals and explicit non-goals. | High | Approved | Done | Covered by `TASK-085` and recurring release review coverage in `TASK-088`. |
 | PAR-051 | Add task reports for visible parity work and link them from `docs/task-reports/index.html`. | Medium | Pending | Not started |  |
 | PAR-052 | Add visual verification coverage for category/tag management, bookmark detail, import review, and pagination once implemented. | Medium | Pending | Not started |  |
-| PAR-053 | Add contract checks that fail when daemon route behavior diverges from `docs/api-contract.json`. | High | Pending | Not started |  |
+| PAR-053 | Add contract checks that fail when daemon route behavior diverges from `docs/api-contract.json`. | High | Approved | Done | Completed in `TASK-121`. |
 | PAR-054 | Add a final Grimoire parity acceptance checklist before promoting a beta release as parity-complete. | High | Pending | Not started |  |
