@@ -222,6 +222,12 @@ Query parameters:
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
 | `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
+| `read_state` | "read" \| "unread" | no | Filter by read state |
+| `is_pinned` | "true" \| "false" \| "1" \| "0" | no | Filter by pinned/starred state; accepts boolean strings or numeric flags |
+| `opened_count_min` | integer | no | Filter to bookmarks opened at least this many times |
+| `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
+| `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
+| `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 | `archived` | "true" \| "false" | no | When true, return archived bookmarks |
@@ -239,7 +245,7 @@ Examples:
 Request:
 
 ```bash
-curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_later=true&limit=10&offset=0"
+curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0"
 ```
 
 Response:
@@ -707,6 +713,12 @@ Query parameters:
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
 | `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
+| `read_state` | "read" \| "unread" | no | Filter by read state |
+| `is_pinned` | "true" \| "false" \| "1" \| "0" | no | Filter by pinned/starred state; accepts boolean strings or numeric flags |
+| `opened_count_min` | integer | no | Filter to bookmarks opened at least this many times |
+| `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
+| `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
+| `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 
@@ -725,7 +737,7 @@ Examples:
 Request:
 
 ```bash
-curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&limit=10&offset=0"
+curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&read_state=read&last_opened_from=2026-06-01&limit=10&offset=0"
 ```
 
 Response:
@@ -1913,6 +1925,12 @@ Query parameters:
 | `date_from` | string | no | Inclusive ISO date or date-time lower bound |
 | `date_to` | string | no | Inclusive ISO date or date-time upper bound |
 | `read_later` | "true" \| "false" \| "1" \| "0" | no | Filter by read-later state; accepts boolean strings or numeric flags |
+| `read_state` | "read" \| "unread" | no | Filter by read state |
+| `is_pinned` | "true" \| "false" \| "1" \| "0" | no | Filter by pinned/starred state; accepts boolean strings or numeric flags |
+| `opened_count_min` | integer | no | Filter to bookmarks opened at least this many times |
+| `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
+| `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
+| `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
 
 Responses:
 
@@ -1920,7 +1938,7 @@ Responses:
 |---|---|---|---|
 | `200` | application/json or text/csv | `array<ExportBookmark>` | Downloadable JSON or CSV export |
 | `400` | application/json | `LegacyError` | Invalid format |
-| `422` | application/json | `LegacyError` | Invalid read_later filter |
+| `422` | application/json | `LegacyError` | Invalid export filter |
 
 Examples:
 
@@ -1962,12 +1980,20 @@ Content-Type: application/json
 ]
 ```
 
+**Export read pinned bookmarks opened this month**
+
+Request:
+
+```bash
+curl "http://127.0.0.1:3210/export?format=csv&read_state=read&is_pinned=true&opened_count_min=1&last_opened_from=2026-06-01"
+```
+
 **Reject an invalid export filter**
 
 Request:
 
 ```bash
-curl "http://127.0.0.1:3210/export?format=json&read_later=maybe"
+curl "http://127.0.0.1:3210/export?format=json&read_state=maybe"
 ```
 
 Response:
@@ -1977,7 +2003,7 @@ HTTP/1.1 422 Unprocessable Entity
 Content-Type: application/json
 
 {
-  "error": "`read_later` must be true, false, 1, or 0"
+  "error": "`read_state` must be read or unread"
 }
 ```
 

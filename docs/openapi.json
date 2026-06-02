@@ -329,6 +329,78 @@
             }
           },
           {
+            "name": "read_state",
+            "in": "query",
+            "required": false,
+            "description": "Filter by read state",
+            "schema": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            }
+          },
+          {
+            "name": "is_pinned",
+            "in": "query",
+            "required": false,
+            "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+            "schema": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            }
+          },
+          {
+            "name": "opened_count_min",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened at least this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "opened_count_max",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened no more than this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "last_opened_from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time lower bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            }
+          },
+          {
+            "name": "last_opened_to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time upper bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1156,6 +1228,78 @@
                 "1",
                 "0"
               ]
+            }
+          },
+          {
+            "name": "read_state",
+            "in": "query",
+            "required": false,
+            "description": "Filter by read state",
+            "schema": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            }
+          },
+          {
+            "name": "is_pinned",
+            "in": "query",
+            "required": false,
+            "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+            "schema": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            }
+          },
+          {
+            "name": "opened_count_min",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened at least this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "opened_count_max",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened no more than this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "last_opened_from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time lower bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            }
+          },
+          {
+            "name": "last_opened_to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time upper bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
             }
           },
           {
@@ -3024,6 +3168,78 @@
                 "0"
               ]
             }
+          },
+          {
+            "name": "read_state",
+            "in": "query",
+            "required": false,
+            "description": "Filter by read state",
+            "schema": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            }
+          },
+          {
+            "name": "is_pinned",
+            "in": "query",
+            "required": false,
+            "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+            "schema": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            }
+          },
+          {
+            "name": "opened_count_min",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened at least this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "opened_count_max",
+            "in": "query",
+            "required": false,
+            "description": "Filter to bookmarks opened no more than this many times",
+            "schema": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "last_opened_from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time lower bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            }
+          },
+          {
+            "name": "last_opened_to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO date or date-time upper bound for last opened time",
+            "schema": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            }
           }
         ],
         "responses": {
@@ -3057,7 +3273,7 @@
             }
           },
           "422": {
-            "description": "Invalid read_later filter",
+            "description": "Invalid export filter",
             "content": {
               "application/json": {
                 "schema": {

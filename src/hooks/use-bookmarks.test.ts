@@ -348,6 +348,54 @@ describe("useBookmarks — search", () => {
     );
   });
 
+  it("passes parity filters to list and search requests", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setReadStateFilter("unread"));
+    act(() => result.current.setPinnedFilter("pinned"));
+    act(() => result.current.setOpenActivityFilter("opened-2-plus"));
+    act(() =>
+      result.current.setLastOpenedRange({
+        from: new Date("2026-06-01T00:00:00.000Z"),
+        to: new Date("2026-06-02T00:00:00.000Z"),
+      })
+    );
+
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          read_state: "unread",
+          is_pinned: true,
+          opened_count_min: 2,
+          last_opened_from: "2026-06-01",
+          last_opened_to: "2026-06-02",
+        })
+      )
+    );
+    expect(result.current.libraryParityFilterParams).toEqual({
+      read_state: "unread",
+      is_pinned: true,
+      opened_count_min: 2,
+      last_opened_from: "2026-06-01",
+      last_opened_to: "2026-06-02",
+    });
+
+    act(() => result.current.setSearchQuery("react"));
+    await waitFor(() =>
+      expect(mockedSearchBookmarks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          read_state: "unread",
+          is_pinned: true,
+          opened_count_min: 2,
+          last_opened_from: "2026-06-01",
+          last_opened_to: "2026-06-02",
+        })
+      ),
+      { timeout: 2000 }
+    );
+  });
+
   it("invalidates active search results after read-later updates", async () => {
     const bookmark = makeApiBookmark({ id: "bm-read-later", title: "React Guide", read_later: 1 });
     mockedListBookmarks.mockResolvedValue(bookmarkListResponse([bookmark]));

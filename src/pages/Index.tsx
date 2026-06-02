@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -238,8 +238,28 @@ const Index = () => {
     store.selectedDomain && { label: store.selectedDomain, clear: () => store.setSelectedDomain(null) },
     store.selectedTag && { label: `#${store.selectedTag}`, clear: () => store.setSelectedTag(null) },
     store.readLaterOnly && { label: "Read Later", clear: () => store.setReadLaterOnly(false) },
+    store.readStateFilter !== "all" && {
+      label: store.readStateFilter === "read" ? "Read" : "Unread",
+      clear: () => store.setReadStateFilter("all"),
+    },
+    store.pinnedFilter !== "all" && {
+      label: store.pinnedFilter === "pinned" ? "Pinned" : "Unpinned",
+      clear: () => store.setPinnedFilter("all"),
+    },
+    store.openActivityFilter !== "all" && {
+      label: store.openActivityFilter === "unopened"
+        ? "Unopened"
+        : store.openActivityFilter === "opened-2-plus"
+          ? "Opened 2+"
+          : "Opened",
+      clear: () => store.setOpenActivityFilter("all"),
+    },
+    (store.lastOpenedRange.from || store.lastOpenedRange.to) && {
+      label: "Last opened",
+      clear: () => store.setLastOpenedRange({ from: null, to: null }),
+    },
     (store.dateRange.from || store.dateRange.to) && {
-      label: "Date range",
+      label: "Saved date",
       clear: () => store.setDateRange({ from: null, to: null }),
     },
   ].filter(Boolean) as { label: string; clear: () => void }[];
@@ -254,6 +274,11 @@ const Index = () => {
     !!store.selectedTag ||
     !!store.selectedDomain ||
     !!store.readLaterOnly ||
+    store.readStateFilter !== "all" ||
+    store.pinnedFilter !== "all" ||
+    store.openActivityFilter !== "all" ||
+    !!store.lastOpenedRange.from ||
+    !!store.lastOpenedRange.to ||
     !!store.dateRange.from ||
     !!store.dateRange.to;
 
@@ -306,6 +331,7 @@ const Index = () => {
                   date_from: store.dateRange.from?.toISOString().slice(0, 10),
                   date_to: store.dateRange.to?.toISOString().slice(0, 10),
                   read_later: store.readLaterOnly ? true : undefined,
+                  ...store.libraryParityFilterParams,
                 }}
               />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="hidden sm:flex">
@@ -420,6 +446,59 @@ const Index = () => {
                       to={store.dateRange.to}
                       onChange={store.setDateRange}
                       showLabel={showButtonLabels}
+                      label="Saved date"
+                      ariaLabel="Saved date filter"
+                    />
+                    <Select value={store.readStateFilter} onValueChange={(v) => store.setReadStateFilter(v as typeof store.readStateFilter)}>
+                      <SelectTrigger
+                        aria-label="Read state filter"
+                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[120px]' : 'w-[40px]'} ${store.readStateFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
+                      >
+                        <Eye className="h-3 w-3 shrink-0" />
+                        {showButtonLabels && <SelectValue />}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="text-xs">All reads</SelectItem>
+                        <SelectItem value="unread" className="text-xs">Unread</SelectItem>
+                        <SelectItem value="read" className="text-xs">Read</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={store.pinnedFilter} onValueChange={(v) => store.setPinnedFilter(v as typeof store.pinnedFilter)}>
+                      <SelectTrigger
+                        aria-label="Pinned filter"
+                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[120px]' : 'w-[40px]'} ${store.pinnedFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
+                      >
+                        <Pin className="h-3 w-3 shrink-0" />
+                        {showButtonLabels && <SelectValue />}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="text-xs">All pins</SelectItem>
+                        <SelectItem value="pinned" className="text-xs">Pinned</SelectItem>
+                        <SelectItem value="unpinned" className="text-xs">Unpinned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={store.openActivityFilter} onValueChange={(v) => store.setOpenActivityFilter(v as typeof store.openActivityFilter)}>
+                      <SelectTrigger
+                        aria-label="Opened count filter"
+                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[132px]' : 'w-[40px]'} ${store.openActivityFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
+                      >
+                        <MousePointerClick className="h-3 w-3 shrink-0" />
+                        {showButtonLabels && <SelectValue />}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="text-xs">All opens</SelectItem>
+                        <SelectItem value="unopened" className="text-xs">Unopened</SelectItem>
+                        <SelectItem value="opened" className="text-xs">Opened</SelectItem>
+                        <SelectItem value="opened-2-plus" className="text-xs">Opened 2+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <DateRangeFilter
+                      from={store.lastOpenedRange.from}
+                      to={store.lastOpenedRange.to}
+                      onChange={store.setLastOpenedRange}
+                      showLabel={showButtonLabels}
+                      label="Last opened"
+                      ariaLabel="Last opened date filter"
                     />
                     <Button
                       variant={store.readLaterOnly ? "secondary" : "outline"}

@@ -69,6 +69,58 @@ describe("Search API", () => {
     expect(json.data.every((b) => b.read_later === 1)).toBe(true);
   });
 
+  it("GET /search applies read, pinned, opened count, and last-opened filters", async () => {
+    const repo = new BookmarkRepository(db);
+    const matching = repo.create("https://example.com/search-filter-match", "Shared Filter Query");
+    const unread = repo.create("https://example.com/search-filter-unread", "Shared Filter Query");
+    const lowCount = repo.create("https://example.com/search-filter-low-count", "Shared Filter Query");
+    const oldOpen = repo.create("https://example.com/search-filter-old-open", "Shared Filter Query");
+    repo.update(matching.id, { read_at: "2026-06-01T08:00:00.000Z", is_pinned: 1 });
+    repo.update(unread.id, { is_pinned: 1 });
+    repo.update(lowCount.id, { read_at: "2026-06-01T08:00:00.000Z", is_pinned: 1 });
+    repo.update(oldOpen.id, { read_at: "2026-06-01T08:00:00.000Z", is_pinned: 1 });
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(3, "2026-06-01T10:00:00.000Z", matching.id);
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(1, "2026-06-01T10:00:00.000Z", lowCount.id);
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(3, "2026-05-20T10:00:00.000Z", oldOpen.id);
+
+    const params = new URLSearchParams({
+      q: "Shared",
+      mode: "keyword",
+      read_state: "read",
+      is_pinned: "true",
+      opened_count_min: "2",
+      last_opened_from: "2026-06-01",
+      last_opened_to: "2026-06-01",
+    });
+    const res = await app.request(`/search?${params.toString()}`);
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: Array<{ id: string; read_at: string | null; is_pinned: 0 | 1; opened_count: number }>;
+      pagination: { total: number };
+    };
+
+    expect(json.pagination.total).toBe(1);
+    expect(json.data.map((b) => b.id)).toEqual([matching.id]);
+    expect(json.data[0]).toMatchObject({ read_at: "2026-06-01T08:00:00.000Z", is_pinned: 1, opened_count: 3 });
+  });
+
+  it("GET /search rejects invalid parity filter params", async () => {
+    for (const query of [
+      "read_state=finished",
+      "is_pinned=maybe",
+      "opened_count_min=-1",
+      "opened_count_max=abc",
+    ]) {
+      const res = await app.request(`/search?q=Shared&${query}`);
+      expect(res.status).toBe(422);
+      const json = await res.json() as { title: string };
+      expect(json.title).toBe("Unprocessable Entity");
+    }
+  });
+
   it("GET /search filters by category_id when duplicate category names exist", async () => {
     const repo = new BookmarkRepository(db);
     const parentA = db

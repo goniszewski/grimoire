@@ -1,6 +1,7 @@
-import { DAEMON_URL } from "./api";
+import { appendLibraryParityFilters, DAEMON_URL } from "./api";
+import type { LibraryParityFilterParams } from "./api";
 
-export interface ExportFilters {
+export interface ExportFilters extends LibraryParityFilterParams {
   tag?: string;
   domain?: string;
   category_id?: string;
@@ -19,6 +20,7 @@ export function buildExportUrl(format: "json" | "csv", filters: ExportFilters = 
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
   if (filters.read_later != null) params.set("read_later", filters.read_later ? "true" : "false");
+  appendLibraryParityFilters(params, filters);
 
   return `${DAEMON_URL}/export?${params.toString()}`;
 }

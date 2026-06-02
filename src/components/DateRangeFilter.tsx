@@ -14,14 +14,23 @@ interface DateRangeFilterProps {
   to: Date | null;
   onChange: (range: { from: Date | null; to: Date | null }) => void;
   showLabel?: boolean;
+  label?: string;
+  ariaLabel?: string;
 }
 
-export function DateRangeFilter({ from, to, onChange, showLabel = true }: DateRangeFilterProps) {
+export function DateRangeFilter({
+  from,
+  to,
+  onChange,
+  showLabel = true,
+  label: defaultLabel = "Date range",
+  ariaLabel,
+}: DateRangeFilterProps) {
   const hasRange = from || to;
 
   const label = hasRange
     ? [from && format(from, "MMM d"), to && format(to, "MMM d")].filter(Boolean).join(" – ")
-    : "Date range";
+    : defaultLabel;
 
   return (
     <div className="flex items-center gap-1">
@@ -34,6 +43,7 @@ export function DateRangeFilter({ from, to, onChange, showLabel = true }: DateRa
               "h-7 text-xs font-mono gap-1.5",
               hasRange && "border-primary/50 text-primary"
             )}
+            aria-label={ariaLabel ?? defaultLabel}
           >
             <CalendarIcon className="h-3 w-3" />
             {showLabel && label}

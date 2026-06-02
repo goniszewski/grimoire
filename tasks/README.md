@@ -129,7 +129,7 @@ tasks/
 | TASK-113 | [Import Export Regression Tests](done/TASK-113-import-export-regression-tests.md) | Grimoire parity | high | done |
 | TASK-114 | [Library Pagination](done/TASK-114-library-pagination.md) | Grimoire parity | high | done |
 | TASK-115 | [Server Driven Sorting](backlog/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | backlog |
-| TASK-116 | [Library Parity Filters](backlog/TASK-116-library-parity-filters.md) | Grimoire parity | high | backlog |
+| TASK-116 | [Library Parity Filters](done/TASK-116-library-parity-filters.md) | Grimoire parity | high | done |
 | TASK-117 | [Persist Library View Preferences](backlog/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | backlog |
 | TASK-118 | [Aggregate Count Endpoints](backlog/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | backlog |
 | TASK-119 | [Large Library Performance Tests](backlog/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | backlog |

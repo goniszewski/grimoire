@@ -274,6 +274,103 @@ describe("Bookmarks API", () => {
     expect(filtered.data.every((b) => b.read_later === 1)).toBe(true);
   });
 
+  it("GET /bookmarks filters by read state and pinned state", async () => {
+    const readPinnedRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/read-pinned" }),
+    });
+    const unreadRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/unread" }),
+    });
+    const { data: readPinned } = await readPinnedRes.json() as { data: { id: string } };
+    const { data: unread } = await unreadRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${readPinned.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ read_at: "2026-06-01T08:00:00.000Z", is_pinned: 1 }),
+    });
+
+    const readRes = await app.request("/bookmarks?read_state=read&is_pinned=true");
+    expect(readRes.status).toBe(200);
+    const readJson = await readRes.json() as {
+      data: Array<{ id: string; read_at: string | null; is_pinned: 0 | 1 }>;
+    };
+    expect(readJson.data.map((b) => b.id)).toEqual([readPinned.id]);
+    expect(readJson.data.every((b) => b.read_at !== null && b.is_pinned === 1)).toBe(true);
+
+    const unreadJson = await (await app.request("/bookmarks?read_state=unread")).json() as {
+      data: Array<{ id: string; read_at: string | null }>;
+    };
+    expect(unreadJson.data.map((b) => b.id)).toContain(unread.id);
+    expect(unreadJson.data.map((b) => b.id)).not.toContain(readPinned.id);
+    expect(unreadJson.data.every((b) => b.read_at === null)).toBe(true);
+  });
+
+  it("GET /bookmarks filters by opened count and last-opened date before pagination", async () => {
+    const matchingRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/opened-match" }),
+    });
+    const lowCountRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/opened-low-count" }),
+    });
+    const oldOpenRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/opened-old" }),
+    });
+    const { data: matching } = await matchingRes.json() as { data: { id: string } };
+    const { data: lowCount } = await lowCountRes.json() as { data: { id: string } };
+    const { data: oldOpen } = await oldOpenRes.json() as { data: { id: string } };
+
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(3, "2026-06-01T10:00:00.000Z", matching.id);
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(1, "2026-06-01T11:00:00.000Z", lowCount.id);
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(4, "2026-05-20T11:00:00.000Z", oldOpen.id);
+
+    const params = new URLSearchParams({
+      opened_count_min: "2",
+      last_opened_from: "2026-06-01",
+      last_opened_to: "2026-06-01",
+      limit: "1",
+      offset: "0",
+    });
+    const res = await app.request(`/bookmarks?${params.toString()}`);
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      data: Array<{ id: string; opened_count: number; last_opened_at: string | null }>;
+      pagination: { total: number; has_more: boolean };
+    };
+
+    expect(json.pagination.total).toBe(1);
+    expect(json.pagination.has_more).toBe(false);
+    expect(json.data.map((b) => b.id)).toEqual([matching.id]);
+    expect(json.data[0].opened_count).toBe(3);
+  });
+
+  it("GET /bookmarks rejects invalid parity filter params", async () => {
+    for (const query of [
+      "read_state=finished",
+      "is_pinned=maybe",
+      "opened_count_min=-1",
+      "opened_count_max=abc",
+    ]) {
+      const res = await app.request(`/bookmarks?${query}`);
+      expect(res.status).toBe(422);
+      const json = await res.json() as { title: string };
+      expect(json.title).toBe("Unprocessable Entity");
+    }
+  });
+
   it("GET /bookmarks filters by category_id when duplicate category names exist", async () => {
     const parentA = db
       .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")
@@ -505,6 +602,61 @@ describe("Bookmarks API", () => {
     expect(res.status).toBe(422);
     const json = await res.json() as { error: string };
     expect(json.error).toContain("read_later");
+
+    const readStateRes = await app.request("/export?read_state=maybe");
+    expect(readStateRes.status).toBe(422);
+    const readStateJson = await readStateRes.json() as { error: string };
+    expect(readStateJson.error).toContain("read_state");
+  });
+
+  it("GET /export applies parity filters before serialization", async () => {
+    const matchingRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/export-filter-match" }),
+    });
+    const unpinnedRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/export-filter-unpinned" }),
+    });
+    const unopenedRes = await app.request("/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com/export-filter-unopened" }),
+    });
+    const { data: matching } = await matchingRes.json() as { data: { id: string } };
+    const { data: unpinned } = await unpinnedRes.json() as { data: { id: string } };
+    const { data: unopened } = await unopenedRes.json() as { data: { id: string } };
+
+    await app.request(`/bookmarks/${matching.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_pinned: 1, read_at: "2026-06-01T09:00:00.000Z" }),
+    });
+    await app.request(`/bookmarks/${unopened.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_pinned: 1, read_at: "2026-06-01T09:00:00.000Z" }),
+    });
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(2, "2026-06-01T12:00:00.000Z", matching.id);
+    db.query("UPDATE bookmarks SET opened_count = ?, last_opened_at = ? WHERE id = ?")
+      .run(3, "2026-06-01T12:00:00.000Z", unpinned.id);
+
+    const params = new URLSearchParams({
+      format: "json",
+      read_state: "read",
+      is_pinned: "true",
+      opened_count_min: "2",
+      last_opened_from: "2026-06-01",
+      last_opened_to: "2026-06-01",
+    });
+    const res = await app.request(`/export?${params.toString()}`);
+
+    expect(res.status).toBe(200);
+    const rows = await res.json() as Array<{ id: string }>;
+    expect(rows.map((row) => row.id)).toEqual([matching.id]);
   });
 
   it("GET /export filters by category_id when category names are duplicated", async () => {

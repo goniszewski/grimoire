@@ -11,9 +11,12 @@ import {
   listCategories,
   listDomains,
   listTags,
+} from "@/lib/api";
+import type {
   ApiBookmark,
   ApiBookmarkWithContent,
   ApiCategory,
+  LibraryParityFilterParams,
 } from "@/lib/api";
 import {
   generatedFavicon,
@@ -30,6 +33,10 @@ export type SortOption =
   | "title-za"
   | "domain-az"
   | "domain-za";
+
+export type ReadStateFilter = "all" | "read" | "unread";
+export type PinnedFilter = "all" | "pinned" | "unpinned";
+export type OpenActivityFilter = "all" | "unopened" | "opened" | "opened-2-plus";
 
 export const LIBRARY_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 export const DEFAULT_LIBRARY_PAGE_SIZE = LIBRARY_PAGE_SIZE_OPTIONS[0];
@@ -192,6 +199,10 @@ export function useBookmarks() {
   const [selectedTag, setSelectedTagState] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomainState] = useState<string | null>(null);
   const [readLaterOnly, setReadLaterOnlyState] = useState(false);
+  const [readStateFilter, setReadStateFilterState] = useState<ReadStateFilter>("all");
+  const [pinnedFilter, setPinnedFilterState] = useState<PinnedFilter>("all");
+  const [openActivityFilter, setOpenActivityFilterState] = useState<OpenActivityFilter>("all");
+  const [lastOpenedRange, setLastOpenedRangeState] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [dateRange, setDateRangeState] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
   const [sortBy, setSortByState] = useState<SortOption>("newest");
   const [pageSize, setPageSizeState] = useState<number>(DEFAULT_LIBRARY_PAGE_SIZE);
@@ -199,6 +210,8 @@ export function useBookmarks() {
 
   const dateFrom = dateRange.from?.toISOString().slice(0, 10);
   const dateTo = dateRange.to?.toISOString().slice(0, 10);
+  const lastOpenedFrom = lastOpenedRange.from?.toISOString().slice(0, 10);
+  const lastOpenedTo = lastOpenedRange.to?.toISOString().slice(0, 10);
 
   const resetPage = useCallback(() => {
     setPageOffset(0);
@@ -226,6 +239,26 @@ export function useBookmarks() {
 
   const setReadLaterOnly = useCallback((readLater: boolean) => {
     setReadLaterOnlyState(readLater);
+    resetPage();
+  }, [resetPage]);
+
+  const setReadStateFilter = useCallback((readState: ReadStateFilter) => {
+    setReadStateFilterState(readState);
+    resetPage();
+  }, [resetPage]);
+
+  const setPinnedFilter = useCallback((pinned: PinnedFilter) => {
+    setPinnedFilterState(pinned);
+    resetPage();
+  }, [resetPage]);
+
+  const setOpenActivityFilter = useCallback((activity: OpenActivityFilter) => {
+    setOpenActivityFilterState(activity);
+    resetPage();
+  }, [resetPage]);
+
+  const setLastOpenedRange = useCallback((range: { from: Date | null; to: Date | null }) => {
+    setLastOpenedRangeState(range);
     resetPage();
   }, [resetPage]);
 
@@ -320,6 +353,19 @@ export function useBookmarks() {
   });
 
   // ─── Bookmarks list (no search) ───────────────────────────────────────────
+  const parityFilterParams = useMemo<LibraryParityFilterParams>(() => {
+    const params: LibraryParityFilterParams = {};
+    if (readStateFilter !== "all") params.read_state = readStateFilter;
+    if (pinnedFilter === "pinned") params.is_pinned = true;
+    if (pinnedFilter === "unpinned") params.is_pinned = false;
+    if (openActivityFilter === "unopened") params.opened_count_max = 0;
+    if (openActivityFilter === "opened") params.opened_count_min = 1;
+    if (openActivityFilter === "opened-2-plus") params.opened_count_min = 2;
+    if (lastOpenedFrom) params.last_opened_from = lastOpenedFrom;
+    if (lastOpenedTo) params.last_opened_to = lastOpenedTo;
+    return params;
+  }, [readStateFilter, pinnedFilter, openActivityFilter, lastOpenedFrom, lastOpenedTo]);
+
   const listParams = useMemo(() => ({
     limit: pageSize,
     offset: pageOffset,
@@ -330,7 +376,8 @@ export function useBookmarks() {
     date_from: dateFrom,
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
-  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly]);
+    ...parityFilterParams,
+  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -351,9 +398,10 @@ export function useBookmarks() {
     date_from: dateFrom,
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
+    ...parityFilterParams,
     limit: pageSize,
     offset: pageOffset,
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, pageSize, pageOffset]);
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -441,6 +489,11 @@ export function useBookmarks() {
     dateFrom,
     dateTo,
     readLaterOnly,
+    readStateFilter,
+    pinnedFilter,
+    openActivityFilter,
+    lastOpenedFrom,
+    lastOpenedTo,
     sortBy,
     pageSize,
     pageOffset,
@@ -454,6 +507,11 @@ export function useBookmarks() {
     dateFrom,
     dateTo,
     readLaterOnly,
+    readStateFilter,
+    pinnedFilter,
+    openActivityFilter,
+    lastOpenedFrom,
+    lastOpenedTo,
     sortBy,
     pageSize,
     pageOffset,
@@ -686,6 +744,7 @@ export function useBookmarks() {
     goToNextPage,
     isFetchingPage,
     pageSelectionKey,
+    libraryParityFilterParams: parityFilterParams,
     categories,
     categoriesLoading: categoriesQuery.isLoading,
     categoriesError: categoriesQuery.isError,
@@ -704,6 +763,14 @@ export function useBookmarks() {
     setSelectedDomain,
     readLaterOnly,
     setReadLaterOnly,
+    readStateFilter,
+    setReadStateFilter,
+    pinnedFilter,
+    setPinnedFilter,
+    openActivityFilter,
+    setOpenActivityFilter,
+    lastOpenedRange,
+    setLastOpenedRange,
     dateRange,
     setDateRange,
     sortBy,

@@ -1,6 +1,11 @@
 import { Database } from "bun:sqlite";
 import { BookmarkRow, BookmarkContentRow, TagRow, JobRow } from "./types.js";
 import { deleteBookmarkMediaCacheSync } from "../media/bookmark-media.js";
+import {
+  appendBookmarkParityFilterConditions,
+  normalizeDateUpperBound,
+} from "./bookmark-filters.js";
+import type { BookmarkParityFilters } from "./bookmark-filters.js";
 
 // ─── Query result shapes ──────────────────────────────────────────────────────
 
@@ -12,7 +17,7 @@ export interface BookmarkWithContent extends BookmarkWithTags {
   content: BookmarkContentRow | null;
 }
 
-export interface ListBookmarksOptions {
+export interface ListBookmarksOptions extends BookmarkParityFilters {
   limit: number;
   offset: number;
   tag?: string;
@@ -44,7 +49,7 @@ export interface ExportBookmarkRow {
   notes: string | null;
 }
 
-export interface FilterOptions {
+export interface FilterOptions extends BookmarkParityFilters {
   tag?: string;
   domain?: string;
   category_id?: string;
@@ -171,12 +176,13 @@ export class BookmarkRepository {
     }
     if (opts.date_to) {
       conditions.push("b.created_at <= ?");
-      params.push(opts.date_to.length === 10 ? `${opts.date_to}T23:59:59Z` : opts.date_to);
+      params.push(normalizeDateUpperBound(opts.date_to));
     }
     if (opts.read_later !== undefined) {
       conditions.push("b.read_later = ?");
       params.push(opts.read_later);
     }
+    appendBookmarkParityFilterConditions(conditions, params, opts);
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -252,12 +258,13 @@ export class BookmarkRepository {
     }
     if (filters.date_to) {
       conditions.push("b.created_at <= ?");
-      params.push(filters.date_to.length === 10 ? `${filters.date_to}T23:59:59Z` : filters.date_to);
+      params.push(normalizeDateUpperBound(filters.date_to));
     }
     if (filters.read_later !== undefined) {
       conditions.push("b.read_later = ?");
       params.push(filters.read_later);
     }
+    appendBookmarkParityFilterConditions(conditions, params, filters);
 
     const where = `WHERE ${conditions.join(" AND ")}`;
 

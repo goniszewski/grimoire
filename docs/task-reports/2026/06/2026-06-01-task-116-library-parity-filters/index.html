@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Library Parity Filters - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1120px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 56px 0;
+}
+.task-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.inner { padding: 28px; }
+.breadcrumbs {
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span, .pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+.hero-shot {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #111827;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+figcaption {
+  padding: 10px 14px;
+  color: #d7dbea;
+  font-size: .86rem;
+}
+section { margin-top: 24px; }
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+p, li {
+  line-height: 1.55;
+}
+code {
+  border-radius: 6px;
+  background: #f1f2f8;
+  padding: 2px 5px;
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #111827;
+}
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+details {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+summary {
+  cursor: pointer;
+  color: var(--blue);
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 28px, 1120px);
+    padding: 36px 0;
+  }
+  .inner { padding: 20px; }
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <div class="inner">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="../index.html">June 2026</a>
+      </nav>
+
+      <header>
+        <p class="eyebrow">Little Imp Task Report</p>
+        <h1>Library Parity Filters</h1>
+        <div class="meta-row">
+          <span>2026-06-01</span>
+          <span>TASK-116</span>
+          <span>Done</span>
+        </div>
+      </header>
+    </div>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-main.png" alt="Desktop library view with saved date, read state, pinned, opened count, last-opened, and read-later filters">
+      <figcaption>After: the library toolbar exposes server-backed parity filters while keeping the dense operational layout.</figcaption>
+    </figure>
+
+    <div class="inner">
+      <section>
+        <h2>Before</h2>
+        <p>The library could filter by category, tag, domain, created date, and read-later state. Read/unread, pinned/starred, opened-count, and last-opened filters were not available server-side, so they could not safely combine with daemon pagination.</p>
+      </section>
+
+      <section>
+        <h2>Problem</h2>
+        <p>Grimoire parity requires these bookmark metadata filters to apply before pagination across both normal list and search results. Client-only filtering would produce incorrect page totals and incomplete filtered pages.</p>
+      </section>
+
+      <section>
+        <h2>Changes Added</h2>
+        <ul>
+          <li>Added validated query params for <code>read_state</code>, <code>is_pinned</code>, <code>opened_count_min</code>, <code>opened_count_max</code>, <code>last_opened_from</code>, and <code>last_opened_to</code>.</li>
+          <li>Applied the shared predicates in bookmark listing, keyword search, semantic search, hybrid search, and filtered export paths.</li>
+          <li>Added compact toolbar controls and active filter chips for read state, pinned state, opened count, and last-opened date.</li>
+          <li>Regenerated API docs and added SQLite indexes for the existing parity fields used by these filters.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Result</h2>
+        <p>Users can combine the new filters with existing search, category, tag, domain, date, read-later, page-size, and pagination controls. The daemon owns the result set, so counts, pages, and filtered exports stay coherent.</p>
+      </section>
+
+      <section>
+        <h2>Verification</h2>
+        <ul>
+          <li><code>bun test daemon/src/test/integration/bookmarks.test.ts daemon/src/test/integration/search.test.ts</code></li>
+          <li><code>npx vitest run src/lib/api.test.ts src/lib/export-url.test.ts src/hooks/use-bookmarks.test.ts src/pages/Index.test.tsx</code></li>
+          <li><code>bun test daemon/src/test/migrations.test.ts</code></li>
+          <li><code>npm run check</code></li>
+          <li><code>npm run test:e2e</code></li>
+          <li><code>git diff --check</code></li>
+          <li>In-app browser visual check on an isolated daemon at <code>127.0.0.1:33216</code> and Vite at <code>127.0.0.1:8081</code>.</li>
+        </ul>
+      </section>
+
+      <details open>
+        <summary>Additional Screenshots</summary>
+        <div class="shot-grid">
+          <figure>
+            <img src="assets/02-after-active-filters.png" alt="Library view filtered to unread pinned bookmarks opened two or more times">
+            <figcaption>Active filter chips narrow the sample library to one matching bookmark.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/03-after-mobile.png" alt="Narrow library view with the parity filters wrapping into multiple toolbar rows">
+            <figcaption>Narrow layout keeps controls readable without overlap.</figcaption>
+          </figure>
+        </div>
+      </details>
+
+      <details>
+        <summary>Files Changed</summary>
+        <ul>
+          <li><code>daemon/src/db/bookmark-filters.ts</code></li>
+          <li><code>daemon/src/db/migrations/0016_bookmark_parity_filter_indexes.sql</code></li>
+          <li><code>daemon/src/routes/bookmark-filter-query.ts</code></li>
+          <li><code>daemon/src/db/bookmark-repository.ts</code></li>
+          <li><code>daemon/src/db/search-repository.ts</code></li>
+          <li><code>daemon/src/routes/bookmarks.ts</code></li>
+          <li><code>daemon/src/routes/search.ts</code></li>
+          <li><code>daemon/src/routes/export.ts</code></li>
+          <li><code>src/lib/api.ts</code></li>
+          <li><code>src/lib/export-url.ts</code></li>
+          <li><code>src/hooks/use-bookmarks.ts</code></li>
+          <li><code>src/pages/Index.tsx</code></li>
+          <li><code>API.md</code> and generated contract files</li>
+        </ul>
+      </details>
+    </div>
+  </article>
+</main>
+</body>
+</html>

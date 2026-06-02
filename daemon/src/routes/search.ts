@@ -2,6 +2,7 @@ import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { SearchRepository, SearchMode } from "../db/search-repository.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
+import { parseBookmarkRouteFilters } from "./bookmark-filter-query.js";
 
 interface SearchDeps {
   db: Database;
@@ -11,13 +12,6 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   if (!val) return fallback;
   const n = parseInt(val, 10);
   return isNaN(n) ? fallback : Math.max(n, min);
-}
-
-function parseBooleanFlagParam(val: string | null | undefined): 0 | 1 | undefined | "invalid" {
-  if (val === undefined || val === null || val === "") return undefined;
-  if (val === "true" || val === "1") return 1;
-  if (val === "false" || val === "0") return 0;
-  return "invalid";
 }
 
 function problem(c: Context, status: 400 | 422, title: string, detail?: string) {
@@ -43,14 +37,14 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     const rawMode = c.req.query("mode") ?? "keyword";
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
     const offset = parseIntParam(c.req.query("offset"), 0);
-    const readLater = parseBooleanFlagParam(c.req.query("read_later"));
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
 
     const validModes: SearchMode[] = ["keyword", "semantic", "hybrid"];
     if (!validModes.includes(rawMode as SearchMode)) {
       return problem(c, 422, "Unprocessable Entity", `mode must be one of: ${validModes.join(", ")}`);
     }
-    if (readLater === "invalid") {
-      return problem(c, 422, "Unprocessable Entity", "`read_later` must be true, false, 1, or 0");
+    if (!parsedFilters.ok) {
+      return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
     }
     const mode = rawMode as SearchMode;
 
@@ -73,7 +67,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         category: c.req.query("category") ?? undefined,
         date_from: c.req.query("date_from") ?? undefined,
         date_to: c.req.query("date_to") ?? undefined,
-        read_later: readLater,
+        ...parsedFilters.filters,
         limit,
         offset,
         embeddingConfig: embeddingConfig ?? undefined,

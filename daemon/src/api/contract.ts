@@ -127,6 +127,14 @@ const bookmarkFilters = {
   read_later: stringSchema("Filter by read-later state; accepts boolean strings or numeric flags", {
     enum: ["true", "false", "1", "0"],
   }),
+  read_state: stringSchema("Filter by read state", { enum: ["read", "unread"] }),
+  is_pinned: stringSchema("Filter by pinned/starred state; accepts boolean strings or numeric flags", {
+    enum: ["true", "false", "1", "0"],
+  }),
+  opened_count_min: integerSchema("Filter to bookmarks opened at least this many times", { minimum: 0 }),
+  opened_count_max: integerSchema("Filter to bookmarks opened no more than this many times", { minimum: 0 }),
+  last_opened_from: stringSchema("Inclusive ISO date or date-time lower bound for last opened time"),
+  last_opened_to: stringSchema("Inclusive ISO date or date-time upper bound for last opened time"),
 };
 
 const bookmarkProperties = {
@@ -1687,7 +1695,7 @@ export const apiContract = {
         {
           title: "List filtered bookmarks",
           request:
-            'curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_later=true&limit=10&offset=0"',
+            'curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0"',
           response: {
             status: 200,
             contentType: "application/json",
@@ -1936,7 +1944,7 @@ export const apiContract = {
         {
           title: "Hybrid search with pagination",
           request:
-            'curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&limit=10&offset=0"',
+            'curl "http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&read_state=read&last_opened_from=2026-06-01&limit=10&offset=0"',
           response: {
             status: 200,
             contentType: "application/json",
@@ -2633,7 +2641,7 @@ export const apiContract = {
           schema: arrayOf(ref("ExportBookmark"), "Export rows"),
         },
         "400": legacyErrorResponse("Invalid format"),
-        "422": legacyErrorResponse("Invalid read_later filter"),
+        "422": legacyErrorResponse("Invalid export filter"),
       },
       examples: [
         {
@@ -2664,12 +2672,17 @@ export const apiContract = {
           },
         },
         {
+          title: "Export read pinned bookmarks opened this month",
+          request:
+            'curl "http://127.0.0.1:3210/export?format=csv&read_state=read&is_pinned=true&opened_count_min=1&last_opened_from=2026-06-01"',
+        },
+        {
           title: "Reject an invalid export filter",
-          request: 'curl "http://127.0.0.1:3210/export?format=json&read_later=maybe"',
+          request: 'curl "http://127.0.0.1:3210/export?format=json&read_state=maybe"',
           response: {
             status: 422,
             contentType: "application/json",
-            body: { error: "`read_later` must be true, false, 1, or 0" },
+            body: { error: "`read_state` must be read or unread" },
           },
         },
       ],

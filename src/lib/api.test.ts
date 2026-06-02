@@ -5,10 +5,12 @@ import {
   createTag,
   deleteTag,
   importBookmarksFile,
+  listBookmarks,
   previewImportBookmarksFile,
   recordBookmarkOpen,
   renameTag,
   resolveDaemonUrl,
+  searchBookmarks,
   updateBookmark,
 } from "./api";
 
@@ -159,6 +161,69 @@ describe("bookmark mutation API", () => {
         }),
       })
     );
+  });
+});
+
+describe("library filter API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("serializes parity filters for bookmark list requests", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    await listBookmarks({
+      read_state: "unread",
+      is_pinned: true,
+      opened_count_min: 1,
+      opened_count_max: 5,
+      last_opened_from: "2026-06-01",
+      last_opened_to: "2026-06-02",
+    });
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.searchParams.get("read_state")).toBe("unread");
+    expect(url.searchParams.get("is_pinned")).toBe("true");
+    expect(url.searchParams.get("opened_count_min")).toBe("1");
+    expect(url.searchParams.get("opened_count_max")).toBe("5");
+    expect(url.searchParams.get("last_opened_from")).toBe("2026-06-01");
+    expect(url.searchParams.get("last_opened_to")).toBe("2026-06-02");
+  });
+
+  it("serializes parity filters for search requests", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [],
+          pagination: { total: 0, limit: 20, offset: 0, has_more: false },
+          meta: { mode: "keyword" },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    await searchBookmarks({
+      q: "react",
+      read_state: "read",
+      is_pinned: false,
+      opened_count_min: 2,
+      last_opened_from: "2026-06-01",
+    });
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.pathname).toBe("/search");
+    expect(url.searchParams.get("read_state")).toBe("read");
+    expect(url.searchParams.get("is_pinned")).toBe("false");
+    expect(url.searchParams.get("opened_count_min")).toBe("2");
+    expect(url.searchParams.get("last_opened_from")).toBe("2026-06-01");
   });
 });
 

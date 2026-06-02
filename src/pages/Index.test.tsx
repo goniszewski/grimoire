@@ -78,7 +78,11 @@ vi.mock("@/components/DegradedModeBanner", () => ({ DegradedModeBanner: () => nu
 vi.mock("@/components/KeyboardShortcuts", () => ({ KeyboardShortcuts: () => null }));
 vi.mock("@/components/ThemeToggle", () => ({ ThemeToggle: () => null }));
 vi.mock("@/components/DateRangeFilter", () => ({ DateRangeFilter: () => null }));
-vi.mock("@/components/ExportMenu", () => ({ ExportMenu: () => null }));
+vi.mock("@/components/ExportMenu", () => ({
+  ExportMenu: ({ filters }: { filters?: Record<string, unknown> }) => (
+    <output data-testid="export-filters">{JSON.stringify(filters ?? {})}</output>
+  ),
+}));
 vi.mock("@/components/PreferencesDialog", () => ({ PreferencesDialog: () => null }));
 vi.mock("@/hooks/use-toast", () => ({ toast: vi.fn() }));
 
@@ -131,6 +135,7 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
     goToNextPage: vi.fn(),
     isFetchingPage: false,
     pageSelectionKey: "page-1",
+    libraryParityFilterParams: {},
     categories: [],
     categoriesLoading: false,
     categoriesError: false,
@@ -149,6 +154,14 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
     setSelectedDomain: vi.fn(),
     readLaterOnly: false,
     setReadLaterOnly: vi.fn(),
+    readStateFilter: "all" as const,
+    setReadStateFilter: vi.fn(),
+    pinnedFilter: "all" as const,
+    setPinnedFilter: vi.fn(),
+    openActivityFilter: "all" as const,
+    setOpenActivityFilter: vi.fn(),
+    lastOpenedRange: { from: null, to: null },
+    setLastOpenedRange: vi.fn(),
     dateRange: { from: null, to: null },
     setDateRange: vi.fn(),
     sortBy: "newest" as const,
@@ -225,5 +238,43 @@ describe("Index pagination", () => {
 
     await waitFor(() => expect(screen.queryByText("1 selected")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: /^Select$/ })).toBeInTheDocument();
+  });
+});
+
+describe("Index parity filters", () => {
+  it("renders dense filter controls and clears active filter badges", () => {
+    mockStore = makeStore({
+      readStateFilter: "unread",
+      pinnedFilter: "pinned",
+      openActivityFilter: "opened",
+      lastOpenedRange: { from: new Date("2026-06-01T00:00:00.000Z"), to: null },
+      libraryParityFilterParams: {
+        read_state: "unread",
+        is_pinned: true,
+        opened_count_min: 1,
+        last_opened_from: "2026-06-01",
+      },
+      setReadStateFilter: vi.fn(),
+      setPinnedFilter: vi.fn(),
+      setOpenActivityFilter: vi.fn(),
+      setLastOpenedRange: vi.fn(),
+    });
+
+    renderIndex();
+
+    expect(screen.getByRole("combobox", { name: "Read state filter" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Pinned filter" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Opened count filter" })).toBeInTheDocument();
+    expect(screen.getAllByText("Unread").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pinned").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Opened").length).toBeGreaterThan(0);
+    expect(screen.getByText("Last opened")).toBeInTheDocument();
+    expect(screen.getByTestId("export-filters").textContent).toContain('"read_state":"unread"');
+    expect(screen.getByTestId("export-filters").textContent).toContain('"is_pinned":true');
+    expect(screen.getByTestId("export-filters").textContent).toContain('"opened_count_min":1');
+    expect(screen.getByTestId("export-filters").textContent).toContain('"last_opened_from":"2026-06-01"');
+
+    fireEvent.click(screen.getAllByText("Unread")[0]);
+    expect(mockStore.setReadStateFilter).toHaveBeenCalledWith("all");
   });
 });

@@ -5122,6 +5122,42 @@
                 "0"
               ]
             },
+            "read_state": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            },
+            "is_pinned": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            },
+            "opened_count_min": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            },
+            "opened_count_max": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            },
+            "last_opened_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            },
+            "last_opened_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            },
             "limit": {
               "type": "integer",
               "description": "Maximum number of results to return",
@@ -5157,7 +5193,7 @@
       "examples": [
         {
           "title": "List filtered bookmarks",
-          "request": "curl \"http://127.0.0.1:3210/bookmarks?tag=rag&read_later=true&limit=10&offset=0\"",
+          "request": "curl \"http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0\"",
           "response": {
             "status": 200,
             "contentType": "application/json",
@@ -5909,6 +5945,42 @@
                 "0"
               ]
             },
+            "read_state": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            },
+            "is_pinned": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            },
+            "opened_count_min": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            },
+            "opened_count_max": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            },
+            "last_opened_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            },
+            "last_opened_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            },
             "limit": {
               "type": "integer",
               "description": "Maximum number of results to return",
@@ -5950,7 +6022,7 @@
       "examples": [
         {
           "title": "Hybrid search with pagination",
-          "request": "curl \"http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&limit=10&offset=0\"",
+          "request": "curl \"http://127.0.0.1:3210/search?q=vector%20search&mode=hybrid&tag=rag&read_state=read&last_opened_from=2026-06-01&limit=10&offset=0\"",
           "response": {
             "status": 200,
             "contentType": "application/json",
@@ -7659,6 +7731,42 @@
                 "1",
                 "0"
               ]
+            },
+            "read_state": {
+              "type": "string",
+              "description": "Filter by read state",
+              "enum": [
+                "read",
+                "unread"
+              ]
+            },
+            "is_pinned": {
+              "type": "string",
+              "description": "Filter by pinned/starred state; accepts boolean strings or numeric flags",
+              "enum": [
+                "true",
+                "false",
+                "1",
+                "0"
+              ]
+            },
+            "opened_count_min": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened at least this many times",
+              "minimum": 0
+            },
+            "opened_count_max": {
+              "type": "integer",
+              "description": "Filter to bookmarks opened no more than this many times",
+              "minimum": 0
+            },
+            "last_opened_from": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time lower bound for last opened time"
+            },
+            "last_opened_to": {
+              "type": "string",
+              "description": "Inclusive ISO date or date-time upper bound for last opened time"
             }
           },
           "required": [],
@@ -7685,7 +7793,7 @@
           }
         },
         "422": {
-          "description": "Invalid read_later filter",
+          "description": "Invalid export filter",
           "contentType": "application/json",
           "schema": {
             "ref": "LegacyError"
@@ -7724,13 +7832,17 @@
           }
         },
         {
+          "title": "Export read pinned bookmarks opened this month",
+          "request": "curl \"http://127.0.0.1:3210/export?format=csv&read_state=read&is_pinned=true&opened_count_min=1&last_opened_from=2026-06-01\""
+        },
+        {
           "title": "Reject an invalid export filter",
-          "request": "curl \"http://127.0.0.1:3210/export?format=json&read_later=maybe\"",
+          "request": "curl \"http://127.0.0.1:3210/export?format=json&read_state=maybe\"",
           "response": {
             "status": 422,
             "contentType": "application/json",
             "body": {
-              "error": "`read_later` must be true, false, 1, or 0"
+              "error": "`read_state` must be read or unread"
             }
           }
         }

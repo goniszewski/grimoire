@@ -11,6 +11,7 @@ import { JobStatus } from "../types/job.js";
 import { dismissPipelineFailure, getPipelineFailure } from "../pipeline/failures.js";
 import { Config } from "../config.js";
 import { listBookmarkMedia } from "../media/bookmark-media.js";
+import { parseBookmarkRouteFilters } from "./bookmark-filter-query.js";
 
 interface BookmarksDeps {
   db: Database;
@@ -55,13 +56,6 @@ function parseIntParam(val: string | null | undefined, fallback: number, min = 0
   if (!val) return fallback;
   const n = parseInt(val, 10);
   return isNaN(n) ? fallback : Math.max(n, min);
-}
-
-function parseBooleanFlagParam(val: string | null | undefined): 0 | 1 | undefined | "invalid" {
-  if (val === undefined || val === null || val === "") return undefined;
-  if (val === "true" || val === "1") return 1;
-  if (val === "false" || val === "0") return 0;
-  return "invalid";
 }
 
 function hasActivePipelineJob(db: Database, bookmarkId: string): boolean {
@@ -164,9 +158,9 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const maxLimit = archived ? 500 : 100;
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), maxLimit);
     const offset = parseIntParam(c.req.query("offset"), 0);
-    const readLater = parseBooleanFlagParam(c.req.query("read_later"));
-    if (readLater === "invalid") {
-      return problem(c, 422, "Unprocessable Entity", "`read_later` must be true, false, 1, or 0");
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    if (!parsedFilters.ok) {
+      return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
     }
 
     const result = repo.list({
@@ -178,7 +172,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       category: c.req.query("category") ?? undefined,
       date_from: c.req.query("date_from") ?? undefined,
       date_to: c.req.query("date_to") ?? undefined,
-      read_later: readLater,
+      ...parsedFilters.filters,
       archived,
     });
 

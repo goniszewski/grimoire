@@ -1,6 +1,7 @@
 import { Context, Hono } from "hono";
 import { Database } from "bun:sqlite";
-import { BookmarkRepository, FilterOptions } from "../db/bookmark-repository.js";
+import { BookmarkRepository, type FilterOptions } from "../db/bookmark-repository.js";
+import { parseBookmarkRouteFilters } from "./bookmark-filter-query.js";
 
 interface ExportDeps {
   db: Database;
@@ -32,17 +33,10 @@ function escapeCSV(v: string | null | undefined): string {
   return s;
 }
 
-function parseReadLaterFilter(value: string | null | undefined): 0 | 1 | undefined | "invalid" {
-  if (value === undefined || value === null || value === "") return undefined;
-  if (value === "true" || value === "1") return 1;
-  if (value === "false" || value === "0") return 0;
-  return "invalid";
-}
-
-function buildFilters(c: Context): FilterOptions | "invalid" {
-  const readLater = parseReadLaterFilter(c.req.query("read_later"));
-  if (readLater === "invalid") {
-    return "invalid";
+function buildFilters(c: Context): FilterOptions | { error: string } {
+  const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+  if (!parsedFilters.ok) {
+    return { error: parsedFilters.detail };
   }
 
   return {
@@ -52,7 +46,7 @@ function buildFilters(c: Context): FilterOptions | "invalid" {
     category: c.req.query("category") ?? undefined,
     date_from: c.req.query("date_from") ?? undefined,
     date_to: c.req.query("date_to") ?? undefined,
-    read_later: readLater,
+    ...parsedFilters.filters,
   };
 }
 
@@ -67,8 +61,8 @@ export function createExportRoute(deps: ExportDeps): Hono {
     }
 
     const filters = buildFilters(c);
-    if (filters === "invalid") {
-      return c.json({ error: "`read_later` must be true, false, 1, or 0" }, 422);
+    if ("error" in filters) {
+      return c.json({ error: filters.error }, 422);
     }
 
     const rows = repo.exportAll(filters);

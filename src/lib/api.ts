@@ -480,7 +480,25 @@ async function fetchHealth(url: string): Promise<HealthResponseDto | null> {
 
 // ─── Bookmarks ────────────────────────────────────────────────────────────────
 
-export interface ListBookmarksParams {
+export interface LibraryParityFilterParams {
+  read_state?: "read" | "unread";
+  is_pinned?: boolean;
+  opened_count_min?: number;
+  opened_count_max?: number;
+  last_opened_from?: string;
+  last_opened_to?: string;
+}
+
+export function appendLibraryParityFilters(q: URLSearchParams, params: LibraryParityFilterParams): void {
+  if (params.read_state) q.set("read_state", params.read_state);
+  if (params.is_pinned != null) q.set("is_pinned", params.is_pinned ? "true" : "false");
+  if (params.opened_count_min != null) q.set("opened_count_min", String(params.opened_count_min));
+  if (params.opened_count_max != null) q.set("opened_count_max", String(params.opened_count_max));
+  if (params.last_opened_from) q.set("last_opened_from", params.last_opened_from);
+  if (params.last_opened_to) q.set("last_opened_to", params.last_opened_to);
+}
+
+export interface ListBookmarksParams extends LibraryParityFilterParams {
   limit?: number;
   offset?: number;
   tag?: string;
@@ -505,6 +523,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
+  appendLibraryParityFilters(q, params);
   if (params.archived) q.set("archived", "true");
   const qs = q.toString();
   return apiFetch<BookmarkListResponseDto>(`/bookmarks${qs ? `?${qs}` : ""}`);
@@ -586,7 +605,7 @@ export async function getReprocessStatus(batchId: string): Promise<ReprocessBatc
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
-export interface SearchParams {
+export interface SearchParams extends LibraryParityFilterParams {
   q: string;
   mode?: SearchResponseDto["meta"]["mode"];
   tag?: string;
@@ -610,6 +629,7 @@ export async function searchBookmarks(params: SearchParams): Promise<SearchRespo
   if (params.date_from) q.set("date_from", params.date_from);
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
+  appendLibraryParityFilters(q, params);
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<SearchResponseDto>(`/search?${q.toString()}`);
