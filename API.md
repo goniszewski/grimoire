@@ -228,6 +228,8 @@ Query parameters:
 | `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
 | `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
 | `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
+| `sort` | "created_at" \| "updated_at" \| "title" \| "domain" \| "opened_count" \| "last_opened_at" | no | Sort key applied before pagination |
+| `direction` | "asc" \| "desc" | no | Sort direction; requires sort and defaults to desc when omitted |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 | `archived` | "true" \| "false" | no | When true, return archived bookmarks |
@@ -245,7 +247,7 @@ Examples:
 Request:
 
 ```bash
-curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0"
+curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&sort=opened_count&direction=desc&limit=10&offset=0"
 ```
 
 Response:
@@ -719,6 +721,8 @@ Query parameters:
 | `opened_count_max` | integer | no | Filter to bookmarks opened no more than this many times |
 | `last_opened_from` | string | no | Inclusive ISO date or date-time lower bound for last opened time |
 | `last_opened_to` | string | no | Inclusive ISO date or date-time upper bound for last opened time |
+| `sort` | "created_at" \| "updated_at" \| "title" \| "domain" \| "opened_count" \| "last_opened_at" | no | Sort key applied before pagination |
+| `direction` | "asc" \| "desc" | no | Sort direction; requires sort and defaults to desc when omitted |
 | `limit` | integer | no | Maximum number of results to return |
 | `offset` | integer | no | Number of results to skip |
 

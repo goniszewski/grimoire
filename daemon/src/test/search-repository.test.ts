@@ -1,10 +1,19 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Database } from "bun:sqlite";
 import { SearchRepository } from "../db/search-repository.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
+import { EmbeddingRepository } from "../db/embedding-repository.js";
 import { makeTestDb } from "./helpers/db.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function mockEmbeddingFetch(vector: number[]): typeof fetch {
+  return (async () =>
+    new Response(JSON.stringify({ data: [{ embedding: vector }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })) as unknown as typeof fetch;
+}
 
 /**
  * Access the private sanitizeFtsQuery function by extracting it from the
@@ -17,11 +26,16 @@ describe("SearchRepository — keywordSearch", () => {
   let db: Database;
   let searchRepo: SearchRepository;
   let bookmarkRepo: BookmarkRepository;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     db = makeTestDb();
     searchRepo = new SearchRepository(db);
     bookmarkRepo = new BookmarkRepository(db);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
   // ─── Empty query ────────────────────────────────────────────────────────
@@ -152,5 +166,87 @@ describe("SearchRepository — keywordSearch", () => {
     const found = result.items.find((i) => i.id === bm.id);
     expect(found!.tags).toContain("rust");
     expect(found!.tags).toContain("systems");
+  });
+
+  it("applies requested sort before paginating keyword search results", () => {
+    const low = bookmarkRepo.create("https://low.example.com", "Shared Query Low");
+    const high = bookmarkRepo.create("https://high.example.com", "Shared Query High");
+    const mid = bookmarkRepo.create("https://mid.example.com", "Shared Query Mid");
+    db.query("UPDATE bookmarks SET opened_count = ? WHERE id = ?").run(1, low.id);
+    db.query("UPDATE bookmarks SET opened_count = ? WHERE id = ?").run(5, high.id);
+    db.query("UPDATE bookmarks SET opened_count = ? WHERE id = ?").run(3, mid.id);
+
+    const result = searchRepo.keywordSearch({
+      q: "Shared",
+      limit: 1,
+      offset: 1,
+      sort: "opened_count",
+      direction: "desc",
+    });
+
+    expect(result.total).toBe(3);
+    expect(result.items.map((bookmark) => bookmark.id)).toEqual([mid.id]);
+  });
+
+  it("matches SQL opened-count tie ordering for semantic search sorts", async () => {
+    const older = bookmarkRepo.create("https://older.example.com", "Shared Older");
+    const recent = bookmarkRepo.create("https://recent.example.com", "Shared Recent");
+    const never = bookmarkRepo.create("https://never.example.com", "Shared Never");
+    db.query(
+      `UPDATE bookmarks
+       SET opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run(1, "2026-05-01T00:00:00.000Z", older.id);
+    db.query(
+      `UPDATE bookmarks
+       SET opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run(1, "2026-05-03T00:00:00.000Z", recent.id);
+    db.query(
+      `UPDATE bookmarks
+       SET opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run(1, null, never.id);
+
+    const embeddingRepo = new EmbeddingRepository(db);
+    for (const bookmark of [older, recent, never]) {
+      embeddingRepo.upsert(bookmark.id, "test-model", [1, 0]);
+    }
+    globalThis.fetch = mockEmbeddingFetch([1, 0]);
+
+    const result = await searchRepo.search({
+      q: "Shared",
+      mode: "semantic",
+      sort: "opened_count",
+      direction: "asc",
+      limit: 10,
+      offset: 0,
+      embeddingConfig: { baseUrl: "https://embed.example.test", apiKey: "test", model: "test-model" },
+    });
+
+    expect(result.items.map((bookmark) => bookmark.id)).toEqual([recent.id, older.id, never.id]);
+  });
+
+  it("keeps hybrid keyword candidates relevance-ranked before applying final sort", async () => {
+    const target = bookmarkRepo.create("https://target.example.com", "Zzz Shared Shared Shared Target");
+    for (let index = 0; index < 200; index++) {
+      bookmarkRepo.create(
+        `https://filler-${index}.example.com`,
+        `Aaa ${String(index).padStart(3, "0")} Shared`
+      );
+    }
+    globalThis.fetch = mockEmbeddingFetch([1, 0]);
+
+    const result = await searchRepo.search({
+      q: "Shared",
+      mode: "hybrid",
+      sort: "title",
+      direction: "asc",
+      limit: 200,
+      offset: 0,
+      embeddingConfig: { baseUrl: "https://embed.example.test", apiKey: "test", model: "test-model" },
+    });
+
+    expect(result.items.map((bookmark) => bookmark.id)).toContain(target.id);
   });
 });

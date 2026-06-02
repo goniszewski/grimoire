@@ -371,6 +371,19 @@ describe("Bookmarks API", () => {
     }
   });
 
+  it("GET /bookmarks rejects invalid sort params", async () => {
+    for (const query of [
+      "sort=importance",
+      "direction=sideways",
+      "direction=asc",
+    ]) {
+      const res = await app.request(`/bookmarks?${query}`);
+      expect(res.status).toBe(422);
+      const json = await res.json() as { title: string };
+      expect(json.title).toBe("Unprocessable Entity");
+    }
+  });
+
   it("GET /bookmarks filters by category_id when duplicate category names exist", async () => {
     const parentA = db
       .query<{ id: string }, [string]>("INSERT INTO categories (name) VALUES (?) RETURNING id")

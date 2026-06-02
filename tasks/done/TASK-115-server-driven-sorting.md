@@ -2,7 +2,7 @@
 
 **Phase:** Grimoire parity
 **Priority:** medium
-**Status:** backlog
+**Status:** done
 **Area:** search / daemon / frontend
 **Source:** PAR-044
 **Labels:** grimoire-parity, sorting, search
@@ -21,11 +21,11 @@ title, domain, opened count, and last-opened date.
 
 ## Acceptance Criteria
 
-- [ ] API contract documents supported sort keys and directions.
-- [ ] Daemon list/search endpoints apply sorting before pagination.
-- [ ] Frontend sort controls use server-driven ordering.
-- [ ] Sorting remains stable for equal values.
-- [ ] Tests cover all approved sort keys and pagination interaction.
+- [x] API contract documents supported sort keys and directions.
+- [x] Daemon list/search endpoints apply sorting before pagination.
+- [x] Frontend sort controls use server-driven ordering.
+- [x] Sorting remains stable for equal values.
+- [x] Tests cover all approved sort keys and pagination interaction.
 
 ## Dependencies
 

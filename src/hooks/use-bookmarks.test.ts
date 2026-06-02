@@ -280,36 +280,71 @@ describe("useBookmarks — sorting", () => {
     mockedListBookmarks.mockResolvedValue(bookmarkListResponse([older, newer]));
   });
 
-  it("sorts newest first by default", async () => {
+  it("requests created_at descending by default and keeps server order", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const ids = result.current.filteredBookmarks.map((b) => b.id);
-    expect(ids).toEqual(["b", "a"]);
+    expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+      sort: "created_at",
+      direction: "desc",
+    }));
+    expect(result.current.filteredBookmarks.map((b) => b.id)).toEqual(["a", "b"]);
   });
 
-  it("sorts oldest first when sortBy=oldest", async () => {
+  it("requests created_at ascending when sortBy=oldest", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     act(() => result.current.setSortBy("oldest"));
-    expect(result.current.filteredBookmarks.map((b) => b.id)).toEqual(["a", "b"]);
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        sort: "created_at",
+        direction: "asc",
+      }))
+    );
   });
 
-  it("sorts title A-Z", async () => {
+  it("requests title ascending when sortBy=title-az", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     act(() => result.current.setSortBy("title-az"));
-    expect(result.current.filteredBookmarks.map((b) => b.title)).toEqual(["Apple", "Banana"]);
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        sort: "title",
+        direction: "asc",
+      }))
+    );
   });
 
-  it("sorts title Z-A", async () => {
+  it("requests opened_count descending when sortBy=most-opened", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    act(() => result.current.setSortBy("title-za"));
-    expect(result.current.filteredBookmarks.map((b) => b.title)).toEqual(["Banana", "Apple"]);
+    act(() => result.current.setSortBy("most-opened"));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        sort: "opened_count",
+        direction: "desc",
+      }))
+    );
+  });
+
+  it("passes sort params to search requests", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSortBy("last-opened-newest"));
+    act(() => result.current.setSearchQuery("react"));
+
+    await waitFor(() =>
+      expect(mockedSearchBookmarks).toHaveBeenCalledWith(expect.objectContaining({
+        q: "react",
+        sort: "last_opened_at",
+        direction: "desc",
+      })),
+      { timeout: 2000 }
+    );
   });
 });
 

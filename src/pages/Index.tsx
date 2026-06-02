@@ -524,10 +524,16 @@ const Index = () => {
                       <SelectContent>
                         <SelectItem value="newest" className="text-xs">Newest first</SelectItem>
                         <SelectItem value="oldest" className="text-xs">Oldest first</SelectItem>
+                        <SelectItem value="updated-newest" className="text-xs">Updated newest</SelectItem>
+                        <SelectItem value="updated-oldest" className="text-xs">Updated oldest</SelectItem>
                         <SelectItem value="title-az" className="text-xs">Title A→Z</SelectItem>
                         <SelectItem value="title-za" className="text-xs">Title Z→A</SelectItem>
                         <SelectItem value="domain-az" className="text-xs">Domain A→Z</SelectItem>
                         <SelectItem value="domain-za" className="text-xs">Domain Z→A</SelectItem>
+                        <SelectItem value="most-opened" className="text-xs">Most opened</SelectItem>
+                        <SelectItem value="least-opened" className="text-xs">Least opened</SelectItem>
+                        <SelectItem value="last-opened-newest" className="text-xs">Last opened newest</SelectItem>
+                        <SelectItem value="last-opened-oldest" className="text-xs">Last opened oldest</SelectItem>
                       </SelectContent>
                     </Select>
                   </>

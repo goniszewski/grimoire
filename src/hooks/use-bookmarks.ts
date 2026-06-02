@@ -16,6 +16,7 @@ import type {
   ApiBookmark,
   ApiBookmarkWithContent,
   ApiCategory,
+  LibrarySortParams,
   LibraryParityFilterParams,
 } from "@/lib/api";
 import {
@@ -29,10 +30,16 @@ export type SearchMode = "keyword" | "semantic" | "hybrid";
 export type SortOption =
   | "newest"
   | "oldest"
+  | "updated-newest"
+  | "updated-oldest"
   | "title-az"
   | "title-za"
   | "domain-az"
-  | "domain-za";
+  | "domain-za"
+  | "most-opened"
+  | "least-opened"
+  | "last-opened-newest"
+  | "last-opened-oldest";
 
 export type ReadStateFilter = "all" | "read" | "unread";
 export type PinnedFilter = "all" | "pinned" | "unpinned";
@@ -169,6 +176,36 @@ function toUICategories(categories: ApiCategory[], depth = 0): UICategory[] {
     },
     ...toUICategories(category.children ?? [], depth + 1),
   ]);
+}
+
+function toLibrarySortParams(sortBy: SortOption): Required<LibrarySortParams> {
+  switch (sortBy) {
+    case "oldest":
+      return { sort: "created_at", direction: "asc" };
+    case "updated-newest":
+      return { sort: "updated_at", direction: "desc" };
+    case "updated-oldest":
+      return { sort: "updated_at", direction: "asc" };
+    case "title-az":
+      return { sort: "title", direction: "asc" };
+    case "title-za":
+      return { sort: "title", direction: "desc" };
+    case "domain-az":
+      return { sort: "domain", direction: "asc" };
+    case "domain-za":
+      return { sort: "domain", direction: "desc" };
+    case "most-opened":
+      return { sort: "opened_count", direction: "desc" };
+    case "least-opened":
+      return { sort: "opened_count", direction: "asc" };
+    case "last-opened-newest":
+      return { sort: "last_opened_at", direction: "desc" };
+    case "last-opened-oldest":
+      return { sort: "last_opened_at", direction: "asc" };
+    case "newest":
+    default:
+      return { sort: "created_at", direction: "desc" };
+  }
 }
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -377,7 +414,8 @@ export function useBookmarks() {
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
     ...parityFilterParams,
-  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams]);
+    ...toLibrarySortParams(sortBy),
+  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, sortBy]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -401,7 +439,8 @@ export function useBookmarks() {
     ...parityFilterParams,
     limit: pageSize,
     offset: pageOffset,
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset]);
+    ...toLibrarySortParams(sortBy),
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, sortBy]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -422,20 +461,8 @@ export function useBookmarks() {
     [rawBookmarks, categoryMap]
   );
 
-  // ─── Sorted bookmarks ─────────────────────────────────────────────────────
-  const filteredBookmarks = useMemo<UIBookmark[]>(() => {
-    return [...bookmarks].sort((a, b) => {
-      switch (sortBy) {
-        case "newest": return new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime();
-        case "oldest": return new Date(a.savedAt).getTime() - new Date(b.savedAt).getTime();
-        case "title-az": return a.title.localeCompare(b.title);
-        case "title-za": return b.title.localeCompare(a.title);
-        case "domain-az": return a.domain.localeCompare(b.domain);
-        case "domain-za": return b.domain.localeCompare(a.domain);
-        default: return 0;
-      }
-    });
-  }, [bookmarks, sortBy]);
+  // The daemon sorts before pagination; keep the received page order intact.
+  const filteredBookmarks = bookmarks;
 
   const activePagination: LibraryPaginationState = useMemo(() => {
     const response = debouncedQuery.trim() ? searchQuery_.data : bookmarksQuery.data;

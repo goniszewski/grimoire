@@ -3,9 +3,10 @@ import { BookmarkRow, BookmarkContentRow, TagRow, JobRow } from "./types.js";
 import { deleteBookmarkMediaCacheSync } from "../media/bookmark-media.js";
 import {
   appendBookmarkParityFilterConditions,
+  buildBookmarkOrderBy,
   normalizeDateUpperBound,
 } from "./bookmark-filters.js";
-import type { BookmarkParityFilters } from "./bookmark-filters.js";
+import type { BookmarkParityFilters, BookmarkSortOptions } from "./bookmark-filters.js";
 
 // ─── Query result shapes ──────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ export interface BookmarkWithContent extends BookmarkWithTags {
   content: BookmarkContentRow | null;
 }
 
-export interface ListBookmarksOptions extends BookmarkParityFilters {
+export interface ListBookmarksOptions extends BookmarkParityFilters, BookmarkSortOptions {
   limit: number;
   offset: number;
   tag?: string;
@@ -185,6 +186,10 @@ export class BookmarkRepository {
     appendBookmarkParityFilterConditions(conditions, params, opts);
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const orderBy = buildBookmarkOrderBy(
+      opts,
+      "b.is_pinned DESC, b.created_at DESC, b.id ASC"
+    );
 
     const total =
       this.db
@@ -196,7 +201,7 @@ export class BookmarkRepository {
     const rows = this.db
       .query<BookmarkRow, (string | number)[]>(
         `SELECT b.* FROM bookmarks b ${where}
-         ORDER BY b.is_pinned DESC, b.created_at DESC
+         ORDER BY ${orderBy}
          LIMIT ? OFFSET ?`
       )
       .all(...params, opts.limit, opts.offset);

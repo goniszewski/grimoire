@@ -489,6 +489,20 @@ export interface LibraryParityFilterParams {
   last_opened_to?: string;
 }
 
+export type LibrarySortKey =
+  | "created_at"
+  | "updated_at"
+  | "title"
+  | "domain"
+  | "opened_count"
+  | "last_opened_at";
+export type LibrarySortDirection = "asc" | "desc";
+
+export interface LibrarySortParams {
+  sort?: LibrarySortKey;
+  direction?: LibrarySortDirection;
+}
+
 export function appendLibraryParityFilters(q: URLSearchParams, params: LibraryParityFilterParams): void {
   if (params.read_state) q.set("read_state", params.read_state);
   if (params.is_pinned != null) q.set("is_pinned", params.is_pinned ? "true" : "false");
@@ -498,7 +512,13 @@ export function appendLibraryParityFilters(q: URLSearchParams, params: LibraryPa
   if (params.last_opened_to) q.set("last_opened_to", params.last_opened_to);
 }
 
-export interface ListBookmarksParams extends LibraryParityFilterParams {
+export function appendLibrarySort(q: URLSearchParams, params: LibrarySortParams): void {
+  if (!params.sort) return;
+  q.set("sort", params.sort);
+  if (params.direction) q.set("direction", params.direction);
+}
+
+export interface ListBookmarksParams extends LibraryParityFilterParams, LibrarySortParams {
   limit?: number;
   offset?: number;
   tag?: string;
@@ -524,6 +544,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
   appendLibraryParityFilters(q, params);
+  appendLibrarySort(q, params);
   if (params.archived) q.set("archived", "true");
   const qs = q.toString();
   return apiFetch<BookmarkListResponseDto>(`/bookmarks${qs ? `?${qs}` : ""}`);
@@ -605,7 +626,7 @@ export async function getReprocessStatus(batchId: string): Promise<ReprocessBatc
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
-export interface SearchParams extends LibraryParityFilterParams {
+export interface SearchParams extends LibraryParityFilterParams, LibrarySortParams {
   q: string;
   mode?: SearchResponseDto["meta"]["mode"];
   tag?: string;
@@ -630,6 +651,7 @@ export async function searchBookmarks(params: SearchParams): Promise<SearchRespo
   if (params.date_to) q.set("date_to", params.date_to);
   if (params.read_later != null) q.set("read_later", params.read_later ? "true" : "false");
   appendLibraryParityFilters(q, params);
+  appendLibrarySort(q, params);
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<SearchResponseDto>(`/search?${q.toString()}`);

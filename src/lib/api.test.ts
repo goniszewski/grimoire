@@ -195,6 +195,41 @@ describe("library filter API", () => {
     expect(url.searchParams.get("last_opened_to")).toBe("2026-06-02");
   });
 
+  it("serializes server sort params for bookmark list requests", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    await listBookmarks({
+      sort: "opened_count",
+      direction: "desc",
+    });
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.searchParams.get("sort")).toBe("opened_count");
+    expect(url.searchParams.get("direction")).toBe("desc");
+  });
+
+  it("does not serialize sort direction without a sort key", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    await listBookmarks({
+      direction: "asc",
+    });
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.searchParams.get("sort")).toBeNull();
+    expect(url.searchParams.get("direction")).toBeNull();
+  });
+
   it("serializes parity filters for search requests", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
@@ -224,6 +259,32 @@ describe("library filter API", () => {
     expect(url.searchParams.get("is_pinned")).toBe("false");
     expect(url.searchParams.get("opened_count_min")).toBe("2");
     expect(url.searchParams.get("last_opened_from")).toBe("2026-06-01");
+  });
+
+  it("serializes server sort params for search requests", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [],
+          pagination: { total: 0, limit: 20, offset: 0, has_more: false },
+          meta: { mode: "keyword" },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+
+    await searchBookmarks({
+      q: "react",
+      sort: "last_opened_at",
+      direction: "asc",
+    });
+
+    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(url.searchParams.get("sort")).toBe("last_opened_at");
+    expect(url.searchParams.get("direction")).toBe("asc");
   });
 });
 

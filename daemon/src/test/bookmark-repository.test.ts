@@ -180,6 +180,65 @@ describe("BookmarkRepository", () => {
     expect(items.map((b) => b.id)).not.toContain(bm.id);
   });
 
+  it("list applies supported sort keys with stable tie-breakers", () => {
+    const alpha = repo.create("https://alpha.example.com/a", "Zebra");
+    const beta = repo.create("https://beta.example.com/b", "Apple");
+    const gamma = repo.create("https://gamma.example.com/c", "Lemon");
+    db.exec("DROP TRIGGER trg_bookmarks_updated_at");
+    db.query(
+      `UPDATE bookmarks
+       SET created_at = ?, updated_at = ?, opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run("2026-01-03T00:00:00.000Z", "2026-02-01T00:00:00.000Z", 2, "2026-05-02T00:00:00.000Z", alpha.id);
+    db.query(
+      `UPDATE bookmarks
+       SET created_at = ?, updated_at = ?, opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run("2026-01-01T00:00:00.000Z", "2026-02-03T00:00:00.000Z", 5, "2026-05-01T00:00:00.000Z", beta.id);
+    db.query(
+      `UPDATE bookmarks
+       SET created_at = ?, updated_at = ?, opened_count = ?, last_opened_at = ?
+       WHERE id = ?`
+    ).run("2026-01-02T00:00:00.000Z", "2026-02-02T00:00:00.000Z", 0, null, gamma.id);
+
+    const cases = [
+      { sort: "created_at", direction: "asc", expected: [beta.id, gamma.id, alpha.id] },
+      { sort: "created_at", direction: "desc", expected: [alpha.id, gamma.id, beta.id] },
+      { sort: "updated_at", direction: "desc", expected: [beta.id, gamma.id, alpha.id] },
+      { sort: "title", direction: "asc", expected: [beta.id, gamma.id, alpha.id] },
+      { sort: "domain", direction: "desc", expected: [gamma.id, beta.id, alpha.id] },
+      { sort: "opened_count", direction: "desc", expected: [beta.id, alpha.id, gamma.id] },
+      { sort: "last_opened_at", direction: "asc", expected: [beta.id, alpha.id, gamma.id] },
+    ] as const;
+
+    for (const testCase of cases) {
+      const result = repo.list({
+        limit: 100,
+        offset: 0,
+        sort: testCase.sort,
+        direction: testCase.direction,
+      });
+      expect(result.items.map((bookmark) => bookmark.id)).toEqual([...testCase.expected]);
+    }
+  });
+
+  it("list sorts before pagination", () => {
+    const zebra = repo.create("https://zebra.example.com", "Zebra");
+    const apple = repo.create("https://apple.example.com", "Apple");
+    const lemon = repo.create("https://lemon.example.com", "Lemon");
+
+    const result = repo.list({
+      limit: 1,
+      offset: 1,
+      sort: "title",
+      direction: "asc",
+    });
+
+    expect(result.total).toBe(3);
+    expect(result.items.map((bookmark) => bookmark.id)).toEqual([lemon.id]);
+    expect([zebra.id, apple.id]).not.toContain(result.items[0].id);
+  });
+
   it("restore clears is_trashed and trashed_at, bookmark visible again", () => {
     const bm = repo.create("https://example.com");
     repo.softDelete(bm.id);

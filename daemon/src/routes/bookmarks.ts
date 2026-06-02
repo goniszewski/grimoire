@@ -11,7 +11,7 @@ import { JobStatus } from "../types/job.js";
 import { dismissPipelineFailure, getPipelineFailure } from "../pipeline/failures.js";
 import { Config } from "../config.js";
 import { listBookmarkMedia } from "../media/bookmark-media.js";
-import { parseBookmarkRouteFilters } from "./bookmark-filter-query.js";
+import { parseBookmarkRouteFilters, parseBookmarkRouteSort } from "./bookmark-filter-query.js";
 
 interface BookmarksDeps {
   db: Database;
@@ -162,6 +162,10 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     if (!parsedFilters.ok) {
       return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
     }
+    const parsedSort = parseBookmarkRouteSort((name) => c.req.query(name));
+    if (!parsedSort.ok) {
+      return problem(c, 422, "Unprocessable Entity", parsedSort.detail);
+    }
 
     const result = repo.list({
       limit,
@@ -173,6 +177,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       date_from: c.req.query("date_from") ?? undefined,
       date_to: c.req.query("date_to") ?? undefined,
       ...parsedFilters.filters,
+      ...parsedSort.sort,
       archived,
     });
 

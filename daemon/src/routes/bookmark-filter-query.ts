@@ -1,11 +1,25 @@
 import type { BookmarkParityFilters, ReadStateFilter } from "../db/bookmark-filters.js";
+import {
+  isBookmarkSortDirection,
+  isBookmarkSortKey,
+} from "../db/bookmark-filters.js";
+import type { BookmarkSortDirection, BookmarkSortKey } from "../db/bookmark-filters.js";
 
 export interface BookmarkRouteFilters extends BookmarkParityFilters {
   read_later?: 0 | 1;
 }
 
+export interface BookmarkRouteSort {
+  sort?: BookmarkSortKey;
+  direction?: BookmarkSortDirection;
+}
+
 export type FilterParseResult =
   | { ok: true; filters: BookmarkRouteFilters }
+  | { ok: false; detail: string };
+
+export type SortParseResult =
+  | { ok: true; sort: BookmarkRouteSort }
   | { ok: false; detail: string };
 
 function parseBooleanFlagParam(val: string | null | undefined): 0 | 1 | undefined | "invalid" {
@@ -91,6 +105,36 @@ export function parseBookmarkRouteFilters(
       opened_count_max: openedCountMax.value,
       last_opened_from: lastOpenedFrom.value,
       last_opened_to: lastOpenedTo.value,
+    },
+  };
+}
+
+export function parseBookmarkRouteSort(
+  query: (name: string) => string | undefined
+): SortParseResult {
+  const sort = query("sort");
+  const direction = query("direction");
+
+  if (sort !== undefined && sort !== "" && !isBookmarkSortKey(sort)) {
+    return {
+      ok: false,
+      detail: "`sort` must be one of: created_at, updated_at, title, domain, opened_count, last_opened_at",
+    };
+  }
+
+  if (direction !== undefined && direction !== "" && !isBookmarkSortDirection(direction)) {
+    return { ok: false, detail: "`direction` must be asc or desc" };
+  }
+
+  if ((direction === "asc" || direction === "desc") && !sort) {
+    return { ok: false, detail: "`direction` requires `sort`" };
+  }
+
+  return {
+    ok: true,
+    sort: {
+      sort: sort && isBookmarkSortKey(sort) ? sort : undefined,
+      direction: direction && isBookmarkSortDirection(direction) ? direction : undefined,
     },
   };
 }

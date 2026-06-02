@@ -2,7 +2,7 @@ import { Hono, Context } from "hono";
 import { Database } from "bun:sqlite";
 import { SearchRepository, SearchMode } from "../db/search-repository.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
-import { parseBookmarkRouteFilters } from "./bookmark-filter-query.js";
+import { parseBookmarkRouteFilters, parseBookmarkRouteSort } from "./bookmark-filter-query.js";
 
 interface SearchDeps {
   db: Database;
@@ -38,6 +38,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
     const offset = parseIntParam(c.req.query("offset"), 0);
     const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    const parsedSort = parseBookmarkRouteSort((name) => c.req.query(name));
 
     const validModes: SearchMode[] = ["keyword", "semantic", "hybrid"];
     if (!validModes.includes(rawMode as SearchMode)) {
@@ -45,6 +46,9 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     }
     if (!parsedFilters.ok) {
       return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
+    }
+    if (!parsedSort.ok) {
+      return problem(c, 422, "Unprocessable Entity", parsedSort.detail);
     }
     const mode = rawMode as SearchMode;
 
@@ -68,6 +72,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
         date_from: c.req.query("date_from") ?? undefined,
         date_to: c.req.query("date_to") ?? undefined,
         ...parsedFilters.filters,
+        ...parsedSort.sort,
         limit,
         offset,
         embeddingConfig: embeddingConfig ?? undefined,

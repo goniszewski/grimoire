@@ -5,15 +5,17 @@ import { EmbeddingRepository } from "./embedding-repository.js";
 import { getEmbedding, cosineSimilarity, EmbeddingConfig } from "../ai/embeddings.js";
 import {
   appendBookmarkParityFilterConditions,
+  buildBookmarkOrderBy,
+  compareBookmarksBySort,
   normalizeDateUpperBound,
 } from "./bookmark-filters.js";
-import type { BookmarkParityFilters } from "./bookmark-filters.js";
+import type { BookmarkParityFilters, BookmarkSortOptions } from "./bookmark-filters.js";
 
 // ─── Query option types ───────────────────────────────────────────────────────
 
 export type SearchMode = "keyword" | "semantic" | "hybrid";
 
-export interface SearchOptions extends BookmarkParityFilters {
+export interface SearchOptions extends BookmarkParityFilters, BookmarkSortOptions {
   q?: string;
   mode?: SearchMode;
   tag?: string;
@@ -147,6 +149,7 @@ export class SearchRepository {
     appendBookmarkParityFilterConditions(conditions, filterParams, opts);
 
     const where = `WHERE ${conditions.join(" AND ")}`;
+    const emptyOrderBy = buildBookmarkOrderBy(opts, "b.created_at DESC, b.id ASC");
 
     if (!hasQuery) {
       // ── Empty query: return all bookmarks sorted by date ──────────────────
@@ -160,7 +163,7 @@ export class SearchRepository {
       const rows = this.db
         .query<BookmarkRow, (string | number)[]>(
           `SELECT b.* FROM bookmarks b ${where}
-           ORDER BY b.created_at DESC
+           ORDER BY ${emptyOrderBy}
            LIMIT ? OFFSET ?`
         )
         .all(...filterParams, limit, offset);
@@ -173,6 +176,12 @@ export class SearchRepository {
     // FTS5 snippet() args: table, column_index (1=title), highlight start/end, ellipsis, num_tokens
     // column weights: title=10, summary=5, tags=5, content=1 (via bm25() column weights)
     const ftsQuery = sanitizeFtsQuery(q!);
+    const searchOrderBy = buildBookmarkOrderBy(
+      opts,
+      "rank ASC, b.created_at DESC, b.id ASC",
+      "b",
+      ["rank ASC"]
+    );
 
     const total =
       this.db
@@ -199,7 +208,7 @@ export class SearchRepository {
          JOIN bookmarks b ON b.id = fts.bookmark_id
          ${where}
            AND fts.bookmarks_fts MATCH ?
-         ORDER BY rank
+         ORDER BY ${searchOrderBy}
          LIMIT ? OFFSET ?`
       )
       .all(...filterParams, ftsQuery, limit, offset);
@@ -229,12 +238,22 @@ export class SearchRepository {
       .sort((a, b) => b.score - a.score);
 
     const total = scored.length;
-    const page = scored.slice(offset, offset + limit);
-
-    const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
-    const scoreMap = new Map(page.map((s) => [s.id, s.score]));
-    // Preserve ranking order from scored results
-    const orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+    const scoreMap = new Map(scored.map((s) => [s.id, s.score]));
+    let orderedRows: BookmarkRow[];
+    if (opts.sort) {
+      orderedRows = Array.from(this.fetchBookmarksByIds(scored.map((s) => s.id)).values()).sort(
+        (a, b) => compareBookmarksBySort(a, b, opts, (left, right) => {
+          const leftScore = scoreMap.get(left.id) ?? 0;
+          const rightScore = scoreMap.get(right.id) ?? 0;
+          return rightScore - leftScore;
+        })
+      ).slice(offset, offset + limit);
+    } else {
+      const page = scored.slice(offset, offset + limit);
+      const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
+      // Preserve ranking order from scored results
+      orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+    }
 
     const items = this.attachTagsAndSnippet(orderedRows, null).map((item) => ({
       ...item,
@@ -251,7 +270,9 @@ export class SearchRepository {
 
     // Run FTS and embedding in parallel
     const [ftsResult, queryVec] = await Promise.all([
-      Promise.resolve(this.keywordSearch({ ...opts, limit: 200, offset: 0 })),
+      Promise.resolve(
+        this.keywordSearch({ ...opts, sort: undefined, direction: undefined, limit: 200, offset: 0 })
+      ),
       getEmbedding(embeddingConfig!, q!.trim()),
     ]);
 
@@ -298,11 +319,21 @@ export class SearchRepository {
     scored.sort((a, b) => b.hybridScore - a.hybridScore);
 
     const total = scored.length;
-    const page = scored.slice(offset, offset + limit);
-
-    const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
-    const scoreMap = new Map(page.map((s) => [s.id, s.hybridScore]));
-    const orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+    const scoreMap = new Map(scored.map((s) => [s.id, s.hybridScore]));
+    let orderedRows: BookmarkRow[];
+    if (opts.sort) {
+      orderedRows = Array.from(this.fetchBookmarksByIds(scored.map((s) => s.id)).values()).sort(
+        (a, b) => compareBookmarksBySort(a, b, opts, (left, right) => {
+          const leftScore = scoreMap.get(left.id) ?? 0;
+          const rightScore = scoreMap.get(right.id) ?? 0;
+          return rightScore - leftScore;
+        })
+      ).slice(offset, offset + limit);
+    } else {
+      const page = scored.slice(offset, offset + limit);
+      const bookmarkRows = this.fetchBookmarksByIds(page.map((s) => s.id));
+      orderedRows = page.map((s) => bookmarkRows.get(s.id)).filter(Boolean) as BookmarkRow[];
+    }
 
     const items = this.attachTagsAndSnippet(orderedRows, null).map((item) => ({
       ...item,

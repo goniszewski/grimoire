@@ -137,6 +137,15 @@ const bookmarkFilters = {
   last_opened_to: stringSchema("Inclusive ISO date or date-time upper bound for last opened time"),
 };
 
+const bookmarkSortQuery = {
+  sort: stringSchema("Sort key applied before pagination", {
+    enum: ["created_at", "updated_at", "title", "domain", "opened_count", "last_opened_at"],
+  }),
+  direction: stringSchema("Sort direction; requires sort and defaults to desc when omitted", {
+    enum: ["asc", "desc"],
+  }),
+};
+
 const bookmarkProperties = {
   id: stringSchema("Bookmark ID"),
   url: stringSchema("Original bookmark URL", { format: "uri" }),
@@ -1686,6 +1695,7 @@ export const apiContract = {
       request: {
         query: objectSchema({
           ...bookmarkFilters,
+          ...bookmarkSortQuery,
           ...pagingQuery.properties,
           archived: stringSchema("When true, return archived bookmarks", { enum: ["true", "false"] }),
         }),
@@ -1695,7 +1705,7 @@ export const apiContract = {
         {
           title: "List filtered bookmarks",
           request:
-            'curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0"',
+            'curl "http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&sort=opened_count&direction=desc&limit=10&offset=0"',
           response: {
             status: 200,
             contentType: "application/json",
@@ -1932,6 +1942,7 @@ export const apiContract = {
           q: stringSchema("Search query"),
           mode: stringSchema("Search mode", { enum: ["keyword", "semantic", "hybrid"] }),
           ...bookmarkFilters,
+          ...bookmarkSortQuery,
           ...pagingQuery.properties,
         }),
       },

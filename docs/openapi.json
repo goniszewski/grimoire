@@ -401,6 +401,38 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort key applied before pagination",
+            "schema": {
+              "type": "string",
+              "description": "Sort key applied before pagination",
+              "enum": [
+                "created_at",
+                "updated_at",
+                "title",
+                "domain",
+                "opened_count",
+                "last_opened_at"
+              ]
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction; requires sort and defaults to desc when omitted",
+            "schema": {
+              "type": "string",
+              "description": "Sort direction; requires sort and defaults to desc when omitted",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1300,6 +1332,38 @@
             "schema": {
               "type": "string",
               "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort key applied before pagination",
+            "schema": {
+              "type": "string",
+              "description": "Sort key applied before pagination",
+              "enum": [
+                "created_at",
+                "updated_at",
+                "title",
+                "domain",
+                "opened_count",
+                "last_opened_at"
+              ]
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction; requires sort and defaults to desc when omitted",
+            "schema": {
+              "type": "string",
+              "description": "Sort direction; requires sort and defaults to desc when omitted",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           },
           {

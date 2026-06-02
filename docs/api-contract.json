@@ -5158,6 +5158,26 @@
               "type": "string",
               "description": "Inclusive ISO date or date-time upper bound for last opened time"
             },
+            "sort": {
+              "type": "string",
+              "description": "Sort key applied before pagination",
+              "enum": [
+                "created_at",
+                "updated_at",
+                "title",
+                "domain",
+                "opened_count",
+                "last_opened_at"
+              ]
+            },
+            "direction": {
+              "type": "string",
+              "description": "Sort direction; requires sort and defaults to desc when omitted",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
             "limit": {
               "type": "integer",
               "description": "Maximum number of results to return",
@@ -5193,7 +5213,7 @@
       "examples": [
         {
           "title": "List filtered bookmarks",
-          "request": "curl \"http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&limit=10&offset=0\"",
+          "request": "curl \"http://127.0.0.1:3210/bookmarks?tag=rag&read_state=unread&is_pinned=true&opened_count_min=1&sort=opened_count&direction=desc&limit=10&offset=0\"",
           "response": {
             "status": 200,
             "contentType": "application/json",
@@ -5980,6 +6000,26 @@
             "last_opened_to": {
               "type": "string",
               "description": "Inclusive ISO date or date-time upper bound for last opened time"
+            },
+            "sort": {
+              "type": "string",
+              "description": "Sort key applied before pagination",
+              "enum": [
+                "created_at",
+                "updated_at",
+                "title",
+                "domain",
+                "opened_count",
+                "last_opened_at"
+              ]
+            },
+            "direction": {
+              "type": "string",
+              "description": "Sort direction; requires sort and defaults to desc when omitted",
+              "enum": [
+                "asc",
+                "desc"
+              ]
             },
             "limit": {
               "type": "integer",

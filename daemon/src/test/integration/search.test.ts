@@ -121,6 +121,19 @@ describe("Search API", () => {
     }
   });
 
+  it("GET /search rejects invalid sort params", async () => {
+    for (const query of [
+      "sort=importance",
+      "direction=sideways",
+      "direction=asc",
+    ]) {
+      const res = await app.request(`/search?q=Shared&${query}`);
+      expect(res.status).toBe(422);
+      const json = await res.json() as { title: string };
+      expect(json.title).toBe("Unprocessable Entity");
+    }
+  });
+
   it("GET /search filters by category_id when duplicate category names exist", async () => {
     const repo = new BookmarkRepository(db);
     const parentA = db
