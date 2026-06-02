@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 import type { UIBookmark, useBookmarks } from "@/hooks/use-bookmarks";
+import { usePreferences } from "@/hooks/use-preferences";
 
 vi.mock("@/hooks/use-bookmarks", () => ({
   LIBRARY_PAGE_SIZE_OPTIONS: [20, 50, 100],
@@ -136,6 +137,8 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
     isFetchingPage: false,
     pageSelectionKey: "page-1",
     libraryParityFilterParams: {},
+    hasCustomLibraryPreferences: false,
+    resetLibraryPreferences: vi.fn(),
     categories: [],
     categoriesLoading: false,
     categoriesError: false,
@@ -188,9 +191,9 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
   };
 }
 
-function renderIndex() {
+function renderIndex(path = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <Index />
     </MemoryRouter>
   );
@@ -198,6 +201,11 @@ function renderIndex() {
 
 beforeEach(() => {
   mockStore = makeStore();
+  vi.mocked(usePreferences).mockReturnValue({
+    showButtonLabels: true,
+    viewMode: "grid",
+    updatePreferences: vi.fn(),
+  });
 });
 
 describe("Index pagination", () => {
@@ -276,5 +284,52 @@ describe("Index parity filters", () => {
 
     fireEvent.click(screen.getAllByText("Unread")[0]);
     expect(mockStore.setReadStateFilter).toHaveBeenCalledWith("all");
+  });
+});
+
+describe("Index library view preferences", () => {
+  it("applies an explicit tag route over a saved local tag preference", async () => {
+    const setSelectedTag = vi.fn();
+    mockStore = makeStore({
+      selectedTag: "saved-tag",
+      setSelectedTag,
+    });
+
+    renderIndex("/?tag=shared-tag");
+
+    await waitFor(() => expect(setSelectedTag).toHaveBeenCalledWith("shared-tag", { persist: false }));
+  });
+
+  it("does not clear a saved local tag preference on initial load without a tag route", () => {
+    const setSelectedTag = vi.fn();
+    mockStore = makeStore({
+      selectedTag: "saved-tag",
+      setSelectedTag,
+    });
+
+    renderIndex("/");
+
+    expect(setSelectedTag).not.toHaveBeenCalled();
+  });
+
+  it("resets saved library filters and view mode from the toolbar command", () => {
+    const resetLibraryPreferences = vi.fn();
+    const updatePreferences = vi.fn();
+    vi.mocked(usePreferences).mockReturnValue({
+      showButtonLabels: true,
+      viewMode: "list",
+      updatePreferences,
+    });
+    mockStore = makeStore({
+      hasCustomLibraryPreferences: true,
+      resetLibraryPreferences,
+    });
+
+    renderIndex();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset library view preferences" }));
+
+    expect(resetLibraryPreferences).toHaveBeenCalledTimes(1);
+    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "grid" });
   });
 });

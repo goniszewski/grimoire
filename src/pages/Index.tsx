@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -54,6 +54,7 @@ const Index = () => {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const lastPageSelectionKey = useRef(store.pageSelectionKey);
+  const routeTagFilterActive = useRef(false);
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
   const appLock = useAppLock();
   const { aiEnabled, isLoading: settingsLoading } = useSettings();
@@ -79,7 +80,17 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    setSelectedTag(requestedTag?.trim() || null);
+    const nextRouteTag = requestedTag?.trim() || null;
+    if (nextRouteTag) {
+      routeTagFilterActive.current = true;
+      setSelectedTag(nextRouteTag, { persist: false });
+      return;
+    }
+
+    if (routeTagFilterActive.current) {
+      routeTagFilterActive.current = false;
+      setSelectedTag(null, { persist: false });
+    }
   }, [requestedTag, setSelectedTag]);
 
   // Keyboard shortcuts
@@ -194,6 +205,12 @@ const Index = () => {
     exitSelectionMode();
   }, [selectedIds, store, exitSelectionMode]);
 
+  const handleResetLibraryViewPreferences = useCallback(() => {
+    store.resetLibraryPreferences();
+    updatePreferences({ viewMode: "grid" });
+    toast({ title: "Library view reset" });
+  }, [store, updatePreferences]);
+
   const handleOpenDetail = useCallback((bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
     setDetailOpen(true);
@@ -281,6 +298,7 @@ const Index = () => {
     !!store.lastOpenedRange.to ||
     !!store.dateRange.from ||
     !!store.dateRange.to;
+  const hasCustomLibraryView = store.hasCustomLibraryPreferences || viewMode !== "grid";
 
   if (appLock.locked) {
     return <LockScreen onUnlock={appLock.unlock} />;
@@ -536,6 +554,18 @@ const Index = () => {
                         <SelectItem value="last-opened-oldest" className="text-xs">Last opened oldest</SelectItem>
                       </SelectContent>
                     </Select>
+                    {hasCustomLibraryView && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleResetLibraryViewPreferences}
+                        className="text-xs h-7"
+                        aria-label="Reset library view preferences"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        {showButtonLabels && <span className="ml-1.5">Reset view</span>}
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

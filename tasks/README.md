@@ -130,7 +130,7 @@ tasks/
 | TASK-114 | [Library Pagination](done/TASK-114-library-pagination.md) | Grimoire parity | high | done |
 | TASK-115 | [Server Driven Sorting](done/TASK-115-server-driven-sorting.md) | Grimoire parity | medium | done |
 | TASK-116 | [Library Parity Filters](done/TASK-116-library-parity-filters.md) | Grimoire parity | high | done |
-| TASK-117 | [Persist Library View Preferences](backlog/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | backlog |
+| TASK-117 | [Persist Library View Preferences](done/TASK-117-persist-library-view-preferences.md) | Grimoire parity | medium | done |
 | TASK-118 | [Aggregate Count Endpoints](backlog/TASK-118-aggregate-count-endpoints.md) | Grimoire parity | medium | backlog |
 | TASK-119 | [Large Library Performance Tests](backlog/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | backlog |
 | TASK-120 | [Import Duplicate Handling Policy](done/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | done |
@@ -284,6 +284,10 @@ TASK-114 is complete with daemon-backed library pagination, visible result
 ranges, page-size choices, cross-page selection clearing, empty-page recovery
 for library/category/tag pagination paths, focused frontend tests, e2e coverage,
 and visual task reporting.
+TASK-117 is complete with local-only library filter/sort/search-mode/page-size
+preference persistence, page-offset exclusion, route-tag precedence for shared
+links, a toolbar reset command that also resets bookmark view mode, focused hook
+and page tests, and desktop/mobile visual reporting.
 Bookmark importance is rejected for this batch, one-click browser capture is
 deferred, future Grimoire backup import is deferred, multi-user/server account
 parity remains deferred, and Grimoire endpoint aliases plus browser extension

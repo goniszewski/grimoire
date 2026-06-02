@@ -47,6 +47,193 @@ export type OpenActivityFilter = "all" | "unopened" | "opened" | "opened-2-plus"
 
 export const LIBRARY_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 export const DEFAULT_LIBRARY_PAGE_SIZE = LIBRARY_PAGE_SIZE_OPTIONS[0];
+export const LIBRARY_VIEW_PREFERENCES_KEY = "little-imp-library-view-preferences";
+
+type DateRangeState = { from: Date | null; to: Date | null };
+
+interface LibraryViewPreferences {
+  searchMode: SearchMode;
+  selectedCategory: string | null;
+  selectedCategoryId: string | null;
+  selectedTag: string | null;
+  selectedDomain: string | null;
+  readLaterOnly: boolean;
+  readStateFilter: ReadStateFilter;
+  pinnedFilter: PinnedFilter;
+  openActivityFilter: OpenActivityFilter;
+  lastOpenedRange: DateRangeState;
+  dateRange: DateRangeState;
+  sortBy: SortOption;
+  pageSize: number;
+}
+
+type StoredLibraryViewPreferences = Omit<LibraryViewPreferences, "dateRange" | "lastOpenedRange"> & {
+  dateRange: { from: string | null; to: string | null };
+  lastOpenedRange: { from: string | null; to: string | null };
+};
+
+type PreferenceUpdateOptions = { persist?: boolean };
+
+const SEARCH_MODE_OPTIONS: SearchMode[] = ["keyword", "semantic", "hybrid"];
+const SORT_OPTIONS: SortOption[] = [
+  "newest",
+  "oldest",
+  "updated-newest",
+  "updated-oldest",
+  "title-az",
+  "title-za",
+  "domain-az",
+  "domain-za",
+  "most-opened",
+  "least-opened",
+  "last-opened-newest",
+  "last-opened-oldest",
+];
+const READ_STATE_OPTIONS: ReadStateFilter[] = ["all", "read", "unread"];
+const PINNED_FILTER_OPTIONS: PinnedFilter[] = ["all", "pinned", "unpinned"];
+const OPEN_ACTIVITY_OPTIONS: OpenActivityFilter[] = ["all", "unopened", "opened", "opened-2-plus"];
+
+const DEFAULT_LIBRARY_VIEW_PREFERENCES: LibraryViewPreferences = {
+  searchMode: "keyword",
+  selectedCategory: null,
+  selectedCategoryId: null,
+  selectedTag: null,
+  selectedDomain: null,
+  readLaterOnly: false,
+  readStateFilter: "all",
+  pinnedFilter: "all",
+  openActivityFilter: "all",
+  lastOpenedRange: { from: null, to: null },
+  dateRange: { from: null, to: null },
+  sortBy: "newest",
+  pageSize: DEFAULT_LIBRARY_PAGE_SIZE,
+};
+
+function getLocalStorage(): Storage | null {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseStringPreference(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function parseEnumPreference<T extends string>(value: unknown, allowed: T[], fallback: T): T {
+  return typeof value === "string" && allowed.includes(value as T) ? value as T : fallback;
+}
+
+function parsePageSizePreference(value: unknown): number {
+  return typeof value === "number" && LIBRARY_PAGE_SIZE_OPTIONS.includes(
+    value as (typeof LIBRARY_PAGE_SIZE_OPTIONS)[number]
+  )
+    ? value
+    : DEFAULT_LIBRARY_PAGE_SIZE;
+}
+
+function parseStoredDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10) === value ? parsed : null;
+}
+
+function parseStoredDateRange(value: unknown): DateRangeState {
+  if (!isRecord(value)) return { from: null, to: null };
+  return {
+    from: parseStoredDate(value.from),
+    to: parseStoredDate(value.to),
+  };
+}
+
+function serialiseDate(date: Date | null): string | null {
+  return date ? date.toISOString().slice(0, 10) : null;
+}
+
+function serialiseLibraryViewPreferences(preferences: LibraryViewPreferences): StoredLibraryViewPreferences {
+  return {
+    searchMode: preferences.searchMode,
+    selectedCategory: preferences.selectedCategory,
+    selectedCategoryId: preferences.selectedCategoryId,
+    selectedTag: preferences.selectedTag,
+    selectedDomain: preferences.selectedDomain,
+    readLaterOnly: preferences.readLaterOnly,
+    readStateFilter: preferences.readStateFilter,
+    pinnedFilter: preferences.pinnedFilter,
+    openActivityFilter: preferences.openActivityFilter,
+    lastOpenedRange: {
+      from: serialiseDate(preferences.lastOpenedRange.from),
+      to: serialiseDate(preferences.lastOpenedRange.to),
+    },
+    dateRange: {
+      from: serialiseDate(preferences.dateRange.from),
+      to: serialiseDate(preferences.dateRange.to),
+    },
+    sortBy: preferences.sortBy,
+    pageSize: preferences.pageSize,
+  };
+}
+
+function areLibraryViewPreferencesDefault(preferences: LibraryViewPreferences): boolean {
+  return JSON.stringify(serialiseLibraryViewPreferences(preferences)) ===
+    JSON.stringify(serialiseLibraryViewPreferences(DEFAULT_LIBRARY_VIEW_PREFERENCES));
+}
+
+function parseLibraryViewPreferences(value: unknown): LibraryViewPreferences {
+  if (!isRecord(value)) return DEFAULT_LIBRARY_VIEW_PREFERENCES;
+
+  return {
+    searchMode: parseEnumPreference(value.searchMode, SEARCH_MODE_OPTIONS, DEFAULT_LIBRARY_VIEW_PREFERENCES.searchMode),
+    selectedCategory: parseStringPreference(value.selectedCategory),
+    selectedCategoryId: parseStringPreference(value.selectedCategoryId),
+    selectedTag: parseStringPreference(value.selectedTag),
+    selectedDomain: parseStringPreference(value.selectedDomain),
+    readLaterOnly: value.readLaterOnly === true,
+    readStateFilter: parseEnumPreference(value.readStateFilter, READ_STATE_OPTIONS, DEFAULT_LIBRARY_VIEW_PREFERENCES.readStateFilter),
+    pinnedFilter: parseEnumPreference(value.pinnedFilter, PINNED_FILTER_OPTIONS, DEFAULT_LIBRARY_VIEW_PREFERENCES.pinnedFilter),
+    openActivityFilter: parseEnumPreference(value.openActivityFilter, OPEN_ACTIVITY_OPTIONS, DEFAULT_LIBRARY_VIEW_PREFERENCES.openActivityFilter),
+    lastOpenedRange: parseStoredDateRange(value.lastOpenedRange),
+    dateRange: parseStoredDateRange(value.dateRange),
+    sortBy: parseEnumPreference(value.sortBy, SORT_OPTIONS, DEFAULT_LIBRARY_VIEW_PREFERENCES.sortBy),
+    pageSize: parsePageSizePreference(value.pageSize),
+  };
+}
+
+function loadLibraryViewPreferences(): LibraryViewPreferences {
+  const storage = getLocalStorage();
+  if (!storage) return DEFAULT_LIBRARY_VIEW_PREFERENCES;
+
+  try {
+    const stored = storage.getItem(LIBRARY_VIEW_PREFERENCES_KEY);
+    return stored ? parseLibraryViewPreferences(JSON.parse(stored)) : DEFAULT_LIBRARY_VIEW_PREFERENCES;
+  } catch {
+    return DEFAULT_LIBRARY_VIEW_PREFERENCES;
+  }
+}
+
+function persistLibraryViewPreferences(preferences: LibraryViewPreferences): void {
+  const storage = getLocalStorage();
+  if (!storage) return;
+
+  if (areLibraryViewPreferencesDefault(preferences)) {
+    storage.removeItem(LIBRARY_VIEW_PREFERENCES_KEY);
+    return;
+  }
+
+  storage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify(serialiseLibraryViewPreferences(preferences)));
+}
+
+function clearLibraryViewPreferences(): void {
+  getLocalStorage()?.removeItem(LIBRARY_VIEW_PREFERENCES_KEY);
+}
 
 // ─── Normalise API bookmark to a shape the UI components already understand ──
 
@@ -228,27 +415,43 @@ export function useBookmarks() {
   const qc = useQueryClient();
 
   // ─── UI filter state ───────────────────────────────────────────────────────
+  const [libraryPreferences, setLibraryPreferences] = useState<LibraryViewPreferences>(loadLibraryViewPreferences);
+  const [selectedTagOverride, setSelectedTagOverride] = useState<string | null | undefined>(undefined);
   const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchMode, setSearchModeState] = useState<SearchMode>("keyword");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedTag, setSelectedTagState] = useState<string | null>(null);
-  const [selectedDomain, setSelectedDomainState] = useState<string | null>(null);
-  const [readLaterOnly, setReadLaterOnlyState] = useState(false);
-  const [readStateFilter, setReadStateFilterState] = useState<ReadStateFilter>("all");
-  const [pinnedFilter, setPinnedFilterState] = useState<PinnedFilter>("all");
-  const [openActivityFilter, setOpenActivityFilterState] = useState<OpenActivityFilter>("all");
-  const [lastOpenedRange, setLastOpenedRangeState] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
-  const [dateRange, setDateRangeState] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
-  const [sortBy, setSortByState] = useState<SortOption>("newest");
-  const [pageSize, setPageSizeState] = useState<number>(DEFAULT_LIBRARY_PAGE_SIZE);
   const [pageOffset, setPageOffset] = useState(0);
+  const {
+    searchMode,
+    selectedCategory,
+    selectedCategoryId,
+    selectedTag: persistedSelectedTag,
+    selectedDomain,
+    readLaterOnly,
+    readStateFilter,
+    pinnedFilter,
+    openActivityFilter,
+    lastOpenedRange,
+    dateRange,
+    sortBy,
+    pageSize,
+  } = libraryPreferences;
+  const selectedTag = selectedTagOverride !== undefined ? selectedTagOverride : persistedSelectedTag;
 
   const dateFrom = dateRange.from?.toISOString().slice(0, 10);
   const dateTo = dateRange.to?.toISOString().slice(0, 10);
   const lastOpenedFrom = lastOpenedRange.from?.toISOString().slice(0, 10);
   const lastOpenedTo = lastOpenedRange.to?.toISOString().slice(0, 10);
+
+  const updateLibraryPreferences = useCallback((
+    updater: (current: LibraryViewPreferences) => LibraryViewPreferences,
+    options: PreferenceUpdateOptions = {}
+  ) => {
+    setLibraryPreferences((current) => {
+      const next = updater(current);
+      if (options.persist !== false) persistLibraryViewPreferences(next);
+      return next;
+    });
+  }, []);
 
   const resetPage = useCallback(() => {
     setPageOffset(0);
@@ -260,54 +463,62 @@ export function useBookmarks() {
   }, [resetPage]);
 
   const setSearchMode = useCallback((mode: SearchMode) => {
-    setSearchModeState(mode);
+    updateLibraryPreferences((current) => ({ ...current, searchMode: mode }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
-  const setSelectedTag = useCallback((tag: string | null) => {
-    setSelectedTagState(tag);
+  const setSelectedTag = useCallback((tag: string | null, options?: PreferenceUpdateOptions) => {
+    const nextTag = parseStringPreference(tag);
+    if (options?.persist === false) {
+      setSelectedTagOverride(nextTag);
+      resetPage();
+      return;
+    }
+
+    setSelectedTagOverride(undefined);
+    updateLibraryPreferences((current) => ({ ...current, selectedTag: nextTag }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setSelectedDomain = useCallback((domain: string | null) => {
-    setSelectedDomainState(domain);
+    updateLibraryPreferences((current) => ({ ...current, selectedDomain: parseStringPreference(domain) }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setReadLaterOnly = useCallback((readLater: boolean) => {
-    setReadLaterOnlyState(readLater);
+    updateLibraryPreferences((current) => ({ ...current, readLaterOnly: readLater }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setReadStateFilter = useCallback((readState: ReadStateFilter) => {
-    setReadStateFilterState(readState);
+    updateLibraryPreferences((current) => ({ ...current, readStateFilter: readState }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setPinnedFilter = useCallback((pinned: PinnedFilter) => {
-    setPinnedFilterState(pinned);
+    updateLibraryPreferences((current) => ({ ...current, pinnedFilter: pinned }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setOpenActivityFilter = useCallback((activity: OpenActivityFilter) => {
-    setOpenActivityFilterState(activity);
+    updateLibraryPreferences((current) => ({ ...current, openActivityFilter: activity }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
-  const setLastOpenedRange = useCallback((range: { from: Date | null; to: Date | null }) => {
-    setLastOpenedRangeState(range);
+  const setLastOpenedRange = useCallback((range: DateRangeState) => {
+    updateLibraryPreferences((current) => ({ ...current, lastOpenedRange: range }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
-  const setDateRange = useCallback((range: { from: Date | null; to: Date | null }) => {
-    setDateRangeState(range);
+  const setDateRange = useCallback((range: DateRangeState) => {
+    updateLibraryPreferences((current) => ({ ...current, dateRange: range }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setSortBy = useCallback((sort: SortOption) => {
-    setSortByState(sort);
+    updateLibraryPreferences((current) => ({ ...current, sortBy: sort }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   const setPageSize = useCallback((nextPageSize: number) => {
     const safePageSize = LIBRARY_PAGE_SIZE_OPTIONS.includes(
@@ -315,9 +526,9 @@ export function useBookmarks() {
     )
       ? nextPageSize
       : DEFAULT_LIBRARY_PAGE_SIZE;
-    setPageSizeState(safePageSize);
+    updateLibraryPreferences((current) => ({ ...current, pageSize: safePageSize }));
     resetPage();
-  }, [resetPage]);
+  }, [resetPage, updateLibraryPreferences]);
 
   // Debounce search — 300ms per spec
   useEffect(() => {
@@ -349,25 +560,28 @@ export function useBookmarks() {
 
   const selectCategory = useCallback((category: string | null, categoryId?: string | null) => {
     resetPage();
-    setSelectedCategory(category);
-    if (!category) {
-      setSelectedCategoryId(null);
-      return;
-    }
-
-    if (categoryId !== undefined) {
-      setSelectedCategoryId(categoryId);
-      return;
-    }
-
-    for (const [id, name] of categoryMap) {
-      if (name === category) {
-        setSelectedCategoryId(id);
-        return;
+    updateLibraryPreferences((current) => {
+      const selectedCategoryName = parseStringPreference(category);
+      if (!selectedCategoryName) {
+        return { ...current, selectedCategory: null, selectedCategoryId: null };
       }
-    }
-    setSelectedCategoryId(null);
-  }, [categoryMap, resetPage]);
+
+      if (categoryId !== undefined) {
+        return {
+          ...current,
+          selectedCategory: selectedCategoryName,
+          selectedCategoryId: parseStringPreference(categoryId),
+        };
+      }
+
+      for (const [id, name] of categoryMap) {
+        if (name === selectedCategoryName) {
+          return { ...current, selectedCategory: selectedCategoryName, selectedCategoryId: id };
+        }
+      }
+      return { ...current, selectedCategory: selectedCategoryName, selectedCategoryId: null };
+    });
+  }, [categoryMap, resetPage, updateLibraryPreferences]);
 
   // ─── Domains (from API) ───────────────────────────────────────────────────
   const domainsQuery = useQuery({
@@ -751,6 +965,17 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { notes } });
   }, [updateBookmarkMutation]);
 
+  const resetLibraryPreferences = useCallback(() => {
+    clearLibraryViewPreferences();
+    setLibraryPreferences(DEFAULT_LIBRARY_VIEW_PREFERENCES);
+    resetPage();
+  }, [resetPage]);
+
+  const hasCustomLibraryPreferences = useMemo(
+    () => !areLibraryViewPreferencesDefault(libraryPreferences),
+    [libraryPreferences]
+  );
+
   const isLoading = bookmarksQuery.isLoading || searchQuery_.isLoading;
   const isError = bookmarksQuery.isError || searchQuery_.isError;
 
@@ -772,6 +997,8 @@ export function useBookmarks() {
     isFetchingPage,
     pageSelectionKey,
     libraryParityFilterParams: parityFilterParams,
+    hasCustomLibraryPreferences,
+    resetLibraryPreferences,
     categories,
     categoriesLoading: categoriesQuery.isLoading,
     categoriesError: categoriesQuery.isError,

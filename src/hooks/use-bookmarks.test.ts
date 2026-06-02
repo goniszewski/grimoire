@@ -12,6 +12,8 @@ import type {
   SearchParams,
 } from "@/lib/api";
 
+const LIBRARY_VIEW_PREFERENCES_KEY = "little-imp-library-view-preferences";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeApiBookmark(overrides: Partial<ApiBookmark> = {}): ApiBookmark {
@@ -182,6 +184,7 @@ function searchPageResponse(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mockedListCategories.mockResolvedValue(categoryTreeResponse([]));
   mockedListDomains.mockResolvedValue(domainListResponse());
   mockedListTags.mockResolvedValue(tagListResponse());
@@ -191,6 +194,178 @@ beforeEach(() => {
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe("useBookmarks — library view preferences", () => {
+  it("restores saved local filters, sort, and page size without restoring page offset", async () => {
+    localStorage.setItem(
+      LIBRARY_VIEW_PREFERENCES_KEY,
+      JSON.stringify({
+        searchMode: "hybrid",
+        selectedTag: "typescript",
+        selectedDomain: "example.com",
+        readLaterOnly: true,
+        readStateFilter: "unread",
+        pinnedFilter: "unpinned",
+        openActivityFilter: "opened-2-plus",
+        dateRange: { from: "2026-05-01", to: "2026-05-31" },
+        lastOpenedRange: { from: "2026-06-01", to: null },
+        sortBy: "most-opened",
+        pageSize: 50,
+        pageOffset: 50,
+      })
+    );
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    expect(result.current.searchMode).toBe("hybrid");
+    expect(result.current.selectedTag).toBe("typescript");
+    expect(result.current.selectedDomain).toBe("example.com");
+    expect(result.current.readLaterOnly).toBe(true);
+    expect(result.current.readStateFilter).toBe("unread");
+    expect(result.current.pinnedFilter).toBe("unpinned");
+    expect(result.current.openActivityFilter).toBe("opened-2-plus");
+    expect(result.current.sortBy).toBe("most-opened");
+    expect(result.current.pageSize).toBe(50);
+    expect(result.current.pagination.offset).toBe(0);
+    expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+      limit: 50,
+      offset: 0,
+      tag: "typescript",
+      domain: "example.com",
+      date_from: "2026-05-01",
+      date_to: "2026-05-31",
+      read_later: true,
+      read_state: "unread",
+      is_pinned: false,
+      opened_count_min: 2,
+      last_opened_from: "2026-06-01",
+      sort: "opened_count",
+      direction: "desc",
+    }));
+  });
+
+  it("persists local preference updates without saving the current page", async () => {
+    mockedListBookmarks.mockResolvedValue(bookmarkPageResponse(
+      [makeApiBookmark({ id: "bm-1" })],
+      75,
+      20,
+      0
+    ));
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSelectedTag("react"));
+    act(() => result.current.setSelectedDomain("example.com"));
+    act(() => result.current.setReadLaterOnly(true));
+    act(() => result.current.setSortBy("title-az"));
+    act(() => result.current.setPageSize(100));
+    act(() => result.current.goToNextPage());
+
+    const stored = JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY)!);
+    expect(stored).toMatchObject({
+      selectedTag: "react",
+      selectedDomain: "example.com",
+      readLaterOnly: true,
+      sortBy: "title-az",
+      pageSize: 100,
+    });
+    expect(stored).not.toHaveProperty("pageOffset");
+  });
+
+  it("does not persist a transient route tag when later library preferences change", async () => {
+    localStorage.setItem(
+      LIBRARY_VIEW_PREFERENCES_KEY,
+      JSON.stringify({
+        selectedTag: "saved-tag",
+      })
+    );
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.setSelectedTag("shared-tag", { persist: false }));
+
+    expect(result.current.selectedTag).toBe("shared-tag");
+    expect(JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY)!).selectedTag).toBe("saved-tag");
+
+    act(() => result.current.setSortBy("title-az"));
+
+    const stored = JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY)!);
+    expect(stored.selectedTag).toBe("saved-tag");
+    expect(stored.sortBy).toBe("title-az");
+  });
+
+  it("resets saved library preferences back to first-run defaults", async () => {
+    localStorage.setItem(
+      LIBRARY_VIEW_PREFERENCES_KEY,
+      JSON.stringify({
+        selectedTag: "typescript",
+        selectedDomain: "example.com",
+        readLaterOnly: true,
+        sortBy: "oldest",
+        pageSize: 50,
+      })
+    );
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    act(() => result.current.resetLibraryPreferences());
+
+    expect(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY)).toBeNull();
+    expect(result.current.selectedTag).toBeNull();
+    expect(result.current.selectedDomain).toBeNull();
+    expect(result.current.readLaterOnly).toBe(false);
+    expect(result.current.sortBy).toBe("newest");
+    expect(result.current.pageSize).toBe(20);
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
+        limit: 20,
+        offset: 0,
+        sort: "created_at",
+        direction: "desc",
+      }))
+    );
+  });
+
+  it("ignores invalid stored preference values instead of applying hidden filters", async () => {
+    localStorage.setItem(
+      LIBRARY_VIEW_PREFERENCES_KEY,
+      JSON.stringify({
+        searchMode: "unknown-mode",
+        readStateFilter: "sometimes",
+        pinnedFilter: "loosely",
+        openActivityFilter: "often",
+        sortBy: "random",
+        pageSize: 999,
+        dateRange: { from: "2026-02-31", to: "not-a-date" },
+        lastOpenedRange: { from: "2026-06-31", to: "2026-07-01" },
+      })
+    );
+
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
+
+    expect(result.current.searchMode).toBe("keyword");
+    expect(result.current.readStateFilter).toBe("all");
+    expect(result.current.pinnedFilter).toBe("all");
+    expect(result.current.openActivityFilter).toBe("all");
+    expect(result.current.sortBy).toBe("newest");
+    expect(result.current.pageSize).toBe(20);
+    expect(result.current.dateRange).toEqual({ from: null, to: null });
+    expect(result.current.lastOpenedRange).toEqual({
+      from: null,
+      to: new Date("2026-07-01T00:00:00.000Z"),
+    });
+    const params = mockedListBookmarks.mock.calls.at(-1)?.[0] ?? {};
+    expect(params.date_from).toBeUndefined();
+    expect(params.date_to).toBeUndefined();
+    expect(params.last_opened_from).toBeUndefined();
+    expect(params).toHaveProperty("last_opened_to", "2026-07-01");
+  });
+});
 
 describe("useBookmarks — initial state", () => {
   it("returns empty arrays before data loads", () => {
