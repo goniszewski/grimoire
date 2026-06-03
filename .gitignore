@@ -25,6 +25,7 @@ release/
 *.sw?
 
 .claude
+.codegraph
 .reasonix
 
 # Test artifacts

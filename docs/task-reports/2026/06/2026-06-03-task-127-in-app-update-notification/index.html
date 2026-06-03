@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In-App Update Notification — Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --amber: #b45309;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row span:nth-child(3) {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.summary-grid,
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.section,
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+code.block {
+  display: block;
+  white-space: pre-wrap;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 12px 14px;
+  font-size: .86rem;
+  overflow-x: auto;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="breadcrumbs">
+  <a href="../../index.html">Task Reports</a>
+  &nbsp;›&nbsp;
+  <a href="../index.html">2026</a>
+  &nbsp;›&nbsp;
+  <a href="index.html">06</a>
+  &nbsp;›&nbsp;
+  <span>In-App Update Notification</span>
+</div>
+
+<div class="task-card">
+
+<div class="eyebrow">First-user experience</div>
+<h1>In-App Update Notification</h1>
+
+<div class="meta-row">
+  <span>P1</span>
+  <span>TASK-127</span>
+  <span>done</span>
+</div>
+
+<!-- Summary -->
+<section>
+  <p>
+    Added a non-intrusive in-app notification banner that alerts users when a newer
+    version of Little Imp is available. The banner appears on the main library page,
+    is dismissible, stays dismissed per version, and links to the Settings → Updates
+    section for detailed update information.
+  </p>
+</section>
+
+<!-- What was implemented -->
+<section>
+  <h2>What was implemented</h2>
+
+  <div class="summary-grid">
+    <div>
+      <h3><code>src/components/UpdateAvailableBanner.tsx</code></h3>
+      <p>
+        A new banner component rendered with an amber/attention color scheme,
+        showing "Little Imp {tag} is available (current: {version}) — View update".
+        Includes a dismiss button. Clicking "View update" navigates to <code>/settings</code>
+        using React Router.
+      </p>
+    </div>
+
+    <div>
+      <h3><code>src/hooks/use-update-check.ts</code></h3>
+      <p>
+        A background update-check hook that:
+      </p>
+      <ul>
+        <li>Calls <code>GET /updates/check</code> once on app load</li>
+        <li>Debounces subsequent checks to a 6-hour interval (stored in <code>localStorage</code>)</li>
+        <li>Silently ignores daemon-unreachable errors (no banner shown)</li>
+        <li>Tracks dismissed version in <code>localStorage</code> so banner stays hidden per version</li>
+        <li>Never auto-downloads or auto-installs</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3><code>src/pages/Index.tsx</code></h3>
+      <p>
+        Wired the update check hook and banner into the main library page.
+        The banner renders after the existing <code>DaemonOfflineBanner</code>
+        and <code>DegradedModeBanner</code>, inheriting the same layout and
+        spacing.
+      </p>
+    </div>
+
+    <div>
+      <h3><code>e2e/update-notification.spec.ts</code></h3>
+      <p>
+        Playwright e2e tests covering:
+      </p>
+      <ul>
+        <li>Banner visibility when update is available</li>
+        <li>No banner when up to date</li>
+        <li>No banner when daemon is unreachable</li>
+        <li>Dismiss and persist across page reload</li>
+        <li>"View update" navigation to Settings page</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3><code>src/components/UpdateAvailableBanner.test.tsx</code></h3>
+      <p>
+        Component unit tests for version rendering, dismiss callback, and
+        accessibility role.
+      </p>
+    </div>
+
+    <div>
+      <h3><code>src/pages/Index.test.tsx</code></h3>
+      <p>
+        Integration tests verifying the banner appears/disappears based on
+        hook state, and that dismiss calls propagate correctly.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Design decisions -->
+<section>
+  <h2>Design decisions</h2>
+  <ul>
+    <li>
+      <strong>Plain fetch instead of <code>apiFetch</code> helper:</strong>
+      The existing <code>checkForUpdates()</code> returns a deeply-nested
+      generic type (<code>ApiDto</code>) that triggers TypeScript
+      "excessively deep" errors. Using <code>fetch</code> directly with a
+      locally-defined <code>UpdateCheckResult</code> interface avoids the
+      generic instantiation entirely while keeping the hook decoupled from
+      the daemon type system.
+    </li>
+    <li>
+      <strong>6-hour debounce via localStorage:</strong> Prevents
+      unnecessary network requests on every page load while surviving
+      page refreshes within the same session. The debounce timestamp
+      is stored in <code>localStorage</code> at <code>littleimp_update_last_check_ms</code>.
+    </li>
+    <li>
+      <strong>Version-aware dismissal:</strong> Dismissing the banner
+      stores the dismissed release tag (e.g. <code>v0.2.0</code>) in
+      <code>localStorage</code>, so the banner stays hidden for that
+      version but re-appears for a newer one.
+    </li>
+    <li>
+      <strong>Amber color scheme:</strong> A soft amber/attention palette
+      (matching the existing Settings update-check result card) signals
+      "action recommended" rather than "error" or "success", which keeps
+      the banner informative without being alarming.
+    </li>
+  </ul>
+</section>
+
+<!-- Files changed -->
+<section>
+  <h2>Files changed</h2>
+  <ul>
+    <li><code>src/components/UpdateAvailableBanner.tsx</code> — new banner component</li>
+    <li><code>src/components/UpdateAvailableBanner.test.tsx</code> — component tests</li>
+    <li><code>src/hooks/use-update-check.ts</code> — background update check hook</li>
+    <li><code>src/pages/Index.tsx</code> — wired banner into library page</li>
+    <li><code>src/pages/Index.test.tsx</code> — integration tests for banner visibility/discovery</li>
+    <li><code>e2e/update-notification.spec.ts</code> — e2e tests for the update notification flow</li>
+  </ul>
+</section>
+
+<!-- Verification -->
+<section>
+  <h2>Verification</h2>
+  <ul>
+    <li><code>npm run type-check</code> — frontend and daemon pass</li>
+    <li><code>npm run lint</code> — 0 errors (8 pre-existing warnings)</li>
+    <li><code>npm run test</code> — 294 tests pass (34 files)</li>
+    <li><code>npm run build</code> — production build succeeds</li>
+  </ul>
+  <details>
+    <summary>Test output</summary>
+    <code class="block">✓ src/components/UpdateAvailableBanner.test.tsx (4 tests)
+✓ src/pages/Index.test.tsx (9 tests)
+
+Test Files  34 passed (34)
+Tests  294 passed (294)</code>
+  </details>
+</section>
+
+</div>
+</div>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 import type { UIBookmark, useBookmarks } from "@/hooks/use-bookmarks";
 import { usePreferences } from "@/hooks/use-preferences";
+import { useUpdateCheck } from "@/hooks/use-update-check";
 
 vi.mock("@/hooks/use-bookmarks", () => ({
   LIBRARY_PAGE_SIZE_OPTIONS: [20, 50, 100],
@@ -76,6 +77,23 @@ vi.mock("@/components/ImportDialog", () => ({ ImportDialog: () => null }));
 vi.mock("@/components/AIPalette", () => ({ AIPalette: () => null }));
 vi.mock("@/components/DaemonOfflineBanner", () => ({ DaemonOfflineBanner: () => null }));
 vi.mock("@/components/DegradedModeBanner", () => ({ DegradedModeBanner: () => null }));
+vi.mock("@/components/UpdateAvailableBanner", () => ({
+  UpdateAvailableBanner: ({ latestTag, currentVersion, onDismiss }: { latestTag: string; currentVersion: string; onDismiss: () => void }) => (
+    <div data-testid="update-banner">
+      <span data-testid="update-tag">{latestTag}</span>
+      <span data-testid="update-version">{currentVersion}</span>
+      <button data-testid="dismiss-update" onClick={onDismiss}>Dismiss</button>
+    </div>
+  ),
+}));
+vi.mock("@/hooks/use-update-check", () => ({
+  useUpdateCheck: vi.fn(() => ({
+    showBanner: false,
+    dismiss: vi.fn(),
+    result: null,
+    loading: false,
+  })),
+}));
 vi.mock("@/components/KeyboardShortcuts", () => ({ KeyboardShortcuts: () => null }));
 vi.mock("@/components/ThemeToggle", () => ({ ThemeToggle: () => null }));
 vi.mock("@/components/DateRangeFilter", () => ({ DateRangeFilter: () => null }));
@@ -206,6 +224,12 @@ beforeEach(() => {
     viewMode: "grid",
     updatePreferences: vi.fn(),
   });
+  vi.mocked(useUpdateCheck).mockReturnValue({
+    showBanner: false,
+    dismiss: vi.fn(),
+    result: null,
+    loading: false,
+  });
 });
 
 describe("Index pagination", () => {
@@ -331,5 +355,54 @@ describe("Index library view preferences", () => {
 
     expect(resetLibraryPreferences).toHaveBeenCalledTimes(1);
     expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "grid" });
+  });
+});
+
+describe("Index update notification banner", () => {
+  it("does not render the update banner when no update is available", () => {
+    renderIndex();
+    expect(screen.queryByTestId("update-banner")).not.toBeInTheDocument();
+  });
+
+  it("renders the update banner when a newer version is available", () => {
+    vi.mocked(useUpdateCheck).mockReturnValue({
+      showBanner: true,
+      dismiss: vi.fn(),
+      result: {
+        current_version: "0.1.0-beta",
+        update_available: true,
+        source: "https://api.github.com/repos/goniszewski/little-imp/releases",
+        channel: "stable",
+        latest: { version: "0.2.0", tag: "v0.2.0", name: "v0.2.0", prerelease: false, published_at: "2026-07-15", url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0" },
+      },
+      loading: false,
+    });
+
+    renderIndex();
+
+    expect(screen.getByTestId("update-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("update-tag")).toHaveTextContent("v0.2.0");
+    expect(screen.getByTestId("update-version")).toHaveTextContent("0.1.0-beta");
+  });
+
+  it("dismisses the update banner when dismiss is clicked", () => {
+    const dismiss = vi.fn();
+    vi.mocked(useUpdateCheck).mockReturnValue({
+      showBanner: true,
+      dismiss,
+      result: {
+        current_version: "0.1.0-beta",
+        update_available: true,
+        source: "",
+        channel: "stable",
+        latest: { version: "0.2.0", tag: "v0.2.0", name: "v0.2.0", prerelease: false, published_at: "2026-07-15", url: "" },
+      },
+      loading: false,
+    });
+
+    renderIndex();
+
+    fireEvent.click(screen.getByTestId("dismiss-update"));
+    expect(dismiss).toHaveBeenCalledTimes(1);
   });
 });

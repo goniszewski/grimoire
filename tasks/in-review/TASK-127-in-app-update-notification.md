@@ -2,7 +2,7 @@
 
 **Phase:** First-user experience
 **Priority:** high (P1)
-**Status:** todo
+**Status:** in-review
 **Area:** frontend / UX
 
 ## Description
@@ -32,13 +32,13 @@ Build on the existing update-check infrastructure (Settings manual check, `GET /
 
 ## Acceptance Criteria
 
-- [ ] Update check runs on app load (debounced to 6-hour intervals).
-- [ ] Banner appears only when a newer version is available and is not dismissed for that version.
-- [ ] Banner is dismissible and stays dismissed across page navigations.
-- [ ] No banner is shown when the daemon is unreachable or returns an error.
-- [ ] No banner is shown when the current version is up to date.
-- [ ] Clicking the banner navigates to Settings → Updates.
-- [ ] All tests pass.
+- [x] Update check runs on app load (debounced to 6-hour intervals).
+- [x] Banner appears only when a newer version is available and is not dismissed for that version.
+- [x] Banner is dismissible and stays dismissed across page navigations.
+- [x] No banner is shown when the daemon is unreachable or returns an error.
+- [x] No banner is shown when the current version is up to date.
+- [x] Clicking the banner navigates to Settings → Updates.
+- [x] All tests pass.
 
 ## Dependencies
 
