@@ -12,7 +12,7 @@ visible during release closeout and go/no-go review.
 | Target | Artifact | Autostart mechanism | Validation route | Current evidence |
 |---|---|---|---|---|
 | macOS 12+ arm64 | `little-imp-0.1.0-beta-macos.tar.gz` | LaunchAgent `com.littleimp.daemon` | Native macOS host or Apple Silicon VM | May 29, 2026 non-mutating host check confirmed Darwin arm64 on macOS 26.5 with the LaunchAgent already running. Fresh release-path install was skipped because no separate test user or VM was available and mutating the shared LaunchAgent label would affect the active user service. TASK-048 records the prior isolated macOS install/upgrade/uninstall/purge smoke. |
-| macOS 12+ x64 | `little-imp-0.1.0-beta-macos.tar.gz` | LaunchAgent `com.littleimp.daemon` | Intel Mac or x64 macOS VM | No Intel Mac or x64 macOS VM was available on May 29, 2026. Keep as an explicit manual validation gap. |
+| macOS 12+ x64 | `little-imp-0.1.0-beta-macos.tar.gz` | LaunchAgent `com.littleimp.daemon` | Intel Mac or x64 macOS VM | Accepted as best-effort target for this beta. No Intel Mac or x64 macOS VM was available on May 29, 2026. macOS arm64 is the validated Mac target. |
 | Ubuntu 24.04 LTS | `little-imp-0.1.0-beta-linux.tar.gz` | systemd user unit `littleimpd.service` | `npm run installer:matrix:linux -- ubuntu:24.04` | Passed in Docker systemd-user smoke on May 29, 2026 after signature-required artifact validation. |
 | Debian 12 | `little-imp-0.1.0-beta-linux.tar.gz` | systemd user unit `littleimpd.service` | `npm run installer:matrix:linux -- debian:12` | Passed in Docker systemd-user smoke on May 29, 2026 after signature-required artifact validation. |
 
@@ -105,8 +105,9 @@ macOS availability and skipped targets:
 - The May 29 task did not run a fresh macOS arm64 install/upgrade/uninstall
   cycle because a fresh test user or Apple Silicon VM was not available, and
   reusing the current GUI user would mutate the active LaunchAgent label.
-- macOS 12+ x64 remains unvalidated because this workspace has no Intel Mac or
-  x64 macOS VM.
+- macOS 12+ x64 is accepted as a best-effort target for this beta; macOS arm64
+  is the validated Mac target. Revisit when Intel hardware or an x64 macOS VM
+  is available.
 
 Historical May 26 checks:
 

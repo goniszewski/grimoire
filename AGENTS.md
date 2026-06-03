@@ -63,7 +63,34 @@ Before meaningful edits, skim:
 - Run `npm run build` for changes that affect bundling, routing, Tailwind, or release output.
 - Run `npm run test:e2e` for user-flow changes that affect core app behavior.
 - For meaningful UI layout, visibility, interaction, or styling changes, launch the app, capture screenshots of the affected desktop and mobile/narrow states, inspect them, and include relevant assets in the task report.
-- If verification cannot be run locally, say so clearly in the final response.
+- If verification cannot be run locally (no system node/bun), see **Tooling Fallbacks** below to provision portable runtimes.
+
+## Tooling Fallbacks
+
+If `node` or `bun` is unavailable on the host (e.g., in sandboxed agent
+environments), use the portable runtimes under `local/bin/`.
+
+Run once to provision:
+
+```sh
+npm run tools:setup
+```
+
+Or directly:
+
+```sh
+bash scripts/setup-local-tools.sh
+```
+
+Then prefix all commands with:
+
+```sh
+export PATH="$PWD/local/bin:$PATH"
+```
+
+This makes `node`, `npm`, `npx`, and `bun` available for running tests,
+type-checks, linting, API doc generation, and builds. The `local/` directory
+is git-ignored and never enters version control.
 
 ## Collaboration Rules
 

@@ -15,7 +15,7 @@ import {
   accessSync,
   constants as fsConstants,
 } from "fs";
-import { join, resolve, basename, dirname, isAbsolute, relative } from "path";
+import { join, resolve, basename, dirname, isAbsolute } from "path";
 import { tmpdir } from "os";
 import { version as APP_VERSION } from "../../package.json";
 import { Config } from "../config.js";
@@ -693,14 +693,20 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       throw statusError("Encrypted package path must end with .littleimp-backup.enc");
     }
 
-    let realBackupsDir: string;
+    // Reject path-traversal attempts using component-level check
+    const components = rawPath.split("/");
+    for (const component of components) {
+      if (component === "..") {
+        throw statusError("Encrypted package path must not contain path traversal");
+      }
+    }
+
     let realPackagePath: string;
     try {
       const st = statSync(packagePath);
       if (!st.isFile()) {
         throw statusError("Encrypted package not found");
       }
-      realBackupsDir = realpathSync(resolve(getBackupsDir()));
       realPackagePath = realpathSync(packagePath);
     } catch (err) {
       if ((err as { status?: number }).status === 422) throw err;
@@ -709,11 +715,6 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
     if (!realPackagePath.endsWith(".littleimp-backup.enc")) {
       throw statusError("Encrypted package path must resolve to a .littleimp-backup.enc file");
-    }
-
-    const relativePath = relative(realBackupsDir, realPackagePath);
-    if (relativePath === "" || relativePath.startsWith("..") || isAbsolute(relativePath)) {
-      throw statusError("Encrypted package path must be inside the configured backup directory");
     }
 
     return packagePath;

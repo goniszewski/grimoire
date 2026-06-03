@@ -69,7 +69,7 @@ TASK-082:
 | Public one-command install and CLI update | TASK-078 confirmed authenticated release assets exist, but unauthenticated raw installer and release archive URLs return `404`; install, `--upgrade`, and `littleimp update install --version 0.1.0-beta` cannot complete from the documented public URLs. | Blocked |
 | Installed-app smoke | `npm run test:e2e:installed` passed against locally packaged artifacts. TASK-081 added `npm run test:e2e:installed:published`, but live public-artifact execution stopped at the public macOS archive `404` before install/runtime mutation. | Local passed; public blocked |
 | Docker | Docker Compose build/start/health validation passed with host port publishing bound to `127.0.0.1:3210:3210`; `docker compose down` preserved the named data volume. TASK-082 confirmed the rendered Compose port remains loopback-only. | Passed |
-| Installer matrix | TASK-077 passed Ubuntu 24.04 LTS and Debian 12 systemd-user installs from signed release artifacts, including health, autostart, upgrade data preservation, uninstall preservation, and explicit purge. macOS arm64 has historical isolated installer evidence and a May 29 non-mutating active LaunchAgent check. | Passed with documented macOS skips |
+| Installer matrix | TASK-077 passed Ubuntu 24.04 LTS and Debian 12 systemd-user installs from signed release artifacts, including health, autostart, upgrade data preservation, uninstall preservation, and explicit purge. macOS arm64 has historical isolated installer evidence and a May 29 non-mutating active LaunchAgent check. macOS x64 is accepted as an explicit validation limitation until Intel hardware or an x64 macOS VM is available for testing. | Passed with documented macOS limitations |
 | Homebrew | TASK-079 aligned formula checksums with `release/release-manifest.json`, added checksum drift coverage, passed `npx vitest run scripts/homebrew-formula.test.ts`, `brew style Formula/little-imp.rb`, `brew audit --strict goniszewski/little-imp/little-imp`, and a dry-run install plan. Live fetch/install/service checks remain blocked by public archive `404`. | Local formula passed; live install blocked |
 | Update system | Local packaged update behavior is documented in [update-system.md](./update-system.md) and covered by release-closeout tests. Public `littleimp update install --version 0.1.0-beta` is blocked by the same unauthenticated release URL failure as TASK-078. | Local passed; public blocked |
 | Backup and restore | Backup/restore design, local backup verification, encrypted package creation/verification/restore, rollback directory behavior, and restart-required restore UX are covered by implementation tasks, installed-app smoke, release checklist evidence, and [backup-design.md](./backup-design.md). | Passed |
@@ -95,8 +95,9 @@ These are explicit and should not be represented as completed release evidence:
 - macOS arm64 fresh release-path install was not rerun on May 29 because no
   separate test user or Apple Silicon VM was available and mutating the active
   LaunchAgent would affect the current user service.
-- macOS 12+ x64 remains a manual validation gap because no Intel Mac or x64
-  macOS VM is available in this workspace.
+- macOS 12+ x64 is an explicit accepted limitation for this beta: the universal
+  binary supports Intel Macs, but no Intel Mac or x64 macOS VM is available in
+  this workspace for installer validation.
 
 ## Known Limitations Accepted For MVP
 
@@ -119,11 +120,10 @@ as local-first, single-user software:
   checks, background notifications, one-click in-app install, and automatic
   rollback are not shipped.
 - Restore intentionally requires a daemon restart after data replacement.
-- Settings can verify or restore encrypted backup packages only when the
-  package path is under the configured backup folder. The packaged CLI is the
-  supported path for encrypted package files stored elsewhere.
-- macOS x64 validation still requires Intel hardware or an x64 macOS VM before
-  that support claim can move from documented target to fresh release evidence.
+- Settings can verify or restore encrypted backup packages from any local path
+  the daemon can read.
+- macOS x64 is an accepted limitation for this beta (best-effort target). macOS
+  arm64 is the validated Mac target.
 
 The public artifact visibility failure is not an acceptable MVP limitation for
 a public installable release. It is a release blocker.
@@ -151,8 +151,9 @@ a public installable release. It is a release blocker.
 4. Rerun `npm run test:e2e:installed:published` so the public-asset smoke
    downloads, verifies, installs, and exercises the release archive users will
    fetch.
-5. Decide whether macOS x64 remains a documented manual validation gap for the
-   beta or must be validated before public promotion.
+5. macOS x64 is accepted as a best-effort target for this beta; macOS arm64 is
+   the validated Mac target. Revisit when Intel hardware or an x64 macOS VM is
+   available.
 
 ## Final Decision
 

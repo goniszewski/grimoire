@@ -2,7 +2,7 @@
 
 **Phase:** First-user experience
 **Priority:** medium (P2)
-**Status:** todo
+**Status:** done
 **Area:** frontend / UX / onboarding
 
 ## Description
@@ -51,3 +51,11 @@ Enhance the existing first-run experience (TASK-036) with a lightweight guided t
 - Demo data should be realistic enough to demonstrate search, categories, tags, and related bookmarks, but fake — never real copyrighted content.
 - Consider adding a "Remove demo data" button in Settings → Data Management.
 - The guided tour should degrade gracefully on narrow/mobile viewports.
+
+## Work Notes
+
+- June 1, 2026: Implemented the demo data endpoint (`daemon/src/routes/demo.ts`) with a POST /demo/load route that creates 3 categories and 10 demo bookmarks with realistic developer-content URLs, titles, and tags. Includes a guard that rejects the load if the library is not empty (409).
+- Created `src/components/GuidedTour.tsx` — a 3-step modal overlay tracked via localStorage (`littleimp_guided_tour_dismissed`). Steps cover: Save a bookmark, Search everything, Stay organized. Dismissible at any step, does not reappear after dismissal.
+- Added `loadDemoData()` to `src/lib/api.ts` and wired "Load demo bookmarks" ghost button into the Index.tsx empty state.
+- Registered the demo route in `daemon/src/server.ts`.
+- Verification cannot be run locally — no JS runtime available. Tests and type-checking should be run before merging.

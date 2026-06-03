@@ -35,6 +35,7 @@
     "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
+    "tools:setup": "bash scripts/setup-local-tools.sh",
     "prepare": "husky"
   },
   "dependencies": {

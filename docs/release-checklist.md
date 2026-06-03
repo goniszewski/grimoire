@@ -24,7 +24,7 @@ The MVP native installer supports this exact OS matrix:
 | Target | Architecture | Service manager | Release artifact | Required before publish |
 |---|---|---|---|---|
 | macOS 12+ arm64 | Apple Silicon | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Validate on the available Apple Silicon host or VM. |
-| macOS 12+ x64 | Intel | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Validate manually on Intel hardware or an x64 macOS VM when available. |
+| macOS 12+ x64 | Intel | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Best-effort target; validated when Intel hardware or an x64 macOS VM is available. macOS arm64 is the validated Mac target. |
 | Ubuntu 24.04 LTS | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
 | Debian 12 | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
 

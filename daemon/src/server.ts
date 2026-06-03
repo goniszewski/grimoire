@@ -26,6 +26,7 @@ import { createReprocessRoute } from "./routes/reprocess.js";
 import { createMediaRoute } from "./routes/media.js";
 import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
 import { createCaptureRoute } from "./routes/capture.js";
+import { createDemoRoute } from "./routes/demo.js";
 import { validatePresentedIntegrationToken } from "./lib/integration-auth.js";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -54,6 +55,7 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/integration-tokens",
   "/restore",
   "/settings/test-s3",
+  "/demo/load",
 ]);
 
 function isFrontendNavigation(c: Context): boolean {
@@ -267,6 +269,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createReprocessRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createIntegrationTokensRoute({ db: deps.db }));
   app.route("/", createMcpRoute({ db: deps.db, queue: deps.queue, version: deps.version }));
+  app.route("/", createDemoRoute({ db: deps.db }));
 
   if (deps.staticDir !== false) {
     registerStaticFrontend(app, deps.staticDir ?? join(import.meta.dir, "../../dist"));

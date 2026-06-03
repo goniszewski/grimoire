@@ -1109,3 +1109,15 @@ export async function rotateIntegrationToken(id: string): Promise<IntegrationTok
     method: "POST",
   });
 }
+
+// ─── Demo data ─────────────────────────────────────────────────────────────────
+
+export interface DemoLoadResult {
+  bookmarks_created: number;
+  categories_created: number;
+}
+
+export async function loadDemoData(): Promise<DemoLoadResult> {
+  const res = await apiFetch<{ data: DemoLoadResult }>("/demo/load", { method: "POST" });
+  return res.data;
+}

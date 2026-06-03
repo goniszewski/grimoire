@@ -1833,7 +1833,7 @@ Request body:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `path` | string | yes | Absolute encrypted package file path under the configured backup directory |
+| `path` | string | yes | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | yes | Password used to decrypt the package |
 
 Responses:
@@ -1872,7 +1872,7 @@ Request body:
 | `name` | string | no | Local backup directory name |
 | `source` | "remote" \| "encrypted_package" | no | Restore source |
 | `key` | string | no | Remote S3 snapshot.db key |
-| `path` | string | no | Absolute encrypted package file path under the configured backup directory |
+| `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
 | `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
@@ -2220,8 +2220,8 @@ Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `token` | string | no | Integration bearer token (query-param auth) |
-| `url` | string | no | The URL to capture |
+| `token` | string | yes | Integration bearer token (query-param auth) |
+| `url` | string | yes | The URL to capture |
 | `title` | string | no | Page title |
 | `selection` | string | no | User-selected text |
 
@@ -2440,6 +2440,22 @@ WWW-Authenticate: Bearer realm="littleimp-local-integrations"
   "detail": "A managed integration bearer token is required for this route"
 }
 ```
+
+### Demo
+
+#### POST /demo/load
+
+Load demo bookmarks into an empty library for first-run exploration.
+
+Creates a set of 10 demo bookmarks with realistic developer-content URLs, titles, categories, and tags. Only succeeds when the library has no existing bookmarks. Returns the count of created bookmarks and categories.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `DemoLoadResult` | Demo data loaded |
+| `409` | application/json | `LegacyError` | Library is not empty — demo can only be loaded on a fresh library |
+| `500` | application/json | `LegacyError` | Failed to load demo data |
 
 ## Schemas
 
@@ -3970,7 +3986,7 @@ Response data
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `path` | string | yes | Absolute encrypted package file path under the configured backup directory |
+| `path` | string | yes | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | yes | Password used to decrypt the package |
 
 ### BackupVerificationResult
@@ -4014,7 +4030,7 @@ Response data
 | `name` | string | no | Local backup directory name |
 | `source` | "remote" \| "encrypted_package" | no | Restore source |
 | `key` | string | no | Remote S3 snapshot.db key |
-| `path` | string | no | Absolute encrypted package file path under the configured backup directory |
+| `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
 | `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
@@ -4346,3 +4362,13 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `error` | string | yes | MCP failure message |
+
+### DemoLoadResult
+
+Demo data load result
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | object | yes |  |
+| `data.bookmarks_created` | integer | yes | Number of bookmarks created by the demo load |
+| `data.categories_created` | integer | yes | Number of categories created by the demo load |

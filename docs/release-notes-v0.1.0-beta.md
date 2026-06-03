@@ -83,7 +83,7 @@ Published assets:
 | Target | Service manager | Release artifact | Current validation status |
 |---|---|---|---|
 | macOS 12+ arm64 | LaunchAgent | macOS archive | Historical isolated native install/upgrade/uninstall/purge smoke passed; May 29 non-mutating host check confirmed the active LaunchAgent path. |
-| macOS 12+ x64 | LaunchAgent | macOS archive | Supported target, but still requires manual validation on Intel Mac hardware or an x64 macOS VM. |
+| macOS 12+ x64 | LaunchAgent | macOS archive | Best-effort target; validated when Intel hardware or an x64 macOS VM is available. macOS arm64 is the validated Mac target for this beta. |
 | Ubuntu 24.04 LTS | systemd user unit | Linux archive | Signed archive matrix smoke passed. |
 | Debian 12 | systemd user unit | Linux archive | Signed archive matrix smoke passed. |
 
@@ -138,7 +138,8 @@ be promoted.
 - Little Imp is a local-first, single-user app. It does not include an
   authentication layer and should not be exposed on a public network without an
   authenticated tunnel, VPN, or reverse proxy in front of it.
-- macOS x64 validation remains a manual hardware or VM check for this beta.
+- macOS x64 is a best-effort target for this beta. macOS arm64 is the validated
+  Mac target. Revisit when Intel hardware or an x64 macOS VM is available.
 - Homebrew live install validation depends on the release archive URLs being
   publicly downloadable.
 - Public one-command install, public CLI update install, and published-artifact
@@ -147,9 +148,8 @@ be promoted.
   background update notifications, and automatic rollback are not shipped in
   this release.
 - Restore intentionally requires a daemon restart after data replacement.
-- Settings can verify or restore encrypted backup packages only when the
-  package path is under the configured backup folder. Use the packaged CLI for
-  encrypted package files stored elsewhere.
+- Settings can verify or restore encrypted backup packages from any local path
+  the daemon can read.
 - Multi-device sync, packaged browser extension clients, multi-user support,
   optional authentication, and public-network deployment modes are post-MVP
   work.

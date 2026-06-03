@@ -1222,7 +1222,7 @@ const schemas = {
   ),
   EncryptedBackupPackageRequest: objectSchema(
     {
-      path: stringSchema("Absolute encrypted package file path under the configured backup directory"),
+      path: stringSchema("Absolute path to an encrypted backup package file accessible by the daemon"),
       password: stringSchema("Password used to decrypt the package"),
     },
     ["path", "password"]
@@ -1265,7 +1265,7 @@ const schemas = {
     name: stringSchema("Local backup directory name"),
     source: stringSchema("Restore source", { enum: ["remote", "encrypted_package"] }),
     key: stringSchema("Remote S3 snapshot.db key"),
-    path: stringSchema("Absolute encrypted package file path under the configured backup directory"),
+    path: stringSchema("Absolute path to an encrypted backup package file accessible by the daemon"),
     password: stringSchema("Password used to decrypt the encrypted package"),
     allow_unsafe_no_checksum: booleanSchema("Allow restoring a backup with no checksum file"),
   }),
@@ -1582,6 +1582,16 @@ const schemas = {
   IntegrationTokenCreateResponse: envelope(ref("IntegrationTokenCreateResult"), "Integration token creation response"),
   IntegrationTokenListResponse: envelope(arrayOf(ref("IntegrationTokenRecord"), "Integration token records")),
   McpErrorResponse: objectSchema({ error: stringSchema("MCP failure message") }, ["error"]),
+  DemoLoadResult: envelope(
+    objectSchema(
+      {
+        bookmarks_created: integerSchema("Number of bookmarks created by the demo load", { minimum: 0 }),
+        categories_created: integerSchema("Number of categories created by the demo load", { minimum: 0 }),
+      },
+      ["bookmarks_created", "categories_created"]
+    ),
+    "Demo data load result"
+  ),
 } as const satisfies ApiSchemaMap;
 
 const exampleTimestamp = "2026-06-01T09:30:00.000Z";
@@ -3056,6 +3066,19 @@ export const apiContract = {
           },
         },
       ],
+    },
+    {
+      method: "POST",
+      path: "/demo/load",
+      tag: "Demo",
+      summary: "Load demo bookmarks into an empty library for first-run exploration.",
+      description:
+        "Creates a set of 10 demo bookmarks with realistic developer-content URLs, titles, categories, and tags. Only succeeds when the library has no existing bookmarks. Returns the count of created bookmarks and categories.",
+      responses: {
+        "200": jsonResponse("Demo data loaded", ref("DemoLoadResult")),
+        "409": legacyErrorResponse("Library is not empty — demo can only be loaded on a fresh library"),
+        "500": legacyErrorResponse("Failed to load demo data"),
+      },
     },
   ],
 } as const satisfies ApiContract;

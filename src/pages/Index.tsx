@@ -15,6 +15,7 @@ import { useDaemonStatus } from "@/hooks/use-daemon-status";
 import { DaemonOfflineBanner } from "@/components/DaemonOfflineBanner";
 import { DegradedModeBanner } from "@/components/DegradedModeBanner";
 import { UpdateAvailableBanner } from "@/components/UpdateAvailableBanner";
+import { GuidedTour } from "@/components/GuidedTour";
 import { useUpdateCheck } from "@/hooks/use-update-check";
 import { useSettings } from "@/hooks/use-settings";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
@@ -41,9 +42,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { loadDemoData } from "@/lib/api";
 
 const Index = () => {
   const store = useBookmarks();
+  const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const { online, isChecking: daemonChecking } = useDaemonStatus();
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
@@ -336,6 +340,7 @@ const Index = () => {
               onDismiss={dismissUpdateBanner}
             />
           )}
+          <GuidedTour />
           {/* Header */}
           <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 py-3">
             <SidebarTrigger className="shrink-0" />
@@ -641,6 +646,28 @@ const Index = () => {
                   <Button variant="outline" onClick={() => setImportOpen(true)}>
                     <Upload className="h-4 w-4 mr-2" />
                     Import from browser
+                  </Button>
+                </div>
+                <div className="mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const result = await loadDemoData();
+                        toast.success("Demo bookmarks loaded", {
+                          description: `Created ${result.bookmarks_created} bookmarks across ${result.categories_created} categories.`,
+                        });
+                        qc.invalidateQueries();
+                      } catch (err) {
+                        toast.error("Failed to load demo data", {
+                          description: err instanceof Error ? err.message : "Unknown error",
+                        });
+                      }
+                    }}
+                  >
+                    <BookmarkIcon className="h-3.5 w-3.5 mr-1.5" />
+                    Load demo bookmarks
                   </Button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import Index from "./Index";
 import type { UIBookmark, useBookmarks } from "@/hooks/use-bookmarks";
 import { usePreferences } from "@/hooks/use-preferences";
@@ -210,11 +211,21 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
 }
 
 function renderIndex(path = "/") {
-  return render(
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
     <MemoryRouter initialEntries={[path]}>
-      <Index />
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
     </MemoryRouter>
   );
+  const result = render(<Index />, { wrapper });
+  return {
+    ...result,
+    rerender: () => result.rerender(<Index />),
+  };
 }
 
 beforeEach(() => {

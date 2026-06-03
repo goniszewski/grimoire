@@ -31,3 +31,6 @@ release/
 # Test artifacts
 test-results/
 playwright-report/
+
+# Portable runtimes for coding agents (see scripts/setup-local-tools.sh)
+local/

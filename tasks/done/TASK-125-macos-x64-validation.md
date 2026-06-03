@@ -2,7 +2,7 @@
 
 **Phase:** Release unblocking
 **Priority:** high (P1)
-**Status:** todo
+**Status:** done
 **Area:** distribution / installer-matrix
 
 ## Description

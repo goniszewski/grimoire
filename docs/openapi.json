@@ -58,6 +58,9 @@
     },
     {
       "name": "MCP"
+    },
+    {
+      "name": "Demo"
     }
   ],
   "paths": {
@@ -3642,7 +3645,7 @@
           {
             "name": "token",
             "in": "query",
-            "required": false,
+            "required": true,
             "description": "Integration bearer token (query-param auth)",
             "schema": {
               "type": "string",
@@ -3652,7 +3655,7 @@
           {
             "name": "url",
             "in": "query",
-            "required": false,
+            "required": true,
             "description": "The URL to capture",
             "schema": {
               "type": "string",
@@ -3945,6 +3948,49 @@
           }
         ],
         "x-little-imp-source-method": "ALL"
+      }
+    },
+    "/demo/load": {
+      "post": {
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Load demo bookmarks into an empty library for first-run exploration.",
+        "description": "Creates a set of 10 demo bookmarks with realistic developer-content URLs, titles, categories, and tags. Only succeeds when the library has no existing bookmarks. Returns the count of created bookmarks and categories.",
+        "operationId": "postDemoLoad",
+        "responses": {
+          "200": {
+            "description": "Demo data loaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoLoadResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Library is not empty — demo can only be loaded on a fresh library",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load demo data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-little-imp-source-method": "POST"
       }
     }
   },
@@ -8041,7 +8087,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Absolute encrypted package file path under the configured backup directory"
+            "description": "Absolute path to an encrypted backup package file accessible by the daemon"
           },
           "password": {
             "type": "string",
@@ -8208,7 +8254,7 @@
           },
           "path": {
             "type": "string",
-            "description": "Absolute encrypted package file path under the configured backup directory"
+            "description": "Absolute path to an encrypted backup package file accessible by the daemon"
           },
           "password": {
             "type": "string",
@@ -9196,6 +9242,36 @@
         },
         "required": [
           "error"
+        ],
+        "additionalProperties": false
+      },
+      "DemoLoadResult": {
+        "type": "object",
+        "description": "Demo data load result",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "bookmarks_created": {
+                "type": "integer",
+                "description": "Number of bookmarks created by the demo load",
+                "minimum": 0
+              },
+              "categories_created": {
+                "type": "integer",
+                "description": "Number of categories created by the demo load",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "bookmarks_created",
+              "categories_created"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
         ],
         "additionalProperties": false
       }

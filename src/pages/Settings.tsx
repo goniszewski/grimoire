@@ -1568,7 +1568,7 @@ const Settings = () => {
                   <div>
                     <h3 className="text-xs font-medium">Encrypted Packages</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Verify or restore a package file that the daemon can read from the configured backup folder.
+                      Verify or restore a package file from any path the daemon can read.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-[1fr_14rem] gap-2">

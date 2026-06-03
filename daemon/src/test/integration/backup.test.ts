@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { chmodSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, symlinkSync } from "fs";
+import { chmodSync, mkdirSync, mkdtempSync, renameSync, rmSync, existsSync, writeFileSync, readFileSync, symlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { createBackupRoute } from "../../routes/backup.js";
@@ -587,7 +587,7 @@ describe("Backup API", () => {
     expect(json.error).toInclude("password is incorrect or package is corrupted");
   });
 
-  it("POST /backup/package/verify rejects package symlinks that resolve outside the backup directory", async () => {
+  it("POST /backup/package/verify accepts package symlinks that resolve outside the backup directory", async () => {
     const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
     const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
     const { path: backupPath } = await backupRes.json() as { path: string };
@@ -606,9 +606,57 @@ describe("Backup API", () => {
       body: JSON.stringify({ path: symlinkPath, password: "correct horse battery staple" }),
     });
 
-    expect(res.status).toBe(422);
-    const json = await res.json() as { error: string };
-    expect(json.error).toInclude("inside the configured backup directory");
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      ok: boolean;
+      path: string;
+      package_encrypted: boolean;
+      checksum_verified: boolean;
+      verified_files: string[];
+      bookmark_count: number;
+      created_at: string;
+    };
+    expect(json.ok).toBeTrue();
+    expect(json.checksum_verified).toBeTrue();
+    expect(json.verified_files).toContain("snapshot.db");
+  });
+
+  it("POST /backup/package/verify accepts a package at an arbitrary path outside the backup directory", async () => {
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const { path: backupPath } = await backupRes.json() as { path: string };
+    const backupName = backupPath.split("/").at(-1)!;
+    // Create a package at a path outside the configured backup directory
+    const outsideDir = mkdtempSync(join(tmpdir(), "littleimp-outside-test-"));
+    const outsidePackagePath = join(outsideDir, "remote-package.littleimp-backup.enc");
+    const packageRes = await localOnlyApp.request("/backup/package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName, password: "test-password" }),
+    });
+    const { path: createdPackagePath } = await packageRes.json() as { path: string };
+    // Move the package to the outside path
+    renameSync(createdPackagePath, outsidePackagePath);
+
+    const res = await localOnlyApp.request("/backup/package/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: outsidePackagePath, password: "test-password" }),
+    });
+
+    expect(res.status).toBe(200);
+    const json = await res.json() as {
+      ok: boolean;
+      path: string;
+      package_encrypted: boolean;
+      checksum_verified: boolean;
+      bookmark_count: number;
+    };
+    expect(json.ok).toBeTrue();
+    expect(json.package_encrypted).toBeTrue();
+    expect(json.checksum_verified).toBeTrue();
+    // Cleanup
+    rmSync(outsideDir, { recursive: true, force: true });
   });
 
   // ─── POST /restore ─────────────────────────────────────────────────────────
