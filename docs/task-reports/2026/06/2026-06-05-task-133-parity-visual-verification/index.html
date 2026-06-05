@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parity Task Reports And Visual Verification - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1120px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+h3 {
+  margin: 0 0 6px;
+  font-size: .95rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row span:nth-child(3) {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.hero-shot,
+.shot-grid figure {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img,
+.shot-grid img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.hero-shot figcaption,
+.shot-grid figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+.coverage-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+.coverage-card ul {
+  margin-top: 8px;
+}
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.shot-grid figure {
+  min-width: 0;
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../../index.html">Task Reports</a>
+    &nbsp;/&nbsp;
+    <a href="../../index.html">2026</a>
+    &nbsp;/&nbsp;
+    <a href="../index.html">June 2026</a>
+  </nav>
+
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Parity Task Reports And Visual Verification</h1>
+      <div class="meta-row">
+        <span>2026-06-05</span>
+        <span>TASK-133</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-category-tree-expanded-desktop.png" alt="Desktop Little Imp library with the synthetic parity category tree expanded in the sidebar">
+      <figcaption>After: the parity verification pass uses a clean synthetic library to capture full-tree categories, library controls, and bookmark cards without personal data.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The Grimoire parity tasks already had many focused implementation reports, but the batch still had open PAR-051 and PAR-052 follow-ups for consolidated task-report coverage and a fresh desktop/narrow visual sweep across parity UI surfaces.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Reviewers needed one place to confirm that bookmark detail, category/tag management, import/export, library pagination/filtering/sorting, and local integration work had visual or documented evidence, with screenshots captured from non-sensitive data.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Seeded an isolated loopback daemon with synthetic categories, tags, bookmarks, open metrics, read-later/read state, cached media, and import duplicate targets.</li>
+        <li>Captured 18 desktop and narrow-width screenshots for category tree states, category/tag detail pages, bookmark detail metadata/media, library filters/sort/pagination, and import preview/result reports.</li>
+        <li>Added this TASK-133 report as a batch-level visual index that links back to the existing parity task reports by epic.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>The parity report archive now has a single review entry for PAR-051/PAR-052: it records the synthetic capture method, links the prior per-task reports, and stores fresh UI evidence for the requested parity surfaces.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Ran an isolated daemon with <code>DATA_DIR=/tmp/littleimp-task133-data.d0oq9d</code> on <code>127.0.0.1:33210</code> and Vite on <code>127.0.0.1:18080</code>.</li>
+        <li>Captured screenshots with Playwright against the real daemon API and media route.</li>
+        <li>Recaptured the bookmark-detail media screenshots through the daemon-hosted static frontend on <code>127.0.0.1:33210</code> so cached media loaded under the same-origin security policy.</li>
+        <li>Checked all 18 PNG files with <code>sips -g pixelWidth -g pixelHeight</code>; every asset has non-zero dimensions.</li>
+        <li>Visually inspected representative desktop and narrow captures for category, detail, filter, and import states.</li>
+      </ul>
+    </section>
+
+    <details open>
+      <summary>Epic Coverage</summary>
+      <div class="coverage-grid">
+        <div class="coverage-card">
+          <h3>Bookmark Detail And Metadata</h3>
+          <p>Covers TASK-089, TASK-091, TASK-092, TASK-093, and TASK-094.</p>
+          <ul>
+            <li><a href="../../05/2026-05-31-task-089-read-later-bookmark-flag/index.html">Read later bookmark flag</a></li>
+            <li><a href="../../05/2026-05-31-task-091-bookmark-open-metrics/index.html">Bookmark open metrics</a></li>
+            <li><a href="../../05/2026-05-31-task-092-bookmark-detail-metadata-content/index.html">Bookmark detail metadata and content</a></li>
+            <li><a href="../../05/2026-05-31-task-093-bookmark-media-handling-preview/index.html">Bookmark media handling and preview</a></li>
+            <li><a href="../../05/2026-05-31-task-094-bookmark-mutation-regression-tests/index.html">Bookmark mutation regression tests</a></li>
+          </ul>
+        </div>
+        <div class="coverage-card">
+          <h3>Category And Tag Management</h3>
+          <p>Covers TASK-095 through TASK-101.</p>
+          <ul>
+            <li><a href="../../05/2026-05-31-task-095-sidebar-categories-full-tree/index.html">Sidebar categories from full tree</a></li>
+            <li><a href="../../05/2026-05-31-task-096-category-detail-page/index.html">Category detail page</a></li>
+            <li><a href="../../05/2026-05-31-task-097-category-metadata-fields/index.html">Category metadata fields</a></li>
+            <li><a href="../../05/2026-05-31-task-098-tag-management-surface/index.html">Tag management surface</a></li>
+            <li><a href="../../05/2026-05-31-task-099-tag-detail-pages/index.html">Tag detail pages</a></li>
+            <li><a href="../../05/2026-05-31-task-100-tag-rename-api-ui/index.html">Tag rename API and UI</a></li>
+            <li><a href="../2026-06-01-task-101-category-tag-regression-tests/index.html">Category and tag regression tests</a></li>
+          </ul>
+        </div>
+        <div class="coverage-card">
+          <h3>Import And Export Parity</h3>
+          <p>Covers TASK-107 through TASK-113 plus TASK-120 duplicate policy.</p>
+          <ul>
+            <li><a href="../2026-06-01-task-107-preserve-import-folder-hierarchy/index.html">Preserve import folder hierarchy</a></li>
+            <li><a href="../2026-06-01-task-108-pre-import-review/index.html">Pre import review</a></li>
+            <li><a href="../2026-06-01-task-109-import-category-tag-remapping/index.html">Import category and tag remapping</a></li>
+            <li><a href="../2026-06-01-task-110-import-result-report/index.html">Import result report</a></li>
+            <li><a href="../2026-06-01-task-111-export-parity-fields/index.html">Export parity fields</a></li>
+            <li><a href="../2026-06-02-task-112-grimoire-backup-import-shape/index.html">Grimoire backup import shape</a></li>
+            <li><a href="../2026-06-01-task-113-import-export-regression-tests/index.html">Import export regression tests</a></li>
+            <li><a href="../2026-06-01-task-120-import-duplicate-handling-policy/index.html">Import duplicate handling policy</a></li>
+          </ul>
+        </div>
+        <div class="coverage-card">
+          <h3>Library Pagination, Sorting, Filters, And Scale</h3>
+          <p>Covers TASK-114 through TASK-119.</p>
+          <ul>
+            <li><a href="../2026-06-01-task-114-library-pagination/index.html">Library pagination</a></li>
+            <li><a href="../2026-06-02-task-115-server-driven-sorting/index.html">Server driven sorting</a></li>
+            <li><a href="../2026-06-01-task-116-library-parity-filters/index.html">Library parity filters</a></li>
+            <li><a href="../2026-06-02-task-117-persist-library-view-preferences/index.html">Persist library view preferences</a></li>
+            <li><a href="../2026-06-02-task-118-aggregate-count-endpoints/index.html">Aggregate count endpoints</a></li>
+            <li><code>tasks/done/TASK-119-large-library-performance-tests.md</code></li>
+          </ul>
+        </div>
+        <div class="coverage-card">
+          <h3>API Docs, Auth, And Capture</h3>
+          <p>Covers TASK-102 through TASK-106. These are API/runtime surfaces, so their visual evidence remains diagram/report based rather than app-screen based.</p>
+          <ul>
+            <li><a href="../2026-06-01-task-102-integration-token-auth/index.html">Integration token authentication</a></li>
+            <li><a href="../2026-06-01-task-103-api-examples/index.html">Human readable API examples</a></li>
+            <li><a href="../2026-06-01-task-104-openapi-contract-output/index.html">OpenAPI contract output</a></li>
+            <li><a href="../2026-06-02-task-105-one-click-capture-endpoint/index.html">One click capture endpoint</a></li>
+            <li><a href="../2026-06-01-task-106-integration-cors-origin-controls/index.html">Integration CORS and origin controls</a></li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>Screenshot Gallery</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/01-category-tree-expanded-desktop.png" alt="Desktop library with expanded nested parity categories in the sidebar">
+          <figcaption>Expanded category tree, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/02-category-tree-collapsed-desktop.png" alt="Desktop library after the sidebar is collapsed to icon form">
+          <figcaption>Collapsed sidebar state, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/03-category-tree-narrow-open.png" alt="Narrow viewport with the category sidebar opened as an off-canvas panel">
+          <figcaption>Category tree, narrow off-canvas.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/04-bookmark-detail-media-desktop.png" alt="Desktop bookmark detail dialog showing source metadata extracted content notes tags category and open metrics">
+          <figcaption>Bookmark detail metadata, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/05-bookmark-detail-media-narrow.png" alt="Narrow bookmark detail dialog showing metadata content notes tags and category fields">
+          <figcaption>Bookmark detail metadata, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/06-category-detail-desktop.png" alt="Desktop category detail page for Data Workflows showing metadata and scoped bookmarks">
+          <figcaption>Category detail, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/07-category-detail-narrow.png" alt="Narrow category detail page for Data Workflows">
+          <figcaption>Category detail, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/08-tags-list-desktop.png" alt="Desktop tag management page listing synthetic parity tags">
+          <figcaption>Tag management, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/09-tags-list-narrow.png" alt="Narrow tag management page listing synthetic parity tags">
+          <figcaption>Tag management, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/10-tag-detail-desktop.png" alt="Desktop tag detail page for parity visual showing matching bookmarks">
+          <figcaption>Tag detail, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/11-tag-detail-narrow.png" alt="Narrow tag detail page for parity visual">
+          <figcaption>Tag detail, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/12-library-pagination-sort-filter-desktop.png" alt="Desktop library with read later filter and most opened sort active">
+          <figcaption>Pagination, sort, and read-later filter.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/13-filter-dropdown-desktop.png" alt="Desktop library opened-count filter dropdown showing all open activity options">
+          <figcaption>Opened-count parity filter dropdown.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/14-library-filter-narrow.png" alt="Narrow library view with read later filter active">
+          <figcaption>Library filter, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/15-import-preview-remapping-desktop.png" alt="Desktop import preview dialog showing duplicate policy category mapping tag mapping detected rows and warnings">
+          <figcaption>Import preview and remapping, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/16-import-result-report-desktop.png" alt="Desktop import result report showing created skipped warnings category paths and row-level outcomes">
+          <figcaption>Import result report, desktop.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/17-import-preview-narrow.png" alt="Narrow import preview dialog showing summary counts and detected duplicate rows">
+          <figcaption>Import preview, narrow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/18-import-result-report-narrow.png" alt="Narrow import result report showing compact row cards and summary counts">
+          <figcaption>Import result report, narrow.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>The synthetic capture database intentionally used local-only fake domains and a temporary data directory. The media preview images were written as PNG files into the daemon media cache and served through the real <code>/media/bookmarks/:bookmarkId/:mediaId</code> route. The narrow import action is not directly visible below the Tailwind <code>sm</code> breakpoint, so the narrow dialog screenshots were captured by opening the import dialog at a supported width and then resizing to a narrow viewport.</p>
+    </details>
+
+    <details>
+      <summary>Known Limitations</summary>
+      <ul>
+        <li>TASK-078, TASK-079, and public distribution validation remain blocked by unauthenticated release artifact visibility. This report does not change that release blocker.</li>
+        <li>TASK-119 is performance-test evidence, not a visible UI surface; it is linked as task documentation rather than recaptured as a browser screenshot.</li>
+        <li>API/auth/capture tasks are primarily contract and runtime behavior surfaces, so this report links their existing diagrams and verification notes.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>docs/task-reports/2026/06/2026-06-05-task-133-parity-visual-verification/index.html</code></li>
+        <li><code>docs/task-reports/2026/06/2026-06-05-task-133-parity-visual-verification/assets/*.png</code></li>
+        <li><code>docs/task-reports/index.html</code></li>
+        <li><code>docs/task-reports/2026/index.html</code></li>
+        <li><code>docs/task-reports/2026/06/index.html</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>tasks/done/TASK-133-parity-task-reports-visual-verification.md</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>
