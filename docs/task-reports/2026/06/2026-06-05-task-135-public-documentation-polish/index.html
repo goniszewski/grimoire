@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public Documentation Polish - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row span:nth-child(3) {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.hero-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../../index.html">Task Reports</a>
+    &nbsp;/&nbsp;
+    <a href="../../index.html">2026</a>
+    &nbsp;/&nbsp;
+    <a href="../index.html">June 2026</a>
+  </nav>
+
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Public Documentation Polish</h1>
+      <div class="meta-row">
+        <span>2026-06-05</span>
+        <span>TASK-135</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-public-docs-map.svg" alt="Map of the public documentation polish across README, FAQ, security, contributing, and verification">
+      <figcaption>After: public-facing docs now orient first-time visitors without claiming blocked public install validation.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The README was long, duplicated quick-start content, and presented the one-command installer as the recommended path even though the repository was still private and unauthenticated release URLs returned <code>404</code>. The FAQ did not exist, contributor setup was stale, and some task-board links pointed at moved task files.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>A first-time GitHub visitor needed a clear project explanation, honest install status, screenshots, test guidance, security posture, and support paths before the repository becomes public.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Rebuilt <code>README.md</code> around a first-visitor flow with banner, badges, screenshots, quick start, local-first architecture, integration summary, and recommended GitHub metadata.</li>
+        <li>Added <code>docs/faq.md</code> covering sync, privacy, daemon crashes, no-AI use, upgrades, Windows, and server deployment.</li>
+        <li>Rewrote <code>SECURITY.md</code> with clearer reporting guidance, PGP status, loopback-first boundaries, implemented controls, limitations, and user best practices.</li>
+        <li>Refreshed <code>CONTRIBUTING.md</code> with current setup, testing, API docs, task-report, and task-board expectations.</li>
+        <li>Fixed stale task-board links for tasks already moved to <code>done</code>.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>The public docs now avoid overclaiming public install readiness, point users to source/Docker paths while release visibility is blocked, and provide a more direct map to product, security, development, and release documentation.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Confirmed with <code>gh repo view</code> that the repository is private on 2026-06-05.</li>
+        <li>Confirmed with <code>curl -I</code> that the tag-qualified raw installer URL returns unauthenticated <code>404</code>.</li>
+        <li>Ran the local markdown link audit for public docs, docs markdown files, and <code>tasks/README.md</code>.</li>
+        <li>Ran a local HTML link audit for the task-report root, year, month, and TASK-135 report pages.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>README.md</code></li>
+        <li><code>docs/faq.md</code></li>
+        <li><code>SECURITY.md</code></li>
+        <li><code>CONTRIBUTING.md</code></li>
+        <li><code>tasks/README.md</code></li>
+        <li><code>tasks/done/TASK-135-public-documentation-polish.md</code></li>
+        <li><code>docs/task-reports/2026/06/2026-06-05-task-135-public-documentation-polish/index.html</code></li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Follow-Ups</summary>
+      <p>Once public artifact visibility is unblocked, the README quick start should be promoted from source-first to release-installer-first and TASK-078/TASK-079 validation evidence should be linked from the release docs.</p>
+    </details>
+  </article>
+</main>
+</body>
+</html>

@@ -273,11 +273,7 @@ describe("Index pagination", () => {
       pageSelectionKey: "page-2",
     });
 
-    rerender(
-      <MemoryRouter>
-        <Index />
-      </MemoryRouter>
-    );
+    rerender();
 
     await waitFor(() => expect(screen.queryByText("1 selected")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: /^Select$/ })).toBeInTheDocument();

@@ -1,326 +1,164 @@
-# Contributing to Little Imp
+# Contributing To Little Imp
 
-Thank you for your interest in contributing to Little Imp! This document provides guidelines and information for contributors.
+Little Imp is a local-first bookmark manager with a React/Vite frontend and a
+Bun/Hono/SQLite daemon. Contributions should preserve the loopback-first,
+single-user release posture unless a task explicitly reopens that product and
+security decision.
+
+## Prerequisites
+
+- Bun 1.x or later
+- Node.js 18 or later
+- npm
+- Git
+- Docker, only for container or installed-artifact validation
+
+If your environment does not have Node.js or Bun, provision the repository's
+portable local tools:
+
+```sh
+npm run tools:setup
+export PATH="$PWD/local/bin:$PATH"
+```
+
+The `local/` directory is ignored by Git.
 
 ## Development Setup
 
-### Prerequisites
-
-- [Bun](https://bun.sh) 1.x or later
-- Node.js 18+ (for frontend development tools)
-- Git
-
-### Quick Start
-
-```bash
-# Clone the repository
+```sh
 git clone https://github.com/goniszewski/little-imp.git
 cd little-imp
 
-# Install frontend dependencies
 npm install
-
-# Install daemon dependencies
 cd daemon && bun install
 cd ..
-
-# Start development servers
-npm run dev          # Frontend (Vite)
-npm run daemon:dev   # Backend (Bun)
 ```
+
+Run the daemon and frontend in separate terminals:
+
+```sh
+npm run daemon:dev
+```
+
+```sh
+npm run dev
+```
+
+The frontend runs at `http://localhost:5173`. The daemon listens on
+`http://127.0.0.1:3210`.
 
 ## Project Structure
 
-```
+```text
 little-imp/
-├── src/                    # Frontend React application
-│   ├── components/         # React components
-│   ├── hooks/             # Custom React hooks
-│   ├── lib/               # Utility functions
-│   └── types/             # TypeScript type definitions
-├── daemon/                 # Backend Bun/Hono daemon
-│   ├── src/
-│   │   ├── db/            # Database repositories and migrations
-│   │   ├── routes/        # API endpoints
-│   │   ├── pipeline/      # Content extraction pipeline
-│   │   ├── ai/            # AI enrichment and organization
-│   │   └── test/          # Backend tests
-│   └── platform/          # Platform-specific files (systemd, LaunchAgent)
-├── docs/                   # Documentation
-├── tasks/                  # Task specifications and tracking
-└── e2e/                    # End-to-end tests
+  src/          React app, components, hooks, pages, tests, and API client
+  daemon/       Bun/Hono daemon, routes, SQLite repositories, pipeline, tests
+  docs/         Product, release, operations, API, parity, and task reports
+  tasks/        File-based task board
+  scripts/      Release, docs, validation, and smoke-test helpers
+  e2e/          Playwright end-to-end tests
+  Formula/      In-repository Homebrew formula
 ```
 
-## Development Workflow
+## Running Tests
 
-### Frontend Development
+Fast local checks:
 
-```bash
-# Start frontend development server
-npm run dev
-
-# Run frontend tests
-npm run test
-npm run test:watch
-
-# Type-check frontend code
-npm run type-check:frontend
-
-# Run linting
-npm run lint
-
-# Build for production
-npm run build
-```
-
-### Backend Development
-
-```bash
-# Start daemon in development mode
-npm run daemon:dev
-
-# Run backend tests
-npm run test:daemon
-
-# Type checking
-npm run type-check:daemon
-```
-
-### Quality Gates
-
-```bash
-# Fast pre-commit gate: lint, frontend/daemon type-checks, frontend unit tests, daemon tests
-npm run check:fast
-
-# Canonical local quality gate: fast gate, API docs drift check, production build
-npm run check
-
-# Individual gates
+```sh
 npm run lint
 npm run type-check
 npm run test
 npm run test:daemon
-npm run docs:api:check
-npm run build
 ```
 
-Release-facing changes may also need:
+Canonical local quality gate:
 
-```bash
+```sh
+npm run check
+```
+
+`npm run check` runs the fast checks, API docs drift check, and production
+build.
+
+End-to-end tests:
+
+```sh
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Release and packaging checks, when relevant:
+
+```sh
 npm run release:validate
 npx vitest run scripts/homebrew-formula.test.ts
 npm run test:e2e:installed
 ```
 
-### End-to-End Testing
+Use focused tests for narrow changes, then broaden verification when a change
+touches shared behavior, API contracts, task reports, or user-visible flows.
 
-Playwright requires browser binaries outside `npm install`.
+## Development Guidelines
 
-```bash
-# First run on a new machine or after Playwright updates
-npm run test:e2e:install
+- Use TypeScript throughout the frontend and daemon.
+- Keep frontend daemon access centralized in `src/lib/api.ts` and shared API
+  contract helpers.
+- Keep daemon route handlers thin. Persistence belongs in `daemon/src/db/`,
+  pipeline behavior in `daemon/src/pipeline/`, update behavior in
+  `daemon/src/update/`, and reusable network/security logic in
+  `daemon/src/lib/`.
+- Keep the daemon bound to loopback by default. Do not widen network exposure
+  without a security review.
+- Preserve SQLite migration ordering. Do not rewrite shipped migrations.
+- Use existing UI components under `src/components/ui/` and icons from
+  `lucide-react`.
+- Keep comments sparse and useful.
+- Preserve unrelated working-tree changes.
 
-# Run browser tests
-npm run test:e2e
+## API And Documentation Changes
+
+For daemon route, request, response, or error-shape changes:
+
+```sh
+npm run docs:api
+npm run docs:api:check
 ```
 
-CI installs Chromium with `npx playwright install --with-deps chromium` before running E2E.
+The source API contract lives in `daemon/src/api/contract.ts`. Generated
+outputs are [API.md](./API.md), [docs/api-contract.json](./docs/api-contract.json),
+and [docs/openapi.json](./docs/openapi.json).
 
-### Continuous Integration
+For non-trivial visible UI, user-flow, documentation-presentation, release
+packaging, installer, API, or important runtime behavior work, add or update a
+task report under [docs/task-reports](./docs/task-reports/index.html) following
+[INSTRUCTION.md](./docs/task-reports/INSTRUCTION.md).
 
-GitHub Actions runs the release quality gates on pull requests and `main` pushes:
+## Task Board Hygiene
 
-- `npm run check` for lint, type-checks, frontend unit tests, daemon tests, API docs drift, and build.
-- `npm run test:e2e` after Playwright browser installation.
-- Docker image build plus `/health` validation on the published container topology.
+Tasks live under `tasks/`:
 
-The Husky pre-commit hook runs `npm run check:fast` so commits catch the high-signal checks without running the slower E2E and Docker jobs locally.
-
-Before tagging or publishing `0.1.0-beta`, run the [Release Checklist](./docs/release-checklist.md). It covers release archives, one-command install/upgrade, native install/upgrade, Homebrew, installed-app smoke, Docker, backup/restore, diagnostics, CI, and documentation validation.
-
-## Code Guidelines
-
-### TypeScript
-
-- Use strict TypeScript configuration
-- Define explicit return types for functions
-- Use interfaces for object shapes
-- Avoid `any` type - use `unknown` or specific types instead
-
-### React Components
-
-- Use functional components with hooks
-- Follow the existing component structure
-- Use proper TypeScript types for props
-- Keep components focused and single-purpose
-
-### Backend Code
-
-- Use ES modules (`import`/`export`)
-- Handle errors gracefully with proper logging
-- Use the existing repository pattern for database access
-- Follow the established route structure
-
-### Testing
-
-- Write tests for new features
-- Maintain or improve current test coverage
-- Use descriptive test names
-- Mock external dependencies appropriately
-
-## Database Changes
-
-### Migrations
-
-When modifying the database schema:
-
-1. Create a new migration file in `daemon/src/db/migrations/`
-2. Follow the naming convention: `NNNN_description.sql`
-3. Ensure migrations are reversible when possible
-4. Test migrations on a fresh database
-
-### Example Migration
-
-```sql
--- 0009_add_new_feature.sql
--- Add a new column to bookmarks table
-
-ALTER TABLE bookmarks ADD COLUMN new_column TEXT;
-
--- Down migration (if needed)
--- ALTER TABLE bookmarks DROP COLUMN new_column;
+```text
+tasks/backlog/
+tasks/todo/
+tasks/in-progress/
+tasks/in-review/
+tasks/done/
 ```
 
-## API Development
+Keep task IDs stable, update the existing task file instead of creating a
+duplicate, and keep [tasks/README.md](./tasks/README.md) in sync with moved
+task files. Do not move a task to `done` unless the workflow explicitly calls
+for it or the maintainer asks.
 
-### Route Structure
+## Pull Requests
 
-- Place new routes in appropriate files under `daemon/src/routes/`
-- Update `daemon/src/api/contract.ts` for every route, request body, query parameter, response, and error shape change
-- Regenerate API docs with `npm run docs:api` and verify drift with `npm run docs:api:check`
-- Follow RESTful conventions
-- Use proper HTTP status codes
-- Include error handling and validation
+1. Keep changes focused.
+2. Explain the user-facing behavior, API behavior, or documentation outcome.
+3. Include screenshots or task-report links for visible changes.
+4. List verification commands and any checks that could not be run.
+5. Use semantic commit messages, for example `docs: refresh public README`.
 
-### Example Route
-
-```typescript
-// daemon/src/routes/feature.ts
-import { Hono } from 'hono';
-import { z } from 'zod';
-
-const schema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional()
-});
-
-export function createFeatureRoute(deps: RouteDeps) {
-  const router = new Hono();
-  
-  router.post('/', async (c) => {
-    const body = await c.req.json();
-    const data = schema.parse(body);
-    
-    // Implementation here
-    
-    return c.json({ success: true });
-  });
-  
-  return router;
-}
-```
-
-## AI Integration
-
-### Adding New AI Features
-
-1. Consider privacy implications - local-first approach preferred
-2. Use the existing LLM client abstraction
-3. Provide fallback behavior when AI is unavailable
-4. Document any new environment variables required
-
-### Environment Variables
-
-New AI features should use the established pattern:
-
-```typescript
-const API_KEY = process.env.MY_FEATURE_API_KEY;
-if (!API_KEY) {
-  log.info('My feature disabled - API key not configured');
-  return;
-}
-```
-
-## Testing Guidelines
-
-### Unit Tests
-
-- Test individual functions and methods
-- Use descriptive test names
-- Mock external dependencies
-- Test both success and error cases
-
-### Integration Tests
-
-- Test API endpoints with real database
-- Use the test database helpers
-- Clean up test data after tests
-- Test authentication and authorization
-
-### E2E Tests
-
-- Test complete user workflows
-- Use Playwright for browser automation
-- Test on multiple browsers when relevant
-- Include accessibility testing
-
-## Submitting Changes
-
-### Pull Request Process
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes following the guidelines above
-4. Run all tests and ensure they pass
-5. Commit with clear, descriptive messages
-6. Push to your fork and submit a pull request
-
-### Pull Request Guidelines
-
-- Provide a clear description of changes
-- Reference any related issues
-- Include screenshots for UI changes
-- Update documentation as needed
-- Ensure all tests pass
-- Keep changes focused and atomic
-
-### Commit Messages
-
-Use clear, descriptive commit messages:
-
-```
-feat: add semantic search with embeddings
-fix: resolve bookmark deletion cascade issue
-docs: update API documentation for categories
-refactor: simplify pipeline error handling
-test: add integration tests for backup feature
-```
-
-## Getting Help
-
-If you need help or have questions:
-
-- Check existing documentation and issues
-- Create an issue with the "question" label
-- Be specific about your problem or question
-- Include relevant code snippets or error messages
-
-## Recognition
-
-Contributors will be recognized in:
-
-- The project README
-- Release notes for significant contributions
-- The project's contributor list
-
-Thank you for contributing to Little Imp! 🎉
+Before tagging or publishing `0.1.0-beta`, run the
+[release checklist](./docs/release-checklist.md). Public one-command,
+published-artifact, and Homebrew validation must not be claimed while
+unauthenticated release URLs return `404`.

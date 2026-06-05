@@ -138,17 +138,17 @@ tasks/
 | TASK-122 | [Public Distribution Unblocking](backlog/TASK-122-public-distribution-unblocking.md) | Release unblocking | critical | backlog |
 | TASK-123 | [Homebrew Live Install Validation](backlog/TASK-123-homebrew-live-install-validation.md) | Release unblocking | critical | backlog |
 | TASK-124 | [Public-Artifact Installed-App E2E](backlog/TASK-124-public-artifact-installed-e2e.md) | Release unblocking | critical | backlog |
-| TASK-125 | [macOS x64 Validation or Documented Acceptance](todo/TASK-125-macos-x64-validation.md) | Release unblocking | high | todo |
+| TASK-125 | [macOS x64 Validation or Documented Acceptance](done/TASK-125-macos-x64-validation.md) | Release unblocking | high | done |
 | TASK-126 | [Browser Bookmarklet Client](done/TASK-126-browser-bookmarklet-client.md) | First-user experience | high | done |
-| TASK-127 | [In-App Update Notification](todo/TASK-127-in-app-update-notification.md) | First-user experience | high | todo |
-| TASK-128 | [In-App Backup Verify from Arbitrary Paths](todo/TASK-128-in-app-backup-verify-arbitrary-paths.md) | First-user experience | medium | todo |
-| TASK-129 | [First-Run Guided Tour and Demo Content](todo/TASK-129-first-run-guided-tour.md) | First-user experience | medium | todo |
+| TASK-127 | [In-App Update Notification](done/TASK-127-in-app-update-notification.md) | First-user experience | high | done |
+| TASK-128 | [In-App Backup Verify from Arbitrary Paths](done/TASK-128-in-app-backup-verify-arbitrary-paths.md) | First-user experience | medium | done |
+| TASK-129 | [First-Run Guided Tour and Demo Content](done/TASK-129-first-run-guided-tour.md) | First-user experience | medium | done |
 | TASK-130 | [sqlite-vec Vector Index Integration](backlog/TASK-130-sqlite-vec-vector-index.md) | Performance and polish | medium | backlog |
 | TASK-131 | [GitHub Issues Extractor](backlog/TASK-131-github-issues-extractor.md) | Performance and polish | low | backlog |
 | TASK-132 | [Large-Library Search Performance](backlog/TASK-132-large-library-search-performance.md) | Performance and polish | low | backlog |
 | TASK-133 | [Parity Task Reports and Visual Verification](todo/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | todo |
 | TASK-134 | [Parity Acceptance Checklist](todo/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | todo |
-| TASK-135 | [Public Documentation Polish](todo/TASK-135-public-documentation-polish.md) | Verification and release readiness | high | todo |
+| TASK-135 | [Public Documentation Polish](done/TASK-135-public-documentation-polish.md) | Verification and release readiness | high | done |
 
 ## Current Status
 
@@ -320,23 +320,17 @@ multi-user/server account parity remains deferred, and Grimoire endpoint
 aliases plus packaged browser-extension clients and extension smoke tests remain
 rejected or out of scope for the current parity batch.
 
-The next task batch (TASK-122 through TASK-135) closes the gap to an
-MVP-ready build. TASK-122, TASK-123, and TASK-124 are the release-unblocking
-tasks (public distribution, Homebrew live install, public-artifact E2E) —
-they are in `backlog/` because they are blocked on the GitHub repository being
-made public. TASK-125 (macOS x64 validation) and TASK-126 (browser bookmarklet
-client) are high-priority tasks that directly affect distribution confidence and
-daily capture UX. TASK-127 (in-app update notification) removes the biggest
-expectation gap around update discovery. TASK-128 (backup verify from arbitrary
-paths) closes a documented release limitation. TASK-129 (first-run guided tour)
-improves the new-user onboarding path. TASK-130 (sqlite-vec vector index) is
-the most impactful post-MVP performance investment but requires significant
-engineering effort, so it is in `backlog/`. TASK-131 (GitHub Issues extractor)
-and TASK-132 (large-library search performance) are lower-priority improvements
-in `backlog/`. TASK-133 (parity task reports) and TASK-134 (parity acceptance
-checklist) close the remaining parity verification gaps. TASK-135 (public
-documentation polish) prepares the repository for first-time visitors on GitHub.
-TASK-125 through TASK-129, TASK-133, TASK-134, and TASK-135 are immediately actionable — they have no external dependencies. TASK-130 through TASK-132 are in backlog because they require significant engineering effort or are lower priority for the current cycle.
+The current follow-up batch (TASK-122 through TASK-135) closes the gap to an
+MVP-ready public build. TASK-122, TASK-123, and TASK-124 are release-unblocking
+tasks for public distribution, Homebrew live install, and public-artifact E2E;
+they remain in `backlog/` because they are blocked on public artifact
+visibility. TASK-125 through TASK-129 are complete, covering macOS x64
+acceptance, browser bookmarklet capture, in-app update notification, arbitrary
+path encrypted-backup verification, and first-run guided tour/demo content.
+TASK-130 through TASK-132 remain in `backlog/` as performance and extractor
+improvements. TASK-133 and TASK-134 are the remaining parity verification docs
+tasks in `todo/`. TASK-135 is complete with public-facing README, FAQ,
+security, contributing, task-report, and link-audit work.
 
 Completed release validation evidence:
 

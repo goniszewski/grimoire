@@ -1,215 +1,168 @@
-# Security Policy for Little Imp
+# Security Policy For Little Imp
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.0-beta | :white_check_mark: |
-| Other pre-release or development builds | :x: |
+| Version | Supported |
+| --- | --- |
+| `0.1.0-beta` | Yes |
+| Other prerelease or development builds | No |
 
-## Reporting a Vulnerability
+## Reporting A Vulnerability
 
-If you discover a security vulnerability, please report it by emailing security concerns to the maintainer at the email address in the repository profile.
+Report security concerns privately to the maintainer contact listed in the
+GitHub repository profile. If GitHub private vulnerability reporting is enabled
+for the repository, that is also an appropriate channel.
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+Do not report security vulnerabilities through public GitHub issues.
 
-When reporting a vulnerability, please include:
+No project-specific PGP key is currently published. If you need encrypted
+coordination, ask the maintainer for a preferred secure channel before sharing
+sensitive exploit details.
 
-- Description of the vulnerability
-- Steps to reproduce the issue
-- Potential impact
-- Any suggested remediation
+Please include:
 
-## Security Considerations
+- A description of the vulnerability.
+- Steps to reproduce it.
+- The affected version or commit.
+- The potential impact.
+- Any suggested remediation.
 
-### Local-First Design
+## Security Boundary Summary
 
-Little Imp is designed as a local-first application that runs entirely on the user's machine. This design provides several security benefits:
+Little Imp is local-first, single-user, and loopback-first for `0.1.0-beta`.
 
-- **No external dependencies**: All data processing happens locally
-- **No cloud storage**: Bookmarks and content are stored in a local SQLite database
-- **Network isolation**: The native daemon listens on `127.0.0.1:3210`
-  (localhost). Docker publishes the daemon as `127.0.0.1:3210:3210` by
-  default; the container-internal `HOST=0.0.0.0` is only used so Docker can
-  forward that loopback-bound host port into the container.
+- Native daemon default: `127.0.0.1:3210`.
+- Docker host port default: `127.0.0.1:3210:3210`.
+- The first-party browser UI is trusted only from the daemon origin or
+  configured loopback development origins.
+- General REST routes remain loopback-only and tokenless for first-party local
+  use.
+- MCP and protected local capture endpoints require managed local integration
+  bearer tokens.
+- Public-network exposure is not a supported Little Imp mode. Any remote access
+  must be protected before requests reach the daemon, for example with an
+  authenticated tunnel, VPN, or reverse proxy.
 
-The canonical threat model and future public-network release gates are
-documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
+The canonical threat model and release gates for any future non-loopback mode
+are documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
 
-### Implemented Security Measures
+## Implemented Controls
 
-#### Input Validation
+### Network Security
 
-- URL validation before fetching content
-- Private IP address blocking (RFC 1918)
-- Path traversal protection in file operations
-- SQL injection prevention through parameterized queries
-- Content-Type validation for fetched resources
+- Localhost-only native binding.
+- Loopback-only Docker port publishing.
+- Unsafe browser requests are accepted only from configured loopback origins.
+- Non-loopback `CORS_ORIGINS` entries are ignored by the daemon.
+- Private, loopback, link-local, and unspecified hosts are blocked for bookmark
+  fetching and update-source handling where route behavior requires public
+  targets.
+- Request size limits and timeout protection are applied to expensive local
+  operations.
 
-#### Network Security
+### Browser Response Hardening
 
-- Localhost-only native binding (`127.0.0.1:3210`)
-- Loopback-only Docker port publishing (`127.0.0.1:3210:3210`)
-- Browser requests with an `Origin` header are accepted only from configured
-  loopback origins, including the daemon's own `127.0.0.1:3210` origin and the
-  default local development origins
-- Non-loopback `CORS_ORIGINS` entries are ignored by the daemon; public access
-  must be protected before traffic reaches Little Imp
-- Private network address blocking
-- Request size limits for import and selected JSON-heavy local operations
-- Request timeout protection (20 seconds)
+Static frontend and API responses include conservative browser headers,
+including:
 
-#### Browser Response Hardening
+- `Content-Security-Policy`
+- `X-Content-Type-Options`
+- `X-Frame-Options`
+- `Referrer-Policy`
+- `Permissions-Policy`
+- `Cross-Origin-Opener-Policy`
+- `Cross-Origin-Resource-Policy`
 
-- Static frontend and API responses include conservative browser headers:
-  `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`,
-  `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and
-  `Cross-Origin-Resource-Policy`
-- The CSP allows the shipped SPA from the daemon origin, localhost/127.0.0.1
-  daemon/API connections, HTTPS images for favicons, and the existing Google
-  font hosts
-- IPv6 loopback origins remain accepted by origin checks, but CSP connect
-  sources use browser-accepted localhost and 127.0.0.1 source forms
-- Scripts are limited to the app origin, object/embed content is blocked, and
-  other sites cannot frame the UI
+Scripts are limited to the app origin, object/embed content is blocked, and
+other sites cannot frame the UI.
 
-#### Data Protection
+### Input And File Validation
 
-- SQLite database with WAL mode for consistency
-- Backup checksum validation
-- Backup settings export omits secrets; restore preserves current local secrets
-- Encrypted backup package passwords are required per verify/restore operation and are not stored
-- In-app encrypted package verify/restore is limited to daemon-local package paths under the configured backup directory
-- Diagnostics omit API keys, URL credentials and query strings, app lock PIN hashes, S3 credentials, backup package passwords, bookmark contents, notes, and embeddings
-- Safe file operations with proper error handling
-- No sensitive data in logs (API keys are masked)
-- Declared request body sizes are rejected before parsing on expensive local
-  operations such as import, backup verification, encrypted package handling,
-  restore, and library reprocessing
-- Backup, restore, verification, and encrypted-package routes validate JSON
-  object bodies and restrict user-supplied backup names and package paths to
-  safe local forms
-- Backup and restore operations use an in-process guard to prevent concurrent
-  destructive or expensive backup work
+- Public URL validation before content fetching.
+- Private-network URL blocking.
+- Path traversal protection for backup, restore, verification, encrypted
+  package, and release archive operations.
+- Parameterized SQLite queries.
+- JSON object validation for high-impact routes.
+- Safe backup names and daemon-local encrypted package path checks.
+- In-process guards that prevent concurrent destructive or expensive backup
+  work.
 
-#### Release Artifact Verification
+### Data Protection
 
-- The recommended one-command installer downloads the published release archive
-  for the current platform and verifies the matching SHA-256 checksum before
-  extraction.
-- Detached `.asc` signatures are verified when they are published or explicitly
-  provided. If no signature is available, the installer reports checksum-only
-  verification instead of implying a signature check happened.
-- Manual release archive installs document checksum verification before running
-  the native installer.
-- The Homebrew formula consumes the same release archives and verifies their
-  published SHA-256 checksums.
+- SQLite WAL mode for local database consistency.
+- Backup checksum verification.
+- Restore rollback directory creation before data replacement.
+- Settings backup omits secrets and restore preserves current local secrets.
+- Encrypted backup package passwords are required per verify/restore operation
+  and are not stored.
+- Diagnostics omit API keys, URL credentials and query strings, app lock PIN
+  hashes, S3 credentials, backup package passwords, bookmark contents, notes,
+  and embeddings.
+- Logs mask known secret values.
+
+### Release Artifact Verification
+
+- The intended one-command installer verifies the published SHA-256 checksum
+  before extraction.
+- Detached `.asc` signatures are verified when published or explicitly
+  provided.
 - The packaged `littleimp update install` flow verifies checksums, verifies
-  optional detached signatures, rejects unsafe archive paths, and confirms the
-  daemon health endpoint reports the upgraded version.
+  optional detached signatures, rejects unsafe archive layouts, runs the native
+  installer in upgrade mode, and confirms `/health` reports the upgraded
+  version.
+- The Homebrew formula uses the same release archives and verifies their
+  published SHA-256 checksums.
 
-### Potential Security Risks
-
-#### Local Access
-
-Since Little Imp runs locally without authentication, any process on the user's machine can potentially access the API. This is by design for a local-first application but users should be aware of this limitation.
-
-Public-network exposure is not a supported mode for the current release or the
-current Grimoire parity batch. Any future mode that binds beyond loopback must
-complete the gates in [docs/security-boundaries.md](./docs/security-boundaries.md)
-before implementation or release.
-
-#### Docker Networking
-
-The Docker image serves the frontend and API from one container. Keep Docker
-port publishing bound to `127.0.0.1`; do not use `3210:3210` or
-`0.0.0.0:3210:3210` unless an authenticated tunnel, VPN, or reverse proxy
-protects the service before requests reach Little Imp.
-
-#### Content Fetching
-
-The content extraction pipeline fetches URLs provided by users. While we implement several protections, users should be cautious about bookmarking malicious URLs.
-
-#### AI Integration
-
-When using external AI providers, API keys are stored locally. Users should ensure their machine is secure and consider using local LLM providers when possible.
-
-### Security Best Practices for Users
-
-1. **Keep your system updated** with the latest security patches
-2. **Use local LLM providers** when possible to avoid sharing data externally
-3. **Secure your machine** with appropriate access controls
-4. **Review imported bookmarks** before processing
-5. **Use the release installer, Homebrew formula, or manual archive checksum
-   verification** instead of running unverified files
-6. **Regular backups** to protect against data loss
-
-### Development Security Guidelines
-
-When contributing to Little Imp:
-
-1. **Never trust user input** - always validate and sanitize
-2. **Use parameterized queries** for all database operations
-3. **Validate all URLs** before fetching content
-4. **Implement proper error handling** that doesn't expose sensitive information
-5. **Follow the principle of least privilege** in file operations
-6. **Test security edge cases** in your contributions
-
-### Security Audit Checklist
-
-#### Network Security
-
-- [x] Localhost-only native binding
-- [x] Loopback-only Docker port publishing
-- [x] Loopback-only browser origin handling for unsafe API requests
-- [x] Private IP blocking
-- [x] Request timeouts
-- [x] Content size limits
-- [x] Content-Type validation
-- [x] Browser security response headers
-- [x] Content Security Policy
-
-#### Input Validation
-
-- [x] URL validation
-- [x] Path traversal protection
-- [x] SQL injection prevention
-- [x] Parameter validation
-- [x] File type restrictions
-
-#### Data Protection
-
-- [x] Database integrity
-- [x] Backup validation
-- [x] Safe file operations
-- [x] Log security (no sensitive data)
-- [x] Environment variable validation
-
-#### Error Handling
-
-- [x] Graceful error responses
-- [x] No sensitive data exposure
-- [x] Proper error logging
-- [x] Resource cleanup
-- [x] Transaction rollback
+Public one-command, published-artifact, and Homebrew validation must not be
+claimed while unauthenticated release URLs return `404`.
 
 ## Known Limitations
 
-1. **Local access only**: No authentication mechanism (by design)
-2. **Single-user system**: Not designed for multi-user environments
-3. **Local file system access**: Requires file system permissions for backups
-4. **Network requests**: Content fetching could potentially be exploited
+- Any local process that can reach `127.0.0.1:3210` can call unprotected REST
+  routes. This is part of the local-first trust model.
+- Little Imp is not designed for multi-user hosts or shared public servers in
+  `0.1.0-beta`.
+- DNS rebinding is not fully mitigated and is accepted only because the daemon
+  is loopback-only.
+- Content extraction fetches user-supplied public URLs. Protections reduce
+  risk, but users should still avoid bookmarking malicious URLs.
+- External AI providers are optional. If configured, provider-bound content and
+  API keys are subject to that provider's security model and the security of
+  the local machine.
 
-## Future Security Enhancements
+## User Best Practices
 
-Consider implementing:
+1. Keep the daemon bound to `127.0.0.1`.
+2. Do not publish Docker as `3210:3210` or `0.0.0.0:3210:3210` unless an
+   authenticated tunnel, VPN, or reverse proxy protects the service first.
+3. Protect your OS account and avoid untrusted local processes.
+4. Use local LLM providers when you do not want content sent to external AI
+   services.
+5. Verify release archives with checksums and signatures where available.
+6. Keep backups and encrypted backup passwords separately.
+7. Review imported bookmarks before processing large imports.
 
-1. **Optional authentication** for multi-user scenarios
-2. **Per-client rate limiting** for authenticated non-local deployment modes
-3. **Sandboxing** for content extraction
-4. **Audit logging** for security events
-5. **Vulnerability scanning** in CI/CD pipeline
+## Development Security Guidelines
 
-## Contact
+When contributing:
 
-For security-related questions or to report vulnerabilities, please contact the maintainer through the appropriate channels listed in the repository.
+- Never trust user input.
+- Keep GET and HEAD routes read-only.
+- Use parameterized queries for database access.
+- Validate URLs before fetching.
+- Reject private-network targets where a route expects public URLs.
+- Avoid logging secrets, bookmark contents, notes, embeddings, or backup
+  passwords.
+- Keep backup, restore, diagnostics, Settings, MCP, capture, and update routes
+  under route-specific security review.
+
+## Future Security Work
+
+These are not shipped in `0.1.0-beta`:
+
+- Optional authentication for future public or multi-user modes.
+- Per-client rate limiting for authenticated non-local deployment modes.
+- Stronger content-extraction sandboxing.
+- Dedicated security audit logging.
+- Additional CI vulnerability scanning.

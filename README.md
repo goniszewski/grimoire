@@ -1,55 +1,192 @@
 # Little Imp
 
-A local-first bookmark manager. Save links, extract content, search semantically, and let an AI organise your library — all on your own machine.
+```text
+ _     _ _   _   _        ___
+| |   (_) |_| |_| | ___  |_ _|_ __ ___  _ __
+| |   | | __| __| |/ _ \  | || '_ ` _ \| '_ \
+| |___| | |_| |_| |  __/  | || | | | | | |_) |
+|_____|_|\__|\__|_|\___| |___|_| |_| |_| .__/
+                                       |_|
+```
+
+[![Quality Gates](https://github.com/goniszewski/little-imp/actions/workflows/quality.yml/badge.svg?branch=develop)](https://github.com/goniszewski/little-imp/actions/workflows/quality.yml)
+![Release target](https://img.shields.io/badge/release-0.1.0--beta-7c3aed)
+![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+
+Little Imp is a local-first bookmark manager for people who save technical
+resources and need to find them later. Save links, import browser bookmarks,
+extract readable content, search by keyword or meaning, and let optional AI
+providers summarize and organize your library while the data stays on your
+machine.
 
 Current release target: `0.1.0-beta`.
 
-## How it works
+> Public install status, June 5, 2026: the repository is still private and the
+> unauthenticated tag-qualified installer URL returns `404`. Use the source
+> checkout or Docker development paths below for now. The one-command installer
+> and Homebrew commands are the intended public paths once distribution
+> visibility is unblocked and the release validation tasks pass.
 
-Little Imp has two parts:
+## Contents
 
-- **Frontend** — a React SPA served by Vite (dev) or any static file server (production).
-- **`littleimpd`** — a background daemon (Bun + Hono) that listens on `127.0.0.1:3210`. It stores bookmarks in SQLite, runs the content extraction pipeline, and exposes a REST API the frontend talks to.
+- [Screenshots](#screenshots)
+- [Quick Start](#quick-start)
+- [What Little Imp Does](#what-little-imp-does)
+- [How It Works](#how-it-works)
+- [Install And Upgrade Paths](#install-and-upgrade-paths)
+- [Data, Privacy, And Security](#data-privacy-and-security)
+- [Configuration](#configuration)
+- [Backups And Restore](#backups-and-restore)
+- [Local Integrations](#local-integrations)
+- [Development](#development)
+- [Documentation](#documentation)
+- [Repository Metadata](#repository-metadata)
 
----
+## Screenshots
 
-## Requirements
+The screenshots below use synthetic/demo data from the local UI audit set.
 
-- macOS 12+ or a modern Linux distribution with systemd
-- [Bun](https://bun.sh) 1.x or later
-- `curl`, `tar`, and a SHA-256 checksum tool (`shasum` or `sha256sum`)
+| Library | Search | Bookmark detail |
+| --- | --- | --- |
+| ![Little Imp library list with categories, domains, tags, and processing badges](./docs/presentations/ui-ux-audit-assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/presentations/ui-ux-audit-assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/presentations/ui-ux-audit-assets/bookmark-detail-standard.png) |
 
----
+| Settings and browser integration | Import flow | Mobile library |
+| --- | --- | --- |
+| ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Little Imp library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
 
-## Installation
+## Quick Start
 
-### One-command release install
+### Source Checkout
 
-This is the recommended MVP install path. It installs Little Imp from the
-published release archive and does not require cloning the repository.
+Use this path while the repository and release artifacts are private.
+
+```sh
+git clone https://github.com/goniszewski/little-imp.git
+cd little-imp
+
+npm install
+cd daemon && bun install
+cd ..
+```
+
+Start the daemon and frontend in separate terminals:
+
+```sh
+npm run daemon:dev
+```
+
+```sh
+npm run dev
+```
+
+Open the Vite app at `http://localhost:5173`. The app talks to the daemon at
+`http://127.0.0.1:3210`.
+
+### Docker
+
+Docker serves the built frontend and daemon API from one loopback-bound port.
+
+```sh
+docker compose up -d
+curl http://127.0.0.1:3210/health
+```
+
+Open `http://127.0.0.1:3210`.
+
+### Public Release Installer
+
+This is the intended first-user path after public distribution is unblocked:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
 ```
 
-For an in-place upgrade that preserves your database, settings, backups, and
-logs:
+Do not treat that command as validated while the unauthenticated URL returns
+`404`. See [release-decision-v0.1.0-beta.md](./docs/release-decision-v0.1.0-beta.md)
+for the current go/no-go state.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
+## What Little Imp Does
+
+- Saves public `http` and `https` URLs from the app, API, MCP, import flow, or
+  browser bookmarklet.
+- Extracts readable content from normal web pages, PDFs, GitHub repositories,
+  StackOverflow/StackExchange pages, and YouTube metadata/transcripts where
+  available.
+- Stores bookmarks, content, tags, categories, jobs, notes, timeline events,
+  backups, and settings locally in SQLite and local files.
+- Searches with SQLite FTS5 keyword search, semantic embedding search, or a
+  hybrid ranking mode.
+- Supports archive, trash, read state, read-later flags, pinning, notes,
+  category/tag management, import/export, backup/restore, diagnostics, and
+  local update checks.
+- Runs without AI providers. Optional providers include OpenAI, Ollama,
+  Anthropic, OpenRouter, DeepSeek international, and custom OpenAI-compatible
+  chat or embeddings endpoints.
+
+## How It Works
+
+Little Imp has two runtime parts:
+
+- Frontend: React 18, Vite, TypeScript, Tailwind, and shadcn/Radix UI under
+  `src/`.
+- Daemon: Bun, Hono, and SQLite under `daemon/`, listening on
+  `127.0.0.1:3210` by default.
+
+Bookmark ingestion is progressive:
+
+```text
+save URL
+  -> enqueue durable SQLite job
+  -> fetch public content
+  -> extract readable text and metadata
+  -> enrich with optional AI summary, tags, and category
+  -> create optional embeddings
+  -> update search indexes
 ```
 
-The one-command installer downloads the release archive for your platform,
-verifies the published SHA-256 checksum before extraction, verifies the detached
-signature when the release publishes one, and then runs the native installer.
-If no `.asc` signature is published, it prints a checksum-only warning and does
-not claim signature verification.
+Bookmarks are visible immediately after save. Pipeline failures keep the
+bookmark usable and expose retry/reprocess controls.
+
+## Install And Upgrade Paths
+
+### Native Source Install
+
+The source installer copies daemon files, installs production dependencies,
+builds the frontend, writes a default config, registers the user service, and
+starts the daemon.
+
+```sh
+cd daemon
+./install.sh
+```
+
+Upgrade from an unpacked source checkout or release archive:
+
+```sh
+cd daemon
+./install.sh --upgrade
+```
+
+Uninstall while preserving data:
+
+```sh
+cd daemon
+./install.sh --uninstall
+```
+
+Purge data only when you intentionally want to remove the local library:
+
+```sh
+cd daemon
+./install.sh --uninstall --purge
+```
 
 ### Homebrew alternate install
 
 Homebrew is an alternate MVP install path for macOS and Linux users who prefer
-`brew services`. The recommended MVP path remains the one-command installer
-above because it is the cross-platform baseline.
+`brew services`. It remains gated on public release artifacts being reachable
+and live validation passing.
 
 ```sh
 brew tap oven-sh/bun
@@ -58,18 +195,13 @@ brew install little-imp
 brew services start little-imp
 ```
 
-The formula consumes the same release archive as the manual install path and
-Homebrew verifies the archive SHA-256 before installation. It installs the
-daemon, built frontend bundle, CLI wrappers, and service assets from the
-archive instead of rebuilding from the repository.
+Upgrade and service management:
 
 ```sh
-# Upgrade and restart the Homebrew service
 brew update
 brew upgrade little-imp
 brew services restart little-imp
 
-# Stop and remove the Homebrew-managed app files
 brew services stop little-imp
 brew uninstall little-imp
 ```
@@ -78,532 +210,191 @@ Data is preserved by default under `$(brew --prefix)/var/little-imp` when
 running `brew uninstall little-imp`. Remove that directory explicitly only when
 you intend to purge the Homebrew-managed database, settings, backups, and logs.
 
-### Manual release archive
+Current local formula checks pass, but live `brew install` is still blocked by
+public artifact `404` while the repository is private.
 
-Use this path when you want to inspect or mirror the archive before running the
-native installer. Download the archive and matching checksum for your platform
-from the release:
+## Data, Privacy, And Security
 
-```sh
-# macOS example
-shasum -a 256 -c little-imp-0.1.0-beta-macos.tar.gz.sha256
-tar -xzf little-imp-0.1.0-beta-macos.tar.gz
-cd little-imp-0.1.0-beta-macos/daemon
-./install.sh
-```
-
-Use `little-imp-0.1.0-beta-linux.tar.gz` on Linux. Each archive includes the
-daemon runtime files, installer assets, packaged `littleimp` CLI entry point,
-built frontend bundle, version metadata, payload checksums, and signing
-instructions. If the release includes `little-imp-0.1.0-beta-macos.tar.gz.asc`
-or `little-imp-0.1.0-beta-linux.tar.gz.asc`, verify it before extraction:
-
-```sh
-gpg --verify little-imp-0.1.0-beta-macos.tar.gz.asc little-imp-0.1.0-beta-macos.tar.gz
-```
-
-### Source checkout for contributors
-
-```sh
-# 1. Clone the repository
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp/daemon
-
-# 2. Run the installer
-./install.sh
-```
-
-Use the source checkout path for development or local packaging work. Normal
-users should prefer the one-command installer or manual release archive above.
-
-The native installer will:
-
-1. Copy daemon files to `~/.local/share/littleimp/daemon`
-2. Install daemon dependencies (production only)
-3. Build the frontend and install it to `~/.local/share/littleimp/dist`
-4. Create a default config at `~/.local/share/littleimp/.env`
-5. Register a LaunchAgent (macOS) or systemd user unit (Linux) so the daemon starts on login
-6. Start the daemon and wait for it to become healthy
-
-### Verify the install
-
-```sh
-curl http://127.0.0.1:3210/health
-# → {"status":"ok","version":"0.1.0-beta","uptime":...,"queueSize":0}
-```
-
----
-
-## Daemon management
-
-### macOS (LaunchAgent)
-
-```sh
-# Start
-launchctl start com.littleimp.daemon
-
-# Stop
-launchctl stop com.littleimp.daemon
-
-# Restart
-launchctl stop com.littleimp.daemon && launchctl start com.littleimp.daemon
-
-# View logs
-tail -f ~/.local/share/littleimp/logs/daemon.log
-tail -f ~/.local/share/littleimp/logs/daemon.error.log
-```
-
-### Linux (systemd user unit)
-
-```sh
-# Start
-systemctl --user start littleimpd
-
-# Stop
-systemctl --user stop littleimpd
-
-# Restart
-systemctl --user restart littleimpd
-
-# Enable auto-start on login
-systemctl --user enable littleimpd
-
-# View logs
-journalctl --user -u littleimpd -f
-# or
-tail -f ~/.local/share/littleimp/logs/daemon.log
-```
-
----
-
-## Upgrade
-
-```sh
-# One-command release upgrade
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
-
-# From the installed packaged CLI, selecting a release version to download
-littleimp update install --version 0.1.0-beta
-
-# From an unpacked release archive or source checkout
-cd little-imp-0.1.0-beta-macos/daemon
-./install.sh --upgrade
-```
-
-The CLI upgrade command downloads the selected platform archive, verifies its
-published checksum, verifies a detached signature when one is available, runs
-the packaged native installer with `--upgrade`, restarts the daemon, and checks
-that `/health` reports the upgraded version. The native upgrade path stops the
-daemon, replaces application files, reinstalls dependencies, rebuilds the
-frontend when source files are present or reuses the bundled frontend archive,
-and restarts. User data under `~/.local/share/littleimp`, runtime settings,
-backups, and logs are preserved.
-
----
-
-## Uninstall
-
-```sh
-# Remove daemon and service file — data is preserved
-./install.sh --uninstall
-
-# Remove daemon, service file, AND all data
-./install.sh --uninstall --purge
-```
-
----
-
-## Data location
-
-All application data lives in `~/.local/share/littleimp/`:
+Native installs keep user data under `~/.local/share/littleimp/`.
 
 | Path | Contents |
-|------|----------|
-| `~/.local/share/littleimp/littleimp.db` | SQLite database (bookmarks, categories, embeddings) |
+| --- | --- |
+| `~/.local/share/littleimp/littleimp.db` | SQLite database |
 | `~/.local/share/littleimp/.env` | Install-time daemon defaults |
 | `~/.local/share/littleimp/dist/` | Built frontend served by the daemon |
-| `~/.local/share/littleimp/backups/` | Local backup snapshots and encrypted packages created by Settings |
-| `~/.local/share/littleimp/restore-rollbacks/` | Pre-restore rollback copies created during restore |
-| `~/.local/share/littleimp/logs/` | Daemon stdout / stderr logs |
+| `~/.local/share/littleimp/backups/` | Local snapshots and encrypted packages |
+| `~/.local/share/littleimp/restore-rollbacks/` | Pre-restore rollback copies |
+| `~/.local/share/littleimp/logs/` | Daemon logs |
 
-Homebrew installs keep Homebrew-managed data under
-`$(brew --prefix)/var/little-imp` instead. The native installer, release
-archive installer, and source checkout installer continue to use
-`~/.local/share/littleimp/`.
+Runtime user settings live at `~/.config/littleimp/config.json`. Homebrew
+installs keep Homebrew-managed data under `$(brew --prefix)/var/little-imp`.
 
-Runtime user settings are stored separately at `~/.config/littleimp/config.json`.
-AI and embedding execution uses those persisted settings first. Environment
-variables such as `LLM_API_KEY`, `LLM_MODEL`, `EMBEDDING_API_KEY`,
-`EMBEDDING_MODEL`, and provider base URLs are fallback defaults for first
-install or unattended deployments. `GET /settings` redacts secrets as `"***"`;
-round-tripping that response through `PUT /settings` preserves the stored
-secret instead of writing the redacted placeholder.
-Supported LLM providers are OpenAI, Ollama, Anthropic, OpenRouter, custom
-OpenAI-compatible chat endpoints, DeepSeek international, and `none`.
+Little Imp is local-first and loopback-first:
 
-### Backup and restore
+- Native daemon default: `127.0.0.1:3210`.
+- Docker host port default: `127.0.0.1:3210:3210`.
+- General REST routes are intended for first-party loopback use.
+- MCP and protected capture endpoints require managed local integration bearer
+  tokens.
+- Public-network exposure is not a supported mode for `0.1.0-beta`; put an
+  authenticated tunnel, VPN, or reverse proxy in front of it if you deliberately
+  need remote access.
 
-The supported backup flow is the daemon backup API/UI, which creates a portable
-snapshot directory under `~/.local/share/littleimp/backups/` by default. Each
-snapshot contains `snapshot.db`, `manifest.json`, `checksums.sha256`, and
-`data/settings.json`. Settings backups omit secrets such as API keys and PIN
-hashes; restoring settings preserves the current local secrets. The Settings
-page also supports custom local destinations, scheduled snapshots, and
-S3-compatible remote backup targets. Local backups in Settings can be verified
-without restoring them or wrapped as encrypted `.littleimp-backup.enc` package
-files. Settings can verify or restore encrypted packages by daemon-local
-absolute path when the package is under the configured backup folder. Browser
-file pickers cannot provide arbitrary absolute paths, so use the packaged CLI
-for encrypted packages stored elsewhere.
-
-Native installs also include a `littleimp` CLI command at
-`~/.local/bin/littleimp`. If that directory is on your `PATH`, you can manage
-backups from the shell:
-
-```sh
-# Create a backup through the running daemon
-littleimp backup create
-
-# List local backups
-littleimp backup list
-
-# Include S3-compatible remote backups when configured
-littleimp backup list --include-remote
-
-# Verify a local snapshot directory without restoring it
-littleimp backup verify --file ~/.local/share/littleimp/backups/BACKUP_DIRECTORY_NAME
-
-# Create an encrypted package from a new local snapshot
-LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
-  littleimp backup create --encrypt --output ~/Desktop/little-imp-backup.enc
-
-# Verify an encrypted package without restoring it
-LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
-  littleimp backup verify --encrypted --file ~/Desktop/little-imp-backup.enc
-
-# Restore a local backup by directory name
-littleimp backup restore BACKUP_DIRECTORY_NAME --yes
-
-# Restore an encrypted package
-LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
-  littleimp backup restore --encrypted-file ~/Desktop/little-imp-backup.enc --yes
-
-# Restore a remote S3 snapshot key
-littleimp backup restore --remote-key little-imp-backups/BACKUP_DIRECTORY_NAME/snapshot.db --yes
-```
-
-Add `--json` to any backup CLI command for machine-readable output. Set
-`LITTLEIMP_DAEMON_URL` or pass `--daemon-url` when the daemon is listening on a
-non-default localhost URL. Encrypted package commands can also read the password
-from `--password-file`; keep that password separately because an encrypted
-package cannot be restored without it. The `--output` file must not already
-exist; this avoids overwriting an earlier backup by accident.
-
-Every successful restore prints or returns the rollback directory, a
-platform-specific restart command, and the `/health` URL to check after
-restarting. Settings blocks the recovery screen until the daemon becomes
-healthy again.
-
-### Diagnostics
-
-Settings and the packaged `littleimp` CLI can generate a local diagnostics
-bundle for support. Diagnostics include version, platform, install mode, data
-paths, daemon health, queue depth, provider status, backup destination status,
-and log file locations. They omit API keys, URL credentials and query strings,
-app lock PIN hashes, S3 credentials, backup passwords, bookmark contents, notes,
-and embeddings.
-
-```sh
-littleimp diagnostics
-littleimp diagnostics --json
-
-curl http://127.0.0.1:3210/diagnostics
-```
-
-Diagnostics are not telemetry; nothing is sent unless you choose to share the
-copied or exported output. See [docs/diagnostics.md](./docs/diagnostics.md).
-
-### Troubleshooting
-
-Start with diagnostics when the app is installed but not behaving as expected:
-
-```sh
-littleimp diagnostics
-curl http://127.0.0.1:3210/health
-```
-
-Common recovery checks:
-
-- If the daemon is offline, restart the LaunchAgent or systemd user service
-  using the commands in [Daemon management](#daemon-management).
-- If install or upgrade fails before the daemon starts, confirm Bun 1.x,
-  `curl`, `tar`, and a SHA-256 checksum tool are available on `PATH`.
-- If a restore succeeds but the UI stays on the recovery screen, run the
-  returned restart command and then check `/health`.
-- If a Homebrew install cannot resolve Bun, run `brew tap oven-sh/bun` before
-  `brew install little-imp`.
-- If an encrypted backup package cannot be restored, verify the password and use
-  the packaged CLI for packages outside the configured backup folder.
-
-### Update checks and manual upgrades
-
-The Settings page, daemon, and packaged `littleimp` CLI can manually check a
-GitHub Releases-compatible source for newer releases with semver-style tags
-such as `v0.2.0` or `v0.2.0-beta.1`. `littleimp update check` is read-only: it
-only reports availability and never downloads or installs updates.
-
-```sh
-# Check the default release source
-littleimp update check
-
-# Check only stable releases and print machine-readable output
-littleimp update check --channel stable --json
-
-# Use an alternate release source
-littleimp update check --source https://updates.example.com/little-imp/releases
-
-# Download and install the latest compatible update found by the release source
-littleimp update install
-
-# Download and install a selected release from a release artifact base URL
-littleimp update install --version 0.2.0-beta.1 \
-  --release-base-url https://github.com/goniszewski/little-imp/releases/download/v0.2.0-beta.1
-
-# Upgrade from an already downloaded archive, checksum, and optional signature
-littleimp update install \
-  --archive ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz \
-  --checksum ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz.sha256 \
-  --signature ~/Downloads/little-imp-0.2.0-beta.1-macos.tar.gz.asc
-
-# Check through the daemon API
-curl 'http://127.0.0.1:3210/updates/check?channel=stable'
-```
-
-Set `LITTLEIMP_UPDATE_SOURCE` to change the default source for scripted
-environments. Beta builds check the beta channel by default; stable builds check
-the stable channel by default. The daemon API rejects private and loopback
-source hosts; use the CLI for explicit local mirrors in controlled offline
-environments. When `update install` selects a release from a GitHub-compatible
-`html_url`, it derives the matching artifact download URL. Set
-`LITTLEIMP_RELEASE_BASE_URL` or pass `--release-base-url` when archives are
-hosted somewhere else. Failed upgrades print rollback guidance; rerun the
-previous verified release installer with `--upgrade` to revert application files
-while preserving local data.
-
-```sh
-# Create a backup through the daemon
-curl -X POST http://127.0.0.1:3210/backup
-
-# Restore a named backup snapshot
-curl -X POST http://127.0.0.1:3210/restore \
-  -H "Content-Type: application/json" \
-  -d '{"name":"BACKUP_DIRECTORY_NAME"}'
-
-# Verify a named local backup without restoring it
-curl -X POST http://127.0.0.1:3210/backup/verify \
-  -H "Content-Type: application/json" \
-  -d '{"name":"BACKUP_DIRECTORY_NAME"}'
-
-# Create an encrypted package from a named local backup
-curl -X POST http://127.0.0.1:3210/backup/package \
-  -H "Content-Type: application/json" \
-  -d '{"name":"BACKUP_DIRECTORY_NAME","password":"use-a-long-unique-password"}'
-
-# Verify an encrypted package without restoring it
-curl -X POST http://127.0.0.1:3210/backup/package/verify \
-  -H "Content-Type: application/json" \
-  -d '{"path":"/absolute/path/inside/backups/BACKUP_DIRECTORY_NAME.littleimp-backup.enc","password":"use-a-long-unique-password"}'
-
-# Restore an encrypted package
-curl -X POST http://127.0.0.1:3210/restore \
-  -H "Content-Type: application/json" \
-  -d '{"source":"encrypted_package","path":"/absolute/path/inside/backups/BACKUP_DIRECTORY_NAME.littleimp-backup.enc","password":"use-a-long-unique-password"}'
-```
-
-Restore verifies checksums before replacing data, creates a rollback directory
-under `DATA_DIR/restore-rollbacks/pre-restore-...`, and returns
-`restart_required: true`, `restart_command`, `health_url`, and
-`rollback_instructions`.
-
-For emergency database-only recovery, stop the daemon before copying files:
-
-```sh
-# macOS
-launchctl stop com.littleimp.daemon
-cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
-launchctl start com.littleimp.daemon
-
-# Linux
-systemctl --user stop littleimpd
-cp ~/Desktop/littleimp-backup-YYYYMMDD.db ~/.local/share/littleimp/littleimp.db
-systemctl --user start littleimpd
-```
-
----
-
-## Frontend development
-
-```sh
-# Install dependencies
-npm install
-
-# Start the dev server (requires daemon running)
-npm run dev
-
-# Run frontend unit tests
-npm run test
-
-# Run end-to-end tests
-npm run test:e2e
-```
-
-## Daemon development
-
-```sh
-npm run daemon:dev    # hot-reload with bun --watch
-npm run daemon:start  # production start (no watch)
-
-# Unit tests
-cd daemon && bun test src/test/
-```
-
----
+See [SECURITY.md](./SECURITY.md) and
+[security-boundaries.md](./docs/security-boundaries.md).
 
 ## Configuration
 
-The daemon reads its configuration from `~/.local/share/littleimp/.env` at startup.
+The daemon reads install-time defaults from `~/.local/share/littleimp/.env`.
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `HOST` | `127.0.0.1` | Bind address (keep localhost for security) |
-| `PORT` | `3210` | HTTP port |
-| `DATA_DIR` | `~/.local/share/littleimp` | Database and log directory |
-| `NODE_ENV` | `production` | `development` enables pretty logs |
-| `LOG_FORMAT` | `json` | `json` or `pretty` |
+| --- | --- | --- |
+| `HOST` | `127.0.0.1` | Bind address. Keep localhost for security. |
+| `PORT` | `3210` | Daemon HTTP port. |
+| `DATA_DIR` | `~/.local/share/littleimp` | Database, backups, and logs. |
+| `NODE_ENV` | `production` | Use `development` for local development logging. |
+| `LOG_FORMAT` | `json` | `json` or `pretty`. |
 
----
+AI and embedding settings are managed in Settings and persisted in
+`~/.config/littleimp/config.json`. Secret fields are redacted in API responses,
+diagnostics, and portable settings backups.
 
-## MCP (Model Context Protocol) integration
+## Backups And Restore
 
-Little Imp exposes an MCP server at `http://127.0.0.1:3210/mcp`. This lets AI assistants like Claude Desktop or Cursor query and add bookmarks directly. MCP requires a managed local integration token.
+Settings and the packaged `littleimp` CLI can create, verify, encrypt, and
+restore local backup snapshots. Each normal snapshot contains:
 
-Create a token and store the returned `data.token` value in your MCP client:
+- `snapshot.db`
+- `manifest.json`
+- `checksums.sha256`
+- `data/settings.json`
+
+CLI examples:
+
+```sh
+littleimp backup create
+littleimp backup list
+littleimp backup verify --file ~/.local/share/littleimp/backups/BACKUP_NAME
+littleimp backup restore BACKUP_NAME --yes
+```
+
+Encrypted package examples:
+
+```sh
+LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
+  littleimp backup create --encrypt --output ~/Desktop/little-imp-backup.enc
+
+LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
+  littleimp backup verify --encrypted --file ~/Desktop/little-imp-backup.enc
+```
+
+Restores verify checksums, create a rollback directory, replace local data, and
+return a restart command plus `/health` URL. See
+[backup-design.md](./docs/backup-design.md).
+
+## Local Integrations
+
+### REST API
+
+The generated API reference is [API.md](./API.md). The source contract is
+[docs/api-contract.json](./docs/api-contract.json), generated from
+`daemon/src/api/contract.ts`.
+
+```sh
+curl http://127.0.0.1:3210/health
+```
+
+### MCP
+
+Little Imp exposes Streamable HTTP MCP at `http://127.0.0.1:3210/mcp`. Create
+a local integration token first:
 
 ```sh
 curl -X POST http://127.0.0.1:3210/integration-tokens \
   -H "Content-Type: application/json" \
-  -d '{"name":"Claude Desktop MCP"}'
+  -d '{"name":"Local MCP client"}'
 ```
 
-### Available tools
+Use the returned token as `Authorization: Bearer ...`.
 
-| Tool | Description |
-|------|-------------|
-| `search_bookmarks` | Full-text or hybrid search over your library |
-| `get_bookmark` | Fetch full details of a bookmark by ID |
-| `list_bookmarks` | List recent bookmarks with optional filters |
-| `add_bookmark` | Save a URL and trigger the ingestion pipeline |
-| `list_categories` | Return the category tree with bookmark counts |
+### Browser Bookmarklet
 
-### Claude Desktop configuration
+Settings -> Browser Integration can create a token-backed bookmarklet. Drag it
+to your browser bookmarks bar, then click it on a page to capture the current
+URL, title, and selected text into Little Imp.
 
-Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "little-imp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "http://127.0.0.1:3210/mcp",
-        "--allow-http",
-        "--header",
-        "Authorization: Bearer ${LITTLE_IMP_MCP_TOKEN}"
-      ],
-      "env": {
-        "LITTLE_IMP_MCP_TOKEN": "limp_it_replace_with_your_token"
-      }
-    }
-  }
-}
-```
-
-> **Note:** `mcp-remote` is only needed because Claude Desktop does not yet support HTTP MCP servers directly. The `--allow-http` flag is for the local loopback URL above; do not use it for untrusted networks. Any MCP client that supports the Streamable HTTP transport (spec 2025-03-26+) can connect to `http://127.0.0.1:3210/mcp` directly.
-
----
-
-## Browser bookmarklet
-
-Save any web page to Little Imp without opening the app:
-
-1. Go to **Settings → Browser Integration**
-2. Create or select an integration token
-3. Drag the **bookmarklet link** to your browser's bookmarks bar
-
-Click the bookmarklet on any page to send its URL, title, and selected text to your daemon. A toast overlay confirms when it's saved.
-
-> **Security:** The bookmarklet embeds your integration token at generation time. Treat it like a password — it grants access to the capture endpoint. The bookmarklet only works while the daemon is running on `127.0.0.1:3210`.
-
----
-
-## Documentation
-
-- [API Reference](./API.md) - Generated daemon API documentation
-- [API Contract](./docs/api-contract.json) - Machine-readable contract generated from `daemon/src/api/contract.ts`
-- [Contributing Guide](./CONTRIBUTING.md) - Development setup and contribution guidelines
-- [Product Requirements](./docs/prd.md) - Detailed product specifications
-- [Development Roadmap](./docs/roadmap.md) - Shipped MVP state and future plans
-- [Backup Design](./docs/backup-design.md) - Technical backup/restore documentation
-- [Release Notes](./docs/release-notes-v0.1.0-beta.md) - Public beta release notes and support links
-- [Release Decision](./docs/release-decision-v0.1.0-beta.md) - Go/no-go package for the beta release
-- [Release Checklist](./docs/release-checklist.md) - Final beta validation checklist
-- [Security Policy](./SECURITY.md) - Security considerations and vulnerability reporting
-- [Update System](./docs/update-system.md) - Update mechanism design and roadmap
-- [Docker Deployment](./docs/docker-deployment.md) - Container deployment guide
-
-## Quick Start
-
-### Option 1: Release Installation (Recommended)
-
-```bash
-# Install the current release
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
-```
-
-### Option 2: Docker (Alternative)
-
-```bash
-# Using Docker Compose (recommended)
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp
-docker compose up -d
-
-# Or using Docker directly
-docker build -t little-imp .
-docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp
-```
-
-Access the application at `http://127.0.0.1:3210`. The Docker image serves
-the built frontend and daemon API from the same local-only port.
+The bookmarklet embeds an integration token. Treat it like a password.
 
 ## Development
 
-Little Imp is built with:
+```sh
+npm install
+cd daemon && bun install
+cd ..
+```
 
-- **Frontend:** React, Vite, Tailwind CSS, shadcn/ui
-- **Backend:** Bun, Hono, SQLite
-- **AI:** Optional local LLM (Ollama), OpenAI, Anthropic, OpenRouter, DeepSeek, or custom OpenAI-compatible providers
+Core commands:
 
-For development setup and contribution guidelines, see the [Contributing Guide](./CONTRIBUTING.md).
+```sh
+npm run dev
+npm run daemon:dev
+npm run lint
+npm run type-check
+npm run test
+npm run test:daemon
+npm run test:e2e
+npm run build
+```
+
+Full local quality gate:
+
+```sh
+npm run check
+```
+
+If `node`, `npm`, `npx`, or `bun` are missing in a sandboxed environment, run:
+
+```sh
+npm run tools:setup
+export PATH="$PWD/local/bin:$PATH"
+```
+
+Then rerun the normal commands.
+
+## Documentation
+
+- [FAQ](./docs/faq.md)
+- [API Reference](./API.md)
+- [API Contract](./docs/api-contract.json)
+- [Project Overview](./docs/overview.md)
+- [Product Requirements](./docs/prd.md)
+- [Roadmap](./docs/roadmap.md)
+- [Backup Design](./docs/backup-design.md)
+- [Diagnostics](./docs/diagnostics.md)
+- [Docker Deployment](./docs/docker-deployment.md)
+- [Update System](./docs/update-system.md)
+- [Release Notes](./docs/release-notes-v0.1.0-beta.md)
+- [Release Decision](./docs/release-decision-v0.1.0-beta.md)
+- [Release Checklist](./docs/release-checklist.md)
+- [Security Policy](./SECURITY.md)
+- [Contributing Guide](./CONTRIBUTING.md)
+- [Task Board](./tasks/README.md)
+- [Task Reports](./docs/task-reports/index.html)
+
+## Repository Metadata
+
+Recommended GitHub settings for public visibility:
+
+- Description: `Local-first bookmark manager with content extraction, semantic search, optional AI enrichment, backups, and local integrations.`
+- Homepage: leave blank until a product site exists, or use the GitHub repository URL.
+- Topics: `bookmark-manager`, `local-first`, `sqlite`, `bun`, `hono`,
+  `react`, `vite`, `typescript`, `semantic-search`, `llm`, `mcp`,
+  `backup`, `self-hosted`.
 
 ## Changelog
 
 See [CHANGELOG.md](./CHANGELOG.md).
 
----
-
 ## License
 
-MIT License - see [LICENSE](./LICENSE) file for details.
+MIT. See [LICENSE](./LICENSE).

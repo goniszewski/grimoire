@@ -655,12 +655,15 @@ const Index = () => {
                     onClick={async () => {
                       try {
                         const result = await loadDemoData();
-                        toast.success("Demo bookmarks loaded", {
+                        toast({
+                          title: "Demo bookmarks loaded",
                           description: `Created ${result.bookmarks_created} bookmarks across ${result.categories_created} categories.`,
                         });
                         qc.invalidateQueries();
                       } catch (err) {
-                        toast.error("Failed to load demo data", {
+                        toast({
+                          variant: "destructive",
+                          title: "Failed to load demo data",
                           description: err instanceof Error ? err.message : "Unknown error",
                         });
                       }

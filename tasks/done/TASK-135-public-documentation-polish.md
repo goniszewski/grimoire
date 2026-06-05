@@ -2,7 +2,7 @@
 
 **Phase:** Verification and release readiness
 **Priority:** high (P1)
-**Status:** todo
+**Status:** done
 **Area:** documentation / project-site
 
 ## Description
@@ -45,11 +45,11 @@ Prepare the repository for public visibility. The codebase, README, and docs are
 
 ## Acceptance Criteria
 
-- [ ] README is reorganized for first-time visitors with clear install/setup and screenshots.
-- [ ] FAQ exists at `docs/faq.md` covering the 7 common questions above.
-- [ ] SECURITY.md and CONTRIBUTING.md are reviewed and current.
-- [ ] Local markdown link audit passes with zero broken links.
-- [ ] All docs consistently use "Little Imp" as the product name and `0.1.0-beta` as the current version.
+- [x] README is reorganized for first-time visitors with clear install/setup and screenshots.
+- [x] FAQ exists at `docs/faq.md` covering the 7 common questions above.
+- [x] SECURITY.md and CONTRIBUTING.md are reviewed and current.
+- [x] Local markdown link audit passes with zero broken links.
+- [x] All docs consistently use "Little Imp" as the product name and `0.1.0-beta` as the current version.
 
 ## Dependencies
 
@@ -60,3 +60,22 @@ Prepare the repository for public visibility. The codebase, README, and docs are
 
 - If the repo is still private when this task runs, use the developer-setup path in Quick Start and mark the one-command install as "coming soon."
 - Do not claim public install validation until TASK-122 passes.
+
+## Work Notes
+
+- June 5, 2026: Selected as the next actionable high-priority task because
+  TASK-078 and TASK-079 remain blocked by public artifact visibility, while
+  TASK-135 can be completed locally without changing product runtime behavior.
+- Confirmed with `gh repo view goniszewski/little-imp --json visibility` that
+  the repository is still private, and with `curl -I` that the tag-qualified
+  raw installer URL returns unauthenticated `404`.
+- Rebuilt `README.md` around first-time visitor flow, synthetic screenshots,
+  source/Docker quick start, clear public-installer blocker wording, and
+  recommended GitHub repository metadata.
+- Added `docs/faq.md`, refreshed `SECURITY.md` and `CONTRIBUTING.md`, fixed
+  stale task-board links, and added the TASK-135 task report under
+  `docs/task-reports/2026/06/2026-06-05-task-135-public-documentation-polish/`.
+- Local markdown link audit passed for 19 files across `README.md`,
+  `CONTRIBUTING.md`, `SECURITY.md`, `docs/*.md`, and `tasks/README.md`.
+- Local task-report HTML link audit passed for the root, year, month, and new
+  TASK-135 report pages.
