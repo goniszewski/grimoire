@@ -147,6 +147,7 @@ batch against the parity report and worksheet:
 
 - [docs/parity/grimoire-feature-parity-report.md](./parity/grimoire-feature-parity-report.md)
 - [docs/parity/grimoire-parity-task-proposals.md](./parity/grimoire-parity-task-proposals.md)
+- [docs/parity/parity-acceptance-checklist.md](./parity/parity-acceptance-checklist.md)
 - [docs/parity/grimoire-backup-import-shape.md](./parity/grimoire-backup-import-shape.md)
 
 Use this section as the recurring regression path for closed parity gaps. A

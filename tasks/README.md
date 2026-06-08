@@ -147,7 +147,7 @@ tasks/
 | TASK-131 | [GitHub Issues Extractor](backlog/TASK-131-github-issues-extractor.md) | Performance and polish | low | backlog |
 | TASK-132 | [Large-Library Search Performance](backlog/TASK-132-large-library-search-performance.md) | Performance and polish | low | backlog |
 | TASK-133 | [Parity Task Reports and Visual Verification](done/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | done |
-| TASK-134 | [Parity Acceptance Checklist](todo/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | todo |
+| TASK-134 | [Parity Acceptance Checklist](done/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | done |
 | TASK-135 | [Public Documentation Polish](done/TASK-135-public-documentation-polish.md) | Verification and release readiness | high | done |
 
 ## Current Status
@@ -330,7 +330,8 @@ path encrypted-backup verification, and first-run guided tour/demo content.
 TASK-130 through TASK-132 remain in `backlog/` as performance and extractor
 improvements. TASK-133 is complete with a synthetic parity task-report and
 desktop/narrow visual verification sweep linked from the task-report indexes.
-TASK-134 is the remaining parity acceptance checklist task in `todo/`.
+TASK-134 is complete with the final parity acceptance checklist and release
+evidence links verified.
 TASK-135 is complete with public-facing README, FAQ, security, contributing,
 task-report, and link-audit work.
 

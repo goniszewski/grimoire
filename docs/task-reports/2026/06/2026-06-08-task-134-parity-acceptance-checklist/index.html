@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parity Acceptance Checklist - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row span:nth-child(3) {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.hero-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../../index.html">Task Reports</a>
+    &nbsp;/&nbsp;
+    <a href="../../index.html">2026</a>
+    &nbsp;/&nbsp;
+    <a href="../index.html">June 2026</a>
+  </nav>
+
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Parity Acceptance Checklist</h1>
+      <div class="meta-row">
+        <span>2026-06-08</span>
+        <span>TASK-134</span>
+        <span>Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-parity-acceptance-map.svg" alt="Diagram showing parity worksheet rows, evidence sources, the acceptance checklist, and release decision linkage">
+      <figcaption>After: the approved local-first Grimoire parity batch has a final evidence matrix and release-decision link.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Parity implementation tasks were completed across many task notes and reports, but there was no single acceptance page mapping each approved done parity row to concrete verification evidence. The worksheet also still showed PAR-051 and PAR-052 as pending after TASK-133 completed the reporting and visual sweep.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>A reviewer needed a compact way to verify that every approved parity gap had daemon, frontend, generated API, visual, e2e, performance, or documentation evidence before the beta is described as parity-complete for the current local-first scope.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added <code>docs/parity/parity-acceptance-checklist.md</code> with a per-PAR evidence matrix and explicit remediation notes.</li>
+        <li>Updated the parity worksheet so PAR-051, PAR-052, and PAR-054 reflect completed TASK-133/TASK-134 work.</li>
+        <li>Linked the checklist from the recurring release checklist and the release decision validation table.</li>
+        <li>Updated the parity report implementation status to include final task-report, visual, contract, and acceptance evidence.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>The parity batch now has a final closeout artifact for the approved local-first scope while keeping multi-user/server mode, direct Grimoire backup import, URL/summary mutation, packaged browser clients, endpoint aliases, and bookmark importance as explicit future or rejected decisions.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Reviewed the parity worksheet, parity report, recurring release checklist, completed task notes, and TASK-133 visual evidence.</li>
+        <li>Linked every approved done parity row to at least one concrete verification signal in the checklist.</li>
+        <li>Ran focused documentation and task-report verification after the edits.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>docs/parity/parity-acceptance-checklist.md</code></li>
+        <li><code>docs/parity/grimoire-parity-task-proposals.md</code></li>
+        <li><code>docs/parity/grimoire-feature-parity-report.md</code></li>
+        <li><code>docs/release-checklist.md</code></li>
+        <li><code>docs/release-decision-v0.1.0-beta.md</code></li>
+        <li><code>docs/task-reports/2026/06/2026-06-08-task-134-parity-acceptance-checklist/index.html</code></li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Follow-Ups</summary>
+      <p>Refresh the checklist whenever a parity-linked API, daemon, frontend, import/export, visual-report, or release-documentation surface changes after this batch.</p>
+    </details>
+  </article>
+</main>
+</body>
+</html>

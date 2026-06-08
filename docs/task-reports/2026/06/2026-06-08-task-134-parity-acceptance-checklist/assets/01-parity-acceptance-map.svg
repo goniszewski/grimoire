@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Parity acceptance checklist evidence map</title>
+  <desc id="desc">A diagram showing parity worksheet rows, evidence sources, the acceptance checklist, and release decision linkage.</desc>
+  <rect width="1280" height="720" fill="#f7f7fa"/>
+  <rect x="64" y="56" width="1152" height="608" rx="8" fill="#ffffff" stroke="#dedfec" stroke-width="2"/>
+  <text x="112" y="118" fill="#191827" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="800">TASK-134 parity acceptance checklist</text>
+  <text x="112" y="154" fill="#626475" font-family="Inter, Arial, sans-serif" font-size="20">Every approved done parity row now points to a concrete verification signal.</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="112" y="228" width="276" height="128" rx="8" fill="#eef6ff" stroke="#0f7fbf" stroke-width="2"/>
+    <text x="138" y="270" fill="#0f3554" font-size="24" font-weight="800">Worksheet source</text>
+    <text x="138" y="306" fill="#33556a" font-size="17">Approved + Done rows</text>
+    <text x="138" y="332" fill="#33556a" font-size="17">Approved done rows</text>
+
+    <rect x="112" y="420" width="276" height="128" rx="8" fill="#f5f0ff" stroke="#7c3aed" stroke-width="2"/>
+    <text x="138" y="462" fill="#34205d" font-size="24" font-weight="800">Evidence sources</text>
+    <text x="138" y="498" fill="#5d4b83" font-size="17">Task notes, test files</text>
+    <text x="138" y="524" fill="#5d4b83" font-size="17">Reports, e2e, checks</text>
+
+    <rect x="490" y="272" width="320" height="176" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+    <text x="522" y="324" fill="#1f2937" font-size="26" font-weight="800">Acceptance matrix</text>
+    <text x="522" y="362" fill="#475569" font-size="18">Cites daemon, frontend,</text>
+    <text x="522" y="390" fill="#475569" font-size="18">contract, visual, e2e,</text>
+    <text x="522" y="418" fill="#475569" font-size="18">performance, and docs evidence</text>
+
+    <rect x="912" y="228" width="244" height="128" rx="8" fill="#ecfdf3" stroke="#15803d" stroke-width="2"/>
+    <text x="940" y="270" fill="#124a27" font-size="24" font-weight="800">Accepted scope</text>
+    <text x="940" y="306" fill="#2f6644" font-size="17">Local-first parity</text>
+    <text x="940" y="332" fill="#2f6644" font-size="17">No new gaps found</text>
+
+    <rect x="912" y="420" width="244" height="128" rx="8" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+    <text x="940" y="462" fill="#73310a" font-size="24" font-weight="800">Future decisions</text>
+    <text x="940" y="498" fill="#894b24" font-size="17">Multi-user, direct import,</text>
+    <text x="940" y="524" fill="#894b24" font-size="17">browser clients stay deferred</text>
+
+    <path d="M388 292H490" fill="none" stroke="#64748b" stroke-width="3"/>
+    <path d="M388 484H438C462 484 474 448 490 412" fill="none" stroke="#64748b" stroke-width="3"/>
+    <path d="M810 336H912" fill="none" stroke="#64748b" stroke-width="3"/>
+    <path d="M810 412C854 450 876 484 912 484" fill="none" stroke="#64748b" stroke-width="3"/>
+    <polygon points="486,292 470,282 470,302" fill="#64748b"/>
+    <polygon points="486,414 469,408 476,426" fill="#64748b"/>
+    <polygon points="908,336 892,326 892,346" fill="#64748b"/>
+    <polygon points="908,484 890,477 898,496" fill="#64748b"/>
+  </g>
+</svg>

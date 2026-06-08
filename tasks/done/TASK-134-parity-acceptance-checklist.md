@@ -2,7 +2,7 @@
 
 **Phase:** Verification and release readiness
 **Priority:** medium (P2)
-**Status:** todo
+**Status:** done
 **Area:** documentation / parity
 
 ## Description
@@ -32,11 +32,11 @@ Address PAR-054: produce a one-page acceptance checklist that confirms every app
 
 ## Acceptance Criteria
 
-- [ ] Every approved parity gap has a documented verification signal.
-- [ ] Gaps with missing or weak evidence are explicitly noted with a remediation path.
-- [ ] The parity report's non-goals and deferred items remain accurate.
-- [ ] The release decision doc references the parity acceptance checklist.
-- [ ] No new parity gaps are discovered (all non-goals are intentional).
+- [x] Every approved parity gap has a documented verification signal.
+- [x] Gaps with missing or weak evidence are explicitly noted with a remediation path.
+- [x] The parity report's non-goals and deferred items remain accurate.
+- [x] The release decision doc references the parity acceptance checklist.
+- [x] No new parity gaps are discovered (all non-goals are intentional).
 
 ## Dependencies
 
@@ -48,3 +48,29 @@ Address PAR-054: produce a one-page acceptance checklist that confirms every app
 
 - This is a documentation-only task. Do not implement product changes.
 - The goal is to make it easy for a reviewer to verify: "Every parity gap claimed as done actually has evidence."
+
+## Work Notes
+
+- June 8, 2026: Selected as the next logical unblocked task because TASK-078
+  and TASK-079 still return public artifact `404`s, while TASK-134 depends only
+  on completed TASK-133 evidence.
+- Added `docs/parity/parity-acceptance-checklist.md` with a per-PAR evidence
+  matrix for all approved done parity rows, plus explicit deferred/rejected row
+  notes for non-goals and future product decisions.
+- Updated `docs/parity/grimoire-parity-task-proposals.md` so PAR-051,
+  PAR-052, and PAR-054 reflect completed TASK-133/TASK-134 work instead of
+  stale pending status.
+- Linked the checklist from the recurring release checklist and the
+  `v0.1.0-beta` release decision validation table.
+- Added the TASK-134 task report under
+  `docs/task-reports/2026/06/2026-06-08-task-134-parity-acceptance-checklist/`
+  and linked it from the task-report indexes.
+- Verification passed:
+  - `git diff --check`
+  - `npx vitest run scripts/parity-release-checklist.test.ts scripts/task-report-lightbox.test.ts`
+  - `npm run docs:api:check` with existing static status-code drift warnings
+    and "API documentation is up to date."
+  - Local relative-link audit over the touched Markdown and HTML files.
+- June 8, 2026 review follow-up: corrected a PAR-054 status overclaim so the
+  worksheet stayed in review until TASK-134 was accepted, then moved the task
+  and worksheet row to done together.

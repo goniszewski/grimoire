@@ -101,7 +101,7 @@ Suggested values:
 | --- | --- | --- | --- | --- | --- |
 | PAR-049 | Add parity-driven API examples for local token auth, bookmark CRUD/update, search/list/filter/sort/pagination, import/export, categories, and tags. | High | Approved | Done | Covered by `TASK-103`; no separate task file. Browser extension/bookmarklet examples are deferred. |
 | PAR-050 | Update README, roadmap, and release docs with approved Grimoire parity goals and explicit non-goals. | High | Approved | Done | Covered by `TASK-085` and recurring release review coverage in `TASK-088`. |
-| PAR-051 | Add task reports for visible parity work and link them from `docs/task-reports/index.html`. | Medium | Pending | Not started |  |
-| PAR-052 | Add visual verification coverage for category/tag management, bookmark detail, import review, and pagination once implemented. | Medium | Pending | Not started |  |
+| PAR-051 | Add task reports for visible parity work and link them from `docs/task-reports/index.html`. | Medium | Approved | Done | Completed in `TASK-133`; the parity report batch and parent indexes link the visible parity work. |
+| PAR-052 | Add visual verification coverage for category/tag management, bookmark detail, import review, and pagination once implemented. | Medium | Approved | Done | Completed in `TASK-133` with synthetic desktop and narrow screenshot coverage for the parity UI surfaces. |
 | PAR-053 | Add contract checks that fail when daemon route behavior diverges from `docs/api-contract.json`. | High | Approved | Done | Completed in `TASK-121`. |
-| PAR-054 | Add a final Grimoire parity acceptance checklist before promoting a beta release as parity-complete. | High | Pending | Not started |  |
+| PAR-054 | Add a final Grimoire parity acceptance checklist before promoting a beta release as parity-complete. | High | Approved | Done | Completed in `TASK-134`; checklist lives in `docs/parity/parity-acceptance-checklist.md`. |

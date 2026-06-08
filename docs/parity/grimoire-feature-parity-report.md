@@ -103,7 +103,8 @@ This batch keeps Little Imp's product model intact:
 
 1. Keep recurring release checks on closed parity gaps, especially generated API
    docs, import/export behavior, category/tag management, filters, pagination,
-   and local integration token/CORS behavior.
+   local integration token/CORS behavior, and the final acceptance matrix in
+   [parity-acceptance-checklist.md](./parity-acceptance-checklist.md).
 2. Treat URL/summary bookmark mutation, direct Grimoire backup import tooling,
    and packaged browser-extension/bookmarklet clients as explicit future
    product decisions rather than unfinished current-batch work. Direct import
@@ -155,3 +156,6 @@ visual, Playwright e2e, and performance verification where relevant.
 3. Category/tag surfaces and regression coverage are complete for TASK-095 through TASK-101.
 4. Browser/Netscape import, export parity, duplicate policy, and import/export regression tests are complete for TASK-107, TASK-108, TASK-109, TASK-110, TASK-111, TASK-113, and TASK-120. TASK-112 is complete as a future direct-import shape and mapping record; runtime direct import implementation remains deferred.
 5. Pagination, server-driven sorting, approved filters, persisted view preferences, aggregate counts, and large-library verification are complete for TASK-114 through TASK-119.
+6. Task-report links, visual verification, contract route behavior checks, and
+   final acceptance evidence are complete through TASK-121, TASK-133, and
+   TASK-134.
