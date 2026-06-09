@@ -3,7 +3,9 @@ import { mkdirSync } from "fs";
 import { join } from "path";
 import { Config } from "../config.js";
 import { log } from "../logger.js";
+import { EmbeddingRepository } from "./embedding-repository.js";
 import { runMigrations } from "./migrations.js";
+import { configureSqliteForVectorExtensions } from "./sqlite-vec.js";
 
 let _db: Database | null = null;
 
@@ -15,6 +17,7 @@ export function getDatabase(): Database {
   const dbPath = join(Config.DATA_DIR, "littleimp.db");
 
   log.info("Opening database", { path: dbPath });
+  configureSqliteForVectorExtensions();
   const db = new Database(dbPath, { create: true });
 
   // Performance pragmas (WAL is set in migration but set here too for safety)
@@ -26,6 +29,7 @@ export function getDatabase(): Database {
   db.exec("PRAGMA recursive_triggers = OFF"); // guard against updated_at trigger recursion
 
   runMigrations(db);
+  new EmbeddingRepository(db).rebuildVectorIndex();
 
   _db = db;
   log.info("Database ready", { path: dbPath });

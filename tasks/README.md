@@ -143,7 +143,7 @@ tasks/
 | TASK-127 | [In-App Update Notification](done/TASK-127-in-app-update-notification.md) | First-user experience | high | done |
 | TASK-128 | [In-App Backup Verify from Arbitrary Paths](done/TASK-128-in-app-backup-verify-arbitrary-paths.md) | First-user experience | medium | done |
 | TASK-129 | [First-Run Guided Tour and Demo Content](done/TASK-129-first-run-guided-tour.md) | First-user experience | medium | done |
-| TASK-130 | [sqlite-vec Vector Index Integration](backlog/TASK-130-sqlite-vec-vector-index.md) | Performance and polish | medium | backlog |
+| TASK-130 | [sqlite-vec Vector Index Integration](done/TASK-130-sqlite-vec-vector-index.md) | Performance and polish | medium | done |
 | TASK-131 | [GitHub Issues Extractor](backlog/TASK-131-github-issues-extractor.md) | Performance and polish | low | backlog |
 | TASK-132 | [Large-Library Search Performance](backlog/TASK-132-large-library-search-performance.md) | Performance and polish | low | backlog |
 | TASK-133 | [Parity Task Reports and Visual Verification](done/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | done |
@@ -327,8 +327,11 @@ they remain in `backlog/` because they are blocked on public artifact
 visibility. TASK-125 through TASK-129 are complete, covering macOS x64
 acceptance, browser bookmarklet capture, in-app update notification, arbitrary
 path encrypted-backup verification, and first-run guided tour/demo content.
-TASK-130 through TASK-132 remain in `backlog/` as performance and extractor
-improvements. TASK-133 is complete with a synthetic parity task-report and
+TASK-130 is complete with optional sqlite-vec vector indexing, durable BLOB
+fallback, search and organization-agent integration, fallback hardening, and a
+100/1K/5K/10K nearest-neighbor benchmark matrix. TASK-131 and TASK-132 remain
+in `backlog/` as performance and extractor improvements.
+TASK-133 is complete with a synthetic parity task-report and
 desktop/narrow visual verification sweep linked from the task-report indexes.
 TASK-134 is complete with the final parity acceptance checklist and release
 evidence links verified.

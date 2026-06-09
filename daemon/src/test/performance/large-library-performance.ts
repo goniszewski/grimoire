@@ -1,12 +1,20 @@
 import {
   LARGE_LIBRARY_BUDGETS_MS,
   LARGE_LIBRARY_SIZE,
+  VECTOR_BENCHMARK_DIMENSIONS,
+  VECTOR_BENCHMARK_ITERATIONS,
+  VECTOR_BENCHMARK_LIMIT,
+  VECTOR_BENCHMARK_MODEL,
+  VECTOR_BENCHMARK_SIZES,
   assertBudget,
   createLargeImportHtml,
   createPerformanceApp,
   seedLargeLibrary,
+  seedVectorBenchmarkLibrary,
   timeAsync,
+  timeSync,
 } from "./large-library-fixtures.js";
+import { EmbeddingRepository } from "../../db/embedding-repository.js";
 
 type PagedResponse = {
   data: Array<{ id: string; category_id?: string | null; tags?: string[] }>;
@@ -52,6 +60,12 @@ type ImportProgressPayload = {
   } | null;
 };
 
+type VectorBenchmarkResult = {
+  size: number;
+  blobMs: number;
+  sqliteVecMs: number | null;
+};
+
 async function expectJson<T>(response: Response, expectedStatus: number): Promise<T> {
   if (response.status !== expectedStatus) {
     throw new Error(`Expected HTTP ${expectedStatus}, received ${response.status}: ${await response.text()}`);
@@ -92,6 +106,84 @@ async function expectBookmarkCount(app: ReturnType<typeof createPerformanceApp>[
   if (json.pagination.total !== expected) {
     throw new Error(`Expected ${expected} bookmarks after import, found ${json.pagination.total}`);
   }
+}
+
+function withSqliteVecDisabled<T>(fn: () => T): T {
+  const previous = process.env.LITTLEIMP_DISABLE_SQLITE_VEC;
+  process.env.LITTLEIMP_DISABLE_SQLITE_VEC = "1";
+  try {
+    return fn();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.LITTLEIMP_DISABLE_SQLITE_VEC;
+    } else {
+      process.env.LITTLEIMP_DISABLE_SQLITE_VEC = previous;
+    }
+  }
+}
+
+function timeNearest(
+  repo: EmbeddingRepository,
+  queryVector: number[]
+): number {
+  const result = timeSync("vector nearest", () => {
+    for (let iteration = 0; iteration < VECTOR_BENCHMARK_ITERATIONS; iteration += 1) {
+      const nearest = repo.findNearest(VECTOR_BENCHMARK_MODEL, queryVector, {
+        limit: VECTOR_BENCHMARK_LIMIT,
+      });
+      if (nearest.length !== VECTOR_BENCHMARK_LIMIT) {
+        throw new Error(
+          `Expected ${VECTOR_BENCHMARK_LIMIT} vector results, received ${nearest.length}`
+        );
+      }
+      if (nearest[0]?.score === undefined || nearest[0].score < nearest.at(-1)!.score) {
+        throw new Error("Vector nearest-neighbor results were not sorted by descending score");
+      }
+    }
+  });
+  return result.elapsedMs / VECTOR_BENCHMARK_ITERATIONS;
+}
+
+function measureBlobVectorSearch(size: number): number {
+  return withSqliteVecDisabled(() => {
+    const context = createPerformanceApp();
+    const fixture = seedVectorBenchmarkLibrary(context.db, size);
+    const repo = new EmbeddingRepository(context.db);
+    repo.findNearest(VECTOR_BENCHMARK_MODEL, fixture.queryVector, {
+      limit: VECTOR_BENCHMARK_LIMIT,
+    });
+    const elapsedMs = timeNearest(repo, fixture.queryVector);
+    context.db.close();
+    return elapsedMs;
+  });
+}
+
+function measureSqliteVecSearch(size: number): number | null {
+  const context = createPerformanceApp();
+  const fixture = seedVectorBenchmarkLibrary(context.db, size);
+  const repo = new EmbeddingRepository(context.db);
+
+  if (!repo.isVectorIndexAvailable(VECTOR_BENCHMARK_DIMENSIONS)) {
+    context.db.close();
+    return null;
+  }
+
+  repo.findNearest(VECTOR_BENCHMARK_MODEL, fixture.queryVector, {
+    limit: VECTOR_BENCHMARK_LIMIT,
+  });
+  const elapsedMs = timeNearest(repo, fixture.queryVector);
+  context.db.close();
+  return elapsedMs;
+}
+
+function runVectorBenchmarks(): VectorBenchmarkResult[] {
+  const sqliteVecDisabledByCaller = process.env.LITTLEIMP_DISABLE_SQLITE_VEC === "1";
+
+  return VECTOR_BENCHMARK_SIZES.map((size) => {
+    const blobMs = measureBlobVectorSearch(size);
+    const sqliteVecMs = sqliteVecDisabledByCaller ? null : measureSqliteVecSearch(size);
+    return { size, blobMs, sqliteVecMs };
+  });
 }
 
 async function run(): Promise<void> {
@@ -188,8 +280,31 @@ async function run(): Promise<void> {
   });
   assertBudget(commit, LARGE_LIBRARY_BUDGETS_MS.importCommit);
 
+  const vectorBenchmarks = runVectorBenchmarks();
+  for (const result of vectorBenchmarks) {
+    if (
+      result.size > 1_000 &&
+      result.sqliteVecMs !== null &&
+      result.sqliteVecMs >= result.blobMs
+    ) {
+      throw new Error(
+        `sqlite-vec nearest-neighbor search was not faster than BLOB scan at ${result.size} embeddings`
+      );
+    }
+  }
+
   for (const result of [list, pagination, search, categoryFilter, tagFilter, preview, commit]) {
     console.log(`${result.name}: ${result.elapsedMs.toFixed(1)}ms / ${result.budgetMs}ms`);
+  }
+
+  console.log(
+    `vector nearest-neighbor (${VECTOR_BENCHMARK_DIMENSIONS}d, k=${VECTOR_BENCHMARK_LIMIT}, average of ${VECTOR_BENCHMARK_ITERATIONS})`
+  );
+  for (const result of vectorBenchmarks) {
+    const sqliteVec = result.sqliteVecMs === null
+      ? "sqlite-vec unavailable"
+      : `sqlite-vec ${result.sqliteVecMs.toFixed(2)}ms (${(result.blobMs / result.sqliteVecMs).toFixed(1)}x faster)`;
+    console.log(`  ${result.size} embeddings: BLOB ${result.blobMs.toFixed(2)}ms; ${sqliteVec}`);
   }
 }
 

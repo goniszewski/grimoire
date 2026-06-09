@@ -41,12 +41,13 @@ const MIN_BOOKMARKS = 20;
 const MIN_CATEGORY_BOOKMARKS = 3;
 
 /**
- * Maximum number of embeddings considered for the O(n²) duplicate scan.
- * At 2 000 embeddings the loop performs ~2 million comparisons — still fast
- * in JS (~100 ms). Beyond this threshold we skip the scan to protect against
- * very large libraries. Increase if needed once a proper ANN index is in place.
+ * Maximum number of embeddings considered for the fallback O(n²) duplicate scan.
+ * sqlite-vec removes this cap when the vector index is available.
  */
 const MAX_EMBEDDINGS_FOR_DUPLICATE_SCAN = 2_000;
+
+/** Number of nearest neighbors checked per bookmark when sqlite-vec is available. */
+const DUPLICATE_NEAREST_NEIGHBOR_LIMIT = 10;
 
 // ─── Agent ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +96,7 @@ export class OrganizationAgent {
 
     log.info("OrganizationAgent: loaded embeddings", { count: embeddings.length });
 
-    await this.detectDuplicates(embeddings);
+    await this.detectDuplicates(model, embeddings);
     await this.detectCategoryMerges(embeddings);
 
     log.info("OrganizationAgent: run complete");
@@ -104,8 +105,42 @@ export class OrganizationAgent {
   // ─── Duplicate detection ────────────────────────────────────────────────────
 
   private async detectDuplicates(
+    model: string,
     embeddings: Array<{ bookmarkId: string; vector: number[] }>
   ): Promise<void> {
+    const hasVectorIndex = embeddings.some((embedding) =>
+      this.embRepo.isVectorIndexAvailable(embedding.vector.length)
+    );
+    if (hasVectorIndex) {
+      let found = 0;
+      const seenPairs = new Set<string>();
+
+      for (const embedding of embeddings) {
+        const nearest = this.embRepo.findNearest(model, embedding.vector, {
+          limit: DUPLICATE_NEAREST_NEIGHBOR_LIMIT,
+          excludeBookmarkId: embedding.bookmarkId,
+        });
+
+        for (const candidate of nearest) {
+          if (candidate.score < DUPLICATE_THRESHOLD) continue;
+          const pairKey = [embedding.bookmarkId, candidate.bookmarkId].sort().join(":");
+          if (seenPairs.has(pairKey)) continue;
+          seenPairs.add(pairKey);
+
+          if (this.handleDuplicateCandidate(
+            embedding.bookmarkId,
+            candidate.bookmarkId,
+            candidate.score
+          )) {
+            found++;
+          }
+        }
+      }
+
+      log.info("OrganizationAgent: duplicate detection done", { found, index: "sqlite-vec" });
+      return;
+    }
+
     if (embeddings.length > MAX_EMBEDDINGS_FOR_DUPLICATE_SCAN) {
       log.warn("OrganizationAgent: embedding count exceeds duplicate-scan limit, skipping", {
         count: embeddings.length,
@@ -121,64 +156,74 @@ export class OrganizationAgent {
         const sim = cosineSimilarity(embeddings[i].vector, embeddings[j].vector);
         if (sim < DUPLICATE_THRESHOLD) continue;
 
-        const idA = embeddings[i].bookmarkId;
-        const idB = embeddings[j].bookmarkId;
-
-        const bmA = this.bookmarkRepo.findById(idA);
-        const bmB = this.bookmarkRepo.findById(idB);
-        if (!bmA || !bmB) continue;
-
-        const value = `Possible duplicate: "${bmA.title ?? bmA.url}" and "${bmB.title ?? bmB.url}"`;
-
-        // Skip if identical URLs (not a duplicate by content, just same page)
-        if (bmA.url === bmB.url) continue;
-
-        // Skip if already suggested (match by structured IDs, not human-readable value)
-        if (this.suggRepo.hasPending("duplicate_bookmark", value, { bookmarkIdA: idA, bookmarkIdB: idB })) continue;
-
-        const confidence = Math.min(sim, 1.0);
-        found++;
-
-        if (confidence >= AUTO_APPLY_THRESHOLD) {
-          // High-confidence: auto-trash the duplicate (idB) and record to timeline atomically.
-          let trashed = false;
-          this.db.transaction(() => {
-            trashed = this.bookmarkRepo.softDelete(idB);
-            if (trashed) {
-              this.timelineRepo.insert(
-                "duplicate_removed",
-                `Auto-removed duplicate: "${bmB.title ?? bmB.url}" (kept "${bmA.title ?? bmA.url}")`,
-                { canonicalBookmarkId: idA, trashedBookmarkId: idB, similarity: sim },
-                "agent",
-                idB
-              );
-            } else {
-              this.timelineRepo.insert(
-                "duplicate_flagged",
-                value,
-                { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
-                "agent"
-              );
-            }
-          })();
-          if (trashed) {
-            log.info("OrganizationAgent: auto-removed duplicate", { canonical: idA, trashed: idB, sim });
-          } else {
-            log.info("OrganizationAgent: auto-flagged duplicate (already trashed?)", { idA, idB, sim });
-          }
-        } else {
-          this.suggRepo.insert(
-            "duplicate_bookmark",
-            value,
-            { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
-            confidence,
-            idA
-          );
+        if (this.handleDuplicateCandidate(
+          embeddings[i].bookmarkId,
+          embeddings[j].bookmarkId,
+          sim
+        )) {
+          found++;
         }
       }
     }
 
     log.info("OrganizationAgent: duplicate detection done", { found });
+  }
+
+  private handleDuplicateCandidate(idA: string, idB: string, sim: number): boolean {
+    const bmA = this.bookmarkRepo.findById(idA);
+    const bmB = this.bookmarkRepo.findById(idB);
+    if (!bmA || !bmB) return false;
+
+    const value = `Possible duplicate: "${bmA.title ?? bmA.url}" and "${bmB.title ?? bmB.url}"`;
+
+    // Skip if identical URLs (not a duplicate by content, just same page)
+    if (bmA.url === bmB.url) return false;
+
+    // Skip if already suggested (match by structured IDs, not human-readable value)
+    if (this.suggRepo.hasPending("duplicate_bookmark", value, { bookmarkIdA: idA, bookmarkIdB: idB })) {
+      return false;
+    }
+
+    const confidence = Math.min(sim, 1.0);
+
+    if (confidence >= AUTO_APPLY_THRESHOLD) {
+      // High-confidence: auto-trash the duplicate (idB) and record to timeline atomically.
+      let trashed = false;
+      this.db.transaction(() => {
+        trashed = this.bookmarkRepo.softDelete(idB);
+        if (trashed) {
+          this.timelineRepo.insert(
+            "duplicate_removed",
+            `Auto-removed duplicate: "${bmB.title ?? bmB.url}" (kept "${bmA.title ?? bmA.url}")`,
+            { canonicalBookmarkId: idA, trashedBookmarkId: idB, similarity: sim },
+            "agent",
+            idB
+          );
+        } else {
+          this.timelineRepo.insert(
+            "duplicate_flagged",
+            value,
+            { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
+            "agent"
+          );
+        }
+      })();
+      if (trashed) {
+        log.info("OrganizationAgent: auto-removed duplicate", { canonical: idA, trashed: idB, sim });
+      } else {
+        log.info("OrganizationAgent: auto-flagged duplicate (already trashed?)", { idA, idB, sim });
+      }
+    } else {
+      this.suggRepo.insert(
+        "duplicate_bookmark",
+        value,
+        { bookmarkIdA: idA, bookmarkIdB: idB, similarity: sim },
+        confidence,
+        idA
+      );
+    }
+
+    return true;
   }
 
   // ─── Category merge detection ───────────────────────────────────────────────

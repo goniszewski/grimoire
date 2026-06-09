@@ -31,8 +31,10 @@ Profile and optimize the hybrid search path for libraries with 10K+ bookmarks. T
 
 4. **Document scaling expectations:**
    - Update `docs/performance.md` with expected query times for 1K, 10K, and 50K libraries
-   - Add a note about sqlite-vec (TASK-130) as the expected solution for vector search scaling
-   - Document the current embedding scan limitation (linear O(n) semantic search)
+   - Use sqlite-vec (TASK-130) as the baseline vector-search path when extension
+     loading is available
+   - Document any remaining fallback-mode embedding scan limitation for hosts
+     without sqlite-vec support
 
 ## Acceptance Criteria
 
@@ -43,11 +45,14 @@ Profile and optimize the hybrid search path for libraries with 10K+ bookmarks. T
 
 ## Dependencies
 
-- TASK-130 (sqlite-vec vector index) — should complete before or alongside this task, since vec0 will significantly change the vector search performance characteristics.
+- TASK-130 (sqlite-vec vector index) — complete; use its vector benchmark as
+  the baseline for semantic and hybrid vector-nearest-neighbor behavior.
 - Existing `npm run test:performance` infrastructure — complete.
 
 ## Notes
 
 - Do not over-optimize preemptively. Profile first, then optimize only the bottlenecks that show up at 10K.
 - FTS5 with a 10K-row table of article-sized content is usually fast. The likely bottlenecks are: filter joins, aggregate counts, and deep-offset pagination.
-- If this task runs before TASK-130, note that semantic search will be the slow path at 10K and the sqlite-vec integration is the planned fix.
+- TASK-130 keeps BLOB scanning as an optional-runtime fallback; TASK-132 should
+  profile both the sqlite-vec path and fallback mode when documenting 10K search
+  expectations.

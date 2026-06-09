@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sqlite-vec Vector Index Runtime - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --amber: #a16207;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row .status-done {
+  border-color: rgba(21, 128, 61, .25);
+  background: rgba(21, 128, 61, .08);
+  color: var(--green);
+}
+.hero-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../../index.html">Task Reports</a>
+    &nbsp;/&nbsp;
+    <a href="../../index.html">2026</a>
+    &nbsp;/&nbsp;
+    <a href="../index.html">June 2026</a>
+  </nav>
+
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>sqlite-vec Vector Index Runtime</h1>
+      <div class="meta-row">
+        <span>2026-06-08</span>
+        <span>TASK-130</span>
+        <span class="status-done">Done</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-sqlite-vec-runtime-flow.svg" alt="Diagram showing embedding writes mirrored from durable BLOB storage into optional per-dimension sqlite-vec tables with fallback search">
+      <figcaption>After: semantic search, hybrid search, related bookmarks, and the organization agent can use an optional sqlite-vec mirror while preserving the durable BLOB fallback.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Embeddings were persisted as SQLite BLOB values and semantic behavior scanned those rows in process. The organization agent duplicate pass also used the same scan path and capped candidates at 2,000 embeddings.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Vector-heavy flows scaled linearly with the embedding table and could not benefit from sqlite-vec even though the dependency was already present. The integration also needed to stay compatible with Bun builds that cannot load SQLite extensions.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added an optional sqlite-vec loader with custom SQLite library probing and an explicit disable switch.</li>
+        <li>Added per-dimension derived <code>vec0</code> tables named <code>embedding_vec_&lt;dimensions&gt;</code>, rebuilt at database bootstrap and dual-written from embedding upserts.</li>
+        <li>Centralized nearest-neighbor lookup in <code>EmbeddingRepository.findNearest</code> with sqlite-vec first and BLOB scan fallback.</li>
+        <li>Moved semantic search, hybrid search, related bookmarks, and duplicate detection to the shared nearest-neighbor path.</li>
+        <li>Disabled the derived mirror per database handle when vector writes or queries fail, keeping embedding persistence on the durable BLOB path.</li>
+        <li>Added daemon regression tests for dual-write behavior, sqlite-vec ranking, active-only vector results, mirror-write fallback, semantic search mirror usage, and duplicate detection beyond the old 2,000-row cap.</li>
+        <li>Added a deterministic 768-dimensional BLOB-vs-sqlite-vec benchmark matrix to <code>npm run test:performance</code>.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Hosts with extension-capable SQLite can query the derived vector mirror for cosine nearest-neighbor ranking. Hosts without sqlite-vec, or with a broken derived mirror, keep the existing BLOB scan behavior, so local-first storage and normal app startup remain conservative.</p>
+    </section>
+
+    <section>
+      <h2>Benchmark Result</h2>
+      <p>On June 9, 2026 with Homebrew SQLite and sqlite-vec <code>v0.1.7-alpha.2</code>, the 768-dimensional nearest-neighbor benchmark measured sqlite-vec at 2.1x faster for 1K embeddings, 2.1x faster for 5K, and 2.0x faster for 10K.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>bun test daemon/src/test/embedding-repository.test.ts daemon/src/test/search-repository.test.ts daemon/src/test/organization-agent.test.ts</code></li>
+        <li><code>cd daemon &amp;&amp; bun run check</code></li>
+        <li><code>npm run test:daemon</code></li>
+        <li><code>npm run lint</code></li>
+        <li><code>npm run type-check</code></li>
+        <li><code>npm run test:performance</code> including the 100/1K/5K/10K vector benchmark matrix</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p><code>embeddings.vector</code> remains the source of truth. The sqlite-vec tables are intentionally derived so startup can recreate them, tests can use in-memory databases, and hosts without extension loading stay functional. Bun 1.3.6 on macOS does not load sqlite-vec through the bundled SQLite path, so the loader probes Homebrew/custom SQLite locations and falls back cleanly when unavailable. Post-load vector-table errors also disable sqlite-vec for that database handle instead of blocking embedding writes.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/db/sqlite-vec.ts</code></li>
+        <li><code>daemon/src/db/embedding-repository.ts</code></li>
+        <li><code>daemon/src/db/search-repository.ts</code></li>
+        <li><code>daemon/src/db/database.ts</code></li>
+        <li><code>daemon/src/test/helpers/db.ts</code></li>
+        <li><code>daemon/src/ai/organization-agent.ts</code></li>
+        <li><code>daemon/src/test/embedding-repository.test.ts</code></li>
+        <li><code>daemon/src/test/search-repository.test.ts</code></li>
+        <li><code>daemon/src/test/organization-agent.test.ts</code></li>
+        <li><code>daemon/src/test/performance/large-library-fixtures.ts</code></li>
+        <li><code>daemon/src/test/performance/large-library-performance.ts</code></li>
+        <li><code>docs/performance.md</code></li>
+        <li><code>tasks/done/TASK-130-sqlite-vec-vector-index.md</code></li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Follow-Ups</summary>
+      <p>Future diagnostics can expose whether sqlite-vec is active on a specific host, but TASK-130 now keeps sqlite-vec optional and preserves the durable BLOB fallback in normal runtime paths.</p>
+    </details>
+  </article>
+</main>
+</body>
+</html>

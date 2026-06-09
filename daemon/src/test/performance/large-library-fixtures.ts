@@ -1,9 +1,16 @@
 import type { Database } from "bun:sqlite";
+import { packFloat32 } from "../../ai/embeddings.js";
+import { EmbeddingRepository } from "../../db/embedding-repository.js";
 import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
 
 export const LARGE_LIBRARY_SIZE = 2_000;
+export const VECTOR_BENCHMARK_DIMENSIONS = 768;
+export const VECTOR_BENCHMARK_ITERATIONS = 3;
+export const VECTOR_BENCHMARK_LIMIT = 10;
+export const VECTOR_BENCHMARK_MODEL = "performance-vector-model";
+export const VECTOR_BENCHMARK_SIZES = [100, 1_000, 5_000, 10_000] as const;
 
 export const LARGE_LIBRARY_BUDGETS_MS = {
   listPage: 500,
@@ -24,6 +31,10 @@ export interface PerformanceResult {
 export interface LargeLibraryFixture {
   categoryIds: string[];
   tagNames: string[];
+}
+
+export interface VectorBenchmarkFixture {
+  queryVector: number[];
 }
 
 export function createPerformanceApp(): {
@@ -124,6 +135,63 @@ export function seedLargeLibrary(db: Database, size: number): LargeLibraryFixtur
   return { categoryIds, tagNames };
 }
 
+export function makeDeterministicVector(index: number, dimensions: number): number[] {
+  const values = Array.from({ length: dimensions }, (_, dimension) => {
+    const first = Math.sin((index + 1) * (dimension + 3) * 0.017);
+    const second = Math.cos(((index % 31) + 1) * (dimension + 5) * 0.011);
+    return first + second;
+  });
+  const norm = Math.sqrt(values.reduce((sum, value) => sum + value * value, 0));
+  return norm === 0 ? values : values.map((value) => value / norm);
+}
+
+export function seedVectorBenchmarkLibrary(
+  db: Database,
+  size: number,
+  dimensions = VECTOR_BENCHMARK_DIMENSIONS,
+  model = VECTOR_BENCHMARK_MODEL
+): VectorBenchmarkFixture {
+  const insertBookmark = db.query<
+    { id: string },
+    [string, string, string, string]
+  >(
+    `INSERT INTO bookmarks (url, domain, title, description)
+     VALUES (?, ?, ?, ?)
+     RETURNING id`
+  );
+  const insertEmbedding = db.query<
+    unknown,
+    [string, string, number, Uint8Array]
+  >(
+    `INSERT INTO embeddings (bookmark_id, model, dimensions, vector)
+     VALUES (?, ?, ?, ?)`
+  );
+  const queryVector = makeDeterministicVector(0, dimensions);
+
+  db.transaction(() => {
+    for (let index = 0; index < size; index += 1) {
+      const domain = `vector-${index % 40}.example.com`;
+      const bookmark = insertBookmark.get(
+        `https://${domain}/nearest/${index}`,
+        domain,
+        `Vector benchmark bookmark ${index}`,
+        `Deterministic nearest-neighbor benchmark row ${index}`
+      )!;
+      insertEmbedding.run(
+        bookmark.id,
+        model,
+        dimensions,
+        packFloat32(makeDeterministicVector(index, dimensions))
+      );
+    }
+  })();
+
+  new EmbeddingRepository(db).rebuildVectorIndex();
+  db.exec("ANALYZE");
+
+  return { queryVector };
+}
+
 export function createLargeImportHtml(rowCount: number): string {
   const groupCount = 6;
   const rowsPerGroup = Math.ceil(rowCount / groupCount);
@@ -161,6 +229,12 @@ ${groups.join("\n")}
 export async function timeAsync(name: string, fn: () => Promise<void>): Promise<PerformanceResult> {
   const started = performance.now();
   await fn();
+  return { name, elapsedMs: performance.now() - started };
+}
+
+export function timeSync(name: string, fn: () => void): PerformanceResult {
+  const started = performance.now();
+  fn();
   return { name, elapsedMs: performance.now() - started };
 }
 

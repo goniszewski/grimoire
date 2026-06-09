@@ -4,6 +4,7 @@ import { SearchRepository } from "../db/search-repository.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { EmbeddingRepository } from "../db/embedding-repository.js";
 import { makeTestDb } from "./helpers/db.js";
+import { packFloat32 } from "../ai/embeddings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -225,6 +226,36 @@ describe("SearchRepository — keywordSearch", () => {
     });
 
     expect(result.items.map((bookmark) => bookmark.id)).toEqual([recent.id, older.id, never.id]);
+  });
+
+  it("semantic search ranks from the sqlite-vec mirror when it is available", async () => {
+    const indexedClose = bookmarkRepo.create("https://indexed.example.com/close", "Indexed close");
+    const indexedFar = bookmarkRepo.create("https://indexed.example.com/far", "Indexed far");
+    const embeddingRepo = new EmbeddingRepository(db);
+    const vectorIndexAvailable = embeddingRepo.isVectorIndexAvailable(2);
+    if (!vectorIndexAvailable) {
+      expect(vectorIndexAvailable).toBe(false);
+      return;
+    }
+
+    embeddingRepo.upsert(indexedClose.id, "test-model", [1, 0]);
+    embeddingRepo.upsert(indexedFar.id, "test-model", [0, 1]);
+
+    db.query("UPDATE embeddings SET vector = ? WHERE bookmark_id = ?")
+      .run(packFloat32([0, 1]), indexedClose.id);
+    db.query("UPDATE embeddings SET vector = ? WHERE bookmark_id = ?")
+      .run(packFloat32([1, 0]), indexedFar.id);
+    globalThis.fetch = mockEmbeddingFetch([1, 0]);
+
+    const result = await searchRepo.search({
+      q: "Indexed",
+      mode: "semantic",
+      limit: 2,
+      offset: 0,
+      embeddingConfig: { baseUrl: "https://embed.example.test", apiKey: "test", model: "test-model" },
+    });
+
+    expect(result.items.map((bookmark) => bookmark.id)).toEqual([indexedClose.id, indexedFar.id]);
   });
 
   it("keeps hybrid keyword candidates relevance-ranked before applying final sort", async () => {

@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { BookmarkRow } from "./types.js";
 import { BookmarkWithTags } from "./bookmark-repository.js";
 import { EmbeddingRepository } from "./embedding-repository.js";
-import { getEmbedding, cosineSimilarity, EmbeddingConfig } from "../ai/embeddings.js";
+import { getEmbedding, EmbeddingConfig } from "../ai/embeddings.js";
 import {
   appendBookmarkParityFilterConditions,
   buildBookmarkOrderBy,
@@ -226,16 +226,18 @@ export class SearchRepository {
     const { q, limit, offset, embeddingConfig } = opts;
     const queryVec = await getEmbedding(embeddingConfig!, q!.trim()); // plain text; sanitization only needed for FTS5 MATCH
 
-    const allEmbeddings = this.embRepo.getAllForModel(embeddingConfig!.model);
-    if (allEmbeddings.length === 0) return { items: [], total: 0, limit, offset };
+    const candidateCount = this.embRepo.countForModel(embeddingConfig!.model);
+    if (candidateCount === 0) return { items: [], total: 0, limit, offset };
 
     // Build filter set (archived bookmarks excluded)
     const allowedIds = this.getFilteredBookmarkIds(opts);
-
-    const scored = allEmbeddings
-      .filter((e) => allowedIds.has(e.bookmarkId))
-      .map((e) => ({ id: e.bookmarkId, score: cosineSimilarity(queryVec, e.vector) }))
-      .sort((a, b) => b.score - a.score);
+    const scored = this.embRepo
+      .findNearest(embeddingConfig!.model, queryVec, {
+        limit: candidateCount,
+        allowedIds,
+        excludeBookmarkId: null,
+      })
+      .map((e) => ({ id: e.bookmarkId, score: e.score }));
 
     const total = scored.length;
     const scoreMap = new Map(scored.map((s) => [s.id, s.score]));
@@ -276,14 +278,21 @@ export class SearchRepository {
       getEmbedding(embeddingConfig!, q!.trim()),
     ]);
 
-    const allEmbeddings = this.embRepo.getAllForModel(embeddingConfig!.model);
-    const embMap = new Map(allEmbeddings.map((e) => [e.bookmarkId, e.vector]));
-
     const allowedIds = this.getFilteredBookmarkIds(opts);
+    const candidateCount = this.embRepo.countForModel(embeddingConfig!.model);
+    const vectorScores = new Map(
+      this.embRepo
+        .findNearest(embeddingConfig!.model, queryVec, {
+          limit: candidateCount,
+          allowedIds,
+          excludeBookmarkId: null,
+        })
+        .map((embedding) => [embedding.bookmarkId, embedding.score])
+    );
     const allBookmarkIds = new Set([
       ...ftsResult.items.map((i) => i.id),
       // Include embedding-only results that passed the filter
-      ...allEmbeddings.filter((e) => allowedIds.has(e.bookmarkId)).map((e) => e.bookmarkId),
+      ...vectorScores.keys(),
     ]);
 
     // BM25 scores from FTS (normalise: BM25 is negative, lower = better)
@@ -305,8 +314,7 @@ export class SearchRepository {
     const scored: Array<{ id: string; hybridScore: number }> = [];
     for (const id of allBookmarkIds) {
       const keywordScore = ftsScores.get(id) ?? 0;
-      const vec = embMap.get(id);
-      const vectorScore = vec ? Math.max(0, cosineSimilarity(queryVec, vec)) : 0;
+      const vectorScore = Math.max(0, vectorScores.get(id) ?? 0);
       const createdAt = bookmarkDates.get(id) ?? now;
       const ageMs = now - createdAt;
       const ageDays = ageMs / 86_400_000;
@@ -357,12 +365,9 @@ export class SearchRepository {
     const source = this.embRepo.getByBookmarkId(bookmarkId);
     if (!source || source.model !== model) return [];
 
-    const all = this.embRepo.getAllForModel(model);
-    const scored = all
-      .filter((e) => e.bookmarkId !== bookmarkId)
-      .map((e) => ({ id: e.bookmarkId, score: cosineSimilarity(source.vector, e.vector) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    const scored = this.embRepo
+      .findNearest(model, source.vector, { limit, excludeBookmarkId: bookmarkId })
+      .map((embedding) => ({ id: embedding.bookmarkId, score: embedding.score }));
 
     const bookmarkRows = this.fetchBookmarksByIds(scored.map((s) => s.id));
     const results: BookmarkWithTags[] = [];

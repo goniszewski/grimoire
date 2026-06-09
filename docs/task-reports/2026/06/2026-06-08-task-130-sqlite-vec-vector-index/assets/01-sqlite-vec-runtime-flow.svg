@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">sqlite-vec runtime flow for Little Imp semantic search</title>
+  <desc id="desc">Diagram showing embedding writes persisted to the BLOB table, mirrored into per-dimension sqlite-vec tables when extension loading is available, and searched with fallback to BLOB scan.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f7fa; }
+      .panel { fill: #ffffff; stroke: #d9dbea; stroke-width: 2; }
+      .primary { fill: #161827; }
+      .muted { fill: #626475; }
+      .purple { fill: #6d28d9; }
+      .blue { fill: #0369a1; }
+      .green { fill: #15803d; }
+      .amber { fill: #a16207; }
+      .line { stroke: #81869b; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 9 8; }
+      text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { font-size: 28px; font-weight: 800; }
+      .body { font-size: 18px; font-weight: 600; }
+      .small { font-size: 15px; font-weight: 700; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#81869b"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="680" rx="0"/>
+  <text x="64" y="76" class="label primary">TASK-130 sqlite-vec vector index</text>
+  <text x="64" y="112" class="body muted">Durable embeddings stay in SQLite BLOB storage. vec0 tables are derived, rebuilt, and optional.</text>
+
+  <rect x="64" y="172" width="250" height="130" rx="12" class="panel"/>
+  <text x="92" y="218" class="label purple">Embedding write</text>
+  <text x="92" y="252" class="body muted">Pipeline stores model,</text>
+  <text x="92" y="278" class="body muted">dimensions, Float32 BLOB</text>
+
+  <rect x="470" y="152" width="260" height="170" rx="12" class="panel"/>
+  <text x="500" y="202" class="label blue">embeddings</text>
+  <text x="500" y="236" class="body muted">Source of truth</text>
+  <text x="500" y="262" class="small muted">bookmark_id primary key</text>
+  <text x="500" y="286" class="small muted">vector BLOB retained</text>
+
+  <rect x="872" y="124" width="264" height="224" rx="12" class="panel"/>
+  <text x="902" y="174" class="label green">sqlite-vec mirror</text>
+  <text x="902" y="208" class="body muted">Per dimension:</text>
+  <text x="902" y="234" class="small muted">embedding_vec_384</text>
+  <text x="902" y="258" class="small muted">embedding_vec_1536</text>
+  <text x="902" y="282" class="small muted">embedding_vec_3072</text>
+  <text x="902" y="318" class="small green">distance_metric=cosine</text>
+
+  <rect x="64" y="440" width="250" height="138" rx="12" class="panel"/>
+  <text x="92" y="486" class="label amber">Search callers</text>
+  <text x="92" y="520" class="body muted">Semantic, hybrid,</text>
+  <text x="92" y="546" class="body muted">related bookmarks, agent</text>
+
+  <rect x="470" y="430" width="260" height="160" rx="12" class="panel"/>
+  <text x="500" y="480" class="label green">KNN query</text>
+  <text x="500" y="514" class="body muted">MATCH query vector</text>
+  <text x="500" y="540" class="small muted">score = 1 - distance</text>
+  <text x="500" y="564" class="small muted">fallback if unavailable</text>
+
+  <rect x="872" y="444" width="264" height="132" rx="12" class="panel"/>
+  <text x="902" y="492" class="label purple">Fallback</text>
+  <text x="902" y="526" class="body muted">Existing BLOB scan</text>
+  <text x="902" y="552" class="small muted">keeps hosts compatible</text>
+
+  <path d="M314 236 C370 236 398 236 470 236" class="line"/>
+  <path d="M730 236 C790 236 812 236 872 236" class="line"/>
+  <path d="M600 322 C600 370 600 390 600 430" class="line"/>
+  <path d="M314 510 C370 510 398 510 470 510" class="line"/>
+  <path d="M730 510 C782 510 814 510 872 510" class="line dash"/>
+  <path d="M1004 348 C1004 392 1004 410 1004 444" class="line"/>
+
+  <text x="348" y="218" class="small muted">upsert</text>
+  <text x="758" y="218" class="small muted">dual-write</text>
+  <text x="620" y="378" class="small muted">startup rebuild</text>
+  <text x="778" y="492" class="small muted">if no vec0</text>
+</svg>
