@@ -437,7 +437,7 @@ a:hover { text-decoration: underline; }
   .random-highlight { left: 12px; right: 12px; max-width: none; }
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -625,6 +625,10 @@ function renderBookmarks() {
   container.querySelectorAll('.bookmark-card, .bookmark-row').forEach(el => {
     el.addEventListener('click', (e) => { e.stopPropagation(); const id = parseInt(el.dataset.id); const b = state.bookmarks.find(bk => bk.id === id); if (b) openQuickPeek(b); });
   });
+  // Handle image load errors — hide broken thumbnails via JS (no inline onerror)
+  container.querySelectorAll('.bookmark-card .card-thumb').forEach(img => {
+    img.addEventListener('error', function hideBroken() { this.style.display = 'none'; });
+  });
 }
 
 function renderCard(b) {
@@ -634,7 +638,7 @@ function renderCard(b) {
   const thumbSrc = b.mainImageUrl || b.mainImage?.relativePath && `/files/${b.mainImageId}`;
   const domain = b.domain || (b.url ? new URL(b.url).hostname : '');
   const tags = b.tags || [];
-  return `<div class="bookmark-card" data-id="${b.id}"><div class="color-bar" style="background:${catColor}"></div>${thumbSrc ? `<img class="card-thumb" src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="card-thumb-placeholder">${escapeHtml(domain)}</div>`}<div class="card-body"><div class="card-meta" style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span class="card-category" style="border-color:${catColor};color:${catColor}">${escapeHtml(catName)}</span><span style="font-size:0.7rem;color:var(--text-tertiary)">${escapeHtml(domain)}</span></div><div class="card-title">${escapeHtml(b.title)}</div>${b.description ? `<div class="card-desc">${escapeHtml(b.description)}</div>` : ''}${tags.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">${tags.slice(0,4).map(t => `<span class="tag">#${escapeHtml(t.name || t)}</span>`).join('')}${tags.length > 4 ? `<span class="tag">+${tags.length-4}</span>` : ''}</div>` : ''}</div></div>`;
+  return `<div class="bookmark-card" data-id="${b.id}"><div class="color-bar" style="background:${catColor}"></div>${thumbSrc ? `<img class="card-thumb" src="${escapeHtml(thumbSrc)}" alt="" loading="lazy">` : `<div class="card-thumb-placeholder">${escapeHtml(domain)}</div>`}<div class="card-body"><div class="card-meta" style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span class="card-category" style="border-color:${catColor};color:${catColor}">${escapeHtml(catName)}</span><span style="font-size:0.7rem;color:var(--text-tertiary)">${escapeHtml(domain)}</span></div><div class="card-title">${escapeHtml(b.title)}</div>${b.description ? `<div class="card-desc">${escapeHtml(b.description)}</div>` : ''}${tags.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">${tags.slice(0,4).map(t => `<span class="tag">#${escapeHtml(t.name || t)}</span>`).join('')}${tags.length > 4 ? `<span class="tag">+${tags.length-4}</span>` : ''}</div>` : ''}</div></div>`;
 }
 
 function renderRow(b) {
@@ -674,9 +678,9 @@ function loadFromCache() {
     const bmRaw = localStorage.getItem(CACHE_KEY_BM), catRaw = localStorage.getItem(CACHE_KEY_CAT);
     if (bmRaw && catRaw) { const bmCache = JSON.parse(bmRaw), catCache = JSON.parse(catRaw), now = Date.now();
       if (now - bmCache.ts < CACHE_TTL && now - catCache.ts < CACHE_TTL) { state.bookmarks = bmCache.data; state.categories = catCache.data; state.total = bmCache.data.length; state.cacheAge = Math.floor((now - bmCache.ts) / 1000); updateCacheIndicator(); return true; } }
-  } catch(e) {} return false;
+  } catch(e) { /* cache parse failure — non-critical, will refetch */ } return false;
 }
-function saveToCache(bm, cat) { try { localStorage.setItem(CACHE_KEY_BM, JSON.stringify({ts:Date.now(),data:bm})); localStorage.setItem(CACHE_KEY_CAT, JSON.stringify({ts:Date.now(),data:cat})); } catch(e) { try { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); } catch(_) {} } }
+function saveToCache(bm, cat) { try { localStorage.setItem(CACHE_KEY_BM, JSON.stringify({ts:Date.now(),data:bm})); localStorage.setItem(CACHE_KEY_CAT, JSON.stringify({ts:Date.now(),data:cat})); } catch(e) { /* localStorage full — clear old entries */ try { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); } catch(_) { /* ignore secondary failure */ } } }
 function clearCache() { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); }
 function updateCacheIndicator() { const el = document.getElementById('cache-indicator'); if (el) el.textContent = state.cacheAge > 0 ? (state.cacheAge < 60 ? state.cacheAge + 's' : Math.floor(state.cacheAge/60) + 'm') : ''; }
 
@@ -701,7 +705,8 @@ function openQuickPeek(b) {
   const thumb = document.getElementById('peek-thumb'), place = document.getElementById('peek-thumb-placeholder');
   if (thumbSrc) { thumb.src = thumbSrc; thumb.style.display = 'block'; place.style.display = 'none'; thumb.onerror = () => { thumb.style.display = 'none'; place.style.display = 'flex'; }; }
   else { thumb.style.display = 'none'; place.style.display = 'flex'; place.textContent = domain; }
-  document.getElementById('peek-open-btn').onclick = () => { window.open(b.url, '_blank'); };
+  const openBtn = document.getElementById('peek-open-btn');
+  openBtn.addEventListener('click', function openPeekLink() { window.open(b.url, '_blank'); });
   overlay.classList.add('open');
   document.addEventListener('keydown', _peekEscHandler = (e) => { if (e.key === 'Escape') closeQuickPeek(); });
 }
@@ -714,8 +719,9 @@ function showRandomBookmark() {
   const b = allBms[Math.floor(Math.random() * allBms.length)];
   const el = document.getElementById('random-highlight');
   const cat = state.categories.find(c => c.id === b.categoryId);
-  document.getElementById('rh-title').textContent = b.title || 'Untitled';
-  document.getElementById('rh-title').onclick = () => { window.open(b.url, '_blank'); };
+  const titleEl = document.getElementById('rh-title');
+  titleEl.textContent = b.title || 'Untitled';
+  titleEl.addEventListener('click', function openRandomLink() { window.open(b.url, '_blank'); });
   document.getElementById('rh-meta').textContent = `${cat?.name || 'Uncategorized'} · ${b.domain || (b.url ? new URL(b.url).hostname : '')}`;
   el.classList.add('visible');
   if (window._rhTimeout) clearTimeout(window._rhTimeout);
