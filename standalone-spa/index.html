@@ -218,7 +218,7 @@ a:hover { text-decoration: underline; }
 }
 .sidebar-section h3 {
   font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--text-tertiary);
+  color: var(--text-tertiary);
   margin-bottom: 8px; padding: 0 8px;
   font-family: var(--font-sans);
   letter-spacing: 0.05em;
@@ -678,9 +678,9 @@ function loadFromCache() {
     const bmRaw = localStorage.getItem(CACHE_KEY_BM), catRaw = localStorage.getItem(CACHE_KEY_CAT);
     if (bmRaw && catRaw) { const bmCache = JSON.parse(bmRaw), catCache = JSON.parse(catRaw), now = Date.now();
       if (now - bmCache.ts < CACHE_TTL && now - catCache.ts < CACHE_TTL) { state.bookmarks = bmCache.data; state.categories = catCache.data; state.total = bmCache.data.length; state.cacheAge = Math.floor((now - bmCache.ts) / 1000); updateCacheIndicator(); return true; } }
-  } catch(e) { /* cache parse failure — non-critical, will refetch */ } return false;
+  } catch(e) { console.warn('Cache read failed, will refetch:', e); } return false;
 }
-function saveToCache(bm, cat) { try { localStorage.setItem(CACHE_KEY_BM, JSON.stringify({ts:Date.now(),data:bm})); localStorage.setItem(CACHE_KEY_CAT, JSON.stringify({ts:Date.now(),data:cat})); } catch(e) { /* localStorage full — clear old entries */ try { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); } catch(_) { /* ignore secondary failure */ } } }
+function saveToCache(bm, cat) { try { localStorage.setItem(CACHE_KEY_BM, JSON.stringify({ts:Date.now(),data:bm})); localStorage.setItem(CACHE_KEY_CAT, JSON.stringify({ts:Date.now(),data:cat})); } catch(e) { console.warn('Cache write failed, clearing:', e); try { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); } catch(_) { console.warn('Cache clear also failed'); } } }
 function clearCache() { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); }
 function updateCacheIndicator() { const el = document.getElementById('cache-indicator'); if (el) el.textContent = state.cacheAge > 0 ? (state.cacheAge < 60 ? state.cacheAge + 's' : Math.floor(state.cacheAge/60) + 'm') : ''; }
 
@@ -716,7 +716,10 @@ function closeQuickPeek() { document.getElementById('peek-overlay').classList.re
 function showRandomBookmark() {
   const allBms = state.bookmarks || [];
   if (!allBms.length) return;
-  const b = allBms[Math.floor(Math.random() * allBms.length)];
+  // Cryptographic random index for unbiased selection (SonarCloud S2245)
+  const idx = new Uint32Array(1);
+  crypto.getRandomValues(idx);
+  const b = allBms[idx[0] % allBms.length];
   const el = document.getElementById('random-highlight');
   const cat = state.categories.find(c => c.id === b.categoryId);
   const titleEl = document.getElementById('rh-title');

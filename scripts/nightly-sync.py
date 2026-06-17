@@ -33,7 +33,9 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from grimoire_api import GrimoireAPI
 
 # ── Grimoire connection ──
-GRIMOIRE_URL = "http://grimoire:5173"
+# Use https:// for production; http:// for internal Docker networking
+# Override via GRIMOIRE_URL env var if needed
+GRIMOIRE_URL = os.environ.get("GRIMOIRE_URL", "https://grimoire.internal:5173")
 GRIMOIRE_USER = "edward"
 
 # ── Raindrop ──
