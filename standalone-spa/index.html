@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Grimoire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════
+   G R I M O I R E   —   Standalone SPA Frontend
+   ══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Light theme — clean neutral */
+  --white: #ffffff;
+  --gray-50: #f8f9fb;
+  --gray-100: #f1f3f6;
+  --gray-200: #e2e5ec;
+  --gray-300: #c8cdd6;
+  --gray-400: #8e96a4;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-200: #c7d2fe;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+  --amber-500: #f59e0b;
+
+  --bg: var(--gray-50);
+  --surface: var(--white);
+  --surface-raised: var(--gray-50);
+  --border: var(--gray-200);
+  --border-light: var(--gray-300);
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-400);
+  --accent: var(--indigo-600);
+  --accent-soft: var(--indigo-50);
+  --accent-border: var(--indigo-500);
+  --tag-bg: var(--indigo-50);
+  --tag-text: var(--indigo-700);
+  --hover-bg: var(--gray-100);
+  --overlay: rgba(0, 0, 0, 0.4);
+  --danger: var(--rose-600);
+  --success: var(--emerald-600);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --header-h: 56px;
+  --search-h: 52px;
+}
+
+[data-theme="dark"] {
+  --white: #1a1b23;
+  --gray-50: #1e1f2b;
+  --gray-100: #262736;
+  --gray-200: #2e3040;
+  --gray-300: #3e4053;
+  --gray-400: #6b6f84;
+  --gray-500: #8b8fa3;
+  --gray-600: #a1a6b8;
+  --gray-700: #c9cdd9;
+  --gray-800: #e2e4ed;
+  --gray-900: #f1f3f9;
+  --indigo-50: #1e1b4b;
+  --indigo-100: #2e2a6e;
+  --indigo-200: #4338ca;
+  --indigo-500: #818cf8;
+  --indigo-600: #6366f1;
+  --indigo-700: #818cf8;
+  --rose-500: #fb7185;
+  --rose-600: #f43f5e;
+  --emerald-500: #34d399;
+  --emerald-600: #10b981;
+  --amber-500: #fbbf24;
+
+  --bg: var(--gray-50);
+  --surface: var(--white);
+  --surface-raised: var(--gray-100);
+  --border: var(--gray-200);
+  --border-light: var(--gray-300);
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-400);
+  --accent: var(--indigo-500);
+  --accent-soft: var(--indigo-50);
+  --accent-border: var(--indigo-200);
+  --tag-bg: var(--indigo-50);
+  --tag-text: var(--indigo-500);
+  --hover-bg: var(--gray-200);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+html { font-size: 15px; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  padding-top: calc(var(--header-h) + var(--search-h));
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* === TWO-ROW FIXED HEADER === */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.header-top {
+  height: var(--header-h);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-top h1 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+.header-top h1 span { color: var(--text-tertiary); font-weight: 400; }
+.header-actions { display: flex; align-items: center; gap: 6px; }
+
+.header-search-row {
+  height: var(--search-h);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.search-box { flex: 1; min-width: 0; position: relative; }
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-box input:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-box .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-tertiary); font-size: 0.85rem; pointer-events: none;
+}
+
+.header-btn {
+  height: 34px; min-width: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; transition: all 0.12s ease; gap: 5px;
+  padding: 0 10px; white-space: nowrap; font-family: var(--font-sans); font-weight: 500;
+}
+.header-btn:hover { background: var(--hover-bg); border-color: var(--accent-border); }
+.header-btn:active { transform: scale(0.97); }
+.header-btn .label { display: none; }
+@media (min-width: 769px) { .header-btn .label { display: inline; } }
+
+.categories-btn { color: var(--accent); }
+.categories-btn .count { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.7; }
+
+.view-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; flex-shrink: 0; }
+.view-toggle button { padding: 5px 10px; background: var(--surface); border: none; color: var(--text-tertiary); cursor: pointer; font-size: 0.85rem; transition: all 0.12s; }
+.view-toggle button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.view-toggle button:not(:last-child) { border-right: 1px solid var(--border); }
+
+/* === LAYOUT === */
+.main-layout { display: flex; max-width: 1400px; margin: 0 auto; min-height: calc(100vh - var(--header-h) - var(--search-h)); }
+
+/* === SIDEBAR === */
+.sidebar {
+  width: 240px; flex-shrink: 0; padding: 20px 16px;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 20px;
+  position: sticky; top: calc(var(--header-h) + var(--search-h));
+  align-self: flex-start;
+  max-height: calc(100vh - var(--header-h) - var(--search-h));
+  overflow-y: auto;
+}
+.sidebar-section h3 {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-tertiary);
+  margin-bottom: 8px; padding: 0 8px;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+}
+.category-item {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px;
+  cursor: pointer; font-size: 0.82rem; color: var(--text-secondary);
+  transition: all 0.12s ease; border-radius: var(--radius-sm);
+}
+.category-item:hover { background: var(--hover-bg); }
+.category-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.category-item .color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.category-item .count { margin-left: auto; font-size: 0.7rem; color: var(--text-tertiary); font-family: var(--font-mono); }
+
+.collection-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  cursor: pointer; font-size: 0.8rem; color: var(--text-secondary);
+  transition: all 0.12s; border-radius: var(--radius-sm);
+}
+.collection-item:hover { background: var(--hover-bg); }
+.collection-item .delete-btn { opacity: 0; font-size: 0.7rem; cursor: pointer; color: var(--danger); background: none; border: none; padding: 2px; transition: opacity 0.12s; }
+.collection-item:hover .delete-btn { opacity: 1; }
+.save-collection-btn { padding: 6px 8px; font-size: 0.78rem; color: var(--accent); cursor: pointer; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); font-family: var(--font-sans); transition: all 0.12s; text-align: left; margin-top: 4px; width: 100%; }
+.save-collection-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* === MAIN CONTENT === */
+.content { flex: 1; padding: 16px 24px 80px; min-width: 0; }
+
+.stats-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--text-secondary); flex-wrap: wrap;
+}
+.stats-bar strong { color: var(--text-primary); font-weight: 600; }
+.stats-bar .divider { color: var(--border-light); }
+
+/* === GRAPHIFY SECTION === */
+.graphify-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.graphify-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.graphify-header:hover { background: var(--hover-bg); }
+.graphify-header-left { display: flex; align-items: center; gap: 10px; }
+.graphify-header-left h3 { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+.graphify-header .graphify-indicator { font-size: 0.68rem; color: var(--text-tertiary); font-family: var(--font-mono); }
+.graphify-toggle-icon { font-size: 0.7rem; color: var(--text-tertiary); transition: transform 0.2s; }
+.graphify-section.collapsed .graphify-toggle-icon { transform: rotate(-90deg); }
+.graphify-section.collapsed .graphify-body { display: none; }
+.graphify-body { padding: 14px 16px 16px; }
+
+.graphify-metrics {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;
+}
+@media (max-width: 680px) { .graphify-metrics { grid-template-columns: repeat(2, 1fr); } }
+.metric-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+  background: var(--surface-raised);
+}
+.metric-card .metric-value { font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); line-height: 1.2; }
+.metric-card .metric-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 4px; }
+.metric-card.metric-highlight { border-color: var(--accent-border); background: var(--accent-soft); }
+.metric-card.metric-highlight .metric-value { color: var(--accent); }
+
+.graphify-charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+@media (max-width: 900px) { .graphify-charts { grid-template-columns: 1fr; } }
+.chart-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--surface-raised);
+}
+.chart-card h4 { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 8px; }
+.chart-card canvas { width: 100% !important; height: 180px !important; }
+.chart-card .chart-hint { font-size: 0.6rem; color: var(--text-tertiary); text-align: center; font-family: var(--font-mono); margin-top: 6px; opacity: 0.7; }
+
+.graphify-insights {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap; font-size: 0.78rem; color: var(--text-secondary);
+  background: var(--surface);
+}
+.graphify-insights .insights-icon { font-size: 0.9rem; flex-shrink: 0; }
+.insight-item {
+  display: flex; align-items: center; gap: 6px; padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  cursor: default;
+}
+.insight-item .insight-label { color: var(--text-tertiary); font-size: 0.68rem; }
+.insight-item .insight-value { font-weight: 600; color: var(--text-primary); font-size: 0.78rem; }
+.insight-item.clickable { cursor: pointer; }
+.insight-item.clickable:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.chart-filter-bar {
+  display: none; align-items: center; gap: 8px;
+  padding: 8px 14px; background: var(--accent-soft);
+  border: 1px solid var(--accent-border); border-radius: var(--radius-sm);
+  margin-bottom: 10px; font-size: 0.78rem;
+}
+.chart-filter-bar.visible { display: flex; }
+.chart-filter-bar .filter-value { font-weight: 600; color: var(--accent); }
+.chart-filter-clear {
+  margin-left: auto; padding: 4px 10px;
+  border: 1px solid var(--accent-border); border-radius: var(--radius-sm);
+  background: var(--surface); cursor: pointer;
+  font-family: var(--font-sans); font-size: 0.72rem; font-weight: 500;
+  color: var(--text-secondary); transition: all 0.12s;
+}
+.chart-filter-clear:hover { background: var(--accent-soft); }
+
+/* === BOOKMARKS === */
+.bookmarks-grid { display: grid; gap: 12px; }
+.bookmarks-grid.grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.bookmarks-grid.list { grid-template-columns: 1fr; }
+
+.bookmark-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+  transition: all 0.15s ease; cursor: pointer;
+}
+.bookmark-card:hover { border-color: var(--accent-border); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.bookmark-card .color-bar { height: 3px; width: 100%; }
+.bookmark-card .card-thumb { width: 100%; height: 160px; object-fit: cover; background: var(--gray-100); display: block; }
+.bookmark-card .card-thumb-placeholder { width: 100%; height: 160px; background: var(--gray-100); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 0.75rem; }
+.bookmark-card .card-body { padding: 12px; }
+.bookmark-card .card-category { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; border: 1px solid; border-radius: 3px; }
+.bookmark-card .card-title { font-size: 0.88rem; font-weight: 600; line-height: 1.4; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bookmark-card .card-desc { font-size: 0.78rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
+
+.tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; background: var(--tag-bg); color: var(--tag-text); font-size: 0.68rem; font-weight: 500; white-space: nowrap; border-radius: 3px; }
+
+/* List view */
+.bookmark-row { display: flex; align-items: flex-start; gap: 14px; padding: 11px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.12s; }
+.bookmark-row:hover { border-color: var(--accent-border); box-shadow: var(--shadow-sm); }
+.bookmark-row .row-title { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* === CATEGORIES DRAWER === */
+.categories-drawer-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 200; opacity: 0; visibility: hidden; transition: opacity 0.2s; }
+.categories-drawer-overlay.open { opacity: 1; visibility: visible; }
+.categories-drawer {
+  position: fixed; left: 0; bottom: 0; right: 0; max-height: 80vh;
+  background: var(--surface); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.15); z-index: 201;
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+.categories-drawer.open { transform: translateY(0); }
+.drawer-handle { width: 40px; height: 4px; background: var(--gray-300); border-radius: 2px; margin: 10px auto; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px; border-bottom: 1px solid var(--border); }
+.drawer-header h3 { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+.drawer-close { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* === QUICK PEEK MODAL === */
+.quick-peek-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 300; opacity: 0; visibility: hidden; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.quick-peek-overlay.open { opacity: 1; visibility: visible; }
+.quick-peek { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.2s ease; }
+.quick-peek-overlay.open .quick-peek { transform: scale(1); }
+.peek-close { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: var(--text-secondary); }
+.peek-body { padding: 20px; }
+.peek-title { font-size: 1.1rem; font-weight: 700; line-height: 1.4; margin-bottom: 10px; }
+.peek-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px; }
+.peek-open-btn { width: 100%; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.12s; }
+.peek-open-btn:hover { background: var(--accent-border); }
+
+/* === RANDOM === */
+.random-highlight { position: fixed; top: calc(var(--header-h) + var(--search-h) + 10px); right: 20px; z-index: 90; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); padding: 14px 18px; max-width: 360px; animation: slideInRight 0.3s ease; display: none; }
+.random-highlight.visible { display: block; }
+@keyframes slideInRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* === MOBILE BOTTOM BAR === */
+.mobile-bottom-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 99; height: 52px; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -2px 8px rgba(0,0,0,0.06); align-items: center; justify-content: space-around; padding: 0 8px; }
+.mobile-bottom-bar .mb-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: var(--text-tertiary); font-size: 1.1rem; cursor: pointer; padding: 6px 12px; font-family: var(--font-sans); }
+.mobile-bottom-bar .mb-btn span { font-size: 0.55rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+.mobile-bottom-bar .mb-btn.active { color: var(--accent); }
+
+/* === PAGINATION === */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 24px 0; flex-wrap: wrap; }
+.pagination button { min-width: 34px; height: 34px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; transition: all 0.12s; }
+.pagination button:hover { border-color: var(--accent); color: var(--accent); }
+.pagination button.active { background: var(--accent); color: white; border-color: var(--accent); }
+.pagination .per-page { margin-left: 16px; display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-tertiary); }
+
+/* === LOGIN === */
+.login-page { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.login-card { width: 360px; padding: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.login-card h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.login-card input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-primary); font-family: var(--font-sans); font-size: 0.9rem; outline: none; margin-bottom: 16px; transition: border-color 0.15s; }
+.login-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.btn-primary { width: 100%; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.12s; }
+.btn-primary:hover { background: var(--accent-border); }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  body { padding-top: calc(var(--header-h) + var(--search-h) + 4px); }
+  .sidebar { display: none; }
+  .content { padding: 12px 12px 70px; }
+  .bookmarks-grid.grid { grid-template-columns: 1fr; }
+  .mobile-bottom-bar { display: flex; }
+  .random-highlight { left: 12px; right: 12px; max-width: none; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+// ══════════════════════════════════════════════════════
+// G R I M O I R E   S P A   —  Standalone Frontend
+// ══════════════════════════════════════════════════════
+
+const API = { login: '/api/auth', bookmarks: '/api/bookmarks', categories: '/api/categories', tags: '/api/tags', health: '/api/health' };
+const LIMIT_OPTIONS = [20, 50, 100];
+const CAT_COLORS = ["#6366f1","#059669","#7c3aed","#d946ef","#dc2626","#f59e0b","#ec4899","#0891b2","#4f46e5","#0d9488","#a16207","#16a34a","#ca8a04"];
+const COLLECTIONS_KEY = 'grimoire-collections';
+
+let state = {
+  authenticated: false, bookmarks: [], categories: [], total: 0,
+  page: 1, limit: 100, view: 'grid', filter: '', category: null,
+  theme: localStorage.getItem('grimoire-theme') || 'light',
+  loading: true, cacheAge: 0,
+  graphifyOpen: true,
+  chartFilter: null,
+};
+
+// ---- Render ----
+function render() {
+  const app = document.getElementById('app');
+  if (!state.authenticated) { app.innerHTML = renderLogin(); bindLogin(); }
+  else { app.innerHTML = renderApp(); bindApp(); }
+}
+
+// ---- Login ----
+function renderLogin() {
+  return `<div class="login-page"><div class="login-card"><h1>Grimoire</h1><p class="subtitle">Sign in to your bookmark library</p><form id="login-form"><label for="login-user">Username or email</label><input type="text" id="login-user" autocomplete="username" required><label for="login-pass">Password</label><input type="password" id="login-pass" autocomplete="current-password" required><button type="submit" class="btn-primary">Sign in</button><div id="login-error" class="login-error" style="color:var(--danger);font-size:0.8rem;margin-top:12px;display:none"></div></form></div></div>`;
+}
+
+function bindLogin() {
+  const form = document.getElementById('login-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login = document.getElementById('login-user').value;
+    const password = document.getElementById('login-pass').value;
+    const errEl = document.getElementById('login-error');
+    try {
+      const resp = await fetch(API.login, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, password }), credentials: 'include' });
+      const data = await resp.json();
+      if (data.success) { state.authenticated = true; state.loading = true; render(); await loadData(); }
+      else { errEl.textContent = data.error || 'Login failed'; errEl.style.display = 'block'; }
+    } catch (e) { errEl.textContent = 'Connection error'; errEl.style.display = 'block'; }
+  });
+}
+
+// ---- App shell ----
+function renderApp() {
+  const cats = state.categories || [];
+  const collections = getCollections();
+  const cf = state.chartFilter;
+  return `
+    <header class="app-header">
+      <div class="header-top">
+        <h1>Grimoire <span>· bookmarks</span></h1>
+        <div class="header-actions">
+          <span style="font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono)" id="cache-indicator"></span>
+          <button class="header-btn" id="random-btn" title="Random bookmark">🎲</button>
+          <button class="header-btn" id="refresh-btn" title="Refresh">⟳</button>
+          <button class="header-btn" id="theme-btn" title="Toggle theme">${state.theme === 'light' ? '🌙' : '☀️'}</button>
+        </div>
+      </div>
+      <div class="header-search-row">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" placeholder="Search ${state.total} bookmarks..." value="${escapeHtml(state.filter)}" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="header-btn categories-btn" id="categories-btn">
+          <span>📂</span><span class="label">Categories</span><span class="count">${cats.length}</span>
+        </button>
+        <div class="view-toggle" id="view-toggle">
+          <button data-view="grid" class="${state.view === 'grid' ? 'active' : ''}">⊞</button>
+          <button data-view="list" class="${state.view === 'list' ? 'active' : ''}">≡</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <aside class="sidebar">
+        <div class="sidebar-section"><h3>Categories</h3><div class="category-list" id="category-list"><div class="category-item ${!state.category ? 'active' : ''}" data-cat=""><span>📚 All bookmarks</span><span class="count">...</span></div></div></div>
+        <div class="sidebar-section">
+          <h3>Collections</h3>
+          <div class="collections-list" id="collections-list">
+            ${collections.length === 0 ? '<div style="font-size:0.78rem;color:var(--text-tertiary);padding:4px 8px">Save a search as a collection</div>' : ''}
+            ${collections.map(c => `<div class="collection-item" data-collection="${escapeHtml(c.name)}"><span>📌</span><span>${escapeHtml(c.name)}</span><button class="delete-btn" data-collection="${escapeHtml(c.name)}" title="Delete">✕</button></div>`).join('')}
+          </div>
+          <button class="save-collection-btn" id="save-collection-btn">+ Save current search</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <div class="stats-bar">
+          <strong id="result-total">${state.total}</strong> bookmarks
+          ${state.category && cats.find(c => c.id === state.category) ? `<span class="divider">·</span> in <strong>${escapeHtml(cats.find(c => c.id === state.category).name)}</strong>` : ''}
+          ${state.filter ? `<span class="divider">·</span> filter: <strong>${escapeHtml(state.filter)}</strong>` : ''}
+          ${cf ? `<span class="divider">·</span> chart: <strong>${cf.type}: ${escapeHtml(String(cf.value))}</strong>` : ''}
+          ${state.total > 0 ? `<span class="divider">·</span> page <strong>${state.page}</strong> of <strong>${Math.ceil(state.total / state.limit)}</strong>` : ''}
+        </div>
+
+        <div class="graphify-section ${state.graphifyOpen ? '' : 'collapsed'}" id="graphify-section">
+          <div class="graphify-header" id="graphify-header">
+            <div class="graphify-header-left"><span>📊</span><h3>Graphify</h3><span class="graphify-indicator">${state.bookmarks.length} pts</span></div>
+            <span class="graphify-toggle-icon">▼</span>
+          </div>
+          <div class="graphify-body" id="graphify-body">
+            <div class="graphify-metrics">
+              <div class="metric-card"><div class="metric-value" id="metric-total">-</div><div class="metric-label">Total</div></div>
+              <div class="metric-card"><div class="metric-value" id="metric-cats">-</div><div class="metric-label">Categories</div></div>
+              <div class="metric-card metric-highlight"><div class="metric-value" id="metric-topcat">-</div><div class="metric-label">Top Category</div></div>
+              <div class="metric-card"><div class="metric-value" id="metric-domains">-</div><div class="metric-label">Domains</div></div>
+            </div>
+            <div class="chart-filter-bar ${cf ? 'visible' : ''}" id="chart-filter-bar">
+              <span>Chart filter:</span> <span class="filter-value" id="chart-filter-value">${cf ? `${cf.type}: ${cf.value}` : ''}</span>
+              <button class="chart-filter-clear" id="chart-filter-clear">✕ Clear</button>
+            </div>
+            <div class="graphify-charts">
+              <div class="chart-card"><h4>By Category</h4><canvas id="chart-categories"></canvas><div class="chart-hint">click a bar to filter</div></div>
+              <div class="chart-card"><h4>Top Domains</h4><canvas id="chart-domains"></canvas><div class="chart-hint">click a slice to search</div></div>
+              <div class="chart-card"><h4>Timeline</h4><canvas id="chart-timeline"></canvas><div class="chart-hint">click a point to filter date</div></div>
+              <div class="chart-card"><h4>Import Sources</h4><canvas id="chart-sources"></canvas><div class="chart-hint">source breakdown</div></div>
+            </div>
+            <div class="graphify-insights"><span>💡</span><div id="insights-content" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">Loading insights…</div></div>
+          </div>
+        </div>
+
+        <div id="bookmarks-container">${state.loading ? '<div class="loading"><div class="spinner"></div></div>' : ''}</div>
+        <div id="pagination-container"></div>
+      </main>
+    </div>
+
+    <div class="categories-drawer-overlay" id="cat-drawer-overlay"></div>
+    <div class="categories-drawer" id="cat-drawer">
+      <div class="drawer-handle"></div>
+      <div class="drawer-header"><h3>Categories</h3><button class="drawer-close" id="drawer-close">✕</button></div>
+      <div class="drawer-category-list" id="drawer-category-list"></div>
+    </div>
+
+    <div class="quick-peek-overlay" id="peek-overlay">
+      <div class="quick-peek" id="peek-modal">
+        <div class="peek-header" style="position:relative">
+          <div class="peek-thumb-placeholder" id="peek-thumb-placeholder" style="height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);background:var(--gray-100)">No preview</div>
+          <img class="peek-thumb" id="peek-thumb" style="width:100%;height:200px;object-fit:cover;display:none" alt="">
+          <button class="peek-close" id="peek-close">✕</button>
+        </div>
+        <div class="peek-body" id="peek-body">
+          <div class="peek-meta" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap"><span class="peek-category" id="peek-category"></span><span class="peek-domain" id="peek-domain" style="font-size:0.75rem;color:var(--text-tertiary)"></span></div>
+          <div class="peek-title" id="peek-title"></div>
+          <div class="peek-desc" id="peek-desc"></div>
+          <div class="peek-tags" id="peek-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px"></div>
+          <button class="peek-open-btn" id="peek-open-btn">Open link →</button>
+          <div class="peek-date" id="peek-date" style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="random-highlight" id="random-highlight">
+      <button class="rh-dismiss" style="position:absolute;top:6px;right:8px;cursor:pointer;font-size:0.7rem;color:var(--text-tertiary);background:none;border:none">✕</button>
+      <div class="rh-title" id="rh-title" style="font-size:0.85rem;font-weight:600;margin-bottom:4px;cursor:pointer"></div>
+      <div class="rh-meta" id="rh-meta" style="font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)"></div>
+    </div>
+
+    <nav class="mobile-bottom-bar">
+      <button class="mb-btn active" data-view="grid"><span>⊞</span><span>Grid</span></button>
+      <button class="mb-btn" data-view="list"><span>≡</span><span>List</span></button>
+      <button class="mb-btn" id="mb-categories"><span>📂</span><span>Cats</span></button>
+      <button class="mb-btn" id="mb-random"><span>🎲</span><span>Random</span></button>
+    </nav>
+  `;
+}
+
+// ---- Bookmark Cards ----
+function renderBookmarks() {
+  const bm = state.bookmarks;
+  const container = document.getElementById('bookmarks-container');
+  if (!container) return;
+  if (state.loading) { container.innerHTML = '<div class="loading" style="display:flex;align-items:center;justify-content:center;padding:80px 0;color:var(--text-tertiary)"><div class="spinner" style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite"></div></div>'; return; }
+  if (bm.length === 0) { container.innerHTML = '<div class="empty-state" style="text-align:center;padding:80px 20px;color:var(--text-tertiary)"><h3>No bookmarks found</h3><p>Try a different search or clear filters.</p></div>'; return; }
+  container.innerHTML = state.view === 'grid' ? `<div class="bookmarks-grid grid">${bm.map(b => renderCard(b)).join('')}</div>` : `<div class="bookmarks-grid list">${bm.map(b => renderRow(b)).join('')}</div>`;
+  container.querySelectorAll('.bookmark-card, .bookmark-row').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); const id = parseInt(el.dataset.id); const b = state.bookmarks.find(bk => bk.id === id); if (b) openQuickPeek(b); });
+  });
+}
+
+function renderCard(b) {
+  const cat = state.categories.find(c => c.id === b.categoryId);
+  const catColor = cat?.color || '#999';
+  const catName = cat?.name || 'Uncategorized';
+  const thumbSrc = b.mainImageUrl || b.mainImage?.relativePath && `/files/${b.mainImageId}`;
+  const domain = b.domain || (b.url ? new URL(b.url).hostname : '');
+  const tags = b.tags || [];
+  return `<div class="bookmark-card" data-id="${b.id}"><div class="color-bar" style="background:${catColor}"></div>${thumbSrc ? `<img class="card-thumb" src="${escapeHtml(thumbSrc)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="card-thumb-placeholder">${escapeHtml(domain)}</div>`}<div class="card-body"><div class="card-meta" style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span class="card-category" style="border-color:${catColor};color:${catColor}">${escapeHtml(catName)}</span><span style="font-size:0.7rem;color:var(--text-tertiary)">${escapeHtml(domain)}</span></div><div class="card-title">${escapeHtml(b.title)}</div>${b.description ? `<div class="card-desc">${escapeHtml(b.description)}</div>` : ''}${tags.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">${tags.slice(0,4).map(t => `<span class="tag">#${escapeHtml(t.name || t)}</span>`).join('')}${tags.length > 4 ? `<span class="tag">+${tags.length-4}</span>` : ''}</div>` : ''}</div></div>`;
+}
+
+function renderRow(b) {
+  const cat = state.categories.find(c => c.id === b.categoryId);
+  const catName = cat?.name || 'Uncategorized';
+  const domain = b.domain || (b.url ? new URL(b.url).hostname : '');
+  return `<div class="bookmark-row" data-id="${b.id}"><div class="row-content"><div class="row-title">${escapeHtml(b.title)}</div><div class="row-meta" style="display:flex;gap:8px;margin-top:3px;font-size:0.72rem;color:var(--text-tertiary)"><span style="color:${cat?.color||'#999'}">${escapeHtml(catName)}</span><span>·</span><span>${escapeHtml(domain)}</span></div></div></div>`;
+}
+
+// ---- Pagination ----
+function renderPagination() {
+  const container = document.getElementById('pagination-container');
+  if (!container) return;
+  const totalPages = Math.ceil(state.total / state.limit);
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  const current = state.page, range = 3;
+  let pages = [1], start = Math.max(2, current - range), end = Math.min(totalPages - 1, current + range);
+  if (current - range <= 2) end = Math.min(totalPages - 1, 2 + range * 2);
+  if (current + range >= totalPages - 1) start = Math.max(2, totalPages - 1 - range * 2);
+  if (start > 2) pages.push('…');
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < totalPages - 1) pages.push('…');
+  if (totalPages > 1) pages.push(totalPages);
+  container.innerHTML = `<div class="pagination"><button class="page-prev" ${current <= 1 ? 'disabled' : ''}>‹</button>${pages.map(p => p === '…' ? '<span style="color:var(--text-tertiary);padding:0 2px">…</span>' : `<button class="${p === current ? 'active' : ''}" data-page="${p}">${p}</button>`).join('')}<button class="page-next" ${current >= totalPages ? 'disabled' : ''}>›</button><span class="per-page">Show <select id="per-page-select">${LIMIT_OPTIONS.map(o => `<option value="${o}" ${o === state.limit ? 'selected' : ''}>${o}</option>`).join('')}</select> per page</span></div>`;
+  container.querySelectorAll('[data-page]').forEach(btn => { btn.addEventListener('click', () => { state.page = parseInt(btn.dataset.page); state.loading = true; renderBookmarks(); loadData(); }); });
+  const prev = container.querySelector('.page-prev'), next = container.querySelector('.page-next');
+  if (prev) prev.addEventListener('click', () => { if (state.page > 1) { state.page--; state.loading = true; renderBookmarks(); loadData(); } });
+  if (next) next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; state.loading = true; renderBookmarks(); loadData(); } });
+  const perPage = container.querySelector('#per-page-select');
+  if (perPage) perPage.addEventListener('change', () => { state.limit = parseInt(perPage.value); state.page = 1; state.loading = true; renderBookmarks(); loadData(); });
+}
+
+// ---- Cache ----
+const CACHE_KEY_BM = 'grimoire-bookmarks-cache', CACHE_KEY_CAT = 'grimoire-categories-cache', CACHE_TTL = 5 * 60 * 1000;
+function loadFromCache() {
+  try {
+    const bmRaw = localStorage.getItem(CACHE_KEY_BM), catRaw = localStorage.getItem(CACHE_KEY_CAT);
+    if (bmRaw && catRaw) { const bmCache = JSON.parse(bmRaw), catCache = JSON.parse(catRaw), now = Date.now();
+      if (now - bmCache.ts < CACHE_TTL && now - catCache.ts < CACHE_TTL) { state.bookmarks = bmCache.data; state.categories = catCache.data; state.total = bmCache.data.length; state.cacheAge = Math.floor((now - bmCache.ts) / 1000); updateCacheIndicator(); return true; } }
+  } catch(e) {} return false;
+}
+function saveToCache(bm, cat) { try { localStorage.setItem(CACHE_KEY_BM, JSON.stringify({ts:Date.now(),data:bm})); localStorage.setItem(CACHE_KEY_CAT, JSON.stringify({ts:Date.now(),data:cat})); } catch(e) { try { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); } catch(_) {} } }
+function clearCache() { localStorage.removeItem(CACHE_KEY_BM); localStorage.removeItem(CACHE_KEY_CAT); }
+function updateCacheIndicator() { const el = document.getElementById('cache-indicator'); if (el) el.textContent = state.cacheAge > 0 ? (state.cacheAge < 60 ? state.cacheAge + 's' : Math.floor(state.cacheAge/60) + 'm') : ''; }
+
+// ---- Quick Peek ----
+let _peekEscHandler = null;
+function openQuickPeek(b) {
+  const overlay = document.getElementById('peek-overlay');
+  const cat = state.categories.find(c => c.id === b.categoryId);
+  const catColor = cat?.color || '#999', catName = cat?.name || 'Uncategorized';
+  const tags = b.tags || [], domain = b.domain || (b.url ? new URL(b.url).hostname : '');
+  const thumbSrc = b.mainImageUrl || b.mainImage?.relativePath && `/files/${b.mainImageId}`;
+  const contentTags = tags.filter(t => !['x','raindrop','pocket'].includes(t.name || t));
+  document.getElementById('peek-category').textContent = catName;
+  document.getElementById('peek-category').style.borderColor = catColor;
+  document.getElementById('peek-category').style.color = catColor;
+  document.getElementById('peek-category').style.cssText += ';font-size:0.6rem;font-weight:600;text-transform:uppercase;padding:3px 8px;border:1px solid;border-radius:3px';
+  document.getElementById('peek-domain').textContent = domain;
+  document.getElementById('peek-title').textContent = b.title || 'Untitled';
+  document.getElementById('peek-desc').textContent = b.description || 'No description';
+  document.getElementById('peek-date').textContent = b.created ? 'Saved ' + new Date(b.created * 1000).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  document.getElementById('peek-tags').innerHTML = contentTags.map(t => `<span class="tag">#${escapeHtml(t.name || t)}</span>`).join('');
+  const thumb = document.getElementById('peek-thumb'), place = document.getElementById('peek-thumb-placeholder');
+  if (thumbSrc) { thumb.src = thumbSrc; thumb.style.display = 'block'; place.style.display = 'none'; thumb.onerror = () => { thumb.style.display = 'none'; place.style.display = 'flex'; }; }
+  else { thumb.style.display = 'none'; place.style.display = 'flex'; place.textContent = domain; }
+  document.getElementById('peek-open-btn').onclick = () => { window.open(b.url, '_blank'); };
+  overlay.classList.add('open');
+  document.addEventListener('keydown', _peekEscHandler = (e) => { if (e.key === 'Escape') closeQuickPeek(); });
+}
+function closeQuickPeek() { document.getElementById('peek-overlay').classList.remove('open'); if (_peekEscHandler) document.removeEventListener('keydown', _peekEscHandler); }
+
+// ---- Random ----
+function showRandomBookmark() {
+  const allBms = state.bookmarks || [];
+  if (!allBms.length) return;
+  const b = allBms[Math.floor(Math.random() * allBms.length)];
+  const el = document.getElementById('random-highlight');
+  const cat = state.categories.find(c => c.id === b.categoryId);
+  document.getElementById('rh-title').textContent = b.title || 'Untitled';
+  document.getElementById('rh-title').onclick = () => { window.open(b.url, '_blank'); };
+  document.getElementById('rh-meta').textContent = `${cat?.name || 'Uncategorized'} · ${b.domain || (b.url ? new URL(b.url).hostname : '')}`;
+  el.classList.add('visible');
+  if (window._rhTimeout) clearTimeout(window._rhTimeout);
+  window._rhTimeout = setTimeout(() => el.classList.remove('visible'), 8000);
+}
+
+// ---- Collections ----
+function getCollections() { try { return JSON.parse(localStorage.getItem(COLLECTIONS_KEY)) || []; } catch { return []; } }
+function saveCollections(cols) { localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(cols)); }
+function saveCurrentAsCollection() { if (!state.filter && !state.category) return; const name = prompt('Name this collection:', state.filter || state.categories.find(c => c.id === state.category)?.name || 'collection'); if (!name) return; const cols = getCollections(); cols.push({ name, filter: state.filter, category: state.category, ts: Date.now() }); saveCollections(cols); updateCollectionsList(); }
+function applyCollection(col) { state.filter = col.filter || ''; state.category = col.category || null; state.page = 1; state.loading = true; renderBookmarks(); loadData(); const inp = document.getElementById('search-input'); if (inp) inp.value = state.filter; }
+function deleteCollection(name) { let cols = getCollections(); cols = cols.filter(c => c.name !== name); saveCollections(cols); updateCollectionsList(); }
+function updateCollectionsList() {
+  const list = document.getElementById('collections-list');
+  if (!list) return;
+  const cols = getCollections();
+  list.innerHTML = cols.length === 0 ? '<div style="font-size:0.78rem;color:var(--text-tertiary);padding:4px 8px">Save a search as a collection</div>' : cols.map(c => `<div class="collection-item" data-collection="${escapeHtml(c.name)}"><span>📌</span><span>${escapeHtml(c.name)}</span><button class="delete-btn" data-collection="${escapeHtml(c.name)}" title="Delete">✕</button></div>`).join('');
+  list.querySelectorAll('.collection-item').forEach(el => { el.addEventListener('click', (e) => { if (e.target.classList.contains('delete-btn')) return; const col = getCollections().find(c => c.name === el.dataset.collection); if (col) applyCollection(col); }); });
+  list.querySelectorAll('.delete-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); deleteCollection(btn.dataset.collection); }); });
+}
+
+// ---- Categories Drawer ----
+function openCategoriesDrawer() { document.getElementById('cat-drawer-overlay').classList.add('open'); document.getElementById('cat-drawer').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeCategoriesDrawer() { document.getElementById('cat-drawer-overlay').classList.remove('open'); document.getElementById('cat-drawer').classList.remove('open'); document.body.style.overflow = ''; }
+
+// ---- Data loading ----
+async function loadData(forceRefresh) {
+  if (!forceRefresh && !state.filter && !state.category && !state.chartFilter && loadFromCache()) {
+    state.loading = false; document.getElementById('result-total').textContent = state.total; renderBookmarks(); renderPagination(); updateCategoryList(); renderGraphify(); refreshInBackground(); return;
+  }
+  try {
+    const params = new URLSearchParams(); params.set('page', state.page); params.set('limit', state.limit); if (state.filter) params.set('filter', state.filter);
+    const [bmResp, catResp] = await Promise.all([fetch(`${API.bookmarks}?${params}`, {credentials:'include'}), fetch(API.categories, {credentials:'include'})]);
+    if (!bmResp.ok || !catResp.ok) { if (bmResp.status === 401 || catResp.status === 401) { state.authenticated = false; render(); return; } throw new Error(`HTTP ${bmResp.status}`); }
+    const bmData = await bmResp.json(), catData = await catResp.json();
+    state.bookmarks = bmData.bookmarks || bmData; state.categories = catData.categories || catData;
+    state.total = bmData.total !== undefined ? bmData.total : (bmData.bookmarks ? bmData.bookmarks.length : state.bookmarks.length);
+    state.loading = false; state.cacheAge = 0;
+    if (!state.filter && !state.category) saveToCache(state.bookmarks, state.categories);
+    updateCacheIndicator(); document.getElementById('result-total').textContent = state.total; renderBookmarks(); renderPagination(); updateCategoryList(); renderGraphify();
+  } catch(e) { console.error(e); state.loading = false; renderBookmarks(); }
+}
+
+let _refreshing = false;
+async function refreshInBackground() {
+  if (_refreshing) return; _refreshing = true;
+  try {
+    const [bmResp, catResp] = await Promise.all([fetch(API.bookmarks, {credentials:'include'}), fetch(API.categories, {credentials:'include'})]);
+    if (!bmResp.ok || !catResp.ok) return;
+    const bmData = await bmResp.json(), catData = await catResp.json();
+    state.bookmarks = bmData.bookmarks || bmData; state.categories = catData.categories || catData; state.total = state.bookmarks.length; state.cacheAge = 0;
+    saveToCache(state.bookmarks, state.categories); updateCacheIndicator(); document.getElementById('result-total').textContent = state.total; renderBookmarks(); renderPagination(); updateCategoryList(); renderGraphify();
+  } finally { _refreshing = false; }
+}
+
+// ---- Category list ----
+function updateCategoryList() {
+  const cats = state.categories || [], bms = state.bookmarks || [];
+  const list = document.getElementById('category-list'), drawerList = document.getElementById('drawer-category-list');
+  const counts = {}; cats.forEach(c => { counts[c.id] = 0; }); bms.forEach(b => { const cid = b.categoryId; if (cid !== undefined) counts[cid] = (counts[cid] || 0) + 1; });
+  const html = `<div class="category-item ${!state.category ? 'active' : ''}" data-cat=""><span>📚 All bookmarks</span><span class="count">${bms.length}</span></div>${cats.filter(c => (counts[c.id]||0) > 0).map(c => `<div class="category-item ${state.category === c.id ? 'active' : ''}" data-cat="${c.id}"><span class="color-dot" style="background:${c.color||'#999'}"></span><span>${escapeHtml(c.name)}</span><span class="count">${counts[c.id]||0}</span></div>`).join('')}`;
+  if (list) list.innerHTML = html; if (drawerList) drawerList.innerHTML = html;
+  const bind = (c) => { if (!c) return; c.querySelectorAll('.category-item').forEach(el => { el.addEventListener('click', () => { state.category = el.dataset.cat ? parseInt(el.dataset.cat) : null; state.page = 1; state.loading = true; document.querySelectorAll('#category-list .category-item, #drawer-category-list .category-item').forEach(e => e.classList.remove('active')); el.classList.add('active'); renderBookmarks(); loadData(); closeCategoriesDrawer(); }); }); };
+  bind(list); bind(drawerList);
+}
+
+// ---- Graphify ----
+let _graphifyCharts = [];
+function renderGraphify() {
+  const section = document.getElementById('graphify-section');
+  if (!section) return;
+  const ind = document.getElementById('graphify-indicator'); if (ind) ind.textContent = `${state.bookmarks.length} pts`;
+  updateMetrics(); updateChartFilterBar();
+  _graphifyCharts.forEach(c => c.destroy()); _graphifyCharts = [];
+  const bms = state.bookmarks, cats = state.categories;
+  if (!bms || !bms.length) return;
+
+  // Category chart
+  const catCounts = {}, catColors = {};
+  cats.forEach(c => { catCounts[c.name] = 0; catColors[c.name] = c.color || '#999'; });
+  catCounts['Uncategorized'] = 0; catColors['Uncategorized'] = '#999';
+  bms.forEach(b => { const c = cats.find(cat => cat.id === b.categoryId); const name = c ? c.name : 'Uncategorized'; catCounts[name] = (catCounts[name] || 0) + 1; });
+  const catLabels = Object.keys(catCounts).filter(k => catCounts[k] > 0).sort((a,b) => catCounts[b] - catCounts[a]);
+  const catData = catLabels.map(k => catCounts[k]), catColorArr = catLabels.map(k => catColors[k] || CAT_COLORS[catLabels.indexOf(k) % CAT_COLORS.length]);
+  const catCtx = document.getElementById('chart-categories');
+  if (catCtx) _graphifyCharts.push(new Chart(catCtx, { type: 'bar', data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: catColorArr, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }, onClick: (e, el) => { if (el.length > 0) applyChartFilter('category', catLabels[el[0].index]); }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} bookmarks` } } }, scales: { x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } }, y: { grid: { display: false } } } } }));
+
+  // Domains chart
+  const domainCounts = {}; bms.forEach(b => { const d = b.domain || 'unknown'; domainCounts[d] = (domainCounts[d] || 0) + 1; });
+  const topDomains = Object.entries(domainCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  const domLabels = topDomains.map(d => d[0].replace('www.', '')), domData = topDomains.map(d => d[1]);
+  const domCtx = document.getElementById('chart-domains');
+  if (domCtx) _graphifyCharts.push(new Chart(domCtx, { type: 'doughnut', data: { labels: domLabels, datasets: [{ data: domData, backgroundColor: domLabels.map((_,i) => CAT_COLORS[i%CAT_COLORS.length]), borderWidth: 2, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 600 }, onClick: (e, el) => { if (el.length > 0) applyChartFilter('domain', domLabels[el[0].index]); }, plugins: { legend: { position: 'right', labels: { font: { size: 9 } } } }, cutout: '45%' } }));
+
+  // Timeline chart
+  const dayCounts = {}; bms.forEach(b => { if (!b.created) return; const d = new Date(b.created*1000).toISOString().slice(0,10); dayCounts[d] = (dayCounts[d]||0)+1; });
+  const days = Object.keys(dayCounts).sort(), dayData = days.map(d => dayCounts[d]);
+  const timeCtx = document.getElementById('chart-timeline');
+  if (timeCtx && days.length) _graphifyCharts.push(new Chart(timeCtx, { type: 'line', data: { labels: days, datasets: [{ data: dayData, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)', fill: true, tension: 0.35, pointRadius: 3, pointHoverRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 800 }, onClick: (e, el) => { if (el.length > 0) applyChartFilter('date', days[el[0].index]); }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } }, x: { ticks: { maxTicksLimit: 8, font: { size: 8 } }, grid: { display: false } } } } }));
+
+  // Source chart
+  const sourceCounts = {'X/Twitter':0,'Pocket':0,'Other':0};
+  bms.forEach(b => { const tags = (b.tags||[]).map(t => typeof t === 'string' ? t : (t.name||'')); if (tags.includes('x')) sourceCounts['X/Twitter']++; else if (tags.includes('raindrop')||tags.includes('pocket')) sourceCounts['Pocket']++; else sourceCounts['Other']++; });
+  const srcLabels = Object.keys(sourceCounts).filter(k => sourceCounts[k] > 0), srcData = srcLabels.map(k => sourceCounts[k]);
+  const srcCtx = document.getElementById('chart-sources');
+  if (srcCtx) _graphifyCharts.push(new Chart(srcCtx, { type: 'pie', data: { labels: srcLabels, datasets: [{ data: srcData, backgroundColor: ['#1d9bf0','#ee4056','#888'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed} (${((ctx.parsed/srcData.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } }));
+}
+
+function updateMetrics() {
+  const bms = state.bookmarks||[], cats = state.categories||[];
+  const totalEl = document.getElementById('metric-total'), catsEl = document.getElementById('metric-cats'), topEl = document.getElementById('metric-topcat'), domEl = document.getElementById('metric-domains');
+  if (totalEl) totalEl.textContent = bms.length;
+  const catCounts = {}; cats.forEach(c => catCounts[c.name]=0); catCounts['Uncategorized']=0;
+  bms.forEach(b => { const c = cats.find(cat => cat.id === b.categoryId); const name = c ? c.name : 'Uncategorized'; catCounts[name] = (catCounts[name]||0)+1; });
+  const active = Object.keys(catCounts).filter(k => catCounts[k]>0);
+  if (catsEl) catsEl.textContent = active.length;
+  if (topEl) { const sorted = Object.entries(catCounts).filter(([_,v]) => v > 0).sort((a,b) => b[1]-a[1]); if (sorted.length) topEl.textContent = sorted[0][0].length > 14 ? sorted[0][0].slice(0,12)+'…' : sorted[0][0]; }
+  if (domEl) domEl.textContent = new Set(bms.map(b => b.domain||'unknown')).size;
+}
+
+function updateChartFilterBar() {
+  const bar = document.getElementById('chart-filter-bar'), val = document.getElementById('chart-filter-value');
+  if (!bar||!val) return;
+  if (state.chartFilter) { bar.classList.add('visible'); val.textContent = `${state.chartFilter.type}: ${state.chartFilter.value}`; }
+  else bar.classList.remove('visible');
+}
+
+function applyChartFilter(type, value) {
+  state.chartFilter = { type, value }; state.category = null; state.page = 1; state.loading = true;
+  if (type === 'category') { const cat = state.categories.find(c => c.name === value); if (cat) { state.category = cat.id; state.filter = ''; } }
+  else if (type === 'domain') state.filter = `domain:${value}`;
+  else if (type === 'date') state.filter = `date:${value}`;
+  const inp = document.getElementById('search-input'); if (inp) inp.value = state.filter;
+  renderBookmarks(); loadData();
+}
+function clearChartFilter() { state.chartFilter = null; state.page = 1; state.loading = true; state.filter = ''; state.category = null; const inp = document.getElementById('search-input'); if (inp) inp.value = ''; renderBookmarks(); loadData(); }
+
+// ---- Bindings ----
+function bindApp() {
+  const searchInput = document.getElementById('search-input');
+  let searchTimer;
+  if (searchInput) {
+    searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { state.filter = searchInput.value; state.page = 1; state.loading = true; renderBookmarks(); loadData(); }, 250); });
+    document.addEventListener('keydown', (e) => { if ((e.ctrlKey||e.metaKey) && e.key === 'k') { e.preventDefault(); searchInput.focus(); } if (e.key === '/' && !['INPUT','TEXTAREA'].includes(e.target.tagName)) { e.preventDefault(); searchInput.focus(); } });
+  }
+  document.querySelectorAll('#view-toggle button').forEach(btn => { btn.addEventListener('click', () => { state.view = btn.dataset.view; document.querySelectorAll('#view-toggle button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.mb-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === state.view)); renderBookmarks(); }); });
+  document.querySelectorAll('.mb-btn[data-view]').forEach(btn => { btn.addEventListener('click', () => { state.view = btn.dataset.view; document.querySelectorAll('.mb-btn[data-view]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === state.view)); renderBookmarks(); }); });
+  const themeBtn = document.getElementById('theme-btn');
+  if (themeBtn) themeBtn.addEventListener('click', () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', state.theme); localStorage.setItem('grimoire-theme', state.theme); themeBtn.textContent = state.theme === 'light' ? '🌙' : '☀️'; });
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => { clearCache(); state.loading = true; renderBookmarks(); loadData(true); refreshBtn.style.opacity = '0.5'; setTimeout(() => refreshBtn.style.opacity = '1', 300); });
+  const graphifyHeader = document.getElementById('graphify-header');
+  if (graphifyHeader) graphifyHeader.addEventListener('click', (e) => { if (e.target.closest('.chart-card')||e.target.closest('.insight-item')) return; state.graphifyOpen = !state.graphifyOpen; const s = document.getElementById('graphify-section'); if (s) s.classList.toggle('collapsed'); });
+  const clearBtn = document.getElementById('chart-filter-clear');
+  if (clearBtn) clearBtn.addEventListener('click', (e) => { e.stopPropagation(); clearChartFilter(); });
+  const catBtn = document.getElementById('categories-btn'); if (catBtn) catBtn.addEventListener('click', openCategoriesDrawer);
+  const mbCats = document.getElementById('mb-categories'); if (mbCats) mbCats.addEventListener('click', openCategoriesDrawer);
+  const drawerOverlay = document.getElementById('cat-drawer-overlay'); if (drawerOverlay) drawerOverlay.addEventListener('click', closeCategoriesDrawer);
+  const drawerClose = document.getElementById('drawer-close'); if (drawerClose) drawerClose.addEventListener('click', closeCategoriesDrawer);
+  const peekOverlay = document.getElementById('peek-overlay'); if (peekOverlay) peekOverlay.addEventListener('click', (e) => { if (e.target === peekOverlay) closeQuickPeek(); });
+  const peekClose = document.getElementById('peek-close'); if (peekClose) peekClose.addEventListener('click', closeQuickPeek);
+  const randomBtn = document.getElementById('random-btn'); if (randomBtn) randomBtn.addEventListener('click', showRandomBookmark);
+  const mbRandom = document.getElementById('mb-random'); if (mbRandom) mbRandom.addEventListener('click', showRandomBookmark);
+  const rhDismiss = document.querySelector('#random-highlight .rh-dismiss'); if (rhDismiss) rhDismiss.addEventListener('click', () => { document.getElementById('random-highlight').classList.remove('visible'); });
+  const saveColBtn = document.getElementById('save-collection-btn'); if (saveColBtn) saveColBtn.addEventListener('click', saveCurrentAsCollection);
+}
+
+function escapeHtml(str) { if (!str) return ''; const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
+async function init() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  try { const resp = await fetch(API.categories, { credentials: 'include' }); state.authenticated = resp.ok; } catch { state.authenticated = false; }
+  render();
+  if (state.authenticated) await loadData();
+}
+init();
+</script>
+</body>
+</html>

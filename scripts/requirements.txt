@@ -1,0 +1,3 @@
+# Dependencies for the nightly sync script
+# Install: pip install -r requirements.txt
+# No external packages needed — uses stdlib only
