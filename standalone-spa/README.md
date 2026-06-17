@@ -18,36 +18,34 @@ An alternative frontend for the [Grimoire](https://github.com/goniszewski/grimoi
 - **Click charts to filter** — click a category bar to see only those bookmarks, click a domain slice to search that domain, click a timeline point to filter by date
 - **Smart insights bar** — auto-generated stats like "Top category: AI & Agents (51.8%)", "Main source: X/Twitter"
 - **Chart filter indicator** — shows active filter with "✕ Clear" button
-- **Cache & background refresh** — 5-minute localStorage cache with silent background refresh
 
-### Auto-Categorization Import Script
-`scripts/nightly-sync.py` — a Python script that:
-- Syncs new bookmarks from X/Twitter (via `bird` CLI) and Raindrop API
-- Deduplicates against existing Grimoire bookmarks
-- Auto-categorizes into 13 content categories using two-pass heuristics (domain match → keyword match)
-- Tags with `#x` or `#raindrop` for source provenance
-- Fetches secrets from 1Password vault
-- Designed to run as a nightly cron job
+### Performance
+- **Client-side cache** — 5-minute localStorage cache with instant render on revisit
+- **Silent background refresh** — stale cache shown immediately, fresh data fetched silently
+- **Debounced search** — 250ms debounce prevents excessive API calls while typing
+- **Cache age indicator** — shows data freshness in the header ("cached 2m")
+- **Lazy image loading** — all thumbnails use `loading="lazy"`
+- **SRI integrity** — Chart.js loaded with subresource integrity hash (see [PERFORMANCE.md](PERFORMANCE.md) for nginx config)
+
+### Security
+- All user content escaped via `escapeHtml()` (textContent-based, XSS-safe)
+- No inline event handlers in generated HTML
+- `crypto.getRandomValues()` for random selection (not `Math.random()`)
+- CDN resources loaded with SRI integrity hashes
 
 ## Usage
 
-### Frontend
-1. Serve `standalone-spa/index.html` via any HTTP server (nginx, Caddy, etc.)
-2. Set the `API` endpoints to point at your Grimoire backend
+1. Serve `index.html` via any HTTP server (nginx, Caddy, etc.)
+2. See [PERFORMANCE.md](PERFORMANCE.md) for recommended nginx config
 3. Log in with your Grimoire credentials
-
-### Sync Script
-```bash
-pip install -r scripts/requirements.txt
-source /creds/op/op_env  # if using 1Password
-python3 scripts/nightly-sync.py
-```
+4. That's it — no build step, no framework, no server-side changes
 
 ## Architecture
 
-This is a **single-page application** (~60KB) with zero build step. It uses:
-- Vanilla DOM manipulation (no framework)
-- Chart.js for visualizations (CDN-loaded)
-- The Grimoire REST API directly (cookie-based auth via Lucia/SvelteKit)
+- **~62KB single-file SPA** — zero build step, no framework dependency
+- **Vanilla DOM** — all rendering via template literals with explicit escaping
+- **Chart.js** — loaded from CDN for visualization (4 chart types)
+- **Grimoire REST API** — cookie-based auth via Lucia/SvelteKit sessions
+- **localStorage** — for client-side cache and saved collections
 
 All features work with an **unmodified Grimoire backend** — no server-side changes needed.
