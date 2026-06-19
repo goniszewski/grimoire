@@ -115,7 +115,7 @@ const loading = writable(false);
 const onGetMetadata = debounce(
 	async (event: Event) => {
 		const target = event.target as HTMLButtonElement;
-		const url = target.value;
+		let url = target.value.trim();
 		error = '';
 
 		loading.set(true);
@@ -124,6 +124,10 @@ const onGetMetadata = debounce(
 			metadata = { ...defaultFormValues };
 			loading.set(false);
 			return;
+		}
+		// Auto-prepend https:// for bare domains like "zombo.com"
+		if (!/^https?:\/\//i.test(url) && !url.startsWith('ftp://') && !url.startsWith('localhost') && /\./.test(url) && !/\s/.test(url)) {
+			url = 'https://' + url;
 		}
 		if (!url.match(validateUrlRegex)) {
 			error = 'Invalid URL';
