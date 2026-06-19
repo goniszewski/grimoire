@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">GitHub issue extraction flow for Little Imp</title>
+  <desc id="desc">Diagram showing a saved GitHub issue URL routed to the GitHub issue extractor, fetched through the GitHub API, converted to markdown, and persisted with labels as bookmark tags.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f7fa; }
+      .panel { fill: #ffffff; stroke: #d9dbea; stroke-width: 2; }
+      .primary { fill: #161827; }
+      .muted { fill: #626475; }
+      .purple { fill: #6d28d9; }
+      .blue { fill: #0369a1; }
+      .green { fill: #15803d; }
+      .amber { fill: #a16207; }
+      .line { stroke: #81869b; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 9 8; }
+      text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { font-size: 27px; font-weight: 800; }
+      .body { font-size: 18px; font-weight: 600; }
+      .small { font-size: 15px; font-weight: 700; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#81869b"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="680"/>
+  <text x="64" y="76" class="label primary">TASK-131 GitHub issue extractor</text>
+  <text x="64" y="112" class="body muted">Issue URLs now use the GitHub Issues API before the broader repository extractor.</text>
+
+  <rect x="64" y="172" width="250" height="132" rx="12" class="panel"/>
+  <text x="92" y="218" class="label purple">Saved issue URL</text>
+  <text x="92" y="252" class="body muted">github.com/owner/repo</text>
+  <text x="92" y="278" class="body muted">/issues/number</text>
+
+  <rect x="470" y="144" width="270" height="188" rx="12" class="panel"/>
+  <text x="500" y="194" class="label blue">Issue extractor</text>
+  <text x="500" y="228" class="body muted">Fetch issue metadata</text>
+  <text x="500" y="254" class="body muted">and top comments</text>
+  <text x="500" y="288" class="small amber">GITHUB_TOKEN optional</text>
+
+  <rect x="872" y="124" width="264" height="228" rx="12" class="panel"/>
+  <text x="902" y="174" class="label green">Markdown output</text>
+  <text x="902" y="208" class="body muted">Title, state, labels,</text>
+  <text x="902" y="234" class="body muted">author, assignees,</text>
+  <text x="902" y="260" class="body muted">body, comments</text>
+  <text x="902" y="318" class="small green">labels exposed as tags</text>
+
+  <rect x="64" y="436" width="250" height="140" rx="12" class="panel"/>
+  <text x="92" y="482" class="label amber">Non-issue URLs</text>
+  <text x="92" y="516" class="body muted">Repositories, pulls,</text>
+  <text x="92" y="542" class="body muted">discussions stay routed</text>
+  <text x="92" y="568" class="body muted">to existing extractors</text>
+
+  <rect x="470" y="432" width="270" height="148" rx="12" class="panel"/>
+  <text x="500" y="480" class="label green">Pipeline persist</text>
+  <text x="500" y="514" class="body muted">bookmark_content</text>
+  <text x="500" y="540" class="body muted">bookmark_tags + FTS</text>
+
+  <rect x="872" y="444" width="264" height="132" rx="12" class="panel"/>
+  <text x="902" y="492" class="label purple">Graceful fallback</text>
+  <text x="902" y="526" class="body muted">404s and rate limits</text>
+  <text x="902" y="552" class="small muted">log guidance, keep bookmark</text>
+
+  <path d="M314 238 C372 238 402 238 470 238" class="line"/>
+  <path d="M740 238 C790 238 812 238 872 238" class="line"/>
+  <path d="M604 332 C604 380 604 396 604 432" class="line"/>
+  <path d="M314 506 C372 506 402 506 470 506" class="line dash"/>
+  <path d="M740 506 C792 506 812 506 872 506" class="line dash"/>
+
+  <text x="346" y="220" class="small muted">parse route</text>
+  <text x="770" y="220" class="small muted">format</text>
+  <text x="626" y="386" class="small muted">normal ingest</text>
+  <text x="344" y="488" class="small muted">specificity guard</text>
+  <text x="770" y="488" class="small muted">errors</text>
+</svg>

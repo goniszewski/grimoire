@@ -242,6 +242,7 @@ Extraction strategies vary by content type.
 | Blog posts | Readability extraction |
 | Technical articles | Readability extraction |
 | GitHub repositories | README + metadata |
+| GitHub issues | issue metadata, labels, body, and top comments |
 | StackOverflow | question + accepted answer |
 | Documentation pages | main page content |
 | Fallback | Readability |
@@ -250,10 +251,6 @@ Additional implemented extractors:
 
 - PDF
 - YouTube transcripts
-
-Future extractors:
-
-- GitHub issues
 
 ---
 

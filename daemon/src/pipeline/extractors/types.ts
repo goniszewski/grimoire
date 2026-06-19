@@ -6,4 +6,5 @@ export interface ExtractionResult {
   publishedAt: string | null; // ISO-8601 or null
   wordCount: number | null;
   language: string | null;
+  tags?: string[];
 }

@@ -2,7 +2,7 @@
 
 **Phase:** Performance and polish
 **Priority:** low (P3)
-**Status:** backlog
+**Status:** in-review
 **Area:** daemon / pipeline / extraction
 
 ## Description
@@ -35,13 +35,13 @@ Add a `github-issues` extractor to the ingestion pipeline. When a saved URL matc
 
 ## Acceptance Criteria
 
-- [ ] A saved GitHub issues URL triggers the `github-issues` extractor.
-- [ ] Issue title, body, state, labels, and top comments are stored in the bookmark content.
-- [ ] Unauthenticated requests fall back cleanly with a rate-limit warning in the pipeline log.
-- [ ] A `GITHUB_TOKEN` setting increases rate limits when configured.
-- [ ] Non-issues GitHub URLs (PRs, discussions, repos) use existing GitHub extractors.
-- [ ] Unit tests cover success, 404, and rate-limit responses.
-- [ ] All existing pipeline tests continue to pass.
+- [x] A saved GitHub issues URL triggers the `github-issues` extractor.
+- [x] Issue title, body, state, labels, and top comments are stored in the bookmark content.
+- [x] Unauthenticated requests fall back cleanly with a rate-limit warning in the pipeline log.
+- [x] A `GITHUB_TOKEN` setting increases rate limits when configured.
+- [x] Non-issues GitHub URLs (PRs, discussions, repos) use existing GitHub extractors.
+- [x] Unit tests cover success, 404, and rate-limit responses.
+- [x] All existing pipeline tests continue to pass.
 
 ## Dependencies
 
@@ -54,3 +54,25 @@ Add a `github-issues` extractor to the ingestion pipeline. When a saved URL matc
 - The GitHub REST API returns issue bodies in Markdown — no additional rendering step needed.
 - Consider caching the API response to avoid re-fetching on pipeline retries.
 - Rate limits: unauthenticated = 60 requests/hour; authenticated = 5,000/hour. Document this in the feature.
+
+## Work Notes
+
+- June 9, 2026: Implemented a dedicated `github-issues` extractor and routed
+  `github.com/{owner}/{repo}/issues/{number}` URLs before the broader GitHub
+  repository extractor.
+- The extractor fetches issue metadata and top comments through the GitHub REST
+  API, uses `GITHUB_TOKEN` when present, and emits a clear rate-limit error
+  recommending `GITHUB_TOKEN` when unauthenticated quota is exhausted.
+- Extended extraction results with optional generated tags and wired the
+  pipeline to persist those tags during normal ingest. GitHub issue labels now
+  become bookmark tags and participate in the existing FTS tag index.
+- Updated README, overview, and PRD extraction docs, then added the TASK-131
+  runtime-flow report under `docs/task-reports/2026/06/`.
+- Verification:
+  - `cd daemon && bun test src/test/pipeline/github-issues.test.ts`
+  - `cd daemon && bun test src/test/pipeline/extract.test.ts src/test/pipeline/github-issues.test.ts`
+  - `cd daemon && bun run check`
+  - `npm run test:daemon`
+  - `npm run lint` (passes with the existing React fast-refresh warnings)
+  - `npm run type-check`
+  - Live smoke: `extractFromGitHubIssue("https://github.com/microsoft/TypeScript/issues/1", 1)` returned issue title, author, tags, body, and comments.

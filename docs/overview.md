@@ -40,6 +40,7 @@ The daemon fetches saved URLs and selects an extractor by URL and content type.
 | Normal web pages | Lightweight readability-style HTML cleanup and Markdown conversion |
 | PDFs | `pdf-parse` text extraction from fetched PDF bytes |
 | GitHub repositories | GitHub REST API metadata plus README content |
+| GitHub issues | GitHub REST API issue metadata, labels, body, and top comments |
 | StackOverflow and StackExchange | Stack Exchange API question and accepted or top answer |
 | YouTube | oEmbed metadata plus available caption transcript |
 
@@ -448,7 +449,8 @@ erDiagram
 - Fetching is limited to public hosts, 20 seconds, 10 MB response bodies, and HTML/PDF content types.
 - Raw HTML stored in SQLite is capped at 500 KB.
 - PDF extracted text is capped at 500,000 characters and scanned/image-only PDFs may only preserve metadata.
-- GitHub and StackExchange extractors use public APIs and inherit their unauthenticated rate limits unless tokens are supplied.
+- GitHub repository/issue and StackExchange extractors use public APIs and
+  inherit their unauthenticated rate limits unless tokens are supplied.
 - YouTube transcripts depend on caption availability and YouTube response formats.
 
 ### Backup And Restore

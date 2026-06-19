@@ -3,7 +3,8 @@
  *
  * Inspects the URL to pick the best extraction strategy:
  *   - youtube.com / youtu.be → YouTube transcript extractor
- *   - github.com  → GitHub API extractor
+ *   - github.com/{owner}/{repo}/issues/{number} → GitHub issue API extractor
+ *   - github.com  → GitHub repository API extractor
  *   - stackoverflow.com / stackexchange.com → SE API extractor
  *   - everything else → Readability-style HTML extractor
  */
@@ -11,6 +12,7 @@
 import { FetchResult } from "./fetcher.js";
 import { extractWithReadability } from "./extractors/readability.js";
 import { extractFromGitHub, parseGitHubUrl } from "./extractors/github.js";
+import { extractFromGitHubIssue, parseGitHubIssueUrl } from "./extractors/github-issues.js";
 import { extractFromStackOverflow, parseSOUrl } from "./extractors/stackoverflow.js";
 import { extractFromPdf } from "./extractors/pdf.js";
 import { extractFromYouTube, parseYouTubeUrl } from "./extractors/youtube.js";
@@ -21,6 +23,10 @@ export type { ExtractionResult };
 
 function isGitHub(url: string): boolean {
   return parseGitHubUrl(url) !== null;
+}
+
+function isGitHubIssue(url: string): boolean {
+  return parseGitHubIssueUrl(url) !== null;
 }
 
 function isPDF(url: string, contentType: string): boolean {
@@ -78,7 +84,20 @@ export async function extractContent(
     return extractFromPdf(fetched.bytes, fallbackTitle ?? null);
   }
 
-  // Strategy: GitHub
+  // Strategy: GitHub issue
+  if (isGitHubIssue(url)) {
+    log.info("Using GitHub issue extractor", { url });
+    try {
+      return await extractFromGitHubIssue(url);
+    } catch (err) {
+      log.warn("GitHub issue extractor failed, falling back to readability", {
+        url,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // Strategy: GitHub repository
   if (isGitHub(url)) {
     log.info("Using GitHub extractor", { url });
     try {

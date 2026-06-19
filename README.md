@@ -111,8 +111,8 @@ for the current go/no-go state.
 - Saves public `http` and `https` URLs from the app, API, MCP, import flow, or
   browser bookmarklet.
 - Extracts readable content from normal web pages, PDFs, GitHub repositories,
-  StackOverflow/StackExchange pages, and YouTube metadata/transcripts where
-  available.
+  GitHub issues, StackOverflow/StackExchange pages, and YouTube
+  metadata/transcripts where available.
 - Stores bookmarks, content, tags, categories, jobs, notes, timeline events,
   backups, and settings locally in SQLite and local files.
 - Searches with SQLite FTS5 keyword search, semantic embedding search, or a

@@ -23,6 +23,7 @@ import { fetchPage } from "./fetcher.js";
 import { extractContent } from "./extractor.js";
 import { enrichBookmark } from "../ai/enrichment.js";
 import { getEmbedding, buildEmbedInput } from "../ai/embeddings.js";
+import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { EmbeddingRepository } from "../db/embedding-repository.js";
 import { BookmarkContentRow } from "../db/types.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
@@ -109,6 +110,11 @@ function updateFts(
      VALUES (?, ?, ?, ?, ?)`,
     [bookmarkId, title, summary, tags, content]
   );
+}
+
+function normalizeExtractedTags(tags: string[] | undefined): string[] {
+  if (!tags) return [];
+  return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
@@ -213,6 +219,14 @@ export async function runPipeline(
       word_count: extracted.wordCount,
       language: extracted.language,
     });
+    const extractedTags = normalizeExtractedTags(extracted.tags);
+    if (extractedTags.length > 0 && !preserveExistingFields) {
+      // Merge with existing tags rather than replacing them. Manual/imported
+      // tags must survive re-extraction; the AI enrichment stage follows the
+      // same merge (INSERT OR IGNORE) philosophy for consistency.
+      const tagRepo = new BookmarkRepository(db);
+      for (const tag of extractedTags) tagRepo.addTag(bookmarkId, tag);
+    }
     setStatus(db, bookmarkId, "extracted");
   })();
 

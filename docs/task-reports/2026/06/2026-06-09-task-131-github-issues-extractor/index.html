@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Issues Extractor - Little Imp Task Report</title>
+<style>
+:root {
+  --bg: #f7f7fa;
+  --surface: #ffffff;
+  --ink: #191827;
+  --muted: #626475;
+  --line: #dedfec;
+  --violet: #7c3aed;
+  --blue: #0f7fbf;
+  --green: #15803d;
+  --amber: #a16207;
+  --shadow: 0 18px 45px rgba(30, 32, 50, .08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: inherit; }
+.page {
+  width: min(1080px, calc(100vw - 40px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+.task-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: clamp(22px, 4vw, 44px);
+  box-shadow: var(--shadow);
+}
+.task-card > * { min-width: 0; }
+.breadcrumbs {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.breadcrumbs a { text-decoration: none; }
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--violet);
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+}
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+p, li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+p { margin: 0; }
+ul { margin: 0; padding-left: 1.18rem; }
+li + li { margin-top: 6px; }
+code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  color: #111827;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.meta-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.meta-row .status-review {
+  border-color: rgba(15, 127, 191, .25);
+  background: rgba(15, 127, 191, .08);
+  color: var(--blue);
+}
+.hero-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hero-shot figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.task-card > section {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .72);
+  padding: 14px 16px;
+}
+summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="../../../index.html">Task Reports</a>
+    &nbsp;/&nbsp;
+    <a href="../../index.html">2026</a>
+    &nbsp;/&nbsp;
+    <a href="../index.html">June 2026</a>
+  </nav>
+
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>GitHub Issues Extractor</h1>
+      <div class="meta-row">
+        <span>2026-06-09</span>
+        <span>TASK-131</span>
+        <span class="status-review">In Review</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-github-issue-extraction-flow.svg" alt="Diagram showing GitHub issue URLs routed to the issue extractor, converted to markdown, and persisted with labels as tags">
+      <figcaption>After: GitHub issue URLs use a dedicated API extractor before the broader repository extractor, and issue labels become bookmark tags during normal ingest.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>All <code>github.com/{owner}/{repo}/...</code> URLs matched the repository extractor. Issue URLs therefore resolved to repository metadata and README content instead of issue title, body, labels, state, assignees, and comments.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Developers often save issue threads as reference material. Treating those URLs as repositories hid the useful discussion content and kept issue labels out of Little Imp tags and search indexing.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added <code>daemon/src/pipeline/extractors/github-issues.ts</code> with parser, GitHub API fetch, optional <code>GITHUB_TOKEN</code> authorization, issue metadata formatting, top-comment extraction, and rate-limit guidance.</li>
+        <li>Registered GitHub issue routing before the existing repository extractor so non-issue GitHub URLs keep their current behavior.</li>
+        <li>Extended extraction results with optional generated tags and merged issue labels into existing bookmark tags through the normal pipeline tag path when generated fields are replaceable (manual/imported tags are preserved).</li>
+        <li>Updated README, overview, and PRD extraction docs so GitHub issues are no longer described as future work.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Saving a GitHub issue now stores structured markdown with repository, issue number, state, labels, author, assignees, body, and top comments. Label names are merged into the bookmark's existing tags (manual and imported tags are preserved) and included in the existing FTS tag index. A failure on the optional comments endpoint no longer discards the issue body and metadata.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li><code>cd daemon &amp;&amp; bun test src/test/pipeline/github-issues.test.ts</code></li>
+        <li><code>cd daemon &amp;&amp; bun test src/test/pipeline/extract.test.ts src/test/pipeline/github-issues.test.ts</code></li>
+        <li><code>cd daemon &amp;&amp; bun run check</code></li>
+        <li><code>npm run test:daemon</code></li>
+        <li><code>npm run lint</code> passes with existing React fast-refresh warnings.</li>
+        <li><code>npm run type-check</code></li>
+        <li>Live smoke against <code>https://github.com/microsoft/TypeScript/issues/1</code> returned title, author, tags, body, and top comments.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Implementation Notes</summary>
+      <p>There is no bookmark-content JSON metadata column today, so issue metadata is encoded in deterministic markdown and labels are persisted through the existing <code>tags</code> and <code>bookmark_tags</code> tables. The extractor follows the existing repository and StackOverflow pattern: public API access by default, optional environment token for higher limits, and fallback through the central extraction router when API extraction fails.</p>
+    </details>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/pipeline/extractors/github-issues.ts</code></li>
+        <li><code>daemon/src/pipeline/extractor.ts</code></li>
+        <li><code>daemon/src/pipeline/extractors/types.ts</code></li>
+        <li><code>daemon/src/pipeline/pipeline.ts</code></li>
+        <li><code>daemon/src/test/pipeline/github-issues.test.ts</code></li>
+        <li><code>README.md</code></li>
+        <li><code>docs/overview.md</code></li>
+        <li><code>docs/prd.md</code></li>
+        <li><code>tasks/in-review/TASK-131-github-issues-extractor.md</code></li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Follow-Ups</summary>
+      <p>If Little Imp later adds source-specific content metadata storage, the issue state, assignees, update time, and comment list can move from structured markdown into typed metadata while preserving the current markdown for search and reading.</p>
+    </details>
+  </article>
+</main>
+</body>
+</html>

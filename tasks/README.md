@@ -144,7 +144,7 @@ tasks/
 | TASK-128 | [In-App Backup Verify from Arbitrary Paths](done/TASK-128-in-app-backup-verify-arbitrary-paths.md) | First-user experience | medium | done |
 | TASK-129 | [First-Run Guided Tour and Demo Content](done/TASK-129-first-run-guided-tour.md) | First-user experience | medium | done |
 | TASK-130 | [sqlite-vec Vector Index Integration](done/TASK-130-sqlite-vec-vector-index.md) | Performance and polish | medium | done |
-| TASK-131 | [GitHub Issues Extractor](backlog/TASK-131-github-issues-extractor.md) | Performance and polish | low | backlog |
+| TASK-131 | [GitHub Issues Extractor](in-review/TASK-131-github-issues-extractor.md) | Performance and polish | low | in-review |
 | TASK-132 | [Large-Library Search Performance](backlog/TASK-132-large-library-search-performance.md) | Performance and polish | low | backlog |
 | TASK-133 | [Parity Task Reports and Visual Verification](done/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | done |
 | TASK-134 | [Parity Acceptance Checklist](done/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | done |
