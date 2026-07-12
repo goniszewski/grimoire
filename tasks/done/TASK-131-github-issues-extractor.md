@@ -2,7 +2,7 @@
 
 **Phase:** Performance and polish
 **Priority:** low (P3)
-**Status:** in-review
+**Status:** done
 **Area:** daemon / pipeline / extraction
 
 ## Description
@@ -76,3 +76,5 @@ Add a `github-issues` extractor to the ingestion pipeline. When a saved URL matc
   - `npm run lint` (passes with the existing React fast-refresh warnings)
   - `npm run type-check`
   - Live smoke: `extractFromGitHubIssue("https://github.com/microsoft/TypeScript/issues/1", 1)` returned issue title, author, tags, body, and comments.
+- July 12, 2026: Moved to `done` after review closeout and aligned the task
+  board plus task-report status.
