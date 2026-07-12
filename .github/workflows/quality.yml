@@ -55,6 +55,29 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
 
+  performance:
+    name: Large-library performance regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install daemon dependencies
+        working-directory: daemon
+        run: bun install --frozen-lockfile
+
+      - name: Run 10K performance regression
+        run: npm run test:performance
+
   docker:
     name: Docker build and health
     runs-on: ubuntu-latest

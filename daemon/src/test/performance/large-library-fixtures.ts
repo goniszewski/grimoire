@@ -5,7 +5,14 @@ import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
 
-export const LARGE_LIBRARY_SIZE = 2_000;
+const requestedLibrarySize = Number.parseInt(
+  process.env.LITTLEIMP_PERFORMANCE_SIZE ?? "10000",
+  10
+);
+
+export const LARGE_LIBRARY_SIZE = Number.isFinite(requestedLibrarySize) && requestedLibrarySize >= 1_000
+  ? requestedLibrarySize
+  : 10_000;
 export const VECTOR_BENCHMARK_DIMENSIONS = 768;
 export const VECTOR_BENCHMARK_ITERATIONS = 3;
 export const VECTOR_BENCHMARK_LIMIT = 10;
@@ -13,11 +20,16 @@ export const VECTOR_BENCHMARK_MODEL = "performance-vector-model";
 export const VECTOR_BENCHMARK_SIZES = [100, 1_000, 5_000, 10_000] as const;
 
 export const LARGE_LIBRARY_BUDGETS_MS = {
-  listPage: 500,
-  paginationPage: 500,
-  keywordSearch: 800,
-  categoryFilter: 500,
-  tagFilter: 650,
+  listPage: 1_000,
+  paginationPage: 1_000,
+  keywordSearch: 1_500,
+  categoryFilter: 1_000,
+  tagFilter: 1_000,
+  domainFilter: 1_000,
+  dateFilter: 1_000,
+  combinedFilter: 1_000,
+  aggregates: 1_000,
+  hybridSearch: 1_500,
   importPreview: 1_000,
   importCommit: 3_000,
 } as const;
@@ -35,6 +47,11 @@ export interface LargeLibraryFixture {
 
 export interface VectorBenchmarkFixture {
   queryVector: number[];
+}
+
+interface TriggerDefinition {
+  name: string;
+  sql: string;
 }
 
 export function createPerformanceApp(): {
@@ -78,57 +95,89 @@ export function seedLargeLibrary(db: Database, size: number): LargeLibraryFixtur
     "INSERT INTO bookmark_tags (bookmark_id, tag_id) VALUES (?, ?)"
   );
 
-  db.transaction(() => {
-    for (let index = 0; index < 12; index += 1) {
-      const row = insertCategory.get(`Performance Category ${index}`)!;
-      categoryIds.push(row.id);
+  const ftsTriggers = db
+    .query<TriggerDefinition, []>(
+      `SELECT name, sql FROM sqlite_master
+       WHERE type = 'trigger' AND name LIKE '%_fts_%' AND sql IS NOT NULL`
+    )
+    .all();
+  for (const trigger of ftsTriggers) {
+    db.exec(`DROP TRIGGER ${trigger.name}`);
+  }
+
+  try {
+    db.transaction(() => {
+      for (let index = 0; index < 12; index += 1) {
+        const row = insertCategory.get(`Performance Category ${index}`)!;
+        categoryIds.push(row.id);
+      }
+
+      for (const name of tagNames) {
+        const row = insertTag.get(name)!;
+        tagIds.push(row.id);
+      }
+
+      for (let index = 0; index < size; index += 1) {
+        const categoryId = categoryIds[index % categoryIds.length]!;
+        const domain = `perf-${index % 20}.example.com`;
+        const hasLatencyTerm = index % 4 === 0;
+        const title = `${hasLatencyTerm ? "Latency" : "Throughput"} benchmark note ${index}`;
+        const createdAt = new Date(Date.UTC(2026, 0, 1 + Math.floor(index / 100), index % 24, index % 60)).toISOString();
+        const readAt = index % 5 === 0
+          ? new Date(Date.UTC(2026, 1, 1 + Math.floor(index / 150), index % 24, 0)).toISOString()
+          : null;
+        const lastOpenedAt = index % 7 === 0
+          ? new Date(Date.UTC(2026, 2, 1 + Math.floor(index / 150), index % 24, 0)).toISOString()
+          : null;
+        const bookmark = insertBookmark.get(
+          `https://${domain}/library/item-${index}`,
+          domain,
+          title,
+          hasLatencyTerm ? "Latency regression reference" : "General performance reference",
+          categoryId,
+          index % 11 === 0 ? 1 : 0,
+          index % 6 === 0 ? 1 : 0,
+          createdAt,
+          readAt,
+          index % 13,
+          lastOpenedAt
+        )!;
+
+        insertContent.run(
+          bookmark.id,
+          `Large library markdown body ${index}. ${hasLatencyTerm ? "latency measurement budget" : "throughput measurement budget"} for deterministic search.`,
+          hasLatencyTerm ? "Latency measurement summary" : "Throughput measurement summary",
+          "en",
+          90 + (index % 200)
+        );
+
+        const firstTag = tagIds[index % tagIds.length]!;
+        const secondTag = tagIds[(index + 7) % tagIds.length]!;
+        attachTag.run(bookmark.id, firstTag);
+        attachTag.run(bookmark.id, secondTag);
+      }
+    })();
+
+    db.exec(`DELETE FROM bookmarks_fts`);
+    db.exec(`
+      INSERT INTO bookmarks_fts (bookmark_id, title, summary, tags, content)
+      SELECT
+        b.id,
+        COALESCE(b.title, ''),
+        COALESCE(bc.summary, b.description, ''),
+        COALESCE(GROUP_CONCAT(t.name, ' '), ''),
+        COALESCE(bc.markdown, '')
+      FROM bookmarks b
+      LEFT JOIN bookmark_content bc ON bc.bookmark_id = b.id
+      LEFT JOIN bookmark_tags bt ON bt.bookmark_id = b.id
+      LEFT JOIN tags t ON t.id = bt.tag_id
+      GROUP BY b.id
+    `);
+  } finally {
+    for (const trigger of ftsTriggers) {
+      db.exec(trigger.sql);
     }
-
-    for (const name of tagNames) {
-      const row = insertTag.get(name)!;
-      tagIds.push(row.id);
-    }
-
-    for (let index = 0; index < size; index += 1) {
-      const categoryId = categoryIds[index % categoryIds.length]!;
-      const domain = `perf-${index % 20}.example.com`;
-      const hasLatencyTerm = index % 4 === 0;
-      const title = `${hasLatencyTerm ? "Latency" : "Throughput"} benchmark note ${index}`;
-      const createdAt = new Date(Date.UTC(2026, 0, 1 + Math.floor(index / 100), index % 24, index % 60)).toISOString();
-      const readAt = index % 5 === 0
-        ? new Date(Date.UTC(2026, 1, 1 + Math.floor(index / 150), index % 24, 0)).toISOString()
-        : null;
-      const lastOpenedAt = index % 7 === 0
-        ? new Date(Date.UTC(2026, 2, 1 + Math.floor(index / 150), index % 24, 0)).toISOString()
-        : null;
-      const bookmark = insertBookmark.get(
-        `https://${domain}/library/item-${index}`,
-        domain,
-        title,
-        hasLatencyTerm ? "Latency regression reference" : "General performance reference",
-        categoryId,
-        index % 11 === 0 ? 1 : 0,
-        index % 6 === 0 ? 1 : 0,
-        createdAt,
-        readAt,
-        index % 13,
-        lastOpenedAt
-      )!;
-
-      insertContent.run(
-        bookmark.id,
-        `Large library markdown body ${index}. ${hasLatencyTerm ? "latency measurement budget" : "throughput measurement budget"} for deterministic search.`,
-        hasLatencyTerm ? "Latency measurement summary" : "Throughput measurement summary",
-        "en",
-        90 + (index % 200)
-      );
-
-      const firstTag = tagIds[index % tagIds.length]!;
-      const secondTag = tagIds[(index + 7) % tagIds.length]!;
-      attachTag.run(bookmark.id, firstTag);
-      attachTag.run(bookmark.id, secondTag);
-    }
-  })();
+  }
 
   db.exec("ANALYZE");
 

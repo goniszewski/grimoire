@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Little Imp large-library search scaling profile</title>
+  <desc id="desc">Comparison of deep pagination, keyword search, aggregates, and hybrid search at one thousand, ten thousand, and fifty thousand bookmarks, all below their performance budgets.</desc>
+  <rect width="1600" height="900" fill="#f7f7fa"/>
+  <rect x="90" y="70" width="1420" height="760" rx="32" fill="#fff" stroke="#dedfec" stroke-width="3"/>
+  <text x="150" y="150" fill="#7c3aed" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="800">TASK-132 · SEARCH PERFORMANCE</text>
+  <text x="150" y="212" fill="#191827" font-family="Inter,Arial,sans-serif" font-size="46" font-weight="800">10K regression · 50K scaling evidence</text>
+  <text x="150" y="258" fill="#626475" font-family="Inter,Arial,sans-serif" font-size="22">Warm in-memory measurements on macOS arm64 · milliseconds · lower is better</text>
+  <line x1="430" y1="340" x2="430" y2="735" stroke="#dedfec" stroke-width="2"/>
+  <line x1="430" y1="735" x2="1410" y2="735" stroke="#dedfec" stroke-width="2"/>
+  <text x="150" y="390" fill="#191827" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700">Deep offset</text>
+  <text x="150" y="490" fill="#191827" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700">Keyword search</text>
+  <text x="150" y="590" fill="#191827" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700">Aggregates</text>
+  <text x="150" y="690" fill="#191827" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700">Hybrid search</text>
+  <g font-family="Inter,Arial,sans-serif" font-size="19" font-weight="700">
+    <rect x="440" y="352" width="2" height="17" rx="8" fill="#94a3b8"/><text x="450" y="368" fill="#626475">1K 1.2</text>
+    <rect x="440" y="379" width="19" height="17" rx="8" fill="#7c3aed"/><text x="470" y="395" fill="#626475">10K 12.0</text>
+    <rect x="440" y="406" width="109" height="17" rx="8" fill="#0f7fbf"/><text x="560" y="422" fill="#626475">50K 68.2</text>
+    <rect x="440" y="452" width="3" height="17" rx="8" fill="#94a3b8"/><text x="451" y="468" fill="#626475">1K 2.1</text>
+    <rect x="440" y="479" width="11" height="17" rx="8" fill="#7c3aed"/><text x="462" y="495" fill="#626475">10K 7.1</text>
+    <rect x="440" y="506" width="59" height="17" rx="8" fill="#0f7fbf"/><text x="510" y="522" fill="#626475">50K 36.7</text>
+    <rect x="440" y="552" width="3" height="17" rx="8" fill="#94a3b8"/><text x="451" y="568" fill="#626475">1K 2.1</text>
+    <rect x="440" y="579" width="36" height="17" rx="8" fill="#7c3aed"/><text x="487" y="595" fill="#626475">10K 22.6</text>
+    <rect x="440" y="606" width="284" height="17" rx="8" fill="#0f7fbf"/><text x="735" y="622" fill="#626475">50K 177.7</text>
+    <rect x="440" y="652" width="19" height="17" rx="8" fill="#94a3b8"/><text x="470" y="668" fill="#626475">1K 11.7</text>
+    <rect x="440" y="679" width="194" height="17" rx="8" fill="#7c3aed"/><text x="645" y="695" fill="#626475">10K 121.3</text>
+    <rect x="440" y="706" width="850" height="17" rx="8" fill="#0f7fbf"/><text x="1310" y="722" fill="#626475">50K 621.7</text>
+  </g>
+  <rect x="150" y="770" width="1300" height="1" fill="#dedfec"/>
+  <circle cx="170" cy="801" r="10" fill="#15803d"/>
+  <text x="195" y="810" fill="#15803d" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="800">All 10K budgets pass; 50K search remains sub-second.</text>
+</svg>

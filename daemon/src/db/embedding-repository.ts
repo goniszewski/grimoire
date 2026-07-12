@@ -34,6 +34,8 @@ export interface FindNearestEmbeddingOptions {
   allowedIds?: Set<string>;
 }
 
+const SQLITE_VEC_MAX_K = 4_096;
+
 export class EmbeddingRepository {
   constructor(private db: Database) {}
 
@@ -248,11 +250,17 @@ export class EmbeddingRepository {
           .get(model)?.count ?? 0;
       if (modelCount === 0) return [];
 
+      // vec0 currently caps k at 4,096. Exhaustive semantic/hybrid ranking can
+      // legitimately request more rows, so use the durable BLOB path for those
+      // calls without disabling the otherwise healthy derived index.
+      if (options.limit > SQLITE_VEC_MAX_K) return null;
+
       const queryBlob = packFloat32(vector);
       let k = options.allowedIds
-        ? modelCount
+        ? Math.min(modelCount, SQLITE_VEC_MAX_K, Math.max(64, options.limit * 2))
         : Math.min(
             modelCount,
+            SQLITE_VEC_MAX_K,
             Math.max(1, options.limit + (options.excludeBookmarkId ? 1 : 0))
           );
 
@@ -285,7 +293,9 @@ export class EmbeddingRepository {
           return ranked.slice(0, options.limit);
         }
 
-        k = Math.min(modelCount, Math.max(k + 1, k * 2));
+        if (k >= SQLITE_VEC_MAX_K) return null;
+
+        k = Math.min(modelCount, SQLITE_VEC_MAX_K, Math.max(k + 1, k * 2));
       }
     } catch (error) {
       this.disableVectorIndex(error);

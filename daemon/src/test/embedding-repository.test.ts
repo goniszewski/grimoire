@@ -101,6 +101,31 @@ describe("EmbeddingRepository vector index", () => {
     expect(nearest.map((row) => row.bookmarkId)).toEqual([active.id, far.id]);
   });
 
+  it("keeps sqlite-vec available when an exhaustive request exceeds its k limit", () => {
+    const db = makeTestDb();
+    const bookmarks = new BookmarkRepository(db);
+    const embeddings = new EmbeddingRepository(db);
+
+    const vectorIndexAvailable = embeddings.isVectorIndexAvailable(2);
+    if (!vectorIndexAvailable) {
+      expect(vectorIndexAvailable).toBe(false);
+      return;
+    }
+
+    const first = bookmarks.create("https://vectors.example.com/exhaustive-a", "Exhaustive A");
+    const second = bookmarks.create("https://vectors.example.com/exhaustive-b", "Exhaustive B");
+    embeddings.upsert(first.id, "test-model", [1, 0]);
+    embeddings.upsert(second.id, "test-model", [0, 1]);
+
+    const nearest = embeddings.findNearest("test-model", [1, 0], {
+      limit: 4_097,
+      excludeBookmarkId: null,
+    });
+
+    expect(nearest.map((row) => row.bookmarkId)).toEqual([first.id, second.id]);
+    expect(embeddings.isVectorIndexAvailable(2)).toBe(true);
+  });
+
   it("keeps the durable embedding when the derived vector mirror cannot be written", () => {
     const db = makeTestDb();
     const bookmarks = new BookmarkRepository(db);

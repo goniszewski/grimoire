@@ -145,7 +145,7 @@ tasks/
 | TASK-129 | [First-Run Guided Tour and Demo Content](done/TASK-129-first-run-guided-tour.md) | First-user experience | medium | done |
 | TASK-130 | [sqlite-vec Vector Index Integration](done/TASK-130-sqlite-vec-vector-index.md) | Performance and polish | medium | done |
 | TASK-131 | [GitHub Issues Extractor](done/TASK-131-github-issues-extractor.md) | Performance and polish | low | done |
-| TASK-132 | [Large-Library Search Performance](backlog/TASK-132-large-library-search-performance.md) | Performance and polish | low | backlog |
+| TASK-132 | [Large-Library Search Performance](done/TASK-132-large-library-search-performance.md) | Performance and polish | low | done |
 | TASK-133 | [Parity Task Reports and Visual Verification](done/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | done |
 | TASK-134 | [Parity Acceptance Checklist](done/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | done |
 | TASK-135 | [Public Documentation Polish](done/TASK-135-public-documentation-polish.md) | Verification and release readiness | high | done |
@@ -331,8 +331,10 @@ TASK-130 is complete with optional sqlite-vec vector indexing, durable BLOB
 fallback, search and organization-agent integration, fallback hardening, and a
 100/1K/5K/10K nearest-neighbor benchmark matrix. TASK-131 is complete with
 GitHub issue API extraction, label-to-tag persistence, focused daemon tests,
-documentation updates, and task-report coverage. TASK-132 remains in `backlog/`
-as the next performance follow-up.
+documentation updates, and task-report coverage. TASK-132 is complete with a
+10K regression fixture, 1K/10K/50K scaling evidence, query-plan assertions,
+hybrid-search profiling, bulk FTS fixture setup, and safe exhaustive sqlite-vec
+fallback behavior, with the 10K budget enforced by a dedicated CI job.
 TASK-133 is complete with a synthetic parity task-report and
 desktop/narrow visual verification sweep linked from the task-report indexes.
 TASK-134 is complete with the final parity acceptance checklist and release

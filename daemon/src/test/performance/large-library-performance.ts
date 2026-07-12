@@ -14,11 +14,29 @@ import {
   timeAsync,
   timeSync,
 } from "./large-library-fixtures.js";
+import type { PerformanceResult } from "./large-library-fixtures.js";
 import { EmbeddingRepository } from "../../db/embedding-repository.js";
+import { SearchRepository } from "../../db/search-repository.js";
 
 type PagedResponse = {
-  data: Array<{ id: string; category_id?: string | null; tags?: string[] }>;
+  data: Array<{
+    id: string;
+    category_id?: string | null;
+    tags?: string[];
+    domain?: string;
+    created_at?: string;
+    read_at?: string | null;
+  }>;
   pagination: { total: number; limit: number; offset: number; has_more: boolean };
+};
+
+type AggregateResponse = {
+  data: {
+    total: number;
+    categories: Array<{ id: string; count: number }>;
+    tags: Array<{ name: string; count: number }>;
+    domains: Array<{ domain: string; count: number }>;
+  };
 };
 
 type PreviewResponse = {
@@ -64,6 +82,15 @@ type VectorBenchmarkResult = {
   size: number;
   blobMs: number;
   sqliteVecMs: number | null;
+};
+
+type QueryPlanRow = {
+  detail: string;
+};
+
+type QueryPlanResult = {
+  name: string;
+  details: string[];
 };
 
 async function expectJson<T>(response: Response, expectedStatus: number): Promise<T> {
@@ -186,6 +213,168 @@ function runVectorBenchmarks(): VectorBenchmarkResult[] {
   });
 }
 
+async function measureHybridSearch(): Promise<PerformanceResult> {
+  const context = createPerformanceApp();
+  const fixture = seedVectorBenchmarkLibrary(context.db, LARGE_LIBRARY_SIZE);
+  const repo = new SearchRepository(context.db);
+  const embeddings = new EmbeddingRepository(context.db);
+  const vectorIndexWasAvailable = embeddings.isVectorIndexAvailable(VECTOR_BENCHMARK_DIMENSIONS);
+  const originalFetch = globalThis.fetch;
+
+  if (vectorIndexWasAvailable && LARGE_LIBRARY_SIZE > 4_096) {
+    const allowedIds = new Set(
+      context.db
+        .query<{ id: string }, []>("SELECT id FROM bookmarks")
+        .all()
+        .map((row) => row.id)
+    );
+    const boundedFiltered = embeddings.findNearest(
+      VECTOR_BENCHMARK_MODEL,
+      fixture.queryVector,
+      { limit: 3_000, allowedIds }
+    );
+    if (boundedFiltered.length !== 3_000) {
+      throw new Error(
+        `Expected 3,000 bounded filtered vector results, received ${boundedFiltered.length}`
+      );
+    }
+    if (!embeddings.isVectorIndexAvailable(VECTOR_BENCHMARK_DIMENSIONS)) {
+      throw new Error("Bounded filtered vector search disabled the sqlite-vec index");
+    }
+
+    const excludedBookmarkId = allowedIds.values().next().value;
+    const maxBounded = embeddings.findNearest(
+      VECTOR_BENCHMARK_MODEL,
+      fixture.queryVector,
+      { limit: 4_096, excludeBookmarkId: excludedBookmarkId }
+    );
+    if (maxBounded.length !== 4_096) {
+      throw new Error(
+        `Expected 4,096 max-bounded vector results, received ${maxBounded.length}`
+      );
+    }
+    if (!embeddings.isVectorIndexAvailable(VECTOR_BENCHMARK_DIMENSIONS)) {
+      throw new Error("Max-bounded vector fallback disabled the sqlite-vec index");
+    }
+  }
+
+  globalThis.fetch = Object.assign(
+    async (...args: Parameters<typeof fetch>) => {
+      const [input, init] = args;
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
+      if (url !== "http://performance.local/v1/embeddings" || init?.method !== "POST") {
+        throw new Error(`Unexpected performance fetch: ${init?.method ?? "GET"} ${url}`);
+      }
+      return new Response(
+        JSON.stringify({ data: [{ embedding: fixture.queryVector }] }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    },
+    { preconnect: originalFetch.preconnect }
+  );
+
+  try {
+    return await timeAsync("hybrid search", async () => {
+      const result = await repo.search({
+        q: "vector",
+        mode: "hybrid",
+        limit: 25,
+        offset: 0,
+        embeddingConfig: {
+          baseUrl: "http://performance.local/v1",
+          apiKey: "",
+          model: VECTOR_BENCHMARK_MODEL,
+        },
+      });
+      if (result.total !== LARGE_LIBRARY_SIZE || result.items.length !== 25) {
+        throw new Error(
+          `Expected ${LARGE_LIBRARY_SIZE} hybrid results and a 25-row page, received ${result.total}/${result.items.length}`
+        );
+      }
+      if (
+        vectorIndexWasAvailable &&
+        !embeddings.isVectorIndexAvailable(VECTOR_BENCHMARK_DIMENSIONS)
+      ) {
+        throw new Error("Exhaustive hybrid fallback disabled the bounded sqlite-vec index");
+      }
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    context.db.close();
+  }
+}
+
+function captureQueryPlans(context: ReturnType<typeof createPerformanceApp>, fixture: { categoryIds: string[] }): QueryPlanResult[] {
+  const explain = (
+    name: string,
+    sql: string,
+    params: Array<string | number>
+  ): QueryPlanResult => ({
+    name,
+    details: context.db
+      .query<QueryPlanRow, Array<string | number>>(`EXPLAIN QUERY PLAN ${sql}`)
+      .all(...params)
+      .map((row) => row.detail),
+  });
+
+  const plans = [
+    explain(
+      "deep library page",
+      `SELECT b.id FROM bookmarks b
+       WHERE b.is_trashed = 0 AND b.is_archived = 0
+       ORDER BY b.is_pinned DESC, b.created_at DESC, b.id ASC
+       LIMIT ? OFFSET ?`,
+      [50, Math.max(0, LARGE_LIBRARY_SIZE - 50)]
+    ),
+    explain(
+      "keyword search",
+      `SELECT b.id FROM bookmarks_fts fts
+       JOIN bookmarks b ON b.id = fts.bookmark_id
+       WHERE b.is_archived = 0 AND b.is_trashed = 0
+         AND fts.bookmarks_fts MATCH ?
+       ORDER BY bm25(bookmarks_fts, 10, 5, 5, 1), b.created_at DESC
+       LIMIT ?`,
+      ['"latency"', 25]
+    ),
+    explain(
+      "combined tag/category filter",
+      `SELECT b.id FROM bookmarks b
+       WHERE b.is_archived = 0 AND b.is_trashed = 0
+         AND b.category_id = ?
+         AND b.id IN (
+           SELECT bt.bookmark_id FROM bookmark_tags bt
+           JOIN tags t ON t.id = bt.tag_id
+           WHERE t.name = ? COLLATE NOCASE
+         )
+       ORDER BY b.is_pinned DESC, b.created_at DESC
+       LIMIT ?`,
+      [fixture.categoryIds[3]!, "topic-3", 30]
+    ),
+    explain(
+      "date range filter",
+      `SELECT b.id FROM bookmarks b
+       WHERE b.is_archived = 0 AND b.is_trashed = 0
+         AND b.created_at >= ? AND b.created_at <= ?
+       ORDER BY b.created_at DESC
+       LIMIT ?`,
+      ["2026-01-01", "2026-01-05T23:59:59Z", 30]
+    ),
+  ];
+
+  if (!plans[1]!.details.some((detail) => detail.includes("VIRTUAL TABLE INDEX"))) {
+    throw new Error("Keyword query plan did not use the FTS5 virtual table index");
+  }
+  if (!plans[2]!.details.some((detail) => detail.includes("idx_bookmark_tags_tag"))) {
+    throw new Error("Combined-filter query plan did not use the bookmark tag index");
+  }
+
+  return plans;
+}
+
 async function run(): Promise<void> {
   const context = createPerformanceApp();
   const fixture = seedLargeLibrary(context.db, LARGE_LIBRARY_SIZE);
@@ -203,9 +392,10 @@ async function run(): Promise<void> {
   assertBudget(list, LARGE_LIBRARY_BUDGETS_MS.listPage);
 
   const pagination = await timeAsync("list deep page", async () => {
-    const response = await context.app.request("/bookmarks?limit=50&offset=950");
+    const deepOffset = Math.max(0, LARGE_LIBRARY_SIZE - 50);
+    const response = await context.app.request(`/bookmarks?limit=50&offset=${deepOffset}`);
     const json = await expectJson<PagedResponse>(response, 200);
-    if (json.data.length !== 50 || json.pagination.offset !== 950) {
+    if (json.data.length !== 50 || json.pagination.offset !== deepOffset) {
       throw new Error("Deep pagination did not return the expected page");
     }
   });
@@ -237,6 +427,74 @@ async function run(): Promise<void> {
     }
   });
   assertBudget(tagFilter, LARGE_LIBRARY_BUDGETS_MS.tagFilter);
+
+  const domainFilter = await timeAsync("domain filter", async () => {
+    const response = await context.app.request("/bookmarks?domain=perf-7.example.com&limit=30");
+    const json = await expectJson<PagedResponse>(response, 200);
+    if (
+      json.pagination.total === 0 ||
+      json.data.length !== 30 ||
+      json.data.some((bookmark) => bookmark.domain !== "perf-7.example.com")
+    ) {
+      throw new Error("Domain filter returned unexpected rows");
+    }
+  });
+  assertBudget(domainFilter, LARGE_LIBRARY_BUDGETS_MS.domainFilter);
+
+  const dateFilter = await timeAsync("date range filter", async () => {
+    const response = await context.app.request(
+      "/bookmarks?date_from=2026-01-01&date_to=2026-01-05&limit=30"
+    );
+    const json = await expectJson<PagedResponse>(response, 200);
+    if (
+      json.pagination.total === 0 ||
+      json.data.length !== 30 ||
+      json.data.some(
+        (bookmark) =>
+          !bookmark.created_at ||
+          bookmark.created_at < "2026-01-01" ||
+          bookmark.created_at > "2026-01-05T23:59:59Z"
+      )
+    ) {
+      throw new Error("Date range filter returned unexpected rows");
+    }
+  });
+  assertBudget(dateFilter, LARGE_LIBRARY_BUDGETS_MS.dateFilter);
+
+  const combinedFilter = await timeAsync("combined filters", async () => {
+    const response = await context.app.request(
+      `/bookmarks?tag=topic-3&category_id=${fixture.categoryIds[3]}&read_state=unread&limit=30`
+    );
+    const json = await expectJson<PagedResponse>(response, 200);
+    if (
+      json.pagination.total === 0 ||
+      json.data.some(
+        (bookmark) =>
+          bookmark.category_id !== fixture.categoryIds[3] ||
+          !bookmark.tags?.includes("topic-3") ||
+          bookmark.read_at !== null
+      )
+    ) {
+      throw new Error("Combined filters returned unexpected rows");
+    }
+  });
+  assertBudget(combinedFilter, LARGE_LIBRARY_BUDGETS_MS.combinedFilter);
+
+  const aggregates = await timeAsync("aggregate counts", async () => {
+    const response = await context.app.request("/bookmarks/aggregates");
+    const json = await expectJson<AggregateResponse>(response, 200);
+    if (
+      json.data.total !== LARGE_LIBRARY_SIZE ||
+      json.data.categories.length !== 12 ||
+      json.data.tags.length !== 24 ||
+      json.data.domains.length !== 20
+    ) {
+      throw new Error("Aggregate counts did not cover the expected fixture distribution");
+    }
+  });
+  assertBudget(aggregates, LARGE_LIBRARY_BUDGETS_MS.aggregates);
+
+  const queryPlans = captureQueryPlans(context, fixture);
 
   const importHtml = createLargeImportHtml(240);
   const form = new FormData();
@@ -278,7 +536,11 @@ async function run(): Promise<void> {
     }
     await expectBookmarkCount(context.app, LARGE_LIBRARY_SIZE + 240);
   });
-  assertBudget(commit, LARGE_LIBRARY_BUDGETS_MS.importCommit);
+  const importCommitBudget = Math.max(
+    LARGE_LIBRARY_BUDGETS_MS.importCommit,
+    LARGE_LIBRARY_SIZE / 10
+  );
+  assertBudget(commit, importCommitBudget);
 
   const vectorBenchmarks = runVectorBenchmarks();
   for (const result of vectorBenchmarks) {
@@ -293,8 +555,29 @@ async function run(): Promise<void> {
     }
   }
 
-  for (const result of [list, pagination, search, categoryFilter, tagFilter, preview, commit]) {
+  const hybridSearch = await measureHybridSearch();
+  assertBudget(hybridSearch, LARGE_LIBRARY_BUDGETS_MS.hybridSearch);
+
+  for (const result of [
+    list,
+    pagination,
+    search,
+    categoryFilter,
+    tagFilter,
+    domainFilter,
+    dateFilter,
+    combinedFilter,
+    aggregates,
+    hybridSearch,
+    preview,
+    commit,
+  ]) {
     console.log(`${result.name}: ${result.elapsedMs.toFixed(1)}ms / ${result.budgetMs}ms`);
+  }
+
+  console.log("query plans");
+  for (const plan of queryPlans) {
+    console.log(`  ${plan.name}: ${plan.details.join(" | ")}`);
   }
 
   console.log(
