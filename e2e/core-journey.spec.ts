@@ -179,10 +179,8 @@ test.describe("Core bookmark journey", () => {
     await page.goto("/");
     await expect(page.getByText("Introduction | Playwright")).toBeVisible({ timeout: 5_000 });
 
-    // Click archive button (hover to reveal)
-    const card = page.locator(".rounded-lg").filter({ hasText: "Introduction | Playwright" }).first();
-    await card.hover();
-    await page.getByTitle("Archive").first().click();
+    await page.getByRole("button", { name: "More bookmark actions" }).click();
+    await page.getByRole("menuitem", { name: "Archive" }).click();
 
     // After archive + re-fetch, bookmark should be gone from main feed
     await expect(page.getByText("Introduction | Playwright")).not.toBeVisible({ timeout: 3_000 });

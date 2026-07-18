@@ -100,6 +100,7 @@ test.describe("Documented business requirements smoke", () => {
     await expect(page.getByText("Saved For Later")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText("Immediate Reference")).toBeVisible();
 
+    await page.getByRole("button", { name: "Refine library" }).click();
     await page.getByRole("button", { name: /^Read Later$/ }).click();
 
     await expect(page.getByText("Saved For Later")).toBeVisible();
@@ -129,17 +130,17 @@ test.describe("Documented business requirements smoke", () => {
 
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 1$/ })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 21$/ })).toBeHidden();
+    await expect(page.getByText(/^Pagination Bookmark 1$/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/^Pagination Bookmark 21$/)).toBeHidden();
     await expect(page.getByText("1-20 of 25")).toBeVisible();
 
     await page.getByRole("button", { name: /^Select$/ }).click();
-    await page.getByRole("heading", { name: /^Pagination Bookmark 1$/ }).click();
+    await page.getByText(/^Pagination Bookmark 1$/).click();
     await expect(page.getByText("1 selected")).toBeVisible();
 
     await page.getByRole("button", { name: "Next page" }).click();
 
-    await expect(page.getByRole("heading", { name: /^Pagination Bookmark 21$/ })).toBeVisible();
+    await expect(page.getByText(/^Pagination Bookmark 21$/)).toBeVisible();
     await expect(page.getByText("21-25 of 25")).toBeVisible();
     await expect(page.getByText("1 selected")).toBeHidden();
   });
