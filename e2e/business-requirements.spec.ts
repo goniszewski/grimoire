@@ -2,6 +2,12 @@ import { expect, test } from "@playwright/test";
 import { makeApiBookmark } from "./api-fixtures";
 import { installMockDaemon } from "./mock-daemon";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littleimp_guided_tour_dismissed", "true");
+  });
+});
+
 test.describe("Documented business requirements smoke", () => {
   test("saves a bookmark and retrieves it through keyword search", async ({ page }) => {
     const daemon = await installMockDaemon(page, { bookmarks: [] });

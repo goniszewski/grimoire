@@ -2,7 +2,11 @@
 
 Decision date: May 29, 2026
 
-Recommendation: **No-go for public MVP promotion.**
+> **Historical decision record.** This assessment reflects the repository and
+> release state on the decision date. Revalidate release visibility, artifacts,
+> CI, and install paths before using it as a current go/no-go decision.
+
+Recommendation at that date: **No-go for public MVP promotion.**
 
 The implemented product, signed local artifacts, local quality gates, Linux
 installer matrix, local installed-app smoke, security regressions, and support

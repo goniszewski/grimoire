@@ -52,6 +52,12 @@ async function setupBaseMocks(
   });
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littleimp_guided_tour_dismissed", "true");
+  });
+});
+
 test.describe("First-run experience", () => {
   test("empty library shows onboarding state with both CTAs", async ({ page }) => {
     await setupBaseMocks(page, []);

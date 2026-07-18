@@ -15,6 +15,7 @@ export default {
     },
     extend: {
       fontFamily: {
+        display: ["Manrope", "Inter", "system-ui", "sans-serif"],
         sans: ["Inter", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
@@ -69,6 +70,10 @@ export default {
           "ai-enriched": "hsl(var(--pipeline-ai-enriched))",
           indexed: "hsl(var(--pipeline-indexed))",
         },
+        info: "hsl(var(--info))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+        knowledge: "hsl(var(--knowledge))",
       },
       borderRadius: {
         lg: "var(--radius)",

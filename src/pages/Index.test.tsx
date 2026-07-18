@@ -365,6 +365,15 @@ describe("Index library view preferences", () => {
   });
 });
 
+describe("Index responsive header", () => {
+  it("keeps the Add label out of the narrow header while preserving its accessible name", () => {
+    renderIndex();
+
+    expect(screen.getByRole("button", { name: "Add bookmark" })).toHaveTextContent("Add");
+    expect(screen.getByText("Add")).toHaveClass("hidden", "sm:inline");
+  });
+});
+
 describe("Index update notification banner", () => {
   it("does not render the update banner when no update is available", () => {
     renderIndex();

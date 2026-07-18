@@ -57,7 +57,7 @@ function TagBookmarkRow({
   const favicon = bookmark.favicon_url;
 
   return (
-    <article className="group flex min-w-0 items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-all hover:border-primary/30 hover:shadow-sm">
+    <article className="group flex min-w-0 items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-[border-color,box-shadow] duration-150 ease-out hover:border-primary/30 hover:shadow-sm">
       {favicon ? (
         <img
           src={favicon}

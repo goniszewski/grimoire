@@ -26,17 +26,17 @@ const TYPE_CONFIG: Record<
   new_subcategory: {
     label: "New subcategory",
     icon: <FolderPlus className="h-4 w-4" />,
-    color: "text-green-500",
+    color: "text-success",
   },
   merge_categories: {
     label: "Merge categories",
     icon: <GitMerge className="h-4 w-4" />,
-    color: "text-blue-500",
+    color: "text-info",
   },
   duplicate_bookmark: {
     label: "Duplicate bookmark",
     icon: <Copy className="h-4 w-4" />,
-    color: "text-orange-500",
+    color: "text-warning",
   },
 };
 
@@ -46,7 +46,7 @@ function ConfidenceBar({ value }: { value: number | null }) {
   if (value === null) return null;
   const pct = Math.round(value * 100);
   const color =
-    pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
+    pct >= 80 ? "bg-success" : pct >= 50 ? "bg-warning" : "bg-destructive";
   return (
     <div className="flex items-center gap-2 mt-1.5">
       <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">

@@ -22,11 +22,11 @@ machine.
 
 Current release target: `0.1.0-beta`.
 
-> Public install status, June 5, 2026: the repository is still private and the
-> unauthenticated tag-qualified installer URL returns `404`. Use the source
-> checkout or Docker development paths below for now. The one-command installer
-> and Homebrew commands are the intended public paths once distribution
-> visibility is unblocked and the release validation tasks pass.
+> **Beta availability.** Source checkout and Docker are the supported ways to
+> evaluate Little Imp today. Signed release packages and Homebrew remain
+> prerelease paths until public install and upgrade validation has passed. See
+> the [release decision](./docs/release-decision-v0.1.0-beta.md) for the
+> recorded gate and required validation.
 
 ## Contents
 
@@ -59,7 +59,8 @@ The screenshots below use synthetic/demo data from the local UI audit set.
 
 ### Source Checkout
 
-Use this path while the repository and release artifacts are private.
+This is the supported beta path. It works from a public clone and does not
+depend on release assets.
 
 ```sh
 git clone https://github.com/goniszewski/little-imp.git
@@ -80,7 +81,7 @@ npm run daemon:dev
 npm run dev
 ```
 
-Open the Vite app at `http://localhost:5173`. The app talks to the daemon at
+Open the Vite app at `http://127.0.0.1:8080`. The app talks to the daemon at
 `http://127.0.0.1:3210`.
 
 ### Docker
@@ -93,18 +94,6 @@ curl http://127.0.0.1:3210/health
 ```
 
 Open `http://127.0.0.1:3210`.
-
-### Public Release Installer
-
-This is the intended first-user path after public distribution is unblocked:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
-```
-
-Do not treat that command as validated while the unauthenticated URL returns
-`404`. See [release-decision-v0.1.0-beta.md](./docs/release-decision-v0.1.0-beta.md)
-for the current go/no-go state.
 
 ## What Little Imp Does
 
@@ -128,8 +117,8 @@ for the current go/no-go state.
 
 Little Imp has two runtime parts:
 
-- Frontend: React 18, Vite, TypeScript, Tailwind, and shadcn/Radix UI under
-  `src/`.
+- Frontend: React 18, Vite, TypeScript, Tailwind CSS, and Radix UI primitives
+  under `src/`.
 - Daemon: Bun, Hono, and SQLite under `daemon/`, listening on
   `127.0.0.1:3210` by default.
 
@@ -182,36 +171,12 @@ cd daemon
 ./install.sh --uninstall --purge
 ```
 
-### Homebrew alternate install
+### Homebrew (pending live validation)
 
-Homebrew is an alternate MVP install path for macOS and Linux users who prefer
-`brew services`. It remains gated on public release artifacts being reachable
-and live validation passing.
-
-```sh
-brew tap oven-sh/bun
-brew tap goniszewski/little-imp
-brew install little-imp
-brew services start little-imp
-```
-
-Upgrade and service management:
-
-```sh
-brew update
-brew upgrade little-imp
-brew services restart little-imp
-
-brew services stop little-imp
-brew uninstall little-imp
-```
-
-Data is preserved by default under `$(brew --prefix)/var/little-imp` when
-running `brew uninstall little-imp`. Remove that directory explicitly only when
-you intend to purge the Homebrew-managed database, settings, backups, and logs.
-
-Current local formula checks pass, but live `brew install` is still blocked by
-public artifact `404` while the repository is private.
+The repository includes a Homebrew formula, but public install, service
+lifecycle, and data-preservation checks have not passed against release assets.
+It is not a supported beta installation path yet. The release decision records
+the validation required before these commands are published for users.
 
 ## Data, Privacy, And Security
 

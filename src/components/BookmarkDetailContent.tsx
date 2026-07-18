@@ -144,7 +144,7 @@ export function BookmarkDetailContent({
         {!!bookmark.read_later && (
           <Badge
             variant="outline"
-            className="text-xs font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+            className="text-xs font-mono border-warning/30 text-warning"
           >
             Read Later
           </Badge>

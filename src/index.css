@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+/* Hallmark · genre: operational UI · tone: dense and task-focused · anchor hue: violet */
+/* Hallmark · macrostructure: local-first library shell · pre-emit critique: P4 H4 E4 S5 R4 V4 */
 
 @tailwind base;
 @tailwind components;
@@ -6,14 +9,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 225 20% 97%;
     --foreground: 230 25% 12%;
-    --card: 0 0% 98%;
+    --card: 225 20% 99%;
     --card-foreground: 230 25% 12%;
-    --popover: 0 0% 100%;
+    --popover: 225 20% 99%;
     --popover-foreground: 230 25% 12%;
     --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 225 20% 98%;
     --secondary: 230 15% 93%;
     --secondary-foreground: 230 25% 12%;
     --muted: 230 15% 95%;
@@ -21,11 +24,12 @@
     --accent: 262 60% 94%;
     --accent-foreground: 262 83% 40%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 225 20% 98%;
     --border: 230 15% 90%;
     --input: 230 15% 90%;
     --ring: 262 83% 58%;
     --radius: 0.5rem;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
     --pipeline-saved: 45 93% 47%;
     --pipeline-fetched: 200 98% 39%;
@@ -33,10 +37,15 @@
     --pipeline-ai-enriched: 280 70% 50%;
     --pipeline-indexed: 142 71% 45%;
 
-    --sidebar-background: 0 0% 97%;
+    --info: 213 82% 42%;
+    --success: 151 64% 34%;
+    --warning: 39 92% 36%;
+    --knowledge: 175 72% 32%;
+
+    --sidebar-background: 225 18% 97%;
     --sidebar-foreground: 230 15% 30%;
     --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 225 20% 98%;
     --sidebar-accent: 262 60% 94%;
     --sidebar-accent-foreground: 262 83% 40%;
     --sidebar-border: 230 15% 90%;
@@ -51,7 +60,7 @@
     --popover: 230 21% 11%;
     --popover-foreground: 220 15% 90%;
     --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 225 20% 98%;
     --secondary: 230 15% 16%;
     --secondary-foreground: 220 15% 85%;
     --muted: 230 15% 16%;
@@ -59,7 +68,7 @@
     --accent: 262 40% 18%;
     --accent-foreground: 262 80% 75%;
     --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 225 20% 98%;
     --border: 230 15% 18%;
     --input: 230 15% 18%;
     --ring: 262 83% 58%;
@@ -70,10 +79,15 @@
     --pipeline-ai-enriched: 280 70% 60%;
     --pipeline-indexed: 142 71% 50%;
 
+    --info: 208 92% 68%;
+    --success: 151 68% 58%;
+    --warning: 42 96% 62%;
+    --knowledge: 175 72% 58%;
+
     --sidebar-background: 230 21% 10%;
     --sidebar-foreground: 220 15% 75%;
     --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 225 20% 98%;
     --sidebar-accent: 262 40% 18%;
     --sidebar-accent-foreground: 262 80% 75%;
     --sidebar-border: 230 15% 18%;
@@ -88,6 +102,13 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-style: normal;
+  }
+  html, body {
+    overflow-x: clip;
   }
   code, .font-mono {
     font-family: 'JetBrains Mono', monospace;

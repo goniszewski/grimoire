@@ -162,6 +162,22 @@ describe("BookmarkCard — actions", () => {
     expect(onPin).toHaveBeenCalledWith("bm-1", expect.objectContaining({ onSuccess: expect.any(Function) }));
   });
 
+  it("keeps bookmark actions discoverable when keyboard focus enters the card", () => {
+    renderCard(
+      <BookmarkCard
+        bookmark={makeBookmark()}
+        onDelete={noop}
+        onClick={noop}
+        onPin={noopStatus}
+        onUnpin={noopStatus}
+      />
+    );
+
+    expect(screen.getByRole("group", { name: "Bookmark actions" })).toHaveClass(
+      "group-focus-within:opacity-100"
+    );
+  });
+
   it("calls onUnpin when pin button is clicked and bookmark is already pinned", async () => {
     const onUnpin = vi.fn();
     renderCard(

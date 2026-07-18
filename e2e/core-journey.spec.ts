@@ -85,6 +85,12 @@ async function setupDaemonMocks(page: Page, bookmarks: unknown[] = []) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("littleimp_guided_tour_dismissed", "true");
+  });
+});
+
 test.describe("Core bookmark journey", () => {
   test("app loads and shows empty state", async ({ page }) => {
     await setupDaemonMocks(page, []);

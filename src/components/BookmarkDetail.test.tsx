@@ -187,4 +187,29 @@ describe("BookmarkDetail", () => {
 
     expect(onUpdateField).toHaveBeenCalledWith("bm-1", "title", "Renamed Article");
   });
+
+  it("exposes the title editor to keyboard and assistive-technology users", async () => {
+    const getBookmarkMock = vi.spyOn(api, "getBookmark") as unknown as {
+      mockResolvedValue: (value: unknown) => void;
+    };
+    getBookmarkMock.mockResolvedValue({ data: { content: null } });
+
+    renderWithQueryClient(
+      <BookmarkDetail
+        bookmark={makeBookmark()}
+        open
+        onOpenChange={vi.fn()}
+        onUpdateTags={vi.fn()}
+        onUpdateCategory={vi.fn()}
+        onUpdateField={vi.fn()}
+        onUpdateNotes={vi.fn()}
+        relatedBookmarks={[]}
+        onSelectRelated={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Edit bookmark title" })).toHaveClass(
+      "focus-visible:opacity-100"
+    );
+  });
 });

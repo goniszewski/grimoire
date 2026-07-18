@@ -923,7 +923,7 @@ const Settings = () => {
               Settings
             </h1>
             {dirty && (
-              <p className="text-xs text-amber-500 font-mono">Unsaved changes</p>
+              <p className="text-xs text-warning font-mono">Unsaved changes</p>
             )}
           </div>
           <Button
@@ -1048,8 +1048,8 @@ const Settings = () => {
                       <span className="flex items-center gap-1.5 text-xs">
                         {testResult.ok ? (
                           <>
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                            <span className="text-green-600">Connected</span>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                            <span className="text-success">Connected</span>
                           </>
                         ) : (
                           <>
@@ -1267,9 +1267,9 @@ const Settings = () => {
                 <div className="rounded border px-3 py-2 text-xs bg-muted/30 space-y-1.5">
                   <div className="flex items-center gap-1.5">
                     {updateCheckResult.update_available ? (
-                      <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                      <AlertCircle className="h-3.5 w-3.5 text-warning" />
                     ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                     )}
                     <span className="font-medium">{updateCheckMessage(updateCheckResult)}</span>
                   </div>
@@ -1712,7 +1712,7 @@ const Settings = () => {
                       <>
                         Currently: <span className="font-mono">{destinationQuery.data.path}</span>
                         {destinationQuery.data.writable ? (
-                          <CheckCircle2 className="inline h-3 w-3 ml-1 text-green-500" />
+                          <CheckCircle2 className="inline h-3 w-3 ml-1 text-success" />
                         ) : (
                           <XCircle className="inline h-3 w-3 ml-1 text-destructive" />
                         )}
@@ -1761,7 +1761,7 @@ const Settings = () => {
                     </Button>
                   )}
                   {destinationDirty && (
-                    <span className="text-xs text-amber-500 font-mono">Unsaved</span>
+                    <span className="text-xs text-warning font-mono">Unsaved</span>
                   )}
                 </div>
               </div>
@@ -1894,7 +1894,7 @@ const Settings = () => {
                   </Button>
 
                   {s3TestResult && (
-                    <span className={`text-xs font-mono ${s3TestResult.ok ? "text-green-500" : "text-destructive"}`}>
+                    <span className={`text-xs font-mono ${s3TestResult.ok ? "text-success" : "text-destructive"}`}>
                       {s3TestResult.ok ? "Connected" : s3TestResult.message ?? s3TestResult.error}
                     </span>
                   )}
@@ -2100,7 +2100,7 @@ const Settings = () => {
                       Save schedule
                     </Button>
                     {scheduleDirty && (
-                      <span className="text-xs text-amber-500 font-mono">Unsaved</span>
+                      <span className="text-xs text-warning font-mono">Unsaved</span>
                     )}
                   </div>
                 </div>
@@ -2204,7 +2204,7 @@ function BrowserIntegration() {
             <li><strong>Firefox:</strong> Right-click the bookmarks bar and choose "Add Bookmark". Paste the bookmarklet code as the URL.</li>
             <li><strong>Safari:</strong> Show the Favorites bar (View → Show Favorites Bar), then drag the bookmarklet link onto it.</li>
           </ul>
-          <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200">
+          <div className="rounded bg-warning/10 border border-warning/30 px-3 py-2 text-warning">
             <strong>Security note:</strong> The bookmarklet embeds your integration token. Anyone with access to
             your browser bookmarks can capture pages to your Little Imp library. Treat it like a password.
           </div>
@@ -2322,7 +2322,7 @@ function BrowserIntegration() {
                     {token.token_prefix}...
                   </code>
                   {token.revoked_at && (
-                    <span className="text-[10px] text-red-500 font-medium">Revoked</span>
+                    <span className="text-[10px] text-destructive font-medium">Revoked</span>
                   )}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -2354,7 +2354,7 @@ function BrowserIntegration() {
                       title={createdToken?.token?.startsWith(token.token_prefix) ? "Copy bookmarklet URL" : "Create a new token first"}
                     >
                       {copiedTokenId === token.id ? (
-                        <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
+                        <CheckCircle2 className="h-3 w-3 mr-1 text-success" />
                       ) : (
                         <Globe className="h-3 w-3 mr-1" />
                       )}
@@ -2363,7 +2363,7 @@ function BrowserIntegration() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                       onClick={() => setRevokeTarget(token.id)}
                       title="Revoke token"
                     >

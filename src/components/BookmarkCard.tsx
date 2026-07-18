@@ -212,10 +212,10 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
         onTouchStart={selectionMode ? undefined : handleTouchStart}
         onTouchMove={selectionMode ? undefined : handleTouchMove}
         onTouchEnd={selectionMode ? undefined : handleTouchEnd}
-        className={`group relative ${compact ? 'flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5' : 'flex flex-col gap-3 rounded-lg border bg-card p-4 h-full'} cursor-pointer transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 ${selected ? 'ring-2 ring-primary border-primary/50' : ''}`}
+        className={`group relative ${compact ? 'flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5' : 'flex flex-col gap-3 rounded-lg border bg-card p-4 h-full'} cursor-pointer transition-[border-color,box-shadow] duration-150 ease-out hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 ${selected ? 'ring-2 ring-primary border-primary/50' : ''}`}
         style={{
           transform: `translateX(${swipeX}px)`,
-          transition: swiping ? 'none' : 'transform 0.3s ease-out',
+          transition: swiping ? 'none' : 'transform 180ms var(--ease-out)',
         }}
       >
         {compact ? (
@@ -250,12 +250,16 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
               </Link>
             ))}
             {!!bookmark.read_later && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 hidden md:inline-flex">Read Later</Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning hidden md:inline-flex">Read Later</Badge>
             )}
             <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
               {openedText ?? formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
             </span>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div
+              role="group"
+              aria-label="Bookmark actions"
+              className="flex gap-1 opacity-100 transition-opacity group-focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 shrink-0"
+            >
               {(onPin || onUnpin) && (
                 <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
                   {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
@@ -272,7 +276,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                 </Button>
               )}
               {(onReadLater || onClearReadLater) && (
-                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-amber-600' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
+                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-warning' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
                   {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                 </Button>
               )}
@@ -328,7 +332,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                 {!!bookmark.read_later && (
                   <Badge
                     variant="outline"
-                    className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+                    className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning"
                   >
                     Read Later
                   </Badge>
@@ -359,7 +363,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
               <div className="flex flex-wrap gap-1">
                 <Badge
                   variant="outline"
-                  className="text-[10px] px-1.5 py-0 h-5 font-mono border-amber-500/30 text-amber-700 dark:text-amber-300"
+                  className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning"
                 >
                   Read Later
                 </Badge>
@@ -371,7 +375,11 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                 {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
                 {openedText ? ` · ${openedText}` : ""}
               </span>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div
+                role="group"
+                aria-label="Bookmark actions"
+                className="flex gap-1 opacity-100 transition-opacity group-focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+              >
                 {(onPin || onUnpin) && (
                   <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
                     {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
@@ -388,7 +396,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                   </Button>
                 )}
                 {(onReadLater || onClearReadLater) && (
-                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-amber-600' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
+                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-warning' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
                     {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
                   </Button>
                 )}

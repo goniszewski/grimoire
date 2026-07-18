@@ -4,62 +4,49 @@ Little Imp is a local-first bookmark manager for saving, extracting, searching,
 organizing, backing up, and restoring a personal knowledge library on your own
 machine.
 
-This beta ships the first signed release archives, a one-command installer,
-an alternate Homebrew formula, a Docker path, explicit update checks, packaged
-backup commands, and local diagnostics for support.
+This prerelease includes signed release archives, an installer, an alternate
+Homebrew formula, a Docker path, explicit update checks, packaged backup
+commands, and local diagnostics for support.
 
-## Install
+> **Release status.** This is a prerelease record, not a public-install
+> announcement. Source checkout and Docker are the supported evaluation paths.
+> Public installer, archive, Homebrew, and published-artifact validation must
+> pass before those routes are offered as supported beta installs.
 
-The recommended MVP path is the one-command installer. It downloads the release
-archive for your platform, verifies the published SHA-256 checksum, verifies the
-detached signature when available, installs the daemon and frontend bundle, and
-registers the local service.
+## Supported Evaluation Paths
+
+### Source checkout
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash
+git clone https://github.com/goniszewski/little-imp.git
+cd little-imp
+npm install
+cd daemon && bun install
+cd ..
+npm run daemon:dev
 ```
 
-For an in-place upgrade that preserves the database, settings, backups, and
-logs:
+In another terminal, start the frontend at `http://127.0.0.1:8080`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
+npm run dev
 ```
 
-After installation, verify the daemon:
+### Docker
 
 ```sh
+docker compose up -d
 curl http://127.0.0.1:3210/health
 ```
 
-The response should report `version: "0.1.0-beta"`.
+Open `http://127.0.0.1:3210`. See the [Docker deployment guide](./docker-deployment.md)
+for configuration and backup guidance.
 
-## Alternate Install Paths
+## Release Package Paths (not yet supported)
 
-Homebrew is the alternate MVP install path for macOS and Linux users who prefer
-`brew services`. Run this path after the release archive URLs are publicly
-downloadable and the tap is registered:
-
-```sh
-brew tap oven-sh/bun
-brew tap goniszewski/little-imp
-brew install little-imp
-brew services start little-imp
-```
-
-Manual archive installation is also supported. Download the archive, checksum,
-and signature for your platform from this release, verify them, then run the
-native installer inside the archive:
-
-```sh
-shasum -a 256 -c little-imp-0.1.0-beta-macos.tar.gz.sha256
-gpg --verify little-imp-0.1.0-beta-macos.tar.gz.asc little-imp-0.1.0-beta-macos.tar.gz
-tar -xzf little-imp-0.1.0-beta-macos.tar.gz
-cd little-imp-0.1.0-beta-macos/daemon
-./install.sh
-```
-
-Use `little-imp-0.1.0-beta-linux.tar.gz` on Linux.
+The installer, release archives, and Homebrew formula are retained for
+validation. Do not use them as a public beta path until the release decision's
+required public checks have been rerun successfully.
 
 ## Artifacts
 
@@ -114,7 +101,7 @@ Docker is also supported for local-only use with the host port bound to
 
 ## Validation Summary
 
-Completed release evidence for this beta includes:
+Historical release evidence for this beta includes:
 
 - `npm run check`
 - `npm run test:e2e`
@@ -127,11 +114,9 @@ Completed release evidence for this beta includes:
 - final localhost security regression coverage
 - API documentation drift and local Markdown link audits
 
-The GitHub release currently stays a prerelease until the public install paths
-are validated against unauthenticated release URLs. If the installer, Homebrew,
-or published-artifact smoke commands return `404` for release assets, the
-repository or assets are not publicly reachable yet and the release should not
-be promoted.
+This evidence predates the current head and must be refreshed before any public
+promotion. The GitHub release remains a prerelease until the public installer,
+Homebrew, and published-artifact smoke checks are successful.
 
 ## Known Limitations
 
@@ -172,8 +157,8 @@ Useful support references:
 
 - Install verification, daemon health, and service restart commands:
   [README daemon management](https://github.com/goniszewski/little-imp/blob/v0.1.0-beta/README.md#daemon-management)
-- Homebrew setup, Bun dependency tap, service lifecycle, and uninstall behavior:
-  [README Homebrew alternate install](https://github.com/goniszewski/little-imp/blob/v0.1.0-beta/README.md#homebrew-alternate-install)
+- Homebrew release gate and live-validation status:
+  [README Homebrew status](https://github.com/goniszewski/little-imp/blob/v0.1.0-beta/README.md#homebrew-pending-live-validation)
 - General troubleshooting, including offline daemon checks, restore recovery,
   Homebrew Bun resolution, and encrypted package fallback behavior:
   [README troubleshooting](https://github.com/goniszewski/little-imp/blob/v0.1.0-beta/README.md#troubleshooting)

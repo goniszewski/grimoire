@@ -138,7 +138,8 @@ export function BookmarkDetail({
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6 opacity-0 group-hover/title:opacity-100 transition-opacity shrink-0"
+        className="h-6 w-6 shrink-0 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+        aria-label="Edit bookmark title"
         onClick={() => { setTitleInput(bookmark.title); setEditingTitle(true); }}
       >
         <Pencil className="h-3 w-3" />

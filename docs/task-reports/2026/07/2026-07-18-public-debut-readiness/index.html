@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public Debut Readiness - Little Imp Task Report</title>
+<style>
+:root{--bg:#f7f7fa;--surface:#fff;--ink:#191827;--muted:#626475;--line:#dedfec;--violet:#7c3aed;--blue:#0f7fbf;--shadow:0 18px 45px rgba(30,32,50,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.page{width:min(1040px,calc(100vw - 40px));margin:0 auto;padding:52px 0}.task-card{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:clamp(22px,5vw,52px);box-shadow:var(--shadow)}a{color:var(--blue)}.breadcrumbs{margin-bottom:28px;color:var(--muted);font-size:.9rem}.eyebrow{margin:0 0 8px;color:var(--violet);font-size:.78rem;font-weight:800;text-transform:uppercase}h1{margin:0;font-size:clamp(2rem,6vw,4rem);line-height:1.04}h2{margin:32px 0 10px;font-size:1.15rem}p,li{color:var(--muted);line-height:1.6}.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 28px}.meta-row span{border:1px solid var(--line);border-radius:999px;padding:6px 11px;color:var(--muted);font-size:.8rem;font-weight:700}.hero-shot{margin:0}.hero-shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px}.hero-shot figcaption{margin-top:8px;color:var(--muted);font-size:.9rem}ul{padding-left:22px}details{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}summary{cursor:pointer;font-weight:750}code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.9em}@media(max-width:640px){.page{width:min(100% - 24px,1040px);padding:28px 0}.task-card{padding:22px}}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page"><article class="task-card">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../index.html">July 2026</a></nav>
+  <header><p class="eyebrow">Little Imp Task Report</p><h1>Public Debut Readiness</h1><div class="meta-row"><span>July 18, 2026</span><span>Release readiness</span><span>In progress</span></div></header>
+  <figure class="hero-shot"><img src="assets/01-readiness-map.svg" alt="Status map of supported beta paths, cleanup complete, and remaining public-install validation gates"><figcaption>After: public-facing documentation now separates supported evaluation from unverified distribution paths.</figcaption></figure>
+  <section><h2>Before</h2><p>The README advertised a known-unreachable installer, named a private repository, and exposed generator-specific build tooling. The Vite development server also listened on every network interface.</p></section>
+  <section><h2>Problem</h2><p>A public repository should be immediately understandable and safe to evaluate. Historical release evidence must not look like a present-tense installation promise.</p></section>
+  <section><h2>Changes Added</h2><ul><li>Removed the unused generator-specific Vite tagger and its dependency metadata.</li><li>Bound Vite to loopback by default.</li><li>Kept guided-tour coverage in unit tests while isolating unrelated browser flows from its first-run overlay.</li><li>Made README and release notes lead with source checkout and Docker, while keeping package routes explicitly gated.</li><li>Marked the old release decision as a historical record that requires fresh evidence.</li></ul></section>
+  <section><h2>Result</h2><p>First-time readers now see a truthful supported path, contributor setup matches the actual Vite port, and public-install claims remain blocked until live validation is complete.</p></section>
+  <section><h2>Verification</h2><ul><li><code>npm run check</code> — lint, type checks, daemon tests, API-doc drift check, and production build.</li><li><code>npm ci --ignore-scripts --dry-run</code> — lockfile installation is reproducible.</li><li><code>npm run test:e2e</code> — browser-backed core-flow checks after Chromium installation.</li><li><code>npm audit --omit=dev</code> — 7 high-severity production advisories remain open.</li></ul></section>
+  <details><summary>Follow-ups</summary><p>Do not publish the installer, Homebrew, or release-archive commands until public distribution and installed-app smoke validation pass. Resolve or explicitly triage the remaining production dependency advisories before a public beta announcement.</p></details>
+  <details><summary>Files Changed</summary><ul><li><code>vite.config.ts</code></li><li><code>package.json</code> and lockfiles</li><li><code>README.md</code></li><li><code>CONTRIBUTING.md</code></li><li><code>docs/release-notes-v0.1.0-beta.md</code></li><li><code>docs/release-decision-v0.1.0-beta.md</code></li></ul></details>
+</article></main>
+</body>
+</html>

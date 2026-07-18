@@ -33,52 +33,52 @@ const EVENT_CONFIG: Record<
   category_created: {
     label: "Category created",
     icon: <FolderPlus className="h-3.5 w-3.5" />,
-    color: "text-green-500",
+    color: "text-success",
   },
   category_merged: {
     label: "Category merged",
     icon: <GitMerge className="h-3.5 w-3.5" />,
-    color: "text-blue-500",
+    color: "text-info",
   },
   category_renamed: {
     label: "Category renamed",
     icon: <PencilLine className="h-3.5 w-3.5" />,
-    color: "text-yellow-500",
+    color: "text-warning",
   },
   category_reparented: {
     label: "Category moved",
     icon: <MoveRight className="h-3.5 w-3.5" />,
-    color: "text-cyan-500",
+    color: "text-knowledge",
   },
   category_deleted: {
     label: "Category deleted",
     icon: <FolderMinus className="h-3.5 w-3.5" />,
-    color: "text-red-500",
+    color: "text-destructive",
   },
   duplicate_removed: {
     label: "Duplicate removed",
     icon: <Copy className="h-3.5 w-3.5" />,
-    color: "text-red-500",
+    color: "text-destructive",
   },
   cluster_labeled: {
     label: "Cluster labeled",
     icon: <Tag className="h-3.5 w-3.5" />,
-    color: "text-purple-500",
+    color: "text-primary",
   },
   category_merge_suggested: {
     label: "Merge suggested",
     icon: <GitMerge className="h-3.5 w-3.5" />,
-    color: "text-sky-500",
+    color: "text-info",
   },
   duplicate_flagged: {
     label: "Duplicate flagged",
     icon: <Flag className="h-3.5 w-3.5" />,
-    color: "text-orange-500",
+    color: "text-warning",
   },
   suggestion_accepted: {
     label: "Suggestion accepted",
     icon: <CheckCheck className="h-3.5 w-3.5" />,
-    color: "text-emerald-500",
+    color: "text-success",
   },
   suggestion_rejected: {
     label: "Suggestion rejected",

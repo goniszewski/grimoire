@@ -59,7 +59,7 @@ Prepare the repository for public visibility. The codebase, README, and docs are
 ## Notes
 
 - If the repo is still private when this task runs, use the developer-setup path in Quick Start and mark the one-command install as "coming soon."
-- Do not claim public install validation until TASK-122 passes.
+- Do not claim public install validation until TASK-142 passes.
 
 ## Work Notes
 

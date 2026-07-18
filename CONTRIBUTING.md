@@ -44,7 +44,7 @@ npm run daemon:dev
 npm run dev
 ```
 
-The frontend runs at `http://localhost:5173`. The daemon listens on
+The frontend runs at `http://127.0.0.1:8080`. The daemon listens on
 `http://127.0.0.1:3210`.
 
 ## Project Structure

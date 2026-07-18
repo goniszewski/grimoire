@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Little Imp public debut readiness map</title>
+  <desc id="desc">A concise status map showing supported beta paths, cleaned build configuration, and release paths still requiring live validation.</desc>
+  <rect width="1200" height="675" fill="#f7f7fa"/>
+  <text x="84" y="96" fill="#191827" font-family="system-ui, sans-serif" font-size="46" font-weight="700">Public debut: credible paths first</text>
+  <text x="84" y="138" fill="#626475" font-family="system-ui, sans-serif" font-size="23">July 18, 2026 · release-readiness cleanup</text>
+  <rect x="84" y="190" width="500" height="190" rx="18" fill="#ffffff" stroke="#15803d" stroke-width="3"/>
+  <circle cx="128" cy="242" r="16" fill="#15803d"/><text x="160" y="251" fill="#191827" font-family="system-ui, sans-serif" font-size="28" font-weight="700">Supported beta paths</text>
+  <text x="126" y="304" fill="#626475" font-family="system-ui, sans-serif" font-size="24">Source checkout</text><text x="126" y="346" fill="#626475" font-family="system-ui, sans-serif" font-size="24">Loopback-bound Docker</text>
+  <rect x="616" y="190" width="500" height="190" rx="18" fill="#ffffff" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="660" cy="242" r="16" fill="#7c3aed"/><text x="692" y="251" fill="#191827" font-family="system-ui, sans-serif" font-size="28" font-weight="700">Repository cleanup</text>
+  <text x="658" y="304" fill="#626475" font-family="system-ui, sans-serif" font-size="24">Unused generator tagger removed</text><text x="658" y="346" fill="#626475" font-family="system-ui, sans-serif" font-size="24">Vite defaults to 127.0.0.1</text>
+  <rect x="84" y="420" width="1032" height="164" rx="18" fill="#ffffff" stroke="#b45309" stroke-width="3"/>
+  <circle cx="128" cy="472" r="16" fill="#b45309"/><text x="160" y="481" fill="#191827" font-family="system-ui, sans-serif" font-size="28" font-weight="700">Still gated before public installation</text>
+  <text x="126" y="534" fill="#626475" font-family="system-ui, sans-serif" font-size="24">Public installer, release archive, Homebrew, production dependency advisories, and published-artifact smoke</text>
+</svg>

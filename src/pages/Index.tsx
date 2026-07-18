@@ -342,9 +342,9 @@ const Index = () => {
           )}
           <GuidedTour />
           {/* Header */}
-          <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 py-3">
+          <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background/80 px-3 py-3 backdrop-blur-sm sm:gap-3 sm:px-4">
             <SidebarTrigger className="shrink-0" />
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <SearchBar
                 value={store.searchQuery}
                 onChange={store.setSearchQuery}
@@ -352,8 +352,10 @@ const Index = () => {
                 onSearchModeChange={store.setSearchMode}
               />
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <ThemeToggle />
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
               <ExportMenu
                 showLabel={showButtonLabels}
                 filters={{
@@ -371,11 +373,11 @@ const Index = () => {
                 <Upload className="h-3.5 w-3.5" />
                 {showButtonLabels && <span className="ml-1.5">Import</span>}
               </Button>
-              <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Button size="sm" aria-label="Add bookmark" onClick={() => setAddOpen(true)}>
                 <Plus className="h-3.5 w-3.5" />
-                {showButtonLabels && <span className="ml-1.5">Add</span>}
+                {showButtonLabels && <span className="ml-1.5 hidden sm:inline">Add</span>}
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPrefsOpen(true)}>
+              <Button variant="ghost" size="icon" className="hidden h-8 w-8 sm:inline-flex" onClick={() => setPrefsOpen(true)}>
                 <Settings className="h-4 w-4" />
               </Button>
             </div>

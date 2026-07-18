@@ -135,9 +135,6 @@ tasks/
 | TASK-119 | [Large Library Performance Tests](done/TASK-119-large-library-performance-tests.md) | Grimoire parity | medium | done |
 | TASK-120 | [Import Duplicate Handling Policy](done/TASK-120-import-duplicate-handling-policy.md) | Grimoire parity | high | done |
 | TASK-121 | [Contract Route Behavior Checks](done/TASK-121-contract-route-behavior-checks.md) | Grimoire parity | high | done |
-| TASK-122 | [Public Distribution Unblocking](backlog/TASK-122-public-distribution-unblocking.md) | Release unblocking | critical | backlog |
-| TASK-123 | [Homebrew Live Install Validation](backlog/TASK-123-homebrew-live-install-validation.md) | Release unblocking | critical | backlog |
-| TASK-124 | [Public-Artifact Installed-App E2E](backlog/TASK-124-public-artifact-installed-e2e.md) | Release unblocking | critical | backlog |
 | TASK-125 | [macOS x64 Validation or Documented Acceptance](done/TASK-125-macos-x64-validation.md) | Release unblocking | high | done |
 | TASK-126 | [Browser Bookmarklet Client](done/TASK-126-browser-bookmarklet-client.md) | First-user experience | high | done |
 | TASK-127 | [In-App Update Notification](done/TASK-127-in-app-update-notification.md) | First-user experience | high | done |
@@ -149,6 +146,17 @@ tasks/
 | TASK-133 | [Parity Task Reports and Visual Verification](done/TASK-133-parity-task-reports-visual-verification.md) | Verification and release readiness | medium | done |
 | TASK-134 | [Parity Acceptance Checklist](done/TASK-134-parity-acceptance-checklist.md) | Verification and release readiness | medium | done |
 | TASK-135 | [Public Documentation Polish](done/TASK-135-public-documentation-polish.md) | Verification and release readiness | high | done |
+| TASK-136 | [Restore CI and Acceptance Integrity](todo/TASK-136-restore-ci-acceptance-integrity.md) | Product reset and public beta | critical | todo |
+| TASK-137 | [Production Security and Dependency Hardening](todo/TASK-137-production-security-dependency-hardening.md) | Product reset and public beta | critical | todo |
+| TASK-138 | [Trustworthy Browser Capture Flow](todo/TASK-138-trustworthy-browser-capture.md) | Product reset and public beta | critical | todo |
+| TASK-139 | [Product Positioning and Beta Evidence Plan](todo/TASK-139-product-positioning-beta-evidence-plan.md) | Product reset and public beta | high | todo |
+| TASK-140 | [Real Browser-Daemon Core Journey E2E](backlog/TASK-140-real-browser-daemon-core-e2e.md) | Product reset and public beta | critical | backlog |
+| TASK-141 | [Canonical Product and Release Documentation Reset](backlog/TASK-141-canonical-product-release-docs-reset.md) | Product reset and public beta | high | backlog |
+| TASK-142 | [Public Beta Distribution and Live Validation](backlog/TASK-142-public-beta-distribution-live-validation.md) | Product reset and public beta | critical | backlog |
+| TASK-143 | [Private Beta Cohort and Outcome Review](backlog/TASK-143-private-beta-cohort-outcome-review.md) | Product reset and public beta | critical | backlog |
+| TASK-144 | [Targeted Frontend Decomposition and Loading](backlog/TASK-144-targeted-frontend-decomposition.md) | Post-beta maintainability | medium | backlog |
+| TASK-145 | [Evidence-Based Roadmap Reset](backlog/TASK-145-evidence-based-roadmap-reset.md) | Post-beta planning | high | backlog |
+| TASK-146 | [Hallmark UI System Remediation](done/TASK-146-hallmark-ui-system-remediation.md) | Product reset and public beta | medium | done |
 
 ## Current Status
 
@@ -320,11 +328,9 @@ multi-user/server account parity remains deferred, and Grimoire endpoint
 aliases plus packaged browser-extension clients and extension smoke tests remain
 rejected or out of scope for the current parity batch.
 
-The current follow-up batch (TASK-122 through TASK-135) closes the gap to an
-MVP-ready public build. TASK-122, TASK-123, and TASK-124 are release-unblocking
-tasks for public distribution, Homebrew live install, and public-artifact E2E;
-they remain in `backlog/` because they are blocked on public artifact
-visibility. TASK-125 through TASK-129 are complete, covering macOS x64
+The TASK-125 through TASK-135 follow-up batch added release, first-user,
+performance, parity, and documentation work. TASK-125 through TASK-129 are
+recorded as complete, covering macOS x64
 acceptance, browser bookmarklet capture, in-app update notification, arbitrary
 path encrypted-backup verification, and first-run guided tour/demo content.
 TASK-130 is complete with optional sqlite-vec vector indexing, durable BLOB
@@ -342,15 +348,31 @@ evidence links verified.
 TASK-135 is complete with public-facing README, FAQ, security, contributing,
 task-report, and link-audit work.
 
+The active product-reset tranche is TASK-136 through TASK-145. TASK-136 through
+TASK-139 are dependency-free `todo` work: restore green CI and acceptance
+integrity, remediate production security/dependency risk, make browser capture
+trustworthy, and define the product/beta evidence plan. TASK-140 through
+TASK-145 remain dependency-gated in `backlog`: add a real browser-daemon E2E,
+reset canonical documentation, validate one usable beta distribution path, run
+a 5-10 person private beta, perform targeted frontend decomposition only after
+evidence, and rebuild the roadmap from observed outcomes. The former TASK-122,
+TASK-123, and TASK-124 backlog split is consolidated into TASK-140 and TASK-142.
+TASK-146 is complete with semantic visual-system remediation, keyboard and
+touch-safe bookmark actions, responsive-header verification, focused regression
+coverage, and visual task-report evidence.
+
 Completed release validation evidence:
 
 1. `npm run check` passed locally.
-2. `npm run test:e2e` passed locally.
+2. `npm run test:e2e` passed historically; the current local run is blocked by
+   a missing Playwright browser installation and the current GitHub E2E job is failing.
 3. Docker Compose build/start/health validation passed with the host port bound to `127.0.0.1:3210:3210`.
 4. `docker compose down` preserved the named data volume.
 5. Native macOS install/health/upgrade/uninstall/purge smoke passed in an isolated temporary home.
 6. Release-target and local markdown link audits passed.
-7. GitHub Actions `Quality Gates` passed for the current release-validation commit, including lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
+7. GitHub Actions `Quality Gates` passed for historical release-validation
+   commits. The current `develop` head passes lint/types/unit/docs/build, Docker,
+   and performance jobs but fails Playwright E2E; TASK-136 owns restoration.
 8. Linux systemd user installer smoke passed in an Ubuntu 24.04 Docker environment with systemd running as PID 1 and a non-root `systemctl --user` manager.
 9. Installer matrix validation names the exact MVP OS targets and passed the packaged Linux archive smoke on Ubuntu 24.04 LTS and Debian 12 systemd-user containers.
 10. Final MVP release documentation alignment passed generated API docs drift
@@ -431,5 +453,7 @@ Notes:
   promotion until the public installer/archive URLs are reachable and TASK-078,
   TASK-079, and the public-artifact smoke path are rerun successfully, or until
   an authenticated distribution path is explicitly chosen and validated.
+- TASK-142 now consolidates the remaining public distribution, Homebrew decision,
+  and published-artifact validation into one dependency-gated beta release task.
 
 See [docs/roadmap.md](../docs/roadmap.md) for full milestone details.

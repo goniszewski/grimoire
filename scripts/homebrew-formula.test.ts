@@ -109,17 +109,14 @@ describe("Homebrew formula packaging", () => {
     expect(formula).not.toMatch(/git clone|npm run build|bun run build|system ".*daemon\/install\.sh/);
   });
 
-  it("documents Homebrew as an alternate MVP install path with data-preserving commands", () => {
+  it("documents Homebrew as a pending path until live validation passes", () => {
     const readme = readProjectFile("README.md");
     const releaseChecklist = readProjectFile("docs/release-checklist.md");
 
-    expect(readme).toContain("### Homebrew alternate install");
-    expect(readme).toContain("brew tap goniszewski/little-imp");
-    expect(readme).toContain("brew install little-imp");
-    expect(readme).toContain("brew services start little-imp");
-    expect(readme).toContain("Homebrew is an alternate MVP install path");
-    expect(readme).toContain("brew uninstall little-imp");
-    expect(readme).toContain("Data is preserved");
+    expect(readme).toContain("### Homebrew (pending live validation)");
+    expect(readme).toContain("not a supported beta installation path yet");
+    expect(readme).not.toContain("brew install little-imp");
+    expect(readme).not.toContain("brew services start little-imp");
 
     expect(releaseChecklist).toContain("brew tap oven-sh/bun");
     expect(releaseChecklist).toContain('brew tap goniszewski/little-imp "$PWD"');

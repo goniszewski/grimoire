@@ -87,6 +87,9 @@ function makeUpToDateResponse(): { data: UpdateCheckResultDto } {
 
 test.describe("In-app update notification", () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("littleimp_guided_tour_dismissed", "true");
+    });
     await setupBaseMocks(page);
   });
 
