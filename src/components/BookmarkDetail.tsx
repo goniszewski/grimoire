@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BookmarkDetailContent } from "./BookmarkDetailContent";
+import { PipelineBadge } from "./PipelineBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Check, X } from "lucide-react";
@@ -112,6 +113,7 @@ export function BookmarkDetail({
           }}
         />
         <span className="text-xs text-muted-foreground font-mono">{bookmarkWithDetail.domain}</span>
+        <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
       </div>
     </div>
   );

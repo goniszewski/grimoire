@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiet Operational UI Redesign - Little Imp Task Report</title>
+<style>
+:root { --bg:#f5f6fa; --surface:#fff; --ink:#161827; --muted:#5c6274; --line:#d9ddeb; --violet:#6d3ee8; --link:#5630c9; --shadow:0 20px 50px rgba(24,29,50,.10); }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+a { color:var(--link); }
+.page { width:min(1040px,calc(100% - 32px)); margin:0 auto; padding:42px 0 64px; }
+.task-card { border:1px solid var(--line); border-radius:18px; background:var(--surface); padding:clamp(22px,4vw,46px); box-shadow:var(--shadow); }
+.breadcrumbs { margin-bottom:28px; color:var(--muted); font-size:.9rem; }
+.eyebrow { margin:0 0 8px; color:var(--violet); font-size:.78rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+h1 { max-width:760px; margin:0; font-size:clamp(2.2rem,6vw,4.6rem); line-height:.98; letter-spacing:-.045em; }
+h2 { margin:32px 0 10px; font-size:1.18rem; }
+p,li { line-height:1.6; }
+.meta-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; color:var(--muted); font-size:.9rem; }
+.meta-row span { border:1px solid var(--line); border-radius:999px; padding:5px 10px; }
+figure { margin:0; }
+.hero-shot { margin-top:30px; }
+.hero-shot img,.shot-grid img { display:block; width:100%; max-width:100%; height:auto; border:1px solid var(--line); border-radius:12px; }
+figcaption { margin-top:9px; color:var(--muted); font-size:.9rem; line-height:1.45; }
+.shot-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:14px; align-items:start; }
+.shot-grid figure { min-width:0; }
+ul { padding-left:22px; }
+details { margin-top:16px; border-top:1px solid var(--line); padding-top:16px; }
+summary { cursor:pointer; color:var(--violet); font-weight:750; }
+code { overflow-wrap:anywhere; }
+@media (max-width:640px) { .page { width:min(100% - 20px,1040px); padding:10px 0 28px; } .task-card { border-radius:12px; } }
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <article class="task-card">
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../index.html">July 2026</a></nav>
+    <header>
+      <p class="eyebrow">Little Imp Task Report</p>
+      <h1>Quiet Operational UI Redesign</h1>
+      <div class="meta-row"><span>July 18, 2026</span><span>Core UI</span><span>Completed</span></div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/03-library-desktop.png" alt="Little Imp desktop library with an explicit Refine library control, compact list rows, and a labelled overflow menu for secondary bookmark actions.">
+      <figcaption>After: the Library establishes a clear workbench hierarchy—search, results controls, optional refinement, then readable list rows.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>The Library presented all filtering controls at once, bookmark rows crowded several hover-dependent actions together, and Settings was a long, undifferentiated form.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>The important reading and library-management decisions were competing with secondary controls. This was especially costly at narrow widths and for keyboard or touch users.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Added a quiet operational token layer, display/body/mono typography roles, and reduced-motion treatment.</li>
+        <li>Made list view the default; moved library filters behind an explicit <em>Refine library</em> disclosure; and kept result rows scan-first.</li>
+        <li>Consolidated secondary bookmark commands into a labelled overflow menu while retaining direct open, pin, and trash affordances.</li>
+        <li>Placed pipeline status in bookmark detail headers before the reading body.</li>
+        <li>Added an anchored, responsive Settings index for AI, Library, System, and Backup groups.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Core work remains dense but calmer: users see a small action hierarchy first, can reveal deeper controls intentionally, and can navigate long settings safely at desktop and narrow widths.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Focused Vitest coverage for Library disclosure, bookmark action overflow, detail status placement, and Settings anchors.</li>
+        <li>Frontend and daemon TypeScript checks completed successfully.</li>
+        <li>Local browser captures using deterministic API mocks checked 1920px desktop and 390px at 2× density; each capture had matching client and scroll widths.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Additional screenshots</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/01-settings-desktop.png" alt="Desktop Settings with a sticky section index beside the configuration forms.">
+          <figcaption>Desktop Settings: an index-first layout gives the long operational form stable navigation.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/02-settings-narrow.png" alt="Narrow Settings with a two-column section index above the AI configuration fields.">
+          <figcaption>390px: the index becomes a compact two-column navigator without horizontal overflow.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/04-library-narrow.png" alt="Narrow Little Imp Library with optional refinements and compact bookmark rows.">
+          <figcaption>390px: refinement and actions remain explicit without forcing the results into a dense control wall.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>README reference comparisons</summary>
+      <div class="shot-grid">
+        <figure>
+          <img src="assets/05-library-desktop-before-after.png" alt="Side-by-side comparison of the README desktop Library reference and the current quiet operational Library redesign.">
+          <figcaption>Desktop Library: the current view separates optional refinement from the result list and condenses secondary actions.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/06-settings-before-after.png" alt="Side-by-side comparison of the README Browser Integration Settings reference and the current index-first Settings redesign.">
+          <figcaption>Settings: the current view adds a stable section index while retaining the operational forms.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/07-library-narrow-before-after.png" alt="Side-by-side comparison of the README narrow Library reference and the current narrow Library redesign.">
+          <figcaption>Narrow Library: controls remain discoverable through a refinement disclosure instead of a persistent control wall.</figcaption>
+        </figure>
+      </div>
+    </details>
+
+    <details>
+      <summary>Files changed</summary>
+      <ul>
+        <li><a href="../../../../../design.md"><code>design.md</code></a> and <a href="../../../../../tokens.css"><code>tokens.css</code></a></li>
+        <li><a href="../../../../../src/pages/Index.tsx"><code>src/pages/Index.tsx</code></a> and <a href="../../../../../src/hooks/use-preferences.ts"><code>src/hooks/use-preferences.ts</code></a></li>
+        <li><a href="../../../../../src/components/BookmarkCard.tsx"><code>BookmarkCard.tsx</code></a> and <a href="../../../../../src/components/BookmarkDetail.tsx"><code>BookmarkDetail.tsx</code></a></li>
+        <li><a href="../../../../../src/pages/Settings.tsx"><code>Settings.tsx</code></a> and focused tests</li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

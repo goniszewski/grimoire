@@ -11,7 +11,7 @@ const PREFS_KEY = "little-imp-preferences";
 
 const defaults: Preferences = {
   showButtonLabels: true,
-  viewMode: "grid",
+  viewMode: "list",
 };
 
 function loadPrefs(): Preferences {

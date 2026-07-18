@@ -40,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Upload, X, BookmarkIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { loadDemoData } from "@/lib/api";
@@ -59,6 +59,7 @@ const Index = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [refineOpen, setRefineOpen] = useState(false);
   const lastPageSelectionKey = useRef(store.pageSelectionKey);
   const routeTagFilterActive = useRef(false);
   const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
@@ -214,7 +215,7 @@ const Index = () => {
 
   const handleResetLibraryViewPreferences = useCallback(() => {
     store.resetLibraryPreferences();
-    updatePreferences({ viewMode: "grid" });
+    updatePreferences({ viewMode: "list" });
     toast({ title: "Library view reset" });
   }, [store, updatePreferences]);
 
@@ -305,7 +306,7 @@ const Index = () => {
     !!store.lastOpenedRange.to ||
     !!store.dateRange.from ||
     !!store.dateRange.to;
-  const hasCustomLibraryView = store.hasCustomLibraryPreferences || viewMode !== "grid";
+  const hasCustomLibraryView = store.hasCustomLibraryPreferences || viewMode !== "list";
 
   if (appLock.locked) {
     return <LockScreen onUnlock={appLock.unlock} />;
@@ -403,10 +404,9 @@ const Index = () => {
               </div>
             )}
 
-            {/* Results count + toolbar */}
-            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-4 flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground font-mono tabular-nums">
                   {totalResults} result{totalResults !== 1 ? "s" : ""}
                   {store.isFetchingPage && <span className="ml-2">Updating...</span>}
                 </p>
@@ -476,83 +476,35 @@ const Index = () => {
                   </>
                 ) : (
                   <>
-                    <DateRangeFilter
-                      from={store.dateRange.from}
-                      to={store.dateRange.to}
-                      onChange={store.setDateRange}
-                      showLabel={showButtonLabels}
-                      label="Saved date"
-                      ariaLabel="Saved date filter"
-                    />
-                    <Select value={store.readStateFilter} onValueChange={(v) => store.setReadStateFilter(v as typeof store.readStateFilter)}>
-                      <SelectTrigger
-                        aria-label="Read state filter"
-                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[120px]' : 'w-[40px]'} ${store.readStateFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
-                      >
-                        <Eye className="h-3 w-3 shrink-0" />
-                        {showButtonLabels && <SelectValue />}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all" className="text-xs">All reads</SelectItem>
-                        <SelectItem value="unread" className="text-xs">Unread</SelectItem>
-                        <SelectItem value="read" className="text-xs">Read</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={store.pinnedFilter} onValueChange={(v) => store.setPinnedFilter(v as typeof store.pinnedFilter)}>
-                      <SelectTrigger
-                        aria-label="Pinned filter"
-                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[120px]' : 'w-[40px]'} ${store.pinnedFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
-                      >
-                        <Pin className="h-3 w-3 shrink-0" />
-                        {showButtonLabels && <SelectValue />}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all" className="text-xs">All pins</SelectItem>
-                        <SelectItem value="pinned" className="text-xs">Pinned</SelectItem>
-                        <SelectItem value="unpinned" className="text-xs">Unpinned</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={store.openActivityFilter} onValueChange={(v) => store.setOpenActivityFilter(v as typeof store.openActivityFilter)}>
-                      <SelectTrigger
-                        aria-label="Opened count filter"
-                        className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[132px]' : 'w-[40px]'} ${store.openActivityFilter !== "all" ? "border-primary/50 text-primary" : ""}`}
-                      >
-                        <MousePointerClick className="h-3 w-3 shrink-0" />
-                        {showButtonLabels && <SelectValue />}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all" className="text-xs">All opens</SelectItem>
-                        <SelectItem value="unopened" className="text-xs">Unopened</SelectItem>
-                        <SelectItem value="opened" className="text-xs">Opened</SelectItem>
-                        <SelectItem value="opened-2-plus" className="text-xs">Opened 2+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <DateRangeFilter
-                      from={store.lastOpenedRange.from}
-                      to={store.lastOpenedRange.to}
-                      onChange={store.setLastOpenedRange}
-                      showLabel={showButtonLabels}
-                      label="Last opened"
-                      ariaLabel="Last opened date filter"
-                    />
                     <Button
-                      variant={store.readLaterOnly ? "secondary" : "outline"}
+                      variant={refineOpen || activeFilters.length > 0 ? "secondary" : "outline"}
                       size="sm"
-                      onClick={() => store.setReadLaterOnly(!store.readLaterOnly)}
-                      className="text-xs h-7"
-                      aria-pressed={store.readLaterOnly}
+                      onClick={() => setRefineOpen((open) => !open)}
+                      className="h-8 text-xs"
+                      aria-expanded={refineOpen}
+                      aria-controls="library-refinements"
                     >
-                      <BookmarkCheck className="h-3 w-3" />
-                      {showButtonLabels && <span className="ml-1.5">Read Later</span>}
+                      <Settings className="h-3.5 w-3.5" />
+                      <span>Refine library</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs"
+                      aria-label={viewMode === "list" ? "Switch to grid view" : "Switch to list view"}
+                      onClick={() => updatePreferences({ viewMode: viewMode === "list" ? "grid" : "list" })}
+                    >
+                      {viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">{viewMode === "list" ? "List" : "Grid"}</span>
                     </Button>
                     {store.filteredBookmarks.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)} className="text-xs h-7">
+                      <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)} className="h-8 text-xs">
                         <CheckSquare className="h-3 w-3" />
                         {showButtonLabels && <span className="ml-1.5">Select</span>}
                       </Button>
                     )}
                     <Select value={store.sortBy} onValueChange={(v) => store.setSortBy(v as SortOption)}>
-                      <SelectTrigger className={`h-7 text-xs font-mono ${showButtonLabels ? 'w-[140px]' : 'w-[40px]'}`}>
+                      <SelectTrigger className={`h-8 text-xs font-mono ${showButtonLabels ? 'w-[140px]' : 'w-[40px]'}`}>
                         <ArrowUpDown className="h-3 w-3 shrink-0" />
                         {showButtonLabels && <SelectValue />}
                       </SelectTrigger>
@@ -588,6 +540,75 @@ const Index = () => {
               </div>
             </div>
 
+            {!selectionMode && refineOpen && (
+              <section
+                id="library-refinements"
+                aria-label="Library refinements"
+                className="mb-5 grid gap-2 rounded-lg border border-border/70 bg-card/40 p-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+              >
+                <DateRangeFilter
+                  from={store.dateRange.from}
+                  to={store.dateRange.to}
+                  onChange={store.setDateRange}
+                  showLabel={true}
+                  label="Saved date"
+                  ariaLabel="Saved date filter"
+                />
+                <Select value={store.readStateFilter} onValueChange={(v) => store.setReadStateFilter(v as typeof store.readStateFilter)}>
+                  <SelectTrigger aria-label="Read state filter" className={`h-9 w-full text-xs font-mono ${store.readStateFilter !== "all" ? "border-primary/50 text-primary" : ""}`}>
+                    <Eye className="h-3 w-3 shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">All reads</SelectItem>
+                    <SelectItem value="unread" className="text-xs">Unread</SelectItem>
+                    <SelectItem value="read" className="text-xs">Read</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={store.pinnedFilter} onValueChange={(v) => store.setPinnedFilter(v as typeof store.pinnedFilter)}>
+                  <SelectTrigger aria-label="Pinned filter" className={`h-9 w-full text-xs font-mono ${store.pinnedFilter !== "all" ? "border-primary/50 text-primary" : ""}`}>
+                    <Pin className="h-3 w-3 shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">All pins</SelectItem>
+                    <SelectItem value="pinned" className="text-xs">Pinned</SelectItem>
+                    <SelectItem value="unpinned" className="text-xs">Unpinned</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={store.openActivityFilter} onValueChange={(v) => store.setOpenActivityFilter(v as typeof store.openActivityFilter)}>
+                  <SelectTrigger aria-label="Opened count filter" className={`h-9 w-full text-xs font-mono ${store.openActivityFilter !== "all" ? "border-primary/50 text-primary" : ""}`}>
+                    <MousePointerClick className="h-3 w-3 shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">All opens</SelectItem>
+                    <SelectItem value="unopened" className="text-xs">Unopened</SelectItem>
+                    <SelectItem value="opened" className="text-xs">Opened</SelectItem>
+                    <SelectItem value="opened-2-plus" className="text-xs">Opened 2+</SelectItem>
+                  </SelectContent>
+                </Select>
+                <DateRangeFilter
+                  from={store.lastOpenedRange.from}
+                  to={store.lastOpenedRange.to}
+                  onChange={store.setLastOpenedRange}
+                  showLabel={true}
+                  label="Last opened"
+                  ariaLabel="Last opened date filter"
+                />
+                <Button
+                  variant={store.readLaterOnly ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => store.setReadLaterOnly(!store.readLaterOnly)}
+                  className="h-9 justify-start text-xs"
+                  aria-pressed={store.readLaterOnly}
+                >
+                  <BookmarkCheck className="h-3 w-3" />
+                  <span>Read Later</span>
+                </Button>
+              </section>
+            )}
+
             {/* Bookmark grid */}
             {store.isLoading ? (
               <div className="rounded-lg border px-4 py-12 text-center text-sm text-muted-foreground">
@@ -602,7 +623,7 @@ const Index = () => {
                 Loading a valid page...
               </div>
             ) : store.filteredBookmarks.length > 0 ? (
-              <div className={viewMode === "grid"
+              <div data-testid="bookmark-results" className={viewMode === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
                 : "flex flex-col gap-2"
               }>

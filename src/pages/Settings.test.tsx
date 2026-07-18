@@ -309,6 +309,19 @@ describe("Settings update checks", () => {
   });
 });
 
+describe("Settings navigation", () => {
+  it("provides an anchored index for the major settings groups", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const navigation = await screen.findByRole("navigation", { name: "Settings sections" });
+    expect(navigation).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "#settings-ai");
+    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("href", "#settings-library");
+    expect(screen.getByRole("link", { name: "System" })).toHaveAttribute("href", "#settings-system");
+    expect(screen.getByRole("link", { name: "Backup" })).toHaveAttribute("href", "#settings-backup");
+  });
+});
+
 describe("Settings backup verification", () => {
   it("refreshes diagnostics after creating a backup", async () => {
     const createMutate = vi.fn((

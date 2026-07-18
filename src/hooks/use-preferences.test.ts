@@ -12,7 +12,7 @@ describe("usePreferences", () => {
 
   it("returns default values when localStorage is empty", () => {
     const { result } = renderHook(() => usePreferences());
-    expect(result.current.viewMode).toBe("grid");
+    expect(result.current.viewMode).toBe("list");
     expect(result.current.showButtonLabels).toBe(true);
   });
 
@@ -61,7 +61,7 @@ describe("usePreferences", () => {
   it("falls back to defaults if localStorage contains invalid JSON", () => {
     localStorage.setItem(PREFS_KEY, "not-json");
     const { result } = renderHook(() => usePreferences());
-    expect(result.current.viewMode).toBe("grid");
+    expect(result.current.viewMode).toBe("list");
     expect(result.current.showButtonLabels).toBe(true);
   });
 });

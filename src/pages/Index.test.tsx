@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import Index from "./Index";
 import type { UIBookmark, useBookmarks } from "@/hooks/use-bookmarks";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useUpdateCheck } from "@/hooks/use-update-check";
+
+const tokensCss = readFileSync(resolve(process.cwd(), "tokens.css"), "utf8");
+const indexCss = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
 
 vi.mock("@/hooks/use-bookmarks", () => ({
   LIBRARY_PAGE_SIZE_OPTIONS: [20, 50, 100],
@@ -280,6 +285,40 @@ describe("Index pagination", () => {
   });
 });
 
+describe("Quiet operational visual system", () => {
+  it("uses shared quiet tokens and provides a reduced-motion fallback", () => {
+    expect(tokensCss).toContain("--color-accent: oklch(");
+    expect(tokensCss).toContain("--font-display:");
+    expect(indexCss).toContain('@import url("../tokens.css")');
+    expect(indexCss).toContain("@media (prefers-reduced-motion: reduce)");
+  });
+});
+
+describe("Quiet Library hierarchy", () => {
+  it("keeps secondary filters behind the refinement control", () => {
+    renderIndex();
+
+    expect(screen.getByRole("button", { name: "Refine library" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Pinned filter" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Refine library" }));
+
+    expect(screen.getByRole("combobox", { name: "Pinned filter" })).toBeInTheDocument();
+  });
+
+  it("renders compact list retrieval for the list view preference", () => {
+    vi.mocked(usePreferences).mockReturnValue({
+      showButtonLabels: true,
+      viewMode: "list",
+      updatePreferences: vi.fn(),
+    });
+
+    renderIndex();
+
+    expect(screen.getByTestId("bookmark-results")).toHaveClass("flex-col");
+  });
+});
+
 describe("Index parity filters", () => {
   it("renders dense filter controls and clears active filter badges", () => {
     mockStore = makeStore({
@@ -300,6 +339,8 @@ describe("Index parity filters", () => {
     });
 
     renderIndex();
+
+    fireEvent.click(screen.getByRole("button", { name: "Refine library" }));
 
     expect(screen.getByRole("combobox", { name: "Read state filter" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Pinned filter" })).toBeInTheDocument();
@@ -361,7 +402,7 @@ describe("Index library view preferences", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset library view preferences" }));
 
     expect(resetLibraryPreferences).toHaveBeenCalledTimes(1);
-    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "grid" });
+    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "list" });
   });
 });
 

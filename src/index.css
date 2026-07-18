@@ -1,7 +1,6 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench / Index-First · design-system: design.md · designed-as-app */
+@import url("../tokens.css");
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
-
-/* Hallmark · genre: operational UI · tone: dense and task-focused · anchor hue: violet */
-/* Hallmark · macrostructure: local-first library shell · pre-emit critique: P4 H4 E4 S5 R4 V4 */
 
 @tailwind base;
 @tailwind components;
@@ -29,8 +28,6 @@
     --input: 230 15% 90%;
     --ring: 262 83% 58%;
     --radius: 0.5rem;
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
     --pipeline-saved: 45 93% 47%;
     --pipeline-fetched: 200 98% 39%;
     --pipeline-extracted: 262 83% 58%;
@@ -101,17 +98,17 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-body);
   }
   h1, h2, h3, h4 {
-    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-family: var(--font-display);
     font-style: normal;
   }
   html, body {
     overflow-x: clip;
   }
   code, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
   }
 }
 
@@ -129,4 +126,15 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 150ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 150ms !important;
+  }
 }

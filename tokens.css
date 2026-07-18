@@ -1,0 +1,30 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench / Index-First · design-system: design.md · designed-as-app */
+:root {
+  --color-paper: oklch(16% 0.016 278);
+  --color-paper-raised: oklch(19% 0.018 278);
+  --color-ink: oklch(92% 0.012 278);
+  --color-ink-muted: oklch(69% 0.018 278);
+  --color-rule: oklch(29% 0.016 278);
+  --color-accent: oklch(66% 0.17 292);
+  --color-accent-ink: oklch(97% 0.008 278);
+  --color-focus: oklch(73% 0.20 292);
+  --font-display: "Manrope", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --radius-control: 0.5rem;
+  --radius-surface: 0.625rem;
+}

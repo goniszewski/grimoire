@@ -913,7 +913,7 @@ const Settings = () => {
         />
       )}
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-sm px-6 py-4">
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
+        <div className="max-w-5xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -939,7 +939,28 @@ const Settings = () => {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-5xl mx-auto grid gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[11rem_minmax(0,1fr)]">
+        <nav
+          aria-label="Settings sections"
+          className="grid h-fit grid-cols-2 gap-1 rounded-lg border bg-card p-2 text-sm lg:sticky lg:top-24 lg:grid-cols-1"
+        >
+          <p className="col-span-2 px-2 pb-1 pt-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground lg:col-auto">
+            Sections
+          </p>
+          <a href="#settings-ai" className="flex min-h-11 items-center rounded px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0 lg:py-1.5">
+            AI
+          </a>
+          <a href="#settings-library" className="flex min-h-11 items-center rounded px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0 lg:py-1.5">
+            Library
+          </a>
+          <a href="#settings-system" className="flex min-h-11 items-center rounded px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0 lg:py-1.5">
+            System
+          </a>
+          <a href="#settings-backup" className="flex min-h-11 items-center rounded px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0 lg:py-1.5">
+            Backup
+          </a>
+        </nav>
+        <div className="min-w-0 space-y-10">
         {isLoading ? (
           <div className="text-sm text-muted-foreground">Loading…</div>
         ) : isError ? (
@@ -953,7 +974,7 @@ const Settings = () => {
         ) : (
           <>
             {/* LLM Provider */}
-            <section className="space-y-4">
+            <section id="settings-ai" className="scroll-mt-24 space-y-4">
               <div>
                 <h2 className="text-sm font-semibold">LLM Provider</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1147,7 +1168,7 @@ const Settings = () => {
             <div className="border-t" />
 
             {/* Library Maintenance */}
-            <section className="space-y-4">
+            <section id="settings-library" className="scroll-mt-24 space-y-4">
               <div>
                 <h2 className="text-sm font-semibold">Library Maintenance</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1228,7 +1249,7 @@ const Settings = () => {
             <div className="border-t" />
 
             {/* Updates */}
-            <section className="space-y-4">
+            <section id="settings-system" className="scroll-mt-24 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-sm font-semibold">Updates</h2>
@@ -1384,7 +1405,7 @@ const Settings = () => {
             <div className="border-t" />
 
             {/* Backup & Restore */}
-            <section className="space-y-4">
+            <section id="settings-backup" className="scroll-mt-24 space-y-4">
               <div>
                 <h2 className="text-sm font-semibold">Backup &amp; Restore</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -2108,6 +2129,7 @@ const Settings = () => {
             </section>
           </>
         )}
+        </div>
       </main>
     </div>
   );

@@ -95,7 +95,8 @@ describe("BookmarkCard — rendering", () => {
     expect(screen.getByTestId("pipeline-badge")).toHaveTextContent("fetched");
   });
 
-  it("shows read indicator (BookOpen icon title) when read_at is set", () => {
+  it("labels the menu action as Mark unread when read_at is set", async () => {
+    const user = userEvent.setup();
     renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: "2024-01-16T00:00:00Z" })}
@@ -105,12 +106,12 @@ describe("BookmarkCard — rendering", () => {
         onMarkUnread={noopStatus}
       />
     );
-    // The "Mark unread" button appears when bookmark is already read
-    const btn = screen.getByTitle("Mark unread");
-    expect(btn).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    expect(screen.getByRole("menuitem", { name: "Mark unread" })).toBeInTheDocument();
   });
 
-  it("shows 'Mark read' button when read_at is null", () => {
+  it("labels the menu action as Mark read when read_at is null", async () => {
+    const user = userEvent.setup();
     renderCard(
       <BookmarkCard
         bookmark={makeBookmark({ read_at: null })}
@@ -120,7 +121,8 @@ describe("BookmarkCard — rendering", () => {
         onMarkUnread={noopStatus}
       />
     );
-    expect(screen.getByTitle("Mark read")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    expect(screen.getByRole("menuitem", { name: "Mark read" })).toBeInTheDocument();
   });
 
   it("shows a Read Later badge when read_later is set", () => {
@@ -162,7 +164,7 @@ describe("BookmarkCard — actions", () => {
     expect(onPin).toHaveBeenCalledWith("bm-1", expect.objectContaining({ onSuccess: expect.any(Function) }));
   });
 
-  it("keeps bookmark actions discoverable when keyboard focus enters the card", () => {
+  it("keeps bookmark actions discoverable without relying on hover", () => {
     renderCard(
       <BookmarkCard
         bookmark={makeBookmark()}
@@ -173,9 +175,15 @@ describe("BookmarkCard — actions", () => {
       />
     );
 
-    expect(screen.getByRole("group", { name: "Bookmark actions" })).toHaveClass(
-      "group-focus-within:opacity-100"
+    expect(screen.getByRole("button", { name: "More bookmark actions" })).toBeVisible();
+  });
+
+  it("keeps the compact list row's trash action keyboard-accessible", () => {
+    renderCard(
+      <BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} compact />
     );
+
+    expect(screen.getByRole("button", { name: "Move bookmark to trash" })).toBeVisible();
   });
 
   it("calls onUnpin when pin button is clicked and bookmark is already pinned", async () => {
@@ -194,7 +202,8 @@ describe("BookmarkCard — actions", () => {
     expect(onUnpin).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onArchive when archive button is clicked", () => {
+  it("calls onArchive from the overflow menu", async () => {
+    const user = userEvent.setup();
     const onArchive = vi.fn();
     renderCard(
       <BookmarkCard
@@ -204,11 +213,32 @@ describe("BookmarkCard — actions", () => {
         onArchive={onArchive}
       />
     );
-    fireEvent.click(screen.getByTitle("Archive"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Archive" }));
     expect(onArchive).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onMarkRead when mark-read button clicked and bookmark is unread", () => {
+  it("keeps secondary bookmark actions in an explicit overflow menu", async () => {
+    const user = userEvent.setup();
+    renderCard(
+      <BookmarkCard
+        bookmark={makeBookmark()}
+        onDelete={noop}
+        onClick={noop}
+        onArchive={noopStatus}
+        onMarkRead={noopStatus}
+        onReadLater={noopStatus}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+
+    expect(screen.getByRole("menuitem", { name: "Archive" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Mark read" })).toBeInTheDocument();
+  });
+
+  it("calls onMarkRead from the menu when bookmark is unread", async () => {
+    const user = userEvent.setup();
     const onMarkRead = vi.fn();
     renderCard(
       <BookmarkCard
@@ -219,11 +249,13 @@ describe("BookmarkCard — actions", () => {
         onMarkUnread={noopStatus}
       />
     );
-    fireEvent.click(screen.getByTitle("Mark read"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Mark read" }));
     expect(onMarkRead).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onMarkUnread when mark-read button clicked and bookmark is read", () => {
+  it("calls onMarkUnread from the menu when bookmark is read", async () => {
+    const user = userEvent.setup();
     const onMarkUnread = vi.fn();
     renderCard(
       <BookmarkCard
@@ -234,11 +266,13 @@ describe("BookmarkCard — actions", () => {
         onMarkUnread={onMarkUnread}
       />
     );
-    fireEvent.click(screen.getByTitle("Mark unread"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Mark unread" }));
     expect(onMarkUnread).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onReadLater when read-later button is clicked and bookmark is not marked", () => {
+  it("calls onReadLater from the menu when bookmark is not marked", async () => {
+    const user = userEvent.setup();
     const onReadLater = vi.fn();
     renderCard(
       <BookmarkCard
@@ -249,11 +283,13 @@ describe("BookmarkCard — actions", () => {
         onClearReadLater={noopStatus}
       />
     );
-    fireEvent.click(screen.getByTitle("Mark read later"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Mark read later" }));
     expect(onReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onClearReadLater when read-later button is clicked and bookmark is already marked", () => {
+  it("calls onClearReadLater from the menu when bookmark is already marked", async () => {
+    const user = userEvent.setup();
     const onClearReadLater = vi.fn();
     renderCard(
       <BookmarkCard
@@ -264,7 +300,8 @@ describe("BookmarkCard — actions", () => {
         onClearReadLater={onClearReadLater}
       />
     );
-    fireEvent.click(screen.getByTitle("Clear read later"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Clear read later" }));
     expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
@@ -294,7 +331,8 @@ describe("BookmarkCard — actions", () => {
     expect(await screen.findByText(/opened 1x/)).toBeInTheDocument();
   });
 
-  it("does not track copy-url actions as opens", () => {
+  it("does not track copy-url actions as opens", async () => {
+    const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn() },
@@ -307,7 +345,8 @@ describe("BookmarkCard — actions", () => {
     );
 
     renderCard(<BookmarkCard bookmark={makeBookmark()} onDelete={noop} onClick={noop} />);
-    fireEvent.click(screen.getByTitle("Copy URL"));
+    await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Copy URL" }));
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });

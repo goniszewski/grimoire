@@ -38,6 +38,12 @@ vi.mock("./BookmarkDetailContent", () => ({
   ),
 }));
 
+vi.mock("./PipelineBadge", () => ({
+  PipelineBadge: ({ initialStatus }: { initialStatus: string }) => (
+    <span data-testid="detail-pipeline-status">{initialStatus}</span>
+  ),
+}));
+
 function makeBookmark(overrides: Partial<UIBookmark> = {}): UIBookmark {
   return {
     id: "bm-1",
@@ -211,5 +217,25 @@ describe("BookmarkDetail", () => {
     expect(screen.getByRole("button", { name: "Edit bookmark title" })).toHaveClass(
       "focus-visible:opacity-100"
     );
+  });
+
+  it("places processing status before the reading content", () => {
+    renderWithQueryClient(
+      <BookmarkDetail
+        bookmark={makeBookmark({ status: "indexed" })}
+        open
+        onOpenChange={vi.fn()}
+        onUpdateTags={vi.fn()}
+        onUpdateCategory={vi.fn()}
+        onUpdateField={vi.fn()}
+        onUpdateNotes={vi.fn()}
+        relatedBookmarks={[]}
+        onSelectRelated={vi.fn()}
+      />
+    );
+
+    const status = screen.getByTestId("detail-pipeline-status");
+    const content = screen.getByTestId("detail-content");
+    expect(status.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

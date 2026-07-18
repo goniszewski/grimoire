@@ -2,7 +2,7 @@ import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineBadge } from "./PipelineBadge";
 import { HighlightText } from "./HighlightText";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, ExternalLink, Pencil, Check, Pin, PinOff, Archive, BookOpen, BookDashed, BookmarkCheck, BookmarkX } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Pencil, Check, Pin, PinOff, Archive, BookOpen, BookDashed, BookmarkCheck, BookmarkX, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,6 +20,13 @@ import { openBookmarkExternal, type RecordedOpenMetrics } from "@/lib/bookmark-o
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type StatusCallback = (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
 
@@ -182,6 +189,80 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
   const editRevealed = swipeX >= threshold;
   const openedText = openMetrics.opened_count > 0 ? `opened ${openMetrics.opened_count}x` : null;
 
+  const renderSecondaryActions = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          aria-label="More bookmark actions"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {onArchive && (
+          <DropdownMenuItem onClick={handleArchive}>
+            <Archive className="mr-2 h-3.5 w-3.5" />
+            Archive
+          </DropdownMenuItem>
+        )}
+        {(onMarkRead || onMarkUnread) && (
+          <DropdownMenuItem onClick={handleToggleRead}>
+            {bookmark.read_at ? <BookDashed className="mr-2 h-3.5 w-3.5" /> : <BookOpen className="mr-2 h-3.5 w-3.5" />}
+            {bookmark.read_at ? "Mark unread" : "Mark read"}
+          </DropdownMenuItem>
+        )}
+        {(onReadLater || onClearReadLater) && (
+          <DropdownMenuItem onClick={handleToggleReadLater}>
+            {bookmark.read_later ? <BookmarkX className="mr-2 h-3.5 w-3.5" /> : <BookmarkCheck className="mr-2 h-3.5 w-3.5" />}
+            {bookmark.read_later ? "Clear read later" : "Mark read later"}
+          </DropdownMenuItem>
+        )}
+        {(onArchive || onMarkRead || onMarkUnread || onReadLater || onClearReadLater) && <DropdownMenuSeparator />}
+        <DropdownMenuItem onClick={handleCopy}>
+          <Copy className="mr-2 h-3.5 w-3.5" />
+          Copy URL
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const renderDeleteAction = () => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-destructive hover:text-destructive"
+          onClick={handleDeleteClick}
+          aria-label="Move bookmark to trash"
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Move to trash?</AlertDialogTitle>
+          <AlertDialogDescription>
+            "{bookmark.title}" will be moved to trash and permanently deleted after 30 days.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => onDelete(bookmark.id)}
+          >
+            Move to trash
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   return (
     <div className="relative overflow-hidden rounded-lg">
       {/* Delete background (swipe left) */}
@@ -255,37 +336,17 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
             <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
               {openedText ?? formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
             </span>
-            <div
-              role="group"
-              aria-label="Bookmark actions"
-              className="flex gap-1 opacity-100 transition-opacity group-focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 shrink-0"
-            >
+            <div role="group" aria-label="Bookmark actions" className="flex items-center gap-1 shrink-0">
               {(onPin || onUnpin) && (
                 <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
                   {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
                 </Button>
               )}
-              {onArchive && (
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleArchive} title="Archive">
-                  <Archive className="h-3 w-3" />
-                </Button>
-              )}
-              {(onMarkRead || onMarkUnread) && (
-                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
-                  {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
-                </Button>
-              )}
-              {(onReadLater || onClearReadLater) && (
-                <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-warning' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
-                  {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy} title="Copy URL">
-                <Copy className="h-3 w-3" />
-              </Button>
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal} title="Open bookmark">
                 <ExternalLink className="h-3 w-3" />
               </Button>
+              {renderSecondaryActions()}
+              {renderDeleteAction()}
             </div>
           </>
         ) : (
@@ -375,66 +436,17 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                 {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
                 {openedText ? ` · ${openedText}` : ""}
               </span>
-              <div
-                role="group"
-                aria-label="Bookmark actions"
-                className="flex gap-1 opacity-100 transition-opacity group-focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
-              >
+              <div role="group" aria-label="Bookmark actions" className="flex items-center gap-1">
                 {(onPin || onUnpin) && (
                   <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.is_pinned ? 'text-primary' : ''}`} onClick={handlePin} title={bookmark.is_pinned ? "Unpin" : "Pin"}>
                     {bookmark.is_pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
                   </Button>
                 )}
-                {onArchive && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleArchive} title="Archive">
-                    <Archive className="h-3 w-3" />
-                  </Button>
-                )}
-                {(onMarkRead || onMarkUnread) && (
-                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_at ? 'text-muted-foreground/60' : ''}`} onClick={handleToggleRead} title={bookmark.read_at ? "Mark unread" : "Mark read"}>
-                    {bookmark.read_at ? <BookDashed className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
-                  </Button>
-                )}
-                {(onReadLater || onClearReadLater) && (
-                  <Button variant="ghost" size="icon" className={`h-6 w-6 ${bookmark.read_later ? 'text-warning' : ''}`} onClick={handleToggleReadLater} title={bookmark.read_later ? "Clear read later" : "Mark read later"}>
-                    {bookmark.read_later ? <BookmarkX className="h-3 w-3" /> : <BookmarkCheck className="h-3 w-3" />}
-                  </Button>
-                )}
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy} title="Copy URL">
-                  <Copy className="h-3 w-3" />
-                </Button>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleExternal} title="Open bookmark">
                   <ExternalLink className="h-3 w-3" />
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-destructive hover:text-destructive"
-                      onClick={handleDeleteClick}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Move to trash?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        "{bookmark.title}" will be moved to trash and permanently deleted after 30 days.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => onDelete(bookmark.id)}
-                      >
-                        Move to trash
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {renderSecondaryActions()}
+                {renderDeleteAction()}
               </div>
             </div>
           </>

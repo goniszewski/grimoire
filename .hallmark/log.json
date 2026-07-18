@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-07-18",
+    "scope": "app",
+    "macrostructure": "Workbench / Index-First",
+    "theme": "custom",
+    "themeAxes": ["dark", "geometric-sans", "cool"],
+    "vibe": "quiet operational violet",
+    "enrichment": "none",
+    "brief": "Calm, scan-first Library, Bookmark Detail, and Settings workflows without changing routes, APIs, or local-first behavior."
+  }
+]
