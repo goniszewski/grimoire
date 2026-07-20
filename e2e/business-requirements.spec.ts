@@ -184,7 +184,7 @@ test.describe("Documented business requirements smoke", () => {
     await expect(page.getByRole("heading", { name: "Backup & Restore" })).toBeVisible();
 
     await page.getByRole("button", { name: /check for updates/i }).click();
-    await expect(page.getByText(/little imp 0\.1\.0-beta is up to date/i)).toBeVisible();
+    await expect(page.getByText(/Grimoire 0\.1\.0-beta is up to date/i)).toBeVisible();
     await expect.poll(() => daemon.requests.updateChecks).toBe(1);
 
     await page.getByTitle("Verify backup integrity").click();

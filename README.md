@@ -15,7 +15,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md).
+> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md#migration-from-legacy-grimoire-high-priority).
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
@@ -31,7 +31,6 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 - [Local Integrations](#local-integrations)
 - [Development](#development)
 - [Documentation](#documentation)
-- [Repository Metadata](#repository-metadata)
 
 ## Screenshots
 
@@ -321,29 +320,13 @@ Then rerun the normal commands.
 - [API Reference](./API.md)
 - [API Contract](./docs/api-contract.json)
 - [Project Overview](./docs/overview.md)
-- [Product Requirements](./docs/prd.md)
 - [Roadmap](./docs/roadmap.md)
 - [Backup Design](./docs/backup-design.md)
 - [Diagnostics](./docs/diagnostics.md)
 - [Docker Deployment](./docs/docker-deployment.md)
 - [Update System](./docs/update-system.md)
-- [Release Notes](./docs/release-notes-v0.1.0-beta.md)
-- [Release Decision](./docs/release-decision-v0.1.0-beta.md)
-- [Release Checklist](./docs/release-checklist.md)
 - [Security Policy](./SECURITY.md)
 - [Contributing Guide](./CONTRIBUTING.md)
-- [Task Board](./tasks/README.md)
-- [Task Reports](./docs/task-reports/index.html)
-
-## Repository Metadata
-
-Recommended GitHub settings for public visibility:
-
-- Description: `Local-first bookmark manager with content extraction, semantic search, optional AI enrichment, backups, and local integrations.`
-- Homepage: leave blank until a product site exists, or use the GitHub repository URL.
-- Topics: `bookmark-manager`, `local-first`, `sqlite`, `bun`, `hono`,
-  `react`, `vite`, `typescript`, `semantic-search`, `llm`, `mcp`,
-  `backup`, `self-hosted`.
 
 ## Changelog
 

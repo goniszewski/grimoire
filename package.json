@@ -2,6 +2,11 @@
   "name": "grimoire",
   "private": true,
   "version": "1.0.0",
+  "license": "MIT",
+  "author": "Robert Goniszewski",
+  "repository": { "type": "git", "url": "git+https://github.com/goniszewski/grimoire.git" },
+  "homepage": "https://github.com/goniszewski/grimoire#readme",
+  "bugs": { "url": "https://github.com/goniszewski/grimoire/issues" },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -103,7 +103,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // Assert: the update banner is visible
-    const banner = page.getByRole("note").filter({ hasText: /Little Imp v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
     await expect(banner).toBeVisible();
     // The dismiss button should be present
     await expect(banner.getByRole("button", { name: /Dismiss/i })).toBeVisible();
@@ -117,7 +117,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // No banner with update text
-    const banner = page.getByRole("note").filter({ hasText: /Little Imp.*is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire.*is available/ });
     await expect(banner).not.toBeVisible();
   });
 
@@ -126,7 +126,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // Banner should not appear
-    const banner = page.getByRole("note").filter({ hasText: /Little Imp.*is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire.*is available/ });
     await expect(banner).not.toBeVisible();
   });
 
@@ -138,7 +138,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // Banner should be visible
-    const banner = page.getByRole("note").filter({ hasText: /Little Imp v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
     await expect(banner).toBeVisible();
 
     // Dismiss it
@@ -160,7 +160,7 @@ test.describe("In-app update notification", () => {
 
     await page.goto("/");
 
-    const banner = page.getByRole("note").filter({ hasText: /Little Imp v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
     await expect(banner).toBeVisible();
 
     // Click "View update"

@@ -1,13 +1,8 @@
 # Grimoire Roadmap
 
-Version: draft-v5
-Status: Release alignment for `0.1.0-beta`
-Author: Robert Goniszewski
-Date: May 2026
-
 ## Current State
 
-Grimoire is in final `0.1.0-beta` release closeout. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, diagnose local issues, and run locally through the native daemon, Docker, release archive, one-command installer, or Homebrew alternate path.
+The core local-first product is implemented: save, extract, organize, search, review, back up, restore, and diagnose local issues. Source checkout and Docker are the currently supported run paths. A native installer, signed release archives, and a Homebrew formula are also implemented and undergoing live-installation validation before becoming supported install paths.
 
 Shipped product areas:
 
@@ -33,95 +28,27 @@ Shipped product areas:
 - Redacted diagnostics from Settings, `littleimp diagnostics`, and `GET /diagnostics` for local support bundles without telemetry.
 - Local and CI quality gates for linting, type-checks, daemon tests, frontend tests, API docs drift checks, production build, Playwright E2E, and Docker health validation.
 
-## Release Closeout Gates
+## Migration from Legacy Grimoire (High Priority)
 
-The product surface is implemented for `0.1.0-beta`. TASK-075 through TASK-077
-and TASK-080 through TASK-084 now have release-closeout evidence, but the
-public build is not ready for promotion until the remaining TASK-078 and
-TASK-079 release-control blockers are completed or explicitly deferred. The
-release-closeout queue covers final metadata freeze, signed artifact
-publication, fresh-host installer evidence, public install and upgrade checks,
-publication-gated Homebrew validation, first-user UX smoke testing,
-public-artifact installed-app E2E, final localhost security regression, release
-notes, and the go/no-go decision package.
+Grimoire 1.0 is a complete rewrite. The legacy Grimoire (SvelteKit + PocketBase) is
+preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x)
+branch. A direct data-migration path is a **high-priority** post-1.0 item — no
+automated tool ships yet.
 
-These checks are complete for the current beta validation state:
-
-- `npm run check`, including lint, type-checks, unit tests, daemon tests, API docs drift check, and production build.
-- `npm run test:e2e`.
-- Docker Compose startup, loopback-only port publishing, container health, and named-volume preservation after shutdown.
-- macOS native installer install, upgrade, health, uninstall, and purge smoke in an isolated temporary home.
-- Linux systemd-user installer install, upgrade, health, service enablement, user-manager restart autostart, uninstall, and purge smoke in an Ubuntu 24.04 Docker environment with systemd running as PID 1.
-- Installer matrix validation names macOS 12+ arm64, macOS 12+ x64, Ubuntu 24.04 LTS, and Debian 12 as the MVP targets, with Ubuntu and Debian packaged archive smokes passing in systemd-user containers.
-- Documentation release-target and local markdown link audits, including the
-  TASK-075 release-candidate freeze pass.
-- GitHub Actions `Quality Gates` for lint/types/tests/docs/build, Playwright E2E, and Docker build/health.
-- TASK-076 signed release artifact publication: macOS and Linux archives,
-  checksum files, detached GPG signatures, and `release-manifest.json` are
-  attached to the `v0.1.0-beta` GitHub prerelease.
-- TASK-084 release decision package: `docs/release-decision-v0.1.0-beta.md`
-  records the release identity, artifact inventory, validation evidence,
-  explicit skipped checks, accepted MVP limitations, and a no-go decision for
-  public promotion while public artifact URLs still return `HTTP 404`.
-
-No product-scope blockers remain in this workspace. The remaining
-release-control blockers are TASK-078 public install/update validation and
-TASK-079 live Homebrew validation. TASK-080 is complete after a May 31, 2026
-real fresh-data first-user UX smoke pass against an isolated daemon and a
-loopback-only frontend API override. Public one-command installer, Homebrew,
-and public-artifact E2E checks remain gated while the GitHub repository is
-private because unauthenticated release and raw tag URLs return `404`. macOS
-12+ x64 remains a manual pre-publish validation target because this workspace
-has no Intel Mac or x64 macOS VM.
-
-## Post-MVP Release Operations
-
-After `0.1.0-beta` passes the public-promotion gates and the remaining
-release-closeout blockers are completed or explicitly deferred, the next
-release-operations pass should focus on polish that is not required for the MVP
-public build:
-
-- Broader update polish beyond the current explicit manual packaged upgrade flow, based on the design in [docs/update-system.md](./update-system.md).
-- Resolve the non-blocking post-MVP audit items tracked by TASK-072.
-
-## Grimoire Parity Scope
-
-The current Grimoire parity batch is a local-first Grimoire compatibility
-pass, not a full Grimoire server-mode clone. The batch is locked as
-local-first, single-user, loopback-first, and local-integrations-only.
-
-In scope:
-
-- local integration security boundaries, token auth, origin policy, API
-  examples, OpenAPI-compatible output, and protected local capture;
-- bookmark read-later state, open metrics, richer detail metadata/content, and
-  regression coverage for supported bookmark mutations;
-- category and tag navigation, management, detail pages, metadata, and
-  regression coverage;
-- browser/Netscape import review, folder preservation, duplicate handling,
-  remapping, result reports, export parity fields, and import/export
-  regression tests;
-- explicit library pagination, server-driven sorting, approved filters, saved
-  view preferences, aggregate counts, and large-library verification.
-
-Intentional non-goals for this batch:
-
-- multi-user accounts, signup, login, sessions, admin roles, account profiles,
-  and per-user backup scoping;
-- public-server or non-loopback deployment mode;
-- Grimoire-compatible endpoint aliases or adapter routes;
-- packaged browser-extension/bookmarklet clients and extension smoke tests;
-- bookmark importance ratings;
-- direct Grimoire/PocketBase backup import tooling.
-
-Future reconsideration requires a new product decision rather than treating the
-non-goal as unfinished parity work. Public-network or multi-user modes need
-their own threat model, auth/session model, data-scoping design, backup
-implications, diagnostics posture, and release gates before implementation.
+- **Supported source versions: Grimoire v0.4 or newer.** Older releases are out of
+  scope for the automated importer.
+- The source data shape and field mapping from a PocketBase admin backup ZIP are
+  already documented in
+  [docs/parity/grimoire-backup-import-shape.md](./parity/grimoire-backup-import-shape.md).
+- The importer will build on the existing browser/Netscape import pipeline and the
+  JSON/CSV export parity fields (notes, read/archive/pinned state, read-later,
+  opened metrics) already shipped for round-tripping.
+- Until the tool lands, v0.4+ users can export from the legacy app and use the current
+  import flows as an interim path.
 
 ## Future Ideas
 
-These are not part of `0.1.0-beta`:
+Not yet implemented:
 
 - Packaged browser extension or bookmarklet client for one-click saves,
   building on the protected local capture endpoint.
@@ -129,10 +56,8 @@ These are not part of `0.1.0-beta`:
 - Multi-user or public-network deployment mode, tracked as post-MVP direction
   research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
 - Optional authentication/rate limiting for non-local deployments.
-- Direct Grimoire/PocketBase backup import tooling after browser/Netscape
-  import and JSON/CSV export parity are stable, starting from the documented
-  source shape and field mapping in
-  [docs/parity/grimoire-backup-import-shape.md](./parity/grimoire-backup-import-shape.md).
+- Direct legacy Grimoire backup import tooling (see
+  [Migration from Legacy Grimoire](#migration-from-legacy-grimoire-high-priority) above).
 - Plugin system.
 - GitHub Issues extractor.
 - Provider-specific consumer cloud APIs for Google Drive, Dropbox, OneDrive, or iCloud beyond normal synced folders.
@@ -167,6 +92,7 @@ These are not part of `0.1.0-beta`:
 | Install without cloning the repository | Shipped through release archives and the one-command release installer |
 | Install through Homebrew | Alternate MVP path implemented; full install validation is gated on publicly reachable release artifacts |
 | Generate local diagnostics | Shipped |
+| Migrate data from legacy Grimoire (v0.4+) | Planned (high priority) |
 | Sync live data across devices | Future |
 
 ## Milestone Summary
@@ -177,8 +103,8 @@ These are not part of `0.1.0-beta`:
 | M2 Settings UI | Complete | AI, embeddings, runtime settings, app lock, and backup configuration. |
 | M3 AI features | Complete | Embeddings, semantic/hybrid search, related bookmarks, organization agent, review queue. |
 | M4 Testing infrastructure | Complete | Daemon/unit integration tests, frontend tests, Playwright E2E, API contract drift checks, CI. |
-| M5 Distribution readiness | Complete for beta | Native installer, Docker path, first-run/degraded states, backup/restore, and release checklist validation are complete for the beta release. |
-| v0-beta hardening | Complete for beta | Runtime settings, Docker safety, CI, safe backup/restore, API docs source of truth, shared API types, documentation alignment, and release validation are represented by TASK-041 through TASK-048. |
+| M5 Distribution readiness | Complete | Native installer, Docker path, first-run/degraded states, backup/restore, and diagnostics. |
+| v1.0 hardening | Complete | Runtime settings, Docker safety, CI, safe backup/restore, API docs source of truth, shared API types, and documentation alignment. |
 
 ## Decisions Log
 
@@ -198,4 +124,4 @@ These are not part of `0.1.0-beta`:
 | 12 | Cloud backup scope | S3-compatible storage is the first remote target. Cloud-synced folders are supported as local destinations. |
 | 13 | Docker network model | Docker binds the host port to `127.0.0.1`; container-internal `HOST=0.0.0.0` only enables Docker forwarding. |
 | 14 | API documentation | `daemon/src/api/contract.ts` is the source of truth; `API.md` and `docs/api-contract.json` are generated artifacts. |
-| 15 | Grimoire parity mode | The current parity batch is local-first, single-user, loopback-first, and local-integrations-only. Multi-user/server mode, endpoint aliases, packaged browser-extension/bookmarklet clients, and extension smoke tests are deferred or rejected as documented in the parity report. |
+| 15 | Scope | Grimoire 1.0 is local-first, single-user, and loopback-first. Multi-user/server mode, endpoint aliases, and packaged browser-extension clients are explicitly out of scope for 1.0. |

@@ -480,11 +480,9 @@ erDiagram
 
 ## Related Documents
 
-- [Product requirements](./prd.md)
 - [Roadmap](./roadmap.md)
 - [Backup design](./backup-design.md)
 - [Docker deployment](./docker-deployment.md)
 - [Security boundaries](./security-boundaries.md)
 - [Update system design](./update-system.md)
-- [Release checklist](./release-checklist.md)
 - [Generated API documentation](../API.md)
