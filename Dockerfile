@@ -1,4 +1,4 @@
-# Little Imp - Local-first bookmark manager
+# Grimoire - Local-first bookmark manager
 # Multi-stage build for production-ready container
 
 # Build stage

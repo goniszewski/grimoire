@@ -1,6 +1,6 @@
-# Little Imp 0.1.0-beta
+# Grimoire 0.1.0-beta
 
-Little Imp is a local-first bookmark manager for saving, extracting, searching,
+Grimoire is a local-first bookmark manager for saving, extracting, searching,
 organizing, backing up, and restoring a personal knowledge library on your own
 machine.
 
@@ -18,8 +18,8 @@ commands, and local diagnostics for support.
 ### Source checkout
 
 ```sh
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp
+git clone https://github.com/goniszewski/grimoire.git
+cd grimoire
 npm install
 cd daemon && bun install
 cd ..
@@ -120,7 +120,7 @@ Homebrew, and published-artifact smoke checks are successful.
 
 ## Known Limitations
 
-- Little Imp is a local-first, single-user app. It does not include an
+- Grimoire is a local-first, single-user app. It does not include an
   authentication layer and should not be exposed on a public network without an
   authenticated tunnel, VPN, or reverse proxy in front of it.
 - macOS x64 is a best-effort target for this beta. macOS arm64 is the validated

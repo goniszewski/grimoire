@@ -1,11 +1,11 @@
-# Security Policy For Little Imp
+# Security Policy For Grimoire
 
 ## Supported Versions
 
 | Version | Supported |
 | --- | --- |
-| `0.1.0-beta` | Yes |
-| Other prerelease or development builds | No |
+| `1.0.0` | Yes |
+| `0.1.0-beta` | No |
 
 ## Reporting A Vulnerability
 
@@ -29,7 +29,7 @@ Please include:
 
 ## Security Boundary Summary
 
-Little Imp is local-first, single-user, and loopback-first for `0.1.0-beta`.
+Grimoire is local-first, single-user, and loopback-first for `1.0.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
@@ -39,7 +39,7 @@ Little Imp is local-first, single-user, and loopback-first for `0.1.0-beta`.
   use.
 - MCP and protected local capture endpoints require managed local integration
   bearer tokens.
-- Public-network exposure is not a supported Little Imp mode. Any remote access
+- Public-network exposure is not a supported Grimoire mode. Any remote access
   must be protected before requests reach the daemon, for example with an
   authenticated tunnel, VPN, or reverse proxy.
 
@@ -121,8 +121,8 @@ claimed while unauthenticated release URLs return `404`.
 
 - Any local process that can reach `127.0.0.1:3210` can call unprotected REST
   routes. This is part of the local-first trust model.
-- Little Imp is not designed for multi-user hosts or shared public servers in
-  `0.1.0-beta`.
+- Grimoire is not designed for multi-user hosts or shared public servers in
+  `1.0.0`.
 - DNS rebinding is not fully mitigated and is accepted only because the daemon
   is loopback-only.
 - Content extraction fetches user-supplied public URLs. Protections reduce
@@ -159,7 +159,7 @@ When contributing:
 
 ## Future Security Work
 
-These are not shipped in `0.1.0-beta`:
+These are not shipped in `1.0.0`:
 
 - Optional authentication for future public or multi-user modes.
 - Per-client rate limiting for authenticated non-local deployment modes.

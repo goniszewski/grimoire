@@ -1,7 +1,7 @@
 {
-  "name": "little-imp",
+  "name": "grimoire",
   "private": true,
-  "version": "0.1.0-beta",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -31,8 +31,8 @@
     "installer:matrix:linux": "bash scripts/validate-linux-installer-matrix.sh",
     "test:e2e:installed": "npm run package:release && bun run scripts/installed-app-smoke.ts",
     "test:e2e:installed:published": "bun run scripts/installed-app-smoke.ts --source published --require-signature",
-    "docker:build": "docker build -t little-imp .",
-    "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v little-imp-data:/data --name little-imp little-imp",
+    "docker:build": "docker build -t grimoire .",
+    "docker:run": "docker run -d -p 127.0.0.1:3210:3210 -v grimoire-data:/data --name grimoire grimoire",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "tools:setup": "bash scripts/setup-local-tools.sh",

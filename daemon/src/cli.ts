@@ -276,7 +276,7 @@ function printBackupList(io: Required<Pick<CliIO, "stdout">>, entries: BackupEnt
 }
 
 function printDiagnostics(io: Required<Pick<CliIO, "stdout">>, diagnostics: DiagnosticsResponse["data"]): void {
-  io.stdout(`Little Imp ${diagnostics.version} diagnostics`);
+  io.stdout(`Grimoire ${diagnostics.version} diagnostics`);
   io.stdout(`Generated: ${diagnostics.generated_at}`);
   io.stdout(`Install: ${diagnostics.install.mode} on ${diagnostics.platform.os}/${diagnostics.platform.arch}`);
   io.stdout(`Daemon: ${diagnostics.daemon.status}, uptime ${diagnostics.daemon.uptime_ms}ms`);
@@ -330,7 +330,7 @@ function printUpdateResult(
   }
 ): void {
   if (!result.latest || !result.update_available) {
-    io.stdout(`Little Imp is up to date (${result.current_version}).`);
+    io.stdout(`Grimoire is up to date (${result.current_version}).`);
     return;
   }
 

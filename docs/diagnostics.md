@@ -1,6 +1,6 @@
 # Diagnostics and Support Bundles
 
-Little Imp diagnostics are generated locally and are only shared when the user
+Grimoire diagnostics are generated locally and are only shared when the user
 chooses to copy, export, or send them. They are not telemetry.
 
 ## Generate diagnostics
@@ -28,7 +28,7 @@ curl http://127.0.0.1:3210/diagnostics
 
 The diagnostics payload includes:
 
-- Little Imp version, generation timestamp, platform, bind host, and port
+- Grimoire version, generation timestamp, platform, bind host, and port
 - detected install mode: development, native, or Docker
 - data, database, settings, backup, frontend, and log file paths
 - daemon status, uptime, queue depth, and retained job counts

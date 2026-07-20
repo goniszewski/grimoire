@@ -1,4 +1,4 @@
-# Little Imp API Documentation
+# Grimoire API Documentation
 
 > Auto-generated from `daemon/src/api/contract.ts`. Do not edit by hand.
 
@@ -19,7 +19,7 @@ Local integration surfaces such as `/mcp` and `/capture` require a managed beare
 
 ## Browser Origin And CORS
 
-Little Imp keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.
+Grimoire keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.
 
 Configure additional local browser clients with `CORS_ORIGINS` as a comma-separated list of loopback origins:
 
@@ -41,7 +41,7 @@ Only full `http` or `https` origins are accepted, including scheme, host, and an
 
 Limitations:
 
-- Hono `ALL` routes are represented by the primary client method `POST` with `x-little-imp-source-method: "ALL"`.
+- Hono `ALL` routes are represented by the primary client method `POST` with `x-grimoire-source-method: "ALL"`.
 - Mixed content responses such as JSON/CSV exports share the closest generated schema; CSV, media, and SSE clients should still use the documented content type.
 - First-party REST routes remain local-origin routes. The OpenAPI bearer scheme documents managed local integration tokens, and MCP marks that scheme as required.
 
@@ -85,7 +85,7 @@ curl http://127.0.0.1:3210/diagnostics
 
 #### GET /updates/check
 
-Check a GitHub Releases-compatible source for a newer Little Imp release.
+Check a GitHub Releases-compatible source for a newer Grimoire release.
 
 Query parameters:
 
@@ -1748,7 +1748,7 @@ Request:
 ```bash
 curl -X PUT http://127.0.0.1:3210/backup/destination \
   -H "Content-Type: application/json" \
-  -d '{"path":"/Users/me/Backups/Little Imp"}'
+  -d '{"path":"/Users/me/Backups/Grimoire"}'
 ```
 
 #### POST /backup/verify
@@ -2409,8 +2409,8 @@ Content-Type: application/json
     "protocolVersion": "2025-03-26",
     "capabilities": {},
     "serverInfo": {
-      "name": "little-imp",
-      "version": "0.1.0-beta"
+      "name": "grimoire",
+      "version": "1.0.0"
     }
   }
 }
@@ -4248,7 +4248,7 @@ Response data
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `current_version` | string | yes | Current packaged Little Imp version |
+| `current_version` | string | yes | Current packaged Grimoire version |
 | `update_available` | boolean | yes | Whether a compatible release is newer than the current version |
 | `source` | string | yes | Release source URL used for the check |
 | `channel` | "stable" \| "beta" | yes | Applied update channel |
@@ -4267,7 +4267,7 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | UpdateCheckResult | yes |  |
-| `data.current_version` | string | yes | Current packaged Little Imp version |
+| `data.current_version` | string | yes | Current packaged Grimoire version |
 | `data.update_available` | boolean | yes | Whether a compatible release is newer than the current version |
 | `data.source` | string | yes | Release source URL used for the check |
 | `data.channel` | "stable" \| "beta" | yes | Applied update channel |

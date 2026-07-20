@@ -1,38 +1,28 @@
-# Little Imp
+<div align="center">
+  <img alt="Grimoire Logo" src="public/grimoire_logo_300.webp">
+  <h1>Grimoire</h1>
+  <p>Save, search, and organize the knowledge that matters to you — all local, all private.</p>
+</div>
 
-```text
- _     _ _   _   _        ___
-| |   (_) |_| |_| | ___  |_ _|_ __ ___  _ __
-| |   | | __| __| |/ _ \  | || '_ ` _ \| '_ \
-| |___| | |_| |_| |  __/  | || | | | | | |_) |
-|_____|_|\__|\__|_|\___| |___|_| |_| |_| .__/
-                                       |_|
-```
+<br>
 
-[![Quality Gates](https://github.com/goniszewski/little-imp/actions/workflows/quality.yml/badge.svg?branch=develop)](https://github.com/goniszewski/little-imp/actions/workflows/quality.yml)
-![Release target](https://img.shields.io/badge/release-0.1.0--beta-7c3aed)
+[![Quality Gates](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml)
+![Release target](https://img.shields.io/badge/release-1.0.0-7c3aed)
 ![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-Little Imp is a local-first bookmark manager for people who save technical
-resources and need to find them later. Save links, import browser bookmarks,
-extract readable content, search by keyword or meaning, and let optional AI
-providers summarize and organize your library while the data stays on your
-machine.
+Grimoire is a local-first bookmark manager for people who save technical resources and need to find them later. Save links, import browser bookmarks, extract readable content, search by keyword or meaning, and let optional AI providers summarize and organize your library — while your data stays on your machine.
 
-Current release target: `0.1.0-beta`.
-
-> **Beta availability.** Source checkout and Docker are the supported ways to
-> evaluate Little Imp today. Signed release packages and Homebrew remain
-> prerelease paths until public install and upgrade validation has passed. See
-> the [release decision](./docs/release-decision-v0.1.0-beta.md) for the
-> recorded gate and required validation.
+> [!NOTE]
+> **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
+> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md).
+> Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
 
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
-- [What Little Imp Does](#what-little-imp-does)
+- [What Grimoire Does](#what-grimoire-does)
 - [How It Works](#how-it-works)
 - [Install And Upgrade Paths](#install-and-upgrade-paths)
 - [Data, Privacy, And Security](#data-privacy-and-security)
@@ -49,22 +39,22 @@ The screenshots below use synthetic/demo data from the local UI audit set.
 
 | Library | Search | Bookmark detail |
 | --- | --- | --- |
-| ![Little Imp library list with categories, domains, tags, and processing badges](./docs/presentations/ui-ux-audit-assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/presentations/ui-ux-audit-assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/presentations/ui-ux-audit-assets/bookmark-detail-standard.png) |
+| ![Grimoire library list with categories, domains, tags, and processing badges](./docs/presentations/ui-ux-audit-assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/presentations/ui-ux-audit-assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/presentations/ui-ux-audit-assets/bookmark-detail-standard.png) |
 
 | Settings and browser integration | Import flow | Mobile library |
 | --- | --- | --- |
-| ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Little Imp library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
+| ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
 
 ## Quick Start
 
 ### Source Checkout
 
-This is the supported beta path. It works from a public clone and does not
+This is the recommended development path. It works from a public clone and does not
 depend on release assets.
 
 ```sh
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp
+git clone https://github.com/goniszewski/grimoire.git
+cd grimoire
 
 npm install
 cd daemon && bun install
@@ -95,7 +85,7 @@ curl http://127.0.0.1:3210/health
 
 Open `http://127.0.0.1:3210`.
 
-## What Little Imp Does
+## What Grimoire Does
 
 - Saves public `http` and `https` URLs from the app, API, MCP, import flow, or
   browser bookmarklet.
@@ -115,7 +105,7 @@ Open `http://127.0.0.1:3210`.
 
 ## How It Works
 
-Little Imp has two runtime parts:
+Grimoire has two runtime parts:
 
 - Frontend: React 18, Vite, TypeScript, Tailwind CSS, and Radix UI primitives
   under `src/`.
@@ -194,16 +184,15 @@ Native installs keep user data under `~/.local/share/littleimp/`.
 Runtime user settings live at `~/.config/littleimp/config.json`. Homebrew
 installs keep Homebrew-managed data under `$(brew --prefix)/var/little-imp`.
 
-Little Imp is local-first and loopback-first:
+Grimoire is local-first and loopback-first:
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
 - General REST routes are intended for first-party loopback use.
 - MCP and protected capture endpoints require managed local integration bearer
   tokens.
-- Public-network exposure is not a supported mode for `0.1.0-beta`; put an
-  authenticated tunnel, VPN, or reverse proxy in front of it if you deliberately
-  need remote access.
+- Public-network exposure is not a supported mode; put an authenticated tunnel,
+  VPN, or reverse proxy in front of it if you deliberately need remote access.
 
 See [SECURITY.md](./SECURITY.md) and
 [security-boundaries.md](./docs/security-boundaries.md).
@@ -271,7 +260,7 @@ curl http://127.0.0.1:3210/health
 
 ### MCP
 
-Little Imp exposes Streamable HTTP MCP at `http://127.0.0.1:3210/mcp`. Create
+Grimoire exposes Streamable HTTP MCP at `http://127.0.0.1:3210/mcp`. Create
 a local integration token first:
 
 ```sh
@@ -286,7 +275,7 @@ Use the returned token as `Authorization: Bearer ...`.
 
 Settings -> Browser Integration can create a token-backed bookmarklet. Drag it
 to your browser bookmarks bar, then click it on a page to capture the current
-URL, title, and selected text into Little Imp.
+URL, title, and selected text into Grimoire.
 
 The bookmarklet embeds an integration token. Treat it like a password.
 

@@ -1,7 +1,7 @@
 import { version as APP_VERSION } from "../../package.json";
 import { isPrivateHost } from "../lib/network.js";
 
-export const DEFAULT_UPDATE_SOURCE = "https://api.github.com/repos/goniszewski/little-imp/releases";
+export const DEFAULT_UPDATE_SOURCE = "https://api.github.com/repos/goniszewski/grimoire/releases";
 
 export type UpdateChannel = "stable" | "beta";
 

@@ -1,4 +1,4 @@
-# Little Imp Release Checklist
+# Grimoire Release Checklist
 
 Release target: `0.1.0-beta`
 
@@ -82,22 +82,22 @@ After the GitHub release artifacts are published:
 
 ## Homebrew Alternate Install
 
-- Confirm `Formula/little-imp.rb` references the current release target and the
+- Confirm `Formula/grimoire.rb` references the current release target and the
   published macOS and Linux archive checksums from `release/release-manifest.json`.
 - Run `npx vitest run scripts/homebrew-formula.test.ts`.
 - Register the Bun dependency tap with `brew tap oven-sh/bun`.
-- Register the checkout as a local tap with `brew tap goniszewski/little-imp "$PWD"`.
-- Run `brew audit --strict goniszewski/little-imp/little-imp`.
+- Register the checkout as a local tap with `brew tap goniszewski/grimoire "$PWD"`.
+- Run `brew audit --strict goniszewski/grimoire/grimoire`.
 - Before release artifacts are published, run
-  `brew install --dry-run goniszewski/little-imp/little-imp` and record any
+  `brew install --dry-run goniszewski/grimoire/grimoire` and record any
   expected 404 caused by unpublished archive URLs.
 - After release artifacts are published, run
-  `brew install goniszewski/little-imp/little-imp`.
+  `brew install goniszewski/grimoire/grimoire`.
 - Confirm `littleimp --help` reports `0.1.0-beta`.
-- Start the Homebrew service with `brew services start little-imp`, then verify
+- Start the Homebrew service with `brew services start grimoire`, then verify
   `curl http://127.0.0.1:3210/health` reports `version: "0.1.0-beta"`.
-- Stop the Homebrew service with `brew services stop little-imp`.
-- Run `brew uninstall little-imp` and confirm
+- Stop the Homebrew service with `brew services stop grimoire`.
+- Run `brew uninstall grimoire` and confirm
   `$(brew --prefix)/var/little-imp` remains unless it is explicitly removed.
 
 ## Installed-App Smoke

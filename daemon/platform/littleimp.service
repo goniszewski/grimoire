@@ -1,5 +1,5 @@
 [Unit]
-Description=Little Imp daemon (littleimpd)
+Description=Grimoire daemon (littleimpd)
 After=network.target
 
 [Service]

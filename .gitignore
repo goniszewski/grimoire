@@ -34,3 +34,16 @@ playwright-report/
 
 # Portable runtimes for coding agents (see scripts/setup-local-tools.sh)
 local/
+
+# Runtime data, build artifacts, and agent tool state
+data/
+build/
+coverage/
+.svelte-kit/
+.omc/
+*.timestamp-*.mjs
+.env
+
+# Internal development artifacts not suitable for the public repo
+docs/superpowers/
+docs/presentations/little-imp-*.html

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "name": "Little Imp daemon API",
+  "name": "Grimoire daemon API",
   "version": "1",
   "baseUrl": "http://127.0.0.1:3210",
   "description": "Local-only REST and MCP API exposed by littleimpd.",
@@ -4979,7 +4979,7 @@
       "properties": {
         "current_version": {
           "type": "string",
-          "description": "Current packaged Little Imp version"
+          "description": "Current packaged Grimoire version"
         },
         "update_available": {
           "type": "boolean",
@@ -5325,7 +5325,7 @@
       "method": "GET",
       "path": "/updates/check",
       "tag": "Updates",
-      "summary": "Check a GitHub Releases-compatible source for a newer Little Imp release.",
+      "summary": "Check a GitHub Releases-compatible source for a newer Grimoire release.",
       "request": {
         "query": {
           "type": "object",
@@ -7835,7 +7835,7 @@
       "examples": [
         {
           "title": "Set a custom backup destination",
-          "request": "curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"path\":\"/Users/me/Backups/Little Imp\"}'"
+          "request": "curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"path\":\"/Users/me/Backups/Grimoire\"}'"
         }
       ]
     },
@@ -8851,8 +8851,8 @@
                 "protocolVersion": "2025-03-26",
                 "capabilities": {},
                 "serverInfo": {
-                  "name": "little-imp",
-                  "version": "0.1.0-beta"
+                  "name": "grimoire",
+                  "version": "1.0.0"
                 }
               }
             }

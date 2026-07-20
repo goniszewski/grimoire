@@ -32,7 +32,7 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
             <Flame className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-lg font-semibold tracking-tight">Little Imp</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Grimoire</h1>
           <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <Lock className="h-3 w-3" />
             App is locked

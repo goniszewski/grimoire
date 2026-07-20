@@ -1,9 +1,9 @@
 # Docker Deployment Guide
 
-This guide covers the supported Docker path for Little Imp: one local-only
+This guide covers the supported Docker path for Grimoire: one local-only
 container that serves both the React frontend and the daemon API on port 3210.
 
-Little Imp has scoped bearer-token authentication for local integration
+Grimoire has scoped bearer-token authentication for local integration
 surfaces such as MCP, but the first-party browser app and general REST API
 still rely on the loopback trust boundary. Do not publish the daemon on a
 public interface unless you put it behind authentication, a VPN, or another
@@ -19,8 +19,8 @@ trusted access control layer.
 ## Quick Start
 
 ```sh
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp
+git clone https://github.com/goniszewski/grimoire.git
+cd grimoire
 docker compose up -d
 ```
 
@@ -34,12 +34,12 @@ container.
 ## Docker Directly
 
 ```sh
-docker build -t little-imp .
+docker build -t grimoire .
 docker run -d \
   -p 127.0.0.1:3210:3210 \
-  -v little-imp-data:/data \
-  --name little-imp \
-  little-imp
+  -v grimoire-data:/data \
+  --name grimoire \
+  grimoire
 ```
 
 Open `http://127.0.0.1:3210`.
@@ -80,7 +80,7 @@ Example OpenAI override:
 
 ```yaml
 services:
-  little-imp:
+  grimoire:
     environment:
       - LLM_API_KEY=${OPENAI_API_KEY}
       - LLM_MODEL=gpt-4o-mini
@@ -91,7 +91,7 @@ services:
 ## Local Ollama
 
 If you enable the optional Ollama service in `docker-compose.yml`, configure
-Little Imp through Settings or the API after startup:
+Grimoire through Settings or the API after startup:
 
 ```sh
 curl -X PUT http://127.0.0.1:3210/settings \
@@ -117,26 +117,26 @@ exposing it to the network.
 
 ## Data and Backups
 
-The `little-imp-data` volume contains the SQLite database, backups, and runtime
+The `grimoire-data` volume contains the SQLite database, backups, and runtime
 data. Prefer the in-app backup/restore flow for portable snapshots.
 
 For emergency volume-level backup:
 
 ```sh
 docker run --rm \
-  -v little-imp-data:/data \
+  -v grimoire-data:/data \
   -v "$PWD":/backup \
-  alpine tar czf /backup/little-imp-data.tar.gz /data
+  alpine tar czf /backup/grimoire-data.tar.gz /data
 ```
 
-For emergency volume-level restore, stop Little Imp first:
+For emergency volume-level restore, stop Grimoire first:
 
 ```sh
 docker compose down
 docker run --rm \
-  -v little-imp-data:/data \
+  -v grimoire-data:/data \
   -v "$PWD":/backup \
-  alpine tar xzf /backup/little-imp-data.tar.gz -C /
+  alpine tar xzf /backup/grimoire-data.tar.gz -C /
 docker compose up -d
 ```
 
@@ -144,8 +144,8 @@ docker compose up -d
 
 ```sh
 docker compose ps
-docker exec little-imp curl -f http://localhost:3210/health
-docker logs -f little-imp
+docker exec grimoire curl -f http://localhost:3210/health
+docker logs -f grimoire
 ```
 
 The container health check calls `http://localhost:3210/health` from inside the
@@ -157,7 +157,7 @@ Keep the host address bound to `127.0.0.1` when changing ports:
 
 ```yaml
 services:
-  little-imp:
+  grimoire:
     ports:
       - "127.0.0.1:3211:3210"
 ```
@@ -166,12 +166,12 @@ Then open `http://127.0.0.1:3211`.
 
 ## Remote Access
 
-Little Imp is designed for local-first, single-user use. Integration token auth
+Grimoire is designed for local-first, single-user use. Integration token auth
 does not turn the daemon into a public server because most first-party REST
 routes remain loopback-trusted. Public reverse proxy examples are intentionally
 omitted. If you need remote access, put the service behind an authenticated
 tunnel, VPN, or reverse proxy that enforces authentication before traffic
-reaches Little Imp.
+reaches Grimoire.
 
 Do not use these unsafe port mappings:
 
@@ -186,8 +186,8 @@ ports:
 ```sh
 docker compose down
 
-# Deletes all Little Imp Docker data.
+# Deletes all Grimoire Docker data.
 docker compose down -v
 
-docker rmi little-imp
+docker rmi grimoire
 ```

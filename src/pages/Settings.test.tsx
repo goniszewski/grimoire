@@ -415,7 +415,7 @@ describe("Settings backup verification", () => {
     fireEvent.click(screen.getByTitle("Restore this backup"));
     fireEvent.click(await screen.findByRole("button", { name: "Restore" }));
 
-    expect(await screen.findByRole("dialog", { name: "Restart Little Imp" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Restart Grimoire" })).toBeInTheDocument();
     expect(screen.getByText(restartCommand)).toBeInTheDocument();
     expect(screen.getByText("http://127.0.0.1:3210/health")).toBeInTheDocument();
     expect(screen.getByText(/\/tmp\/rollback\/littleimp\.db/)).toBeInTheDocument();

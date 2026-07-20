@@ -1,9 +1,9 @@
-# Little Imp — Personal Knowledge Index
+# Grimoire — Personal Knowledge Index
 
 Product Requirements Document (PRD)
 
 Version: v0.6
-Status: Living document aligned to the `0.1.0-beta` release target
+Status: Living document aligned to the `1.0.0` release
 Author: Robert Goniszewski
 Date: May 2026
 
@@ -11,9 +11,9 @@ Date: May 2026
 
 ## 1. Overview
 
-Little Imp is a **local-first personal knowledge index** designed for developers who collect large volumes of technical resources.
+Grimoire is a **local-first personal knowledge index** designed for developers who collect large volumes of technical resources.
 
-Instead of functioning as a traditional bookmark manager, Little Imp acts as a **personal search engine for everything a user has saved**.
+Instead of functioning as a traditional bookmark manager, Grimoire acts as a **personal search engine for everything a user has saved**.
 
 Users save URLs and the system:
 
@@ -27,7 +27,7 @@ Users save URLs and the system:
 
 Current product state:
 
-- `0.1.0-beta` is the current release target
+- `1.0.0` is the current release
 - core save, extract, keyword search, semantic search, hybrid search, and review flows exist
 - local/S3-compatible backup and restore flows exist with checksum validation, rollback directory creation, and restart-required restore responses
 - Docker deployment, release archives, the one-command installer, the Homebrew alternate path, and Streamable HTTP MCP integration are supported local-first entry points
@@ -482,7 +482,7 @@ Backup and restore:
 
 ### Backup Strategy
 
-Little Imp should treat backup as a separate concern from sync.
+Grimoire should treat backup as a separate concern from sync.
 
 Principles:
 
@@ -607,7 +607,7 @@ Performance metrics:
 
 ## 20. Long-Term Vision
 
-Little Imp evolves from a bookmark manager into a **personal knowledge infrastructure**.
+Grimoire evolves from a bookmark manager into a **personal knowledge infrastructure**.
 
 Potential future uses:
 

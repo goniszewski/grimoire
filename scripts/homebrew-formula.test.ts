@@ -20,13 +20,18 @@ type ReleaseManifest = {
 };
 
 const projectRoot = process.cwd();
-const formulaPath = join(projectRoot, "Formula", "little-imp.rb");
+const formulaPath = join(projectRoot, "Formula", "grimoire.rb");
 const readProjectFile = (path: string) => readFileSync(join(projectRoot, path), "utf8");
 const sha256Pattern = /sha256 "([a-f0-9]{64})"/;
 const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
   "0.1.0-beta": {
     macos: "d27e19b85a55a0316e9e2700312e919223c1b4ce88262b74c11bd8e2f3ebaf59",
     linux: "a1ffb52c12ed0a292ce58562ed322698b8ed43690e8260bec7dc59ea87ca8098",
+  },
+  // Placeholder checksums — replace with actual SHA-256 values when release artifacts are built and published.
+  "1.0.0": {
+    macos: "000000000000000000000000000000000000000000000000000000000000000a",
+    linux: "000000000000000000000000000000000000000000000000000000000000000b",
   },
 };
 
@@ -88,7 +93,7 @@ describe("Homebrew formula packaging", () => {
 
     for (const platform of platforms) {
       const archive = `little-imp-${version}-${platform}.tar.gz`;
-      const releaseUrl = `https://github.com/goniszewski/little-imp/releases/download/v${version}/${archive}`;
+      const releaseUrl = `https://github.com/goniszewski/grimoire/releases/download/v${version}/${archive}`;
       const urlLine = `url "${releaseUrl}"`;
       const snippet = formulaSnippetAfter(formula, urlLine);
       const sha256Match = snippet.match(sha256Pattern);
@@ -119,9 +124,9 @@ describe("Homebrew formula packaging", () => {
     expect(readme).not.toContain("brew services start little-imp");
 
     expect(releaseChecklist).toContain("brew tap oven-sh/bun");
-    expect(releaseChecklist).toContain('brew tap goniszewski/little-imp "$PWD"');
-    expect(releaseChecklist).toContain("brew audit --strict goniszewski/little-imp/little-imp");
-    expect(releaseChecklist).toContain("brew install goniszewski/little-imp/little-imp");
-    expect(releaseChecklist).toContain("brew uninstall little-imp");
+    expect(releaseChecklist).toContain('brew tap goniszewski/grimoire "$PWD"');
+    expect(releaseChecklist).toContain("brew audit --strict goniszewski/grimoire/grimoire");
+    expect(releaseChecklist).toContain("brew install goniszewski/grimoire/grimoire");
+    expect(releaseChecklist).toContain("brew uninstall grimoire");
   });
 });

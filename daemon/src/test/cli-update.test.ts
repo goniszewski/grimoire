@@ -58,10 +58,10 @@ function platformName(): "macos" | "linux" {
   return process.platform === "darwin" ? "macos" : "linux";
 }
 
-function createUpgradeArchiveFixture(options: { badChecksum?: boolean; signature?: boolean } = {}) {
+function createUpgradeArchiveFixture(options: { badChecksum?: boolean; signature?: boolean; version?: string } = {}) {
   const releaseDir = mkdtempSync(join(tmpdir(), "little-imp-cli-upgrade-release-"));
   const payloadStage = join(releaseDir, "payload");
-  const version = "0.2.0-beta";
+  const version = options.version ?? "0.2.0-beta";
   const platform = platformName();
   const archiveRoot = `little-imp-${version}-${platform}`;
   const archiveName = `${archiveRoot}.tar.gz`;
@@ -164,20 +164,20 @@ describe("littleimp update CLI", () => {
   it("reports the newest compatible release from the configured source", async () => {
     const harness = makeUpdateHarness([
       {
-        tag_name: "v0.2.0-beta.1",
-        name: "Little Imp 0.2.0 beta 1",
+        tag_name: "v1.1.0-beta.1",
+        name: "Grimoire 1.1.0 beta 1",
         draft: false,
         prerelease: true,
         published_at: "2026-05-18T12:00:00Z",
-        html_url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1",
+        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0-beta.1",
       },
       {
-        tag_name: "v0.1.0",
-        name: "Little Imp 0.1.0",
+        tag_name: "v1.0.1",
+        name: "Grimoire 1.0.1",
         draft: false,
         prerelease: false,
         published_at: "2026-05-17T12:00:00Z",
-        html_url: "https://github.com/goniszewski/little-imp/releases/tag/v0.1.0",
+        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
       },
     ]);
 
@@ -194,20 +194,20 @@ describe("littleimp update CLI", () => {
     expect(harness.calls[0].url).toBe("https://updates.example.test/releases");
     expect(harness.calls[0].init?.headers).toEqual({
       accept: "application/vnd.github+json",
-      "user-agent": "littleimp-update-check/0.1.0-beta",
+      "user-agent": "littleimp-update-check/1.0.0",
     });
     expect(JSON.parse(harness.stdout[0])).toEqual({
-      current_version: "0.1.0-beta",
+      current_version: "1.0.0",
       update_available: true,
       source: "https://updates.example.test/releases",
-      channel: "beta",
+      channel: "stable",
       latest: {
-        version: "0.2.0-beta.1",
-        tag: "v0.2.0-beta.1",
-        name: "Little Imp 0.2.0 beta 1",
-        prerelease: true,
-        published_at: "2026-05-18T12:00:00Z",
-        url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1",
+        version: "1.0.1",
+        tag: "v1.0.1",
+        name: "Grimoire 1.0.1",
+        prerelease: false,
+        published_at: "2026-05-17T12:00:00Z",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
       },
     });
   });
@@ -293,8 +293,8 @@ describe("littleimp update CLI", () => {
     const code = await harness.run(["update", "check", "--source", "https://updates.example.test/releases"]);
 
     expect(code).toBe(0);
-    expect(harness.stdout.join("\n")).toContain("Little Imp is up to date");
-    expect(harness.stdout.join("\n")).toContain("0.1.0-beta");
+    expect(harness.stdout.join("\n")).toContain("Grimoire is up to date");
+    expect(harness.stdout.join("\n")).toContain("1.0.0");
   });
 
   it("uses LITTLEIMP_UPDATE_SOURCE when no source flag is provided", async () => {
@@ -343,7 +343,7 @@ describe("littleimp update CLI", () => {
     expect(harness.spawnCalls[0].args).toContain("--upgrade");
     expect(harness.fetchCalls[0].url).toBe("http://127.0.0.1:3210/health");
     expect(JSON.parse(harness.stdout[0])).toMatchObject({
-      current_version: "0.1.0-beta",
+      current_version: "1.0.0",
       upgraded_version: fixture.version,
       archive: fixture.archivePath,
       checksum_verified: true,
@@ -470,7 +470,7 @@ describe("littleimp update CLI", () => {
   });
 
   it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
-    const fixture = createUpgradeArchiveFixture();
+    const fixture = createUpgradeArchiveFixture({ version: "1.0.1" });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];
@@ -487,7 +487,7 @@ describe("littleimp update CLI", () => {
             tag_name: `v${fixture.version}`,
             name: `Little Imp ${fixture.version}`,
             draft: false,
-            prerelease: true,
+            prerelease: false,
             published_at: "2026-05-26T12:00:00Z",
             html_url: tagUrl,
           },

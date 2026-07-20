@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# One-command Little Imp release installer.
+# One-command Grimoire release installer.
 # Downloads a published release archive, verifies it, then delegates to daemon/install.sh.
 set -euo pipefail
 
-APP_NAME="Little Imp"
-REPO="goniszewski/little-imp"
+APP_NAME="Grimoire"
+REPO="goniszewski/grimoire"
 VERSION="${LITTLEIMP_VERSION:-0.1.0-beta}"
 RELEASE_BASE_URL="${LITTLEIMP_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/v${VERSION}}"
 

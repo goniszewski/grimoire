@@ -18,7 +18,7 @@ function renderBanner(latestTag = "v0.2.0", currentVersion = "0.1.0-beta", onDis
 describe("UpdateAvailableBanner", () => {
   it("renders the available version and current version", () => {
     renderBanner("v0.2.0", "0.1.0-beta");
-    expect(screen.getByText(/Little Imp v0.2.0 is available/)).toBeInTheDocument();
+    expect(screen.getByText(/Grimoire v0.2.0 is available/)).toBeInTheDocument();
     expect(screen.getByText(/current: 0.1.0-beta/)).toBeInTheDocument();
   });
 

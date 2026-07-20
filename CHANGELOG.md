@@ -1,8 +1,14 @@
 # Changelog
 
-All notable changes to Little Imp will be documented in this file.
+All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [1.0.0] - 2026-07-20
+
+### Changed
+- General-availability release. The `littleimp`/`littleimpd` daemon and CLI
+  tooling names are stable on-disk identifiers and remain unchanged.
 
 ## [Unreleased]
 

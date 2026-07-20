@@ -1,4 +1,4 @@
-# Little Imp Roadmap
+# Grimoire Roadmap
 
 Version: draft-v5
 Status: Release alignment for `0.1.0-beta`
@@ -7,7 +7,7 @@ Date: May 2026
 
 ## Current State
 
-Little Imp is in final `0.1.0-beta` release closeout. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, diagnose local issues, and run locally through the native daemon, Docker, release archive, one-command installer, or Homebrew alternate path.
+Grimoire is in final `0.1.0-beta` release closeout. The core local-first product is implemented: save, extract, organize, search, review, back up, restore, diagnose local issues, and run locally through the native daemon, Docker, release archive, one-command installer, or Homebrew alternate path.
 
 Shipped product areas:
 
@@ -86,7 +86,7 @@ public build:
 
 ## Grimoire Parity Scope
 
-The current Grimoire parity batch is a local-first Little Imp compatibility
+The current Grimoire parity batch is a local-first Grimoire compatibility
 pass, not a full Grimoire server-mode clone. The batch is locked as
 local-first, single-user, loopback-first, and local-integrations-only.
 

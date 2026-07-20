@@ -9,9 +9,9 @@ Date: May 2026
 
 ## 1. Purpose
 
-This document captures post-MVP research for adding multi-user support to Little Imp.
+This document captures post-MVP research for adding multi-user support to Grimoire.
 
-The goal is not to change the `0.1.0-beta` release scope. The current product remains a local-first, single-user knowledge index. Multi-user support is a larger product and architecture direction that should be evaluated after the MVP release is stable.
+The goal is not to change the `1.0.0` release scope. The current product remains a local-first, single-user knowledge index. Multi-user support is a larger product and architecture direction that should be evaluated after the MVP release is stable.
 
 The requested capabilities are:
 
@@ -28,7 +28,7 @@ The requested capabilities are:
 
 ## 2. Executive Summary
 
-Multi-user support is a platform shift for Little Imp.
+Multi-user support is a platform shift for Grimoire.
 
 The current implementation assumes one local owner. The daemon exposes a
 loopback-bound API where first-party REST remains tokenless, local integration
@@ -63,7 +63,7 @@ The recommended post-MVP planning baseline is 10-14 weeks for one senior enginee
 
 ### 3.1 Runtime Model
 
-Little Imp currently has two runtime parts:
+Grimoire currently has two runtime parts:
 
 - React SPA frontend
 - Bun and Hono daemon, `littleimpd`
@@ -102,9 +102,9 @@ accounts, roles, or route-level authorization.
 
 Current Docker documentation explicitly warns:
 
-- Little Imp's integration tokens do not make the daemon a public server.
+- Grimoire's integration tokens do not make the daemon a public server.
 - The daemon should not be published on a public interface.
-- Remote access should be handled by an authenticated tunnel, VPN, or reverse proxy before traffic reaches Little Imp.
+- Remote access should be handled by an authenticated tunnel, VPN, or reverse proxy before traffic reaches Grimoire.
 
 The Hono app still has no request principal, session lookup, role check, or
 multi-user authorization middleware.
@@ -195,7 +195,7 @@ The first multi-user bootstrap flow should create the first admin account.
 
 ### 4.2 Environments
 
-An environment is an isolated Little Imp library.
+An environment is an isolated Grimoire library.
 
 It should contain:
 
@@ -313,7 +313,7 @@ Control database:
 
 Environment database:
 
-- current Little Imp library schema
+- current Grimoire library schema
 - environment-local settings
 - environment-local jobs
 - environment-local FTS

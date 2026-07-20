@@ -26,7 +26,7 @@ export function UpdateAvailableBanner({
     >
       <ArrowUpCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
       <span className="flex-1">
-        Little Imp {latestTag} is available (current: {currentVersion}) —{" "}
+        Grimoire {latestTag} is available (current: {currentVersion}) —{" "}
         <button
           onClick={handleNavigate}
           className="underline underline-offset-2 hover:no-underline font-medium focus-visible:ring-2 focus-visible:ring-warning focus-visible:rounded"

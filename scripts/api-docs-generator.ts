@@ -67,7 +67,7 @@ interface OpenApiDocument {
     schemas: Record<string, OpenApiSchema>;
     securitySchemes: Record<string, OpenApiSecurityScheme>;
   };
-  "x-little-imp-contract": {
+  "x-grimoire-contract": {
     schemaVersion: ApiContractDocument["schemaVersion"];
     source: string;
   };
@@ -91,7 +91,7 @@ interface OpenApiOperation {
   requestBody?: OpenApiRequestBody;
   responses: Record<string, OpenApiResponse>;
   security?: Array<Record<string, string[]>>;
-  "x-little-imp-source-method": HttpMethod;
+  "x-grimoire-source-method": HttpMethod;
 }
 
 interface OpenApiParameter {
@@ -337,7 +337,7 @@ const MIDDLEWARE_STATUS_CODES = new Set([401, 413, 415]);
 
 export function buildApiMarkdown(document: ApiContractDocument): string {
   const lines: string[] = [];
-  lines.push("# Little Imp API Documentation");
+  lines.push("# Grimoire API Documentation");
   lines.push("");
   lines.push("> Auto-generated from `daemon/src/api/contract.ts`. Do not edit by hand.");
   lines.push("");
@@ -358,7 +358,7 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("");
   lines.push("## Browser Origin And CORS");
   lines.push("");
-  lines.push("Little Imp keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.");
+  lines.push("Grimoire keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.");
   lines.push("");
   lines.push("Configure additional local browser clients with `CORS_ORIGINS` as a comma-separated list of loopback origins:");
   lines.push("");
@@ -380,7 +380,7 @@ export function buildApiMarkdown(document: ApiContractDocument): string {
   lines.push("");
   lines.push("Limitations:");
   lines.push("");
-  lines.push("- Hono `ALL` routes are represented by the primary client method `POST` with `x-little-imp-source-method: \"ALL\"`.");
+  lines.push("- Hono `ALL` routes are represented by the primary client method `POST` with `x-grimoire-source-method: \"ALL\"`.");
   lines.push("- Mixed content responses such as JSON/CSV exports share the closest generated schema; CSV, media, and SSE clients should still use the documented content type.");
   lines.push("- First-party REST routes remain local-origin routes. The OpenAPI bearer scheme documents managed local integration tokens, and MCP marks that scheme as required.");
   lines.push("");
@@ -457,12 +457,12 @@ export function buildOpenApiDocument(contract: ApiContract): OpenApiDocument {
         localIntegrationBearer: {
           type: "http",
           scheme: "bearer",
-          bearerFormat: "Little Imp integration token",
+          bearerFormat: "Grimoire integration token",
           description: "Managed local integration bearer token created with POST /integration-tokens.",
         },
       },
     },
-    "x-little-imp-contract": {
+    "x-grimoire-contract": {
       schemaVersion: 1,
       source: "daemon/src/api/contract.ts",
     },
@@ -492,7 +492,7 @@ function buildOpenApiOperation(
       ])
     ),
     ...(route.path === "/mcp" || route.path === "/capture" ? { security: [{ localIntegrationBearer: [] }] } : {}),
-    "x-little-imp-source-method": route.method,
+    "x-grimoire-source-method": route.method,
   };
 
   return operation;

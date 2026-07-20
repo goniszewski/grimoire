@@ -41,7 +41,7 @@ const OLLAMA_BASE_URL = "http://localhost:11434";
 const ANTHROPIC_BASE_URL = "https://api.anthropic.com";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-const OPENROUTER_TITLE = "Little Imp";
+const OPENROUTER_TITLE = "Grimoire";
 const REDACTED_SECRET = "***";
 const AI_PROVIDERS = new Set<AiProvider>([
   "openai",

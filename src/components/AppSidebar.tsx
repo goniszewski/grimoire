@@ -525,7 +525,7 @@ export function AppSidebar({
             <Flame className="h-6 w-6 text-primary shrink-0" />
             {!collapsed && (
               <div>
-                <h1 className="font-semibold text-sm tracking-tight">Little Imp</h1>
+                <h1 className="font-semibold text-sm tracking-tight">Grimoire</h1>
                 <p className="text-[10px] text-muted-foreground font-mono">{totalCount} bookmarks</p>
               </div>
             )}

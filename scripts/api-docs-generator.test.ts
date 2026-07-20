@@ -126,7 +126,7 @@ describe("API documentation generator", () => {
     expect(openapi.components.securitySchemes.localIntegrationBearer).toEqual({
       type: "http",
       scheme: "bearer",
-      bearerFormat: "Little Imp integration token",
+      bearerFormat: "Grimoire integration token",
       description: "Managed local integration bearer token created with POST /integration-tokens.",
     });
     expect(openapi.components.schemas.Pagination.required).toEqual([
@@ -208,7 +208,7 @@ describe("API documentation generator", () => {
     });
 
     expect(openapi.paths["/mcp"].post.security).toEqual([{ localIntegrationBearer: [] }]);
-    expect(openapi.paths["/mcp"].post["x-little-imp-source-method"]).toBe("ALL");
+    expect(openapi.paths["/mcp"].post["x-grimoire-source-method"]).toBe("ALL");
     expect(openapi.paths["/capture"].post.security).toEqual([{ localIntegrationBearer: [] }]);
   });
 

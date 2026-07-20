@@ -1,4 +1,4 @@
-# Little Imp 0.1.0-beta Release Decision
+# Grimoire 0.1.0-beta Release Decision
 
 Decision date: May 29, 2026
 
@@ -109,7 +109,7 @@ These are explicit and should not be represented as completed release evidence:
 These limitations are acceptable for an MVP beta if the release remains framed
 as local-first, single-user software:
 
-- Little Imp has scoped local integration-token auth for MCP and protected
+- Grimoire has scoped local integration-token auth for MCP and protected
   local capture, but the general first-party REST API remains loopback-trusted
   and must not be exposed on a public network without an authenticated tunnel,
   VPN, or reverse proxy in front of it.

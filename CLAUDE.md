@@ -1,4 +1,4 @@
-# CLAUDE.md — Little Imp (Grimoire 2.0)
+# CLAUDE.md — Grimoire 1.0
 
 ## Project
 

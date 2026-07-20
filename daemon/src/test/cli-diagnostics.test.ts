@@ -81,7 +81,7 @@ describe("littleimp diagnostics CLI", () => {
     const code = await harness.run(["diagnostics"]);
 
     expect(code).toBe(0);
-    expect(harness.stdout.join("\n")).toContain("Little Imp 0.1.0-beta diagnostics");
+    expect(harness.stdout.join("\n")).toContain("Grimoire 0.1.0-beta diagnostics");
     expect(harness.stdout.join("\n")).toContain("Install: native on darwin/arm64");
     expect(harness.stdout.join("\n")).toContain("Queue: 2 pending");
     expect(harness.stdout.join("\n")).toContain("Logs: /Users/me/.local/share/littleimp/logs/daemon.log");

@@ -1,6 +1,6 @@
 # Performance Checks
 
-Little Imp keeps the default daemon test suite focused and fast. Heavier
+Grimoire keeps the default daemon test suite focused and fast. Heavier
 large-library checks run separately:
 
 ```sh

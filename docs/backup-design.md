@@ -1,4 +1,4 @@
-# Little Imp Backup Design
+# Grimoire Backup Design
 
 Version: v0.3
 Status: Release baseline, packaged CLI, and encrypted backup packages implemented; compression remains future work
@@ -9,7 +9,7 @@ Date: May 2026
 
 ## 1. Purpose
 
-This document defines the concrete backup and restore design for Little Imp.
+This document defines the concrete backup and restore design for Grimoire.
 
 Backup is designed as:
 
@@ -18,7 +18,7 @@ Backup is designed as:
 - independent from sync
 - compatible with local folders and remote object storage
 
-The design assumes Little Imp remains a single-user, local-first application.
+The design assumes Grimoire remains a single-user, local-first application.
 
 ---
 
@@ -26,7 +26,7 @@ The design assumes Little Imp remains a single-user, local-first application.
 
 Primary goals:
 
-1. Preserve all user data required to fully restore Little Imp.
+1. Preserve all user data required to fully restore Grimoire.
 2. Make restore safe, explicit, and deterministic.
 3. Support local backups first, then remote backups without changing the backup format.
 4. Keep cloud-provider support narrow by using a destination abstraction.
@@ -48,7 +48,7 @@ This design does not attempt to provide:
 
 ## 4. Backup Scope
 
-A backup must include all data required to recreate a functional Little Imp library.
+A backup must include all data required to recreate a functional Grimoire library.
 
 Initial required contents:
 
@@ -187,7 +187,7 @@ Rules:
 
 ### 7.1 Snapshot semantics
 
-Little Imp must never back up a live database file by copying it blindly while writes are in progress.
+Grimoire must never back up a live database file by copying it blindly while writes are in progress.
 
 The system must create a consistent snapshot first.
 

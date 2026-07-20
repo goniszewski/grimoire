@@ -1,6 +1,6 @@
-# Design — Little Imp
+# Design — Grimoire
 
-A locked visual system for Little Imp’s application surfaces. Every redesign
+A locked visual system for Grimoire’s application surfaces. Every redesign
 reads this file before adding or changing visual code. It protects the product’s
 local-first, search-first character while making its dense operational work
 calmer to scan.

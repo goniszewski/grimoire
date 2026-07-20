@@ -40,20 +40,20 @@ describe("Updates API", () => {
       calls.push({ url: String(url), init });
       return releasesResponse([
         {
-          tag_name: "v0.3.0-beta.1",
-          name: "Little Imp 0.3.0 beta 1",
+          tag_name: "v1.1.0-beta.1",
+          name: "Grimoire 1.1.0 beta 1",
           draft: false,
           prerelease: true,
           published_at: "2026-05-19T10:00:00Z",
-          html_url: "https://github.com/goniszewski/little-imp/releases/tag/v0.3.0-beta.1",
+          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0-beta.1",
         },
         {
-          tag_name: "v0.2.0",
-          name: "Little Imp 0.2.0",
+          tag_name: "v1.0.1",
+          name: "Grimoire 1.0.1",
           draft: false,
           prerelease: false,
           published_at: "2026-05-18T10:00:00Z",
-          html_url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0",
+          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
         },
       ]);
     }) as typeof fetch;
@@ -65,7 +65,7 @@ describe("Updates API", () => {
     expect(calls[0].url).toBe(source);
     expect(calls[0].init?.headers).toEqual({
       accept: "application/vnd.github+json",
-      "user-agent": "littleimp-update-check/0.1.0-beta",
+      "user-agent": "littleimp-update-check/1.0.0",
     });
     const json = await res.json() as {
       data: {
@@ -84,17 +84,17 @@ describe("Updates API", () => {
       };
     };
     expect(json.data).toEqual({
-      current_version: "0.1.0-beta",
+      current_version: "1.0.0",
       update_available: true,
       source,
       channel: "stable",
       latest: {
-        version: "0.2.0",
-        tag: "v0.2.0",
-        name: "Little Imp 0.2.0",
+        version: "1.0.1",
+        tag: "v1.0.1",
+        name: "Grimoire 1.0.1",
         prerelease: false,
         published_at: "2026-05-18T10:00:00Z",
-        url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
       },
     });
   });

@@ -754,7 +754,7 @@ describe("settings-driven AI runtime configuration", () => {
         expectedUrl: "https://openrouter.ai/api/v1/chat/completions",
         expectedAuth: "Bearer openrouter-key",
         expectedModel: "~openai/gpt-latest",
-        expectedOpenRouterTitle: "Little Imp",
+        expectedOpenRouterTitle: "Grimoire",
       },
       {
         provider: "openai_compatible",

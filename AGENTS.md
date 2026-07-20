@@ -4,10 +4,10 @@ Guidance for coding agents working in this repository.
 
 ## Project Snapshot
 
-- Little Imp is a local-first bookmark manager.
+- Grimoire is a local-first bookmark manager.
 - The frontend is a React 18 + Vite + TypeScript SPA under `src/`.
 - The background daemon is a Bun service under `daemon/` that listens on `127.0.0.1:3210`, stores data in SQLite, and exposes the REST API used by the frontend.
-- Current release target: `0.1.0-beta`.
+- Current release: `1.0.0`.
 
 ## First Reads
 

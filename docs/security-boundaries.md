@@ -4,12 +4,12 @@ Date: 2026-05-31
 Status: current Grimoire parity boundary
 Task: TASK-087
 
-This document defines the security boundary for Little Imp's local daemon and
+This document defines the security boundary for Grimoire's local daemon and
 local integration clients. It records the current loopback-only threat model,
 the minimum controls required for local integrations, and the release gates
 that must be satisfied before any future public-network mode can be considered.
 
-Little Imp remains local-first, single-user, and loopback-first for the current
+Grimoire remains local-first, single-user, and loopback-first for the current
 Grimoire parity batch. This document does not approve LAN, public internet,
 multi-user, or hosted server deployment.
 
@@ -60,7 +60,7 @@ These controls are in scope:
 The current parity batch does not include:
 
 - Binding the native daemon to `0.0.0.0`, a LAN address, or a public interface.
-- Public reverse-proxy examples that pass requests directly to Little Imp.
+- Public reverse-proxy examples that pass requests directly to Grimoire.
 - Multi-user accounts, sessions, admin roles, or per-user data partitions.
 - Packaged browser-extension or bookmarklet clients and compatibility smoke
   tests.
@@ -68,8 +68,8 @@ The current parity batch does not include:
 - Public MCP, backup, diagnostics, update, or Settings endpoints.
 
 If a user needs remote access today, an authenticated tunnel, VPN, or reverse
-proxy must enforce access control before traffic reaches Little Imp. That is an
-operator-owned wrapper, not a Little Imp public-server mode.
+proxy must enforce access control before traffic reaches Grimoire. That is an
+operator-owned wrapper, not a Grimoire public-server mode.
 
 ## Assets And Trust Boundaries
 
@@ -105,7 +105,7 @@ read-only and must not perform state-changing operations.
 
 ### Public-network exposure
 
-Public-network exposure is not approved. If Little Imp is reachable from other
+Public-network exposure is not approved. If Grimoire is reachable from other
 machines without an authenticated wrapper, tokenless REST routes and sensitive
 route families such as MCP, diagnostics, backup, restore, update, and Settings
 become remote attack surface.
@@ -171,7 +171,7 @@ browser origin and CORS policy for local integration clients:
 
 ## Public-Network Release Gates
 
-Before any Little Imp mode can bind beyond loopback or document direct public
+Before any Grimoire mode can bind beyond loopback or document direct public
 network use, all of these gates must be complete:
 
 1. A product decision explicitly approves the non-loopback mode and names its

@@ -111,7 +111,7 @@ Keep reports concise. The main card should be readable in one or two minutes. Pu
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Task Title - Little Imp Task Report</title>
+<title>Task Title - Grimoire Task Report</title>
 <style>
 /* Keep styles embedded so the report is self-contained. */
 </style>
@@ -125,7 +125,7 @@ Keep reports concise. The main card should be readable in one or two minutes. Pu
     </nav>
 
     <header>
-      <p class="eyebrow">Little Imp Task Report</p>
+      <p class="eyebrow">Grimoire Task Report</p>
       <h1>Task Title</h1>
       <div class="meta-row">
         <span>YYYY-MM-DD</span>

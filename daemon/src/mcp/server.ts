@@ -53,7 +53,7 @@ export interface McpDeps {
 }
 
 /**
- * Creates a configured McpServer instance with all Little Imp tools and resources.
+ * Creates a configured McpServer instance with all Grimoire tools and resources.
  * The server is stateless (no session IDs) — each request creates a fresh transport.
  */
 export function createMcpServer(deps: McpDeps): McpServer {
@@ -233,7 +233,7 @@ export function createMcpServer(deps: McpDeps): McpServer {
     {
       title: "Add Bookmark",
       description:
-        "Save a URL to the Little Imp library. " +
+        "Save a URL to the Grimoire library. " +
         "The daemon will automatically fetch the page, extract content, and enrich it with AI.",
       inputSchema: z.object({
         url: z.string().describe("Public http or https URL to save"),

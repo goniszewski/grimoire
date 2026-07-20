@@ -1,5 +1,5 @@
 /**
- * Little Imp Bookmarklet Source
+ * Grimoire Bookmarklet Source
  *
  * This is the source for the bookmarklet that gets injected into a javascript: URL.
  * At generation time, __TOKEN__ is replaced with the user's integration token and
@@ -48,7 +48,7 @@ const DAEMON_URL: string = "__DAEMON_URL__";
   toast.appendChild(spinner);
 
   const label = document.createElement("span");
-  label.textContent = "Saving to Little Imp\u2026";
+  label.textContent = "Saving to Grimoire\u2026";
   toast.appendChild(label);
 
   document.body.appendChild(toast);

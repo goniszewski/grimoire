@@ -1,6 +1,6 @@
-# Contributing To Little Imp
+# Contributing To Grimoire
 
-Little Imp is a local-first bookmark manager with a React/Vite frontend and a
+Grimoire is a local-first bookmark manager with a React/Vite frontend and a
 Bun/Hono/SQLite daemon. Contributions should preserve the loopback-first,
 single-user release posture unless a task explicitly reopens that product and
 security decision.
@@ -26,8 +26,8 @@ The `local/` directory is ignored by Git.
 ## Development Setup
 
 ```sh
-git clone https://github.com/goniszewski/little-imp.git
-cd little-imp
+git clone https://github.com/goniszewski/grimoire.git
+cd grimoire
 
 npm install
 cd daemon && bun install
@@ -50,7 +50,7 @@ The frontend runs at `http://127.0.0.1:8080`. The daemon listens on
 ## Project Structure
 
 ```text
-little-imp/
+grimoire/
   src/          React app, components, hooks, pages, tests, and API client
   daemon/       Bun/Hono daemon, routes, SQLite repositories, pipeline, tests
   docs/         Product, release, operations, API, parity, and task reports
@@ -158,7 +158,7 @@ for it or the maintainer asks.
 4. List verification commands and any checks that could not be run.
 5. Use semantic commit messages, for example `docs: refresh public README`.
 
-Before tagging or publishing `0.1.0-beta`, run the
+Before tagging or publishing a release, run the
 [release checklist](./docs/release-checklist.md). Public one-command,
 published-artifact, and Homebrew validation must not be claimed while
 unauthenticated release URLs return `404`.

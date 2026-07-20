@@ -1,11 +1,11 @@
-# Little Imp Update System
+# Grimoire Update System
 
 ## Overview
 
 This document describes the update behavior shipped for the `0.1.0-beta`
 release target and separates it from post-MVP update-management ideas.
 
-Little Imp updates are explicit and user-controlled. The shipped system can
+Grimoire updates are explicit and user-controlled. The shipped system can
 check for newer releases, download or consume a selected release archive, verify
 the archive, run the native installer in upgrade mode, restart the daemon, and
 verify the daemon reports the upgraded version. It does not perform automatic
@@ -44,7 +44,7 @@ littleimp update install
 
 # Download and install a selected release version
 littleimp update install --version 0.2.0-beta.1 \
-  --release-base-url https://github.com/goniszewski/little-imp/releases/download/v0.2.0-beta.1
+  --release-base-url https://github.com/goniszewski/grimoire/releases/download/v0.2.0-beta.1
 
 # Upgrade from an already downloaded archive, checksum, and optional signature
 littleimp update install \
@@ -80,7 +80,7 @@ verifies the published checksum, verifies a detached signature when published,
 and delegates to the native installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade
+curl -fsSL https://raw.githubusercontent.com/goniszewski/grimoire/v0.1.0-beta/install.sh | bash -s -- --upgrade
 ```
 
 If no detached signature is published, the installer prints a checksum-only

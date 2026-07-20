@@ -1,16 +1,16 @@
-class LittleImp < Formula
+class Grimoire < Formula
   desc "Local-first bookmark manager and search daemon"
-  homepage "https://github.com/goniszewski/little-imp"
+  homepage "https://github.com/goniszewski/grimoire"
   license "MIT"
 
   depends_on "oven-sh/bun/bun"
 
   if OS.mac?
-    url "https://github.com/goniszewski/little-imp/releases/download/v0.1.0-beta/little-imp-0.1.0-beta-macos.tar.gz"
-    sha256 "d27e19b85a55a0316e9e2700312e919223c1b4ce88262b74c11bd8e2f3ebaf59"
+    url "https://github.com/goniszewski/grimoire/releases/download/v1.0.0/little-imp-1.0.0-macos.tar.gz"
+    sha256 "000000000000000000000000000000000000000000000000000000000000000a"
   elsif OS.linux?
-    url "https://github.com/goniszewski/little-imp/releases/download/v0.1.0-beta/little-imp-0.1.0-beta-linux.tar.gz"
-    sha256 "a1ffb52c12ed0a292ce58562ed322698b8ed43690e8260bec7dc59ea87ca8098"
+    url "https://github.com/goniszewski/grimoire/releases/download/v1.0.0/little-imp-1.0.0-linux.tar.gz"
+    sha256 "000000000000000000000000000000000000000000000000000000000000000b"
   end
 
   def install

@@ -1,18 +1,18 @@
-# Little Imp Overview
+# Grimoire Overview
 
-Version: `0.1.0-beta`
+Version: `1.0.0`
 Status: current implementation overview
 Last updated: May 2026
 
 ## Purpose
 
-Little Imp is a local-first personal knowledge index for saved web resources. It is designed for developers who collect technical articles, documentation, videos, repositories, discussions, PDFs, and other reference material, then need to find those items later by meaning rather than by remembering the exact title.
+Grimoire is a local-first personal knowledge index for saved web resources. It is designed for developers who collect technical articles, documentation, videos, repositories, discussions, PDFs, and other reference material, then need to find those items later by meaning rather than by remembering the exact title.
 
 The product promise is:
 
 > Find anything you have saved quickly. Organization happens automatically where possible.
 
-Little Imp has two runtime parts:
+Grimoire has two runtime parts:
 
 - A React single-page app for the user interface.
 - `littleimpd`, a Bun and Hono daemon that owns storage, background processing, API routes, backup, MCP, and static production serving.
@@ -80,7 +80,7 @@ Search and listing support filtering by tag, domain, category, and date range. R
 
 ### Library Organization
 
-Little Imp supports both manual and automated organization.
+Grimoire supports both manual and automated organization.
 
 Manual controls:
 
@@ -419,7 +419,7 @@ erDiagram
 
 ### Product Scope
 
-- Little Imp is single-user and local-first.
+- Grimoire is single-user and local-first.
 - It is not a public hosted service and does not implement multi-user accounts.
 - Live multi-device sync is not implemented. Backups are snapshots, not replication.
 - A browser extension is future work.

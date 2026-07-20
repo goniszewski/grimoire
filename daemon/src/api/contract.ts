@@ -1511,7 +1511,7 @@ const schemas = {
   ),
   UpdateCheckResult: objectSchema(
     {
-      current_version: stringSchema("Current packaged Little Imp version"),
+      current_version: stringSchema("Current packaged Grimoire version"),
       update_available: booleanSchema("Whether a compatible release is newer than the current version"),
       source: stringSchema("Release source URL used for the check", { format: "uri" }),
       channel: stringSchema("Applied update channel", { enum: ["stable", "beta"] }),
@@ -1752,7 +1752,7 @@ const problem = (type: string, title: string, status: number, detail: string) =>
   }) as const;
 
 export const apiContract = {
-  name: "Little Imp daemon API",
+  name: "Grimoire daemon API",
   version: "1",
   baseUrl: "http://127.0.0.1:3210",
   description: "Local-only REST and MCP API exposed by littleimpd.",
@@ -1784,7 +1784,7 @@ export const apiContract = {
       method: "GET",
       path: "/updates/check",
       tag: "Updates",
-      summary: "Check a GitHub Releases-compatible source for a newer Little Imp release.",
+      summary: "Check a GitHub Releases-compatible source for a newer Grimoire release.",
       request: {
         query: objectSchema({
           channel: stringSchema("Update channel to check; defaults from the current package version", {
@@ -2667,7 +2667,7 @@ export const apiContract = {
         {
           title: "Set a custom backup destination",
           request:
-            'curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H "Content-Type: application/json" \\\n  -d \'{"path":"/Users/me/Backups/Little Imp"}\'',
+            'curl -X PUT http://127.0.0.1:3210/backup/destination \\\n  -H "Content-Type: application/json" \\\n  -d \'{"path":"/Users/me/Backups/Grimoire"}\'',
         },
       ],
     },
@@ -3042,8 +3042,8 @@ export const apiContract = {
                 protocolVersion: "2025-03-26",
                 capabilities: {},
                 serverInfo: {
-                  name: "little-imp",
-                  version: "0.1.0-beta",
+                  name: "grimoire",
+                  version: "1.0.0",
                 },
               },
             },

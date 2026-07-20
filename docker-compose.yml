@@ -1,13 +1,13 @@
 services:
-  little-imp:
+  grimoire:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: little-imp
+    container_name: grimoire
     ports:
       - "127.0.0.1:3210:3210"
     volumes:
-      - little-imp-data:/data
+      - grimoire-data:/data
     environment:
       - HOST=0.0.0.0
       - PORT=3210
@@ -47,7 +47,7 @@ services:
   #     retries: 3
 
 volumes:
-  little-imp-data:
+  grimoire-data:
     driver: local
   # ollama-data:
   #   driver: local

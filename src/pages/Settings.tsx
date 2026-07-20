@@ -254,14 +254,14 @@ function formatBytes(bytes: number): string {
 }
 
 function restoreSuccessDescription(result: ApiRestoreResult): string {
-  return `Restart before using Little Imp again: ${result.restart_command}`;
+  return `Restart before using Grimoire again: ${result.restart_command}`;
 }
 
 function updateCheckMessage(result: ApiUpdateCheckResult): string {
   if (result.update_available) {
     return `${result.latest?.tag ?? result.latest?.version ?? "A newer release"} is available`;
   }
-  return `Little Imp ${result.current_version} is up to date`;
+  return `Grimoire ${result.current_version} is up to date`;
 }
 
 function encryptedPackageDescription(result: ApiEncryptedBackupPackageResult): string {
@@ -334,7 +334,7 @@ function RestoreRecoveryDialog({
       >
         <div className="border-b px-5 py-4 space-y-1">
           <h2 id="restore-recovery-title" className="text-base font-semibold">
-            Restart Little Imp
+            Restart Grimoire
           </h2>
           <p className="text-xs text-muted-foreground">
             Restore finished, but the current daemon process must be restarted before the restored
@@ -1254,7 +1254,7 @@ const Settings = () => {
                 <div>
                   <h2 className="text-sm font-semibold">Updates</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Check the configured release channel for a newer Little Imp version.
+                    Check the configured release channel for a newer Grimoire version.
                   </p>
                 </div>
                 <Button
@@ -2228,7 +2228,7 @@ function BrowserIntegration() {
           </ul>
           <div className="rounded bg-warning/10 border border-warning/30 px-3 py-2 text-warning">
             <strong>Security note:</strong> The bookmarklet embeds your integration token. Anyone with access to
-            your browser bookmarks can capture pages to your Little Imp library. Treat it like a password.
+            your browser bookmarks can capture pages to your Grimoire library. Treat it like a password.
           </div>
         </div>
       )}
