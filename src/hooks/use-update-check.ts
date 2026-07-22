@@ -65,7 +65,7 @@ export function useUpdateCheck(): UseUpdateCheckResult {
     setLoading(true);
     void checkForUpdates()
       .then((json) => {
-        setResult((json.data as UpdateCheckResult) ?? null);
+        setResult(json.data ?? null);
         try {
           localStorage.setItem(STORAGE_KEY_LAST_CHECK, String(Date.now()));
         } catch {
