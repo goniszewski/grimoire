@@ -25,7 +25,7 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSafeExternalBookmarkUrl(url)) {
-      setError("Please enter a valid http(s) URL without embedded credentials");
+      setError("Please enter a valid URL (http or https, no credentials)");
       return;
     }
     setSubmitting(true);
