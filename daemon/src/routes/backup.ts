@@ -1408,26 +1408,26 @@ export function createBackupRoute(deps: BackupDeps): Hono {
         }
 
         const allowUnsafeNoChecksum = body.allow_unsafe_no_checksum === true;
+        if (allowUnsafeNoChecksum) {
+          return c.json(
+            {
+              error:
+                "allow_unsafe_no_checksum is no longer accepted over the HTTP API. Restore only checksum-verified backups.",
+            },
+            422
+          );
+        }
         const tmpRestoreDir = mkdtempSync(join(tmpdir(), "littleimp-restore-"));
         try {
           const snapshotData = await downloadFromS3(s3cfg, s3Key);
           writeFileSync(join(tmpRestoreDir, SNAPSHOT_FILE), snapshotData);
 
           const checksumKey = s3Key.replace(/\/snapshot\.db$/, "/checksums.sha256");
-          if (!allowUnsafeNoChecksum) {
-            try {
-              const checksumData = await downloadFromS3(s3cfg, checksumKey);
-              writeFileSync(join(tmpRestoreDir, CHECKSUM_FILE), checksumData);
-            } catch {
-              throw statusError("Remote backup checksum file is required");
-            }
-          } else {
-            try {
-              const checksumData = await downloadFromS3(s3cfg, checksumKey);
-              writeFileSync(join(tmpRestoreDir, CHECKSUM_FILE), checksumData);
-            } catch {
-              log.warn("Remote restore: unsafe checksum bypass requested and checksum file is missing", { checksumKey });
-            }
+          try {
+            const checksumData = await downloadFromS3(s3cfg, checksumKey);
+            writeFileSync(join(tmpRestoreDir, CHECKSUM_FILE), checksumData);
+          } catch {
+            throw statusError("Remote backup checksum file is required");
           }
 
           const manifestKey = s3Key.replace(/\/snapshot\.db$/, "/manifest.json");
@@ -1449,7 +1449,7 @@ export function createBackupRoute(deps: BackupDeps): Hono {
 
           const { bookmark_count, checksum_verified, rollback_path } = await restoreFromBackupDirectory(
             tmpRestoreDir,
-            { allowUnsafeNoChecksum }
+            { allowUnsafeNoChecksum: false }
           );
 
           return c.json(restoreResult(bookmark_count, checksum_verified, rollback_path));
@@ -1486,14 +1486,22 @@ export function createBackupRoute(deps: BackupDeps): Hono {
       }
 
       try {
-        const allowUnsafeNoChecksum = body.allow_unsafe_no_checksum === true;
-        if (!existsSync(checksumPath) && !allowUnsafeNoChecksum) {
+        if (body.allow_unsafe_no_checksum === true) {
+          return c.json(
+            {
+              error:
+                "allow_unsafe_no_checksum is no longer accepted over the HTTP API. Restore only checksum-verified backups.",
+            },
+            422
+          );
+        }
+        if (!existsSync(checksumPath)) {
           return c.json({ error: "Backup checksum file is required" }, 422);
         }
 
         const { bookmark_count, checksum_verified, rollback_path } = await restoreFromBackupDirectory(
           backupPath,
-          { allowUnsafeNoChecksum }
+          { allowUnsafeNoChecksum: false }
         );
         return c.json(restoreResult(bookmark_count, checksum_verified, rollback_path));
       } catch (err) {

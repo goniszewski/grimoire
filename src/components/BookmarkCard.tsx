@@ -129,7 +129,13 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
 
   const handleExternal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    openBookmarkExternal(bookmark, handleRecordedOpen);
+    if (!openBookmarkExternal(bookmark, handleRecordedOpen)) {
+      toast({
+        title: "Cannot open bookmark",
+        description: "URL must be a safe http(s) link without embedded credentials.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePin = (e: React.MouseEvent) => {

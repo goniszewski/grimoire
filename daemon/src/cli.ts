@@ -353,7 +353,7 @@ function printUpgradeResult(io: Required<Pick<CliIO, "stdout">>, result: Package
   io.stdout(`Upgrade complete: ${result.current_version} -> ${result.upgraded_version}`);
   io.stdout(`Archive: ${result.archive}`);
   io.stdout("Checksum: verified");
-  io.stdout(result.signature_verified ? "Signature: verified" : "Signature: not provided; checksum verified only.");
+  io.stdout(result.signature_verified ? "Signature: verified" : "Signature: not verified (unsigned install allowed).");
   io.stdout(`Restart: daemon healthy (${result.health_version})`);
   io.stdout("Rollback guidance:");
   for (const line of result.rollback_guidance) {
@@ -371,8 +371,8 @@ function usage(): string {
     "",
     "Usage:",
     "  littleimp update check [--channel stable|beta] [--source URL] [--json]",
-    "  littleimp update install [--version VERSION] [--release-base-url URL] [--channel stable|beta] [--source URL] [--json]",
-    "  littleimp update install --archive FILE --checksum FILE [--signature FILE] [--json]",
+    "  littleimp update install [--version VERSION] [--release-base-url URL] [--channel stable|beta] [--source URL] [--json] [--allow-unsigned]",
+    "  littleimp update install --archive FILE --checksum FILE [--signature FILE] [--json] [--allow-unsigned]",
     "  littleimp backup create [--json] [--daemon-url URL]",
     "  littleimp backup create --encrypt --output FILE [--json] [--daemon-url URL] [--password-file FILE]",
     "  littleimp backup list [--include-remote] [--json] [--daemon-url URL]",
@@ -427,7 +427,7 @@ async function handleUpdateInstallCommand(
   io: CliRuntime
 ): Promise<number> {
   const parsed = parseArgs(rest, {
-    booleanFlags: ["--json"],
+    booleanFlags: ["--json", "--allow-unsigned"],
     valueFlags: [
       "--archive",
       "--checksum",
@@ -446,6 +446,9 @@ async function handleUpdateInstallCommand(
   const signature = parsed.values.get("--signature");
   const versionFlag = parsed.values.get("--version");
   const json = parsed.flags.has("--json");
+  const allowUnsigned =
+    parsed.flags.has("--allow-unsigned") ||
+    ["1", "true", "yes"].includes((io.env.LITTLEIMP_ALLOW_UNSIGNED_UPGRADE ?? "").trim().toLowerCase());
   const daemonUrl = getDaemonUrl(parsed, io.env);
   const currentVersion = APP_VERSION;
   const workDir = createUpgradeWorkDir();
@@ -464,21 +467,26 @@ async function handleUpdateInstallCommand(
   }
 
   try {
+    const installEnv = allowUnsigned
+      ? { ...io.env, LITTLEIMP_ALLOW_UNSIGNED_UPGRADE: "1" }
+      : io.env;
+
     const artifact = archive
       ? {
           archivePath: archive,
           checksumPath: checksum!,
           signaturePath: signature,
         }
-      : await resolveDownloadedUpgradeArtifact(parsed, io, workDir);
+      : await resolveDownloadedUpgradeArtifact(parsed, io, workDir, { requireSignature: !allowUnsigned });
 
     const verified = verifyAndExtractUpgradeArtifact({
       archivePath: artifact.archivePath,
       checksumPath: artifact.checksumPath,
       signaturePath: artifact.signaturePath,
       signatureRunner: io.spawnSync,
-      env: io.env,
+      env: installEnv,
       workDir,
+      requireSignature: !allowUnsigned,
     });
     const guidance = rollbackGuidance(currentVersion, verified.version);
 
@@ -486,7 +494,7 @@ async function handleUpdateInstallCommand(
       runNativeUpgradeInstaller({
         extractedRoot: verified.extractedRoot,
         runner: io.spawnSync,
-        env: io.env,
+        env: installEnv,
       });
     } catch (err) {
       if (err instanceof UpgradeError) {
@@ -518,7 +526,8 @@ async function handleUpdateInstallCommand(
 async function resolveDownloadedUpgradeArtifact(
   parsed: ParsedArgs,
   io: CliRuntime,
-  workDir: string
+  workDir: string,
+  options: { requireSignature?: boolean } = {}
 ): Promise<{
   archivePath: string;
   checksumPath: string;
@@ -549,6 +558,7 @@ async function resolveDownloadedUpgradeArtifact(
     releaseBaseUrl,
     workDir,
     fetchImpl: io.fetch,
+    requireSignature: options.requireSignature !== false,
   });
 }
 

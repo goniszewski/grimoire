@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink, Copy, Calendar, Globe, Tag, FolderOpen, Pencil, Check, X, Pin, PinOff, Archive, BookOpen, BookDashed, NotebookPen, BookmarkCheck, BookmarkX, Clock, FileText, Info, Images } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { openBookmarkExternal, recordBookmarkOpenExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
+import { isSafeExternalBookmarkUrl } from "@/lib/safe-url";
 import { format } from "date-fns";
 import ReactMarkdown, { type Components } from "react-markdown";
 
@@ -29,13 +30,22 @@ interface BookmarkDetailContentProps {
 }
 
 const extractedMarkdownComponents: Components = {
-  a: ({ href, children }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  ),
+  a: ({ href, children }) =>
+    isSafeExternalBookmarkUrl(href) ? (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ) : (
+      <span>{children}</span>
+    ),
   img: () => null,
 };
+
+function formatSafeDate(value: string, pattern: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+  return format(date, pattern);
+}
 
 export function BookmarkDetailContent({
   bookmark,
@@ -289,7 +299,7 @@ export function BookmarkDetailContent({
             className="prose prose-sm dark:prose-invert max-w-none text-sm cursor-pointer hover:bg-muted/40 rounded-md p-1 -mx-1 transition-colors"
             onClick={() => { setNotesInput(bookmark.notes ?? ""); setEditingNotes(true); }}
           >
-            <ReactMarkdown>{bookmark.notes}</ReactMarkdown>
+            <ReactMarkdown components={extractedMarkdownComponents}>{bookmark.notes}</ReactMarkdown>
           </div>
         ) : (
           <p
@@ -361,19 +371,23 @@ export function BookmarkDetailContent({
       <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 group/url">
           <Globe className="h-3 w-3 shrink-0" />
-          <a
-            href={bookmark.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
-            className="hover:text-foreground font-mono truncate"
-          >
-            {bookmark.url}
-          </a>
+          {isSafeExternalBookmarkUrl(bookmark.url) ? (
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
+              className="hover:text-foreground font-mono truncate"
+            >
+              {bookmark.url}
+            </a>
+          ) : (
+            <span className="font-mono truncate text-destructive">{bookmark.url}</span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <Calendar className="h-3 w-3" />
-          {format(new Date(bookmark.savedAt), "MMM d, yyyy 'at' h:mm a")}
+          {formatSafeDate(bookmark.savedAt, "MMM d, yyyy 'at' h:mm a")}
         </div>
         {openMetrics.opened_count > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
@@ -384,7 +398,7 @@ export function BookmarkDetailContent({
         {openMetrics.last_opened_at && (
           <div className="flex items-center gap-1.5 shrink-0">
             <Clock className="h-3 w-3" />
-            Last opened {format(new Date(openMetrics.last_opened_at), "MMM d, yyyy 'at' h:mm a")}
+            Last opened {formatSafeDate(openMetrics.last_opened_at, "MMM d, yyyy 'at' h:mm a")}
           </div>
         )}
       </div>
@@ -402,17 +416,29 @@ export function BookmarkDetailContent({
           <Copy className="h-3.5 w-3.5 mr-1.5" />
           Copy URL
         </Button>
-        <Button variant="outline" size="sm" asChild>
-          <a
-            href={bookmark.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
+        {isSafeExternalBookmarkUrl(bookmark.url) ? (
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => recordBookmarkOpenExternal(bookmark, handleRecordedOpen)}
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Open
+            </a>
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            title="Bookmark URL is not a safe http(s) link"
           >
             <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
             Open
-          </a>
-        </Button>
+          </Button>
+        )}
         {(onPin || onUnpin) && (
           <Button
             variant={bookmark.is_pinned ? "secondary" : "outline"}

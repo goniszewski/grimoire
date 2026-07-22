@@ -1,5 +1,6 @@
 import { version as APP_VERSION } from "../../package.json";
 import { isPrivateHost } from "../lib/network.js";
+import { fetchFollowingSafeRedirects } from "../lib/safe-fetch.js";
 
 export const DEFAULT_UPDATE_SOURCE = "https://api.github.com/repos/goniszewski/grimoire/releases";
 
@@ -69,6 +70,10 @@ export function resolveUpdateSource(
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new UpdateCheckError("source must be a valid http or https URL.", 422);
+  }
+
+  if (url.username || url.password) {
+    throw new UpdateCheckError("source must not include embedded credentials.", 422);
   }
 
   if (!options.allowPrivateHosts && isPrivateHost(url.hostname)) {
@@ -207,14 +212,20 @@ export async function fetchUpdateReleases(
   source: string,
   currentVersion = APP_VERSION
 ): Promise<GitHubRelease[]> {
+  const headers = {
+    accept: "application/vnd.github+json",
+    "user-agent": `littleimp-update-check/${currentVersion}`,
+  };
+
   let res: Response;
   try {
-    res = await fetchImpl(source, {
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": `littleimp-update-check/${currentVersion}`,
-      },
-    });
+    // Default fetch uses manual redirect validation. Injected fetchImpl
+    // (tests / CLI mocks) is called as provided.
+    if (fetchImpl === fetch) {
+      res = await fetchFollowingSafeRedirects(source, { headers });
+    } else {
+      res = await fetchImpl(source, { headers });
+    }
   } catch (err) {
     throw new UpdateCheckError(
       `Could not check updates at ${displayUpdateSource(source)}: ${redactUpdateErrorMessage(err, source)}`

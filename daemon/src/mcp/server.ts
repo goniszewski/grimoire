@@ -7,20 +7,13 @@ import { CategoryRepository } from "../db/category-repository.js";
 import { SearchRepository, SearchMode } from "../db/search-repository.js";
 import { JobQueue } from "../queue.js";
 import { log } from "../logger.js";
-import { isPrivateHost } from "../lib/network.js";
+import { isPublicHttpUrl } from "../lib/public-url.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isValidUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-    if (isPrivateHost(u.hostname)) return false;
-    return true;
-  } catch {
-    return false;
-  }
+  return isPublicHttpUrl(raw);
 }
 
 function textContent(text: string) {

@@ -130,9 +130,19 @@ const Index = () => {
       try {
         const url = new URL(text);
         if (url.protocol === "http:" || url.protocol === "https:") {
+          if (url.username || url.password) return;
           e.preventDefault();
-          addBookmark(text);
-          toast({ title: "Bookmark added", description: text });
+          void addBookmark(text)
+            .then(() => {
+              toast({ title: "Bookmark added", description: text });
+            })
+            .catch((err) => {
+              toast({
+                title: "Could not add bookmark",
+                description: err instanceof Error ? err.message : "Unknown error",
+                variant: "destructive",
+              });
+            });
         }
       } catch {
         // Ignore pasted text that is not a URL.
@@ -143,18 +153,29 @@ const Index = () => {
   }, [addBookmark]);
 
   const handleDelete = (id: string) => {
-    const deleted = store.deleteBookmark(id);
-    if (deleted) {
-      toast({
-        title: "Bookmark deleted",
-        description: deleted.title,
-        action: (
-          <ToastAction altText="Undo delete" onClick={() => store.restoreBookmark(deleted.id)}>
-            Undo
-          </ToastAction>
-        ),
+    const deleted = store.filteredBookmarks.find((b) => b.id === id)
+      ?? store.bookmarks.find((b) => b.id === id);
+    void store.deleteBookmark(id)
+      .then(() => {
+        if (deleted) {
+          toast({
+            title: "Bookmark deleted",
+            description: deleted.title,
+            action: (
+              <ToastAction altText="Undo delete" onClick={() => void store.restoreBookmark(deleted.id)}>
+                Undo
+              </ToastAction>
+            ),
+          });
+        }
+      })
+      .catch((err) => {
+        toast({
+          title: "Could not delete bookmark",
+          description: err instanceof Error ? err.message : "Unknown error",
+          variant: "destructive",
+        });
       });
-    }
   };
 
   const toggleSelect = useCallback((id: string) => {
@@ -171,46 +192,73 @@ const Index = () => {
   }, [store.filteredBookmarks]);
 
   const handleBulkDelete = useCallback(() => {
-    const deletedBookmarks: Bookmark[] = [];
-    selectedIds.forEach((id) => {
-      const deleted = store.deleteBookmark(id);
-      if (deleted) deletedBookmarks.push(deleted);
-    });
-    const count = deletedBookmarks.length;
-    toast({
-      title: `${count} bookmark${count !== 1 ? "s" : ""} deleted`,
-      action: (
-        <ToastAction
-          altText="Undo delete"
-          onClick={() => deletedBookmarks.forEach((b) => store.restoreBookmark(b.id))}
-        >
-          Undo
-        </ToastAction>
-      ),
-    });
-    exitSelectionMode();
-    setBulkDeleteOpen(false);
+    const ids = [...selectedIds];
+    const deletedBookmarks = ids
+      .map((id) => store.filteredBookmarks.find((b) => b.id === id) ?? store.bookmarks.find((b) => b.id === id))
+      .filter((b): b is NonNullable<typeof b> => Boolean(b));
+
+    void Promise.all(ids.map((id) => store.deleteBookmark(id)))
+      .then(() => {
+        const count = deletedBookmarks.length;
+        toast({
+          title: `${count} bookmark${count !== 1 ? "s" : ""} deleted`,
+          action: (
+            <ToastAction
+              altText="Undo delete"
+              onClick={() => deletedBookmarks.forEach((b) => void store.restoreBookmark(b.id))}
+            >
+              Undo
+            </ToastAction>
+          ),
+        });
+        exitSelectionMode();
+        setBulkDeleteOpen(false);
+      })
+      .catch((err) => {
+        toast({
+          title: "Could not delete bookmarks",
+          description: err instanceof Error ? err.message : "Unknown error",
+          variant: "destructive",
+        });
+      });
   }, [selectedIds, store, exitSelectionMode]);
 
-  const handleBulkMoveCategory = useCallback((category: string) => {
+  const handleBulkMoveCategory = useCallback((categoryId: string) => {
+    const category = store.categories.find((c) => c.id === categoryId);
     selectedIds.forEach((id) => {
-      store.updateBookmarkCategory(id, category);
+      store.updateBookmarkCategory(id, categoryId);
     });
-    toast({ title: `Moved ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""} to "${category}"` });
+    toast({
+      title: `Moved ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""} to "${category?.name ?? categoryId}"`,
+    });
     exitSelectionMode();
   }, [selectedIds, store, exitSelectionMode]);
 
   const handleBulkReadLater = useCallback((readLater: boolean) => {
-    selectedIds.forEach((id) => {
-      if (readLater) store.markReadLater(id, { onSuccess: () => {}, onError: () => {} });
-      else store.clearReadLater(id, { onSuccess: () => {}, onError: () => {} });
-    });
-    toast({
-      title: readLater
-        ? `Marked ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""} read later`
-        : `Cleared read later from ${selectedIds.size} bookmark${selectedIds.size !== 1 ? "s" : ""}`,
-    });
-    exitSelectionMode();
+    const ids = [...selectedIds];
+    void Promise.all(
+      ids.map(
+        (id) =>
+          new Promise<void>((resolve, reject) => {
+            if (readLater) store.markReadLater(id, { onSuccess: () => resolve(), onError: () => reject(new Error("failed")) });
+            else store.clearReadLater(id, { onSuccess: () => resolve(), onError: () => reject(new Error("failed")) });
+          })
+      )
+    )
+      .then(() => {
+        toast({
+          title: readLater
+            ? `Marked ${ids.length} bookmark${ids.length !== 1 ? "s" : ""} read later`
+            : `Cleared read later from ${ids.length} bookmark${ids.length !== 1 ? "s" : ""}`,
+        });
+        exitSelectionMode();
+      })
+      .catch(() => {
+        toast({
+          title: "Could not update read later",
+          variant: "destructive",
+        });
+      });
   }, [selectedIds, store, exitSelectionMode]);
 
   const handleResetLibraryViewPreferences = useCallback(() => {
@@ -463,7 +511,7 @@ const Index = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {store.categories.map((c) => (
-                          <SelectItem key={c.name} value={c.name} className="text-xs">
+                          <SelectItem key={c.id} value={c.id} className="text-xs">
                             {c.name} ({c.count})
                           </SelectItem>
                         ))}
