@@ -1,4 +1,5 @@
 import { recordBookmarkOpen } from "@/lib/api";
+import { isSafeExternalBookmarkUrl } from "@/lib/safe-url";
 
 export type OpenableBookmark = {
   id: string;
@@ -25,7 +26,11 @@ export function recordBookmarkOpenExternal(
 export function openBookmarkExternal(
   bookmark: OpenableBookmark,
   onRecorded?: (bookmark: RecordedOpenMetrics) => void
-): void {
+): boolean {
+  if (!isSafeExternalBookmarkUrl(bookmark.url)) {
+    return false;
+  }
   window.open(bookmark.url, "_blank", "noopener,noreferrer");
   recordBookmarkOpenExternal(bookmark, onRecorded);
+  return true;
 }

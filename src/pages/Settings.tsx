@@ -12,6 +12,7 @@ import {
   listIntegrationTokens,
   createIntegrationToken,
   revokeIntegrationToken,
+  testAiConnection,
   DAEMON_URL,
   ApiError,
 } from "@/lib/api";
@@ -713,20 +714,7 @@ const Settings = () => {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(`${DAEMON_URL}/settings/test-ai`, { method: "POST" });
-      let json: { ok: boolean; error?: string };
-      if (res.ok || res.status === 400) {
-        json = await res.json() as { ok: boolean; error?: string };
-      } else {
-        let detail = res.statusText;
-        try {
-          const body = await res.json() as { detail?: string };
-          if (body.detail) detail = body.detail;
-        } catch {
-          // Keep the HTTP status text fallback when the error body is not JSON.
-        }
-        json = { ok: false, error: `Server returned ${res.status}: ${detail}` };
-      }
+      const json = await testAiConnection();
       setTestResult(json);
     } catch (err) {
       const msg = err instanceof ApiError ? err.detail ?? err.message : String(err);

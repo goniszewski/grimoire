@@ -43,6 +43,8 @@ export interface AppDeps {
 const IMPORT_MAX_BYTES = 10 * 1024 * 1024;
 const LOCAL_JSON_BODY_MAX_BYTES = 64 * 1024;
 const CAPTURE_JSON_BODY_MAX_BYTES = 256 * 1024;
+/** Default cap for mutating routes that are not on the allowlist below. */
+const DEFAULT_JSON_BODY_MAX_BYTES = 256 * 1024;
 
 const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/backup",
@@ -56,6 +58,12 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/restore",
   "/settings/test-s3",
   "/demo/load",
+]);
+
+/** Larger JSON mutators that still need an explicit higher cap. */
+const LARGE_JSON_BODY_LIMIT_PATHS = new Map<string, number>([
+  ["/settings", 512 * 1024],
+  ["/bookmarks", LOCAL_JSON_BODY_MAX_BYTES],
 ]);
 
 function isFrontendNavigation(c: Context): boolean {
@@ -149,7 +157,10 @@ function bodyLimitFor(path: string, method: string): number | null {
   if (path === "/import") return IMPORT_MAX_BYTES;
   if (path === "/capture") return CAPTURE_JSON_BODY_MAX_BYTES;
   if (LOCAL_JSON_BODY_LIMIT_PATHS.has(path)) return LOCAL_JSON_BODY_MAX_BYTES;
-  return null;
+  const large = LARGE_JSON_BODY_LIMIT_PATHS.get(path);
+  if (large != null) return large;
+  // Bookmark / category / tag patch routes use path params — apply default.
+  return DEFAULT_JSON_BODY_MAX_BYTES;
 }
 
 function declaredContentLength(c: Context): number | "invalid" | null {

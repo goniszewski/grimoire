@@ -1,13 +1,14 @@
 /**
  * Fetches a URL and returns the raw HTML body.
  *
- * - Follows up to 10 redirects automatically (Bun/fetch default).
+ * - Follows redirects manually and validates every target (SSRF defense).
  * - Sends a realistic user-agent to avoid bot-detection rejections.
  * - Hard timeout of 20 seconds.
  * - Only accepts 2xx responses; throws on anything else.
  */
 
-import { isPrivateHost } from "../lib/network.js";
+import { fetchFollowingSafeRedirects } from "../lib/safe-fetch.js";
+import { parsePublicHttpUrl } from "../lib/public-url.js";
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)";
@@ -15,6 +16,7 @@ const USER_AGENT =
 const FETCH_TIMEOUT_MS = 20_000;
 /** Reject responses larger than this to prevent memory exhaustion. */
 const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_REDIRECTS = 10;
 
 export interface FetchResult {
   html: string;
@@ -25,16 +27,15 @@ export interface FetchResult {
 }
 
 export async function fetchPage(url: string): Promise<FetchResult> {
-  // Pre-flight SSRF guard: reject private/loopback hostnames before the first
-  // network packet leaves the machine. The post-redirect check further down
-  // handles open-redirect chains, but this stops trivially private URLs early.
-  try {
-    const initialHost = new URL(url).hostname;
-    if (isPrivateHost(initialHost)) {
+  // Pre-flight SSRF + credentials guard before any network I/O.
+  const parsed = parsePublicHttpUrl(url);
+  if (!parsed.ok) {
+    if (parsed.reason === "private") {
       throw new Error(`Fetch to private host blocked: ${url}`);
     }
-  } catch (e) {
-    if ((e as Error).message.startsWith("Fetch to private host")) throw e;
+    if (parsed.reason === "credentials") {
+      throw new Error(`Fetch URL must not include embedded credentials: ${url}`);
+    }
     throw new Error(`Invalid URL: ${url}`);
   }
 
@@ -43,28 +44,18 @@ export async function fetchPage(url: string): Promise<FetchResult> {
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetchFollowingSafeRedirects(url, {
       headers: {
         "User-Agent": USER_AGENT,
         Accept: "text/html,application/xhtml+xml,application/pdf,*/*;q=0.5",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      redirect: "follow",
       signal: controller.signal,
+      maxRedirects: MAX_REDIRECTS,
+      skipInitialHostCheck: true,
     });
   } finally {
     clearTimeout(timer);
-  }
-
-  // Guard against SSRF via open redirects: validate the *final* URL after redirect chain.
-  try {
-    const finalHost = new URL(res.url).hostname;
-    if (isPrivateHost(finalHost)) {
-      throw new Error(`Redirect to private host blocked: ${res.url}`);
-    }
-  } catch (e) {
-    if ((e as Error).message.startsWith("Redirect to private host")) throw e;
-    throw new Error(`Invalid final URL after redirect: ${res.url}`);
   }
 
   if (!res.ok) {
@@ -72,9 +63,10 @@ export async function fetchPage(url: string): Promise<FetchResult> {
   }
 
   const contentType = res.headers.get("content-type") ?? "";
+  const finalUrl = res.url || parsed.href;
   // Use the final URL (after redirects) for the extension check — the original URL
   // may have redirected to a different resource type.
-  const isPdf = contentType.includes("application/pdf") || res.url.toLowerCase().endsWith(".pdf");
+  const isPdf = contentType.includes("application/pdf") || finalUrl.toLowerCase().endsWith(".pdf");
   if (
     !isPdf &&
     !contentType.includes("text/html") &&
@@ -117,9 +109,9 @@ export async function fetchPage(url: string): Promise<FetchResult> {
   }, new Uint8Array(0));
 
   if (isPdf) {
-    return { html: "", finalUrl: res.url, contentType, bytes: rawBytes };
+    return { html: "", finalUrl, contentType, bytes: rawBytes };
   }
 
   const html = new TextDecoder().decode(rawBytes);
-  return { html, finalUrl: res.url, contentType };
+  return { html, finalUrl, contentType };
 }

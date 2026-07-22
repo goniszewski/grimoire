@@ -1874,7 +1874,6 @@ Request body:
 | `key` | string | no | Remote S3 snapshot.db key |
 | `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
-| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 Responses:
 
@@ -3402,7 +3401,7 @@ Resolved category and tag remapping decisions applied to an import preview or co
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" \| "credential_url" | yes | Import row classification |
 | `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Action that the selected policy would apply |
 | `url` | string \| null | yes | Source bookmark URL |
 | `title` | string | yes | Source bookmark title |
@@ -3505,7 +3504,7 @@ Final committed import row result
 |---|---|---:|---|
 | `status` | "created" \| "merged" \| "restored" \| "skipped" \| "failed" | yes | Final committed row status |
 | `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Requested action selected by the duplicate policy |
-| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" \| "credential_url" | yes | Import row classification |
 | `url` | string \| null | yes | Source bookmark URL |
 | `title` | string | yes | Source bookmark title |
 | `notes` | string \| null | yes | Source note text when the import format provides note-like metadata |
@@ -4032,7 +4031,6 @@ Response data
 | `key` | string | no | Remote S3 snapshot.db key |
 | `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
-| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 ### RestoreResult
 

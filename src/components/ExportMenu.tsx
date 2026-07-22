@@ -7,7 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { buildExportUrl, type ExportFilters } from "@/lib/export-url";
+import { downloadExport } from "@/lib/api";
+import type { ExportFilters } from "@/lib/export-url";
 
 interface ExportMenuProps {
   showLabel?: boolean;
@@ -15,16 +16,8 @@ interface ExportMenuProps {
 }
 
 async function triggerDownload(format: "json" | "csv", filters: ExportMenuProps["filters"] = {}) {
-  const url = buildExportUrl(format, filters);
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
-
-    const blob = await res.blob();
-    const disposition = res.headers.get("Content-Disposition") ?? "";
-    const match = disposition.match(/filename="([^"]+)"/);
-    const filename = match?.[1] ?? `bookmarks.${format}`;
-
+    const { blob, filename } = await downloadExport(format, filters);
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = objectUrl;

@@ -9,27 +9,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { isSafeExternalBookmarkUrl } from "@/lib/safe-url";
 
 interface AddBookmarkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (url: string) => void;
+  onAdd: (url: string) => Promise<void> | void;
 }
 
 export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDialogProps) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isSafeExternalBookmarkUrl(url)) {
+      setError("Please enter a valid URL (http or https, no credentials)");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
     try {
-      new URL(url);
-      onAdd(url);
+      await onAdd(url.trim());
       setUrl("");
-      setError("");
       onOpenChange(false);
-    } catch {
-      setError("Please enter a valid URL");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save bookmark");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -56,15 +64,16 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
               placeholder="https://example.com/article"
               className="font-mono text-sm"
               autoFocus
+              disabled={submitting}
             />
             {error && <p className="text-xs text-destructive mt-1">{error}</p>}
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!url.trim()}>
-              Save Bookmark
+            <Button type="submit" disabled={!url.trim() || submitting}>
+              {submitting ? "Saving…" : "Save Bookmark"}
             </Button>
           </div>
         </form>

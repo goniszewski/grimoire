@@ -333,6 +333,7 @@ describe("littleimp update CLI", () => {
       fixture.archivePath,
       "--checksum",
       fixture.checksumPath,
+      "--allow-unsigned",
       "--json",
     ]);
 
@@ -397,7 +398,7 @@ describe("littleimp update CLI", () => {
   });
 
   it("downloads a selected release artifact before running the packaged upgrade", async () => {
-    const fixture = createUpgradeArchiveFixture();
+    const fixture = createUpgradeArchiveFixture({ signature: true });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];
@@ -413,7 +414,7 @@ describe("littleimp update CLI", () => {
         return new Response(Bun.file(fixture.checksumPath));
       }
       if (rawUrl.endsWith(`${fixture.archiveName}.asc`)) {
-        return new Response("missing", { status: 404 });
+        return new Response(Bun.file(fixture.signaturePath));
       }
       if (rawUrl === "http://127.0.0.1:3210/health") {
         return new Response(JSON.stringify({ status: "ok", version: fixture.version }), {
@@ -431,7 +432,7 @@ describe("littleimp update CLI", () => {
         output: ["", "", ""],
         pid: 123,
         stdout: "",
-        stderr: "",
+        stderr: command === "gpg" ? "gpg: Good signature from Test Key\nPrimary key fingerprint: AAAABBBBCCCCDDDDEEEEFFFF0000111122223333" : "",
       };
     };
 
@@ -459,18 +460,48 @@ describe("littleimp update CLI", () => {
       `${baseUrl}/${fixture.archiveName}.asc`,
       "http://127.0.0.1:3210/health",
     ]);
-    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls.some((call) => call.command === "gpg")).toBe(true);
     expect(JSON.parse(stdout[0])).toMatchObject({
       upgraded_version: fixture.version,
       checksum_verified: true,
-      signature_verified: false,
+      signature_verified: true,
       restart_status: "healthy",
     });
     expect(JSON.parse(stdout[0]).archive).toEndWith(fixture.archiveName);
   });
 
+  it("refuses remote upgrades when the detached signature is missing", async () => {
+    const fixture = createUpgradeArchiveFixture();
+    const stderr: string[] = [];
+    const fetchImpl = async (url: string | URL | Request) => {
+      const rawUrl = String(url);
+      if (rawUrl.endsWith(fixture.archiveName)) return new Response(Bun.file(fixture.archivePath));
+      if (rawUrl.endsWith(`${fixture.archiveName}.sha256`)) return new Response(Bun.file(fixture.checksumPath));
+      if (rawUrl.endsWith(`${fixture.archiveName}.asc`)) return new Response("missing", { status: 404 });
+      return new Response("unexpected", { status: 500 });
+    };
+
+    const code = await runLittleImpCli([
+      "update",
+      "install",
+      "--version",
+      fixture.version,
+      "--release-base-url",
+      `https://updates.example.test/little-imp/v${fixture.version}`,
+    ], {
+      env: {},
+      fetch: fetchImpl as typeof fetch,
+      spawnSync: () => ({ status: 0, signal: null, output: ["", "", ""], pid: 1, stdout: "", stderr: "" }),
+      stdout: () => undefined,
+      stderr: (line) => stderr.push(line),
+    });
+
+    expect(code).toBe(1);
+    expect(stderr.join("\n")).toContain("Detached signature");
+  });
+
   it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
-    const fixture = createUpgradeArchiveFixture({ version: "1.0.1" });
+    const fixture = createUpgradeArchiveFixture({ version: "1.0.1", signature: true });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];
@@ -503,7 +534,7 @@ describe("littleimp update CLI", () => {
         return new Response(Bun.file(fixture.checksumPath));
       }
       if (rawUrl.endsWith(`${fixture.archiveName}.asc`)) {
-        return new Response("missing", { status: 404 });
+        return new Response(Bun.file(fixture.signaturePath));
       }
       if (rawUrl === "http://127.0.0.1:3210/health") {
         return new Response(JSON.stringify({ status: "ok", version: fixture.version }), {
@@ -521,7 +552,7 @@ describe("littleimp update CLI", () => {
         output: ["", "", ""],
         pid: 123,
         stdout: "",
-        stderr: "",
+        stderr: command === "gpg" ? "gpg: Good signature\nPrimary key fingerprint: AAAABBBBCCCCDDDDEEEEFFFF0000111122223333" : "",
       };
     };
 
@@ -548,9 +579,10 @@ describe("littleimp update CLI", () => {
       `${baseUrl}/${fixture.archiveName}.asc`,
       "http://127.0.0.1:3210/health",
     ]);
-    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls.some((call) => call.command === "gpg")).toBe(true);
     expect(JSON.parse(stdout[0])).toMatchObject({
       upgraded_version: fixture.version,
+      signature_verified: true,
       restart_status: "healthy",
     });
   });

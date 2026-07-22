@@ -136,16 +136,52 @@ describe("fetchPage", () => {
 
   it("follows redirects and returns the final URL", async () => {
     const html = "<html><body>Redirected</body></html>";
-    // fetch follows redirects automatically; the finalUrl on the Response
-    // reflects the ultimate destination.
-    globalThis.fetch = mockFetch(async () =>
-      withUrl(makeResponse({ body: html }), "https://example.com/final")
-    );
+    let calls = 0;
+    globalThis.fetch = mockFetch(async (input) => {
+      calls += 1;
+      const url = String(input);
+      if (url === "https://example.com/original") {
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://example.com/final" },
+        });
+      }
+      return withUrl(makeResponse({ body: html }), "https://example.com/final");
+    });
 
     const result = await fetchPage("https://example.com/original");
 
+    expect(calls).toBe(2);
     expect(result.finalUrl).toBe("https://example.com/final");
     expect(result.html).toBe(html);
+  });
+
+  it("blocks redirects to private hosts before following them", async () => {
+    let followedPrivate = false;
+    globalThis.fetch = mockFetch(async (input) => {
+      const url = String(input);
+      if (url.includes("127.0.0.1") || url.includes("192.168.")) {
+        followedPrivate = true;
+        return makeResponse();
+      }
+      return new Response(null, {
+        status: 302,
+        headers: { location: "http://127.0.0.1/secret" },
+      });
+    });
+
+    await expect(fetchPage("https://example.com/open-redirect")).rejects.toThrow(/private|invalid host/i);
+    expect(followedPrivate).toBe(false);
+  });
+
+  it("rejects URLs with embedded credentials before fetching", async () => {
+    let called = false;
+    globalThis.fetch = mockFetch(async () => {
+      called = true;
+      return makeResponse();
+    });
+    await expect(fetchPage("https://user:pass@example.com/x")).rejects.toThrow(/credentials/i);
+    expect(called).toBe(false);
   });
 
   // ── Private-host guard ──────────────────────────────────────────────────

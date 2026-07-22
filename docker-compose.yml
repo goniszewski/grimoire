@@ -16,6 +16,7 @@ services:
       - HOME=/data
       - NODE_ENV=production
       - LOG_FORMAT=json
+      - LITTLEIMP_IN_CONTAINER=1
       # Optional: seed OpenAI defaults for first start or unattended deployments.
       # Runtime settings saved through the UI/API remain the source of truth.
       # - LLM_API_KEY=your-api-key

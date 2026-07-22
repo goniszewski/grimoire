@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Security hardening review fixes summary">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <text x="72" y="120" fill="#94a3b8" font-family="ui-sans-serif,system-ui,sans-serif" font-size="28" font-weight="700">GRIMOIRE · SECURITY</text>
+  <text x="72" y="210" fill="#f8fafc" font-family="ui-sans-serif,system-ui,sans-serif" font-size="64" font-weight="800">Review hardening</text>
+  <text x="72" y="280" fill="#cbd5e1" font-family="ui-sans-serif,system-ui,sans-serif" font-size="28">SSRF · upgrades · bind policy · mutation UX</text>
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="22" fill="#e2e8f0">
+    <rect x="72" y="360" width="320" height="72" rx="12" fill="#0ea5e9" fill-opacity="0.18" stroke="#38bdf8"/>
+    <text x="96" y="405">manual redirects</text>
+    <rect x="416" y="360" width="320" height="72" rx="12" fill="#22c55e" fill-opacity="0.18" stroke="#4ade80"/>
+    <text x="440" y="405">signed upgrades</text>
+    <rect x="760" y="360" width="360" height="72" rx="12" fill="#a78bfa" fill-opacity="0.18" stroke="#c4b5fd"/>
+    <text x="784" y="405">awaited mutations</text>
+  </g>
+</svg>

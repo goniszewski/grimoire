@@ -26,6 +26,10 @@ function isLockEnabled(): boolean {
   return localStorage.getItem(LOCK_ENABLED_KEY) === "true";
 }
 
+/**
+ * Local UI privacy lock only. This is NOT authentication for the daemon API:
+ * any local process that can reach the loopback daemon can still call REST routes.
+ */
 export function useAppLock() {
   const [locked, setLocked] = useState(() => {
     return isLockEnabled() && !!getStoredHash();

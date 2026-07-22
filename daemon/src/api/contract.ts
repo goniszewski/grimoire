@@ -731,7 +731,7 @@ const schemas = {
   ImportPreviewRow: objectSchema(
     {
       classification: stringSchema("Import row classification", {
-        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url", "credential_url"],
       }),
       action: stringSchema("Action that the selected policy would apply", {
         enum: ["create", "skip", "merge", "restore_merge"],
@@ -816,7 +816,7 @@ const schemas = {
         enum: ["create", "skip", "merge", "restore_merge"],
       }),
       classification: stringSchema("Import row classification", {
-        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url", "credential_url"],
       }),
       url: nullable(stringSchema("Source bookmark URL")),
       title: stringSchema("Source bookmark title"),
@@ -1267,7 +1267,6 @@ const schemas = {
     key: stringSchema("Remote S3 snapshot.db key"),
     path: stringSchema("Absolute path to an encrypted backup package file accessible by the daemon"),
     password: stringSchema("Password used to decrypt the encrypted package"),
-    allow_unsafe_no_checksum: booleanSchema("Allow restoring a backup with no checksum file"),
   }),
   RestoreResult: objectSchema(
     {

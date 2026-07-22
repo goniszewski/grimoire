@@ -179,7 +179,7 @@ Rules:
 
 - the checksum file must include all restorable payload files
 - the checksum file must not include itself
-- restore must verify checksums before replacing local data unless the caller explicitly requests unsafe recovery with `allow_unsafe_no_checksum: true`
+- restore must verify checksums before replacing local data; the HTTP API no longer accepts `allow_unsafe_no_checksum`
 
 ---
 

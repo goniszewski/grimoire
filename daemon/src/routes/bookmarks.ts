@@ -5,7 +5,11 @@ import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { SearchRepository } from "../db/search-repository.js";
 import { log } from "../logger.js";
-import { isPrivateHost } from "../lib/network.js";
+import {
+  parsePublicHttpUrl,
+  publicUrlRejectionMessage,
+  redactUrlForLog,
+} from "../lib/public-url.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
 import { JobStatus } from "../types/job.js";
 import { dismissPipelineFailure, getPipelineFailure } from "../pipeline/failures.js";
@@ -42,14 +46,13 @@ function problem(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isValidUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-    if (isPrivateHost(u.hostname)) return false;
-    return true;
-  } catch {
-    return false;
-  }
+  return parsePublicHttpUrl(raw).ok;
+}
+
+function urlValidationDetail(raw: string): string {
+  const parsed = parsePublicHttpUrl(raw);
+  if (parsed.ok) return "Invalid URL - must be http or https";
+  return publicUrlRejectionMessage(parsed.reason).replace(/^`url` /, "Invalid URL - ");
 }
 
 function parseIntParam(val: string | null | undefined, fallback: number, min = 0): number {
@@ -114,8 +117,9 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
 
     const { url, title } = body as { url: string; title?: unknown };
 
-    if (!isValidUrl(url)) {
-      return problem(c, 422, "Unprocessable Entity", "Invalid URL - must be http or https");
+    const parsedUrl = parsePublicHttpUrl(url);
+    if (!parsedUrl.ok) {
+      return problem(c, 422, "Unprocessable Entity", urlValidationDetail(url));
     }
 
     // Idempotency: return existing active (not archived, not trashed) bookmark if URL already saved
@@ -137,7 +141,26 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     }
 
     const titleStr = typeof title === "string" && title.trim() ? title.trim() : undefined;
-    const bookmark = repo.create(url, titleStr);
+    let bookmark;
+    try {
+      bookmark = repo.create(url, titleStr);
+    } catch (err) {
+      // Concurrent create race: another request inserted the same URL first.
+      const raced = repo.findByUrl(url);
+      if (raced) {
+        if (raced.is_trashed) {
+          return problem(c, 409, "Conflict",
+            "This URL is already in your trash. Restore or permanently delete it before re-adding.");
+        }
+        if (raced.is_archived) {
+          return problem(c, 409, "Conflict",
+            "This URL is already in your archive. Restore it from the archive before re-adding.");
+        }
+        const bm = repo.findById(raced.id)!;
+        return ok(c, bm, 200);
+      }
+      throw err;
+    }
 
     // Enqueue the ingestion pipeline job
     const job = deps.queue.enqueue("ingest", {
@@ -145,7 +168,11 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       url: bookmark.url,
     });
 
-    log.info("Bookmark ingested", { bookmarkId: bookmark.id, url, jobId: job.id });
+    log.info("Bookmark ingested", {
+      bookmarkId: bookmark.id,
+      url: redactUrlForLog(url),
+      jobId: job.id,
+    });
 
     const bm = repo.findById(bookmark.id)!;
     return ok(c, bm, 201);
