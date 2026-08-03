@@ -49,7 +49,7 @@ async function seFetch(path: string, site: string): Promise<unknown> {
     const res = await fetch(
       `${SE_API}${path}${path.includes("?") ? "&" : "?"}${siteParam}${keyParam}`,
       {
-        headers: { "User-Agent": "LittleImp/0.0" },
+        headers: { "User-Agent": "Grimoire/1.0.0" },
         signal: controller.signal,
       }
     );

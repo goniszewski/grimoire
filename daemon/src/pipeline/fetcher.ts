@@ -10,7 +10,7 @@
 import { isPrivateHost } from "../lib/network.js";
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)";
+  "Mozilla/5.0 (compatible; Grimoire/1.0.0; +https://github.com/goniszewski/grimoire)";
 
 const FETCH_TIMEOUT_MS = 20_000;
 /** Reject responses larger than this to prevent memory exhaustion. */

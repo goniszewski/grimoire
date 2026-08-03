@@ -124,7 +124,7 @@ async function fetchCaptionTracks(videoId: string): Promise<TimedTextTrack[]> {
       headers: {
         "Content-Type": "application/json",
         "User-Agent":
-          "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)",
+          "Mozilla/5.0 (compatible; Grimoire/1.0.0; +https://github.com/goniszewski/grimoire)",
       },
       body,
     });

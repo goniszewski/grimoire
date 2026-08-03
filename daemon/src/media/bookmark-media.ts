@@ -281,7 +281,7 @@ async function fetchMedia(candidate: BookmarkMediaCandidate): Promise<{
       response = await fetch(source.toString(), {
         headers: {
           Accept: "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon,*/*;q=0.2",
-          "User-Agent": "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)",
+          "User-Agent": "Mozilla/5.0 (compatible; Grimoire/1.0.0; +https://github.com/goniszewski/grimoire)",
         },
         redirect: "manual",
         signal: controller.signal,

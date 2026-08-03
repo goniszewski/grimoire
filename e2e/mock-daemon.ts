@@ -228,9 +228,9 @@ function makeRestoreResult(bookmarkCount: number): RestoreResultDto {
 
 function makeUpdateResult(): UpdateCheckResultDto {
   return {
-    current_version: "0.1.0-beta",
+    current_version: "1.0.0",
     update_available: false,
-    source: "https://github.com/goniszewski/little-imp/releases",
+    source: "https://github.com/goniszewski/grimoire/releases",
     channel: "beta",
     latest: null,
   };
