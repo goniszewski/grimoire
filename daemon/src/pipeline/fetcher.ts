@@ -8,9 +8,10 @@
  */
 
 import { isPrivateHost } from "../lib/network.js";
+import { version as APP_VERSION } from "../../package.json";
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; Grimoire/1.0.0; +https://github.com/goniszewski/grimoire)";
+  `Mozilla/5.0 (compatible; Grimoire/${APP_VERSION}; +https://github.com/goniszewski/grimoire)`;
 
 const FETCH_TIMEOUT_MS = 20_000;
 /** Reject responses larger than this to prevent memory exhaustion. */

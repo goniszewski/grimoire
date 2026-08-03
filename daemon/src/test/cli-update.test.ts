@@ -172,12 +172,12 @@ describe("littleimp update CLI", () => {
         html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0-beta.1",
       },
       {
-        tag_name: "v1.0.1",
-        name: "Grimoire 1.0.1",
+        tag_name: "v1.1.0",
+        name: "Grimoire 1.1.0",
         draft: false,
         prerelease: false,
         published_at: "2026-05-17T12:00:00Z",
-        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
+        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0",
       },
     ]);
 
@@ -194,20 +194,20 @@ describe("littleimp update CLI", () => {
     expect(harness.calls[0].url).toBe("https://updates.example.test/releases");
     expect(harness.calls[0].init?.headers).toEqual({
       accept: "application/vnd.github+json",
-      "user-agent": "littleimp-update-check/1.0.0",
+      "user-agent": "littleimp-update-check/1.0.1",
     });
     expect(JSON.parse(harness.stdout[0])).toEqual({
-      current_version: "1.0.0",
+      current_version: "1.0.1",
       update_available: true,
       source: "https://updates.example.test/releases",
       channel: "stable",
       latest: {
-        version: "1.0.1",
-        tag: "v1.0.1",
-        name: "Grimoire 1.0.1",
+        version: "1.1.0",
+        tag: "v1.1.0",
+        name: "Grimoire 1.1.0",
         prerelease: false,
         published_at: "2026-05-17T12:00:00Z",
-        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0",
       },
     });
   });
@@ -294,7 +294,7 @@ describe("littleimp update CLI", () => {
 
     expect(code).toBe(0);
     expect(harness.stdout.join("\n")).toContain("Grimoire is up to date");
-    expect(harness.stdout.join("\n")).toContain("1.0.0");
+    expect(harness.stdout.join("\n")).toContain("1.0.1");
   });
 
   it("uses LITTLEIMP_UPDATE_SOURCE when no source flag is provided", async () => {
@@ -343,7 +343,7 @@ describe("littleimp update CLI", () => {
     expect(harness.spawnCalls[0].args).toContain("--upgrade");
     expect(harness.fetchCalls[0].url).toBe("http://127.0.0.1:3210/health");
     expect(JSON.parse(harness.stdout[0])).toMatchObject({
-      current_version: "1.0.0",
+      current_version: "1.0.1",
       upgraded_version: fixture.version,
       archive: fixture.archivePath,
       checksum_verified: true,
@@ -470,7 +470,7 @@ describe("littleimp update CLI", () => {
   });
 
   it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
-    const fixture = createUpgradeArchiveFixture({ version: "1.0.1" });
+    const fixture = createUpgradeArchiveFixture({ version: "1.1.0" });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];

@@ -73,7 +73,9 @@ describe("EmbeddingRepository vector index", () => {
         "SELECT bookmark_id FROM embedding_vec_2 ORDER BY bookmark_id"
       )
       .all();
-    expect(restoredRows.map((row) => row.bookmark_id)).toEqual([first.id, second.id]);
+    expect(restoredRows.map((row) => row.bookmark_id).sort()).toEqual(
+      [first.id, second.id].sort()
+    );
 
     const nearest = embeddings.findNearest("test-model", [0.99, 0.01], {
       limit: 1,

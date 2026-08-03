@@ -14,6 +14,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes.
 
+## [1.0.1] - 2026-08-03
+
+### Fixed
+- The one-command installer now defaults to the current release version instead
+  of the stale `0.1.0-beta`.
+- GitHub issue and repository extraction now accepts `www.github.com` URLs and
+  keeps stripping a trailing `.git` from repository names.
+- Outbound HTTP requests identify as `Grimoire/<version>` (derived from the
+  packaged version) instead of the stale `LittleImp/0.0`.
+- The sqlite-vec index is rebuilt in a single atomic transaction at daemon start.
+- E2E mocks, test fixtures, and release docs aligned with the 1.0.x version
+  identity and the `goniszewski/grimoire` repository.
+
 ## [0.1.0-beta] - 2026-05-28
 
 ### Added

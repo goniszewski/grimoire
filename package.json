@@ -1,7 +1,7 @@
 {
   "name": "grimoire",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "author": "Robert Goniszewski",
   "repository": { "type": "git", "url": "git+https://github.com/goniszewski/grimoire.git" },

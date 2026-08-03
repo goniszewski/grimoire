@@ -2,7 +2,7 @@
 
 ## Can I sync my bookmarks across devices?
 
-Not yet. Grimoire is local-first and single-user for `1.0.0`. Backups
+Not yet. Grimoire is local-first and single-user for `1.0.1`. Backups
 are snapshot-based, so you can move or restore a saved backup, but there is no
 continuous multi-device sync service.
 
@@ -37,14 +37,14 @@ source is configured. Settings can also check for update availability. See
 
 ## Does it work on Windows?
 
-There is no native Windows installer in `1.0.0`. Docker on Windows with
+There is no native Windows installer in `1.0.1`. Docker on Windows with
 WSL2 is the supported path. Keep Docker port publishing bound to loopback, for
 example `127.0.0.1:3210:3210`.
 
 ## Can I run it on a server?
 
 Yes through Docker, but Grimoire itself is not a public-server product in
-`1.0.0`. Keep the daemon loopback-bound or put an authenticated tunnel,
+`1.0.1`. Keep the daemon loopback-bound or put an authenticated tunnel,
 VPN, or reverse proxy in front of it before traffic reaches Grimoire. See
 [security-boundaries.md](./security-boundaries.md) and
 [docker-deployment.md](./docker-deployment.md).

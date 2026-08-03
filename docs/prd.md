@@ -3,7 +3,7 @@
 Product Requirements Document (PRD)
 
 Version: v0.6
-Status: Living document aligned to the `1.0.0` release
+Status: Living document aligned to the `1.0.1` release
 Author: Robert Goniszewski
 Date: May 2026
 
@@ -27,7 +27,7 @@ Users save URLs and the system:
 
 Current product state:
 
-- `1.0.0` is the current release
+- `1.0.1` is the current release
 - core save, extract, keyword search, semantic search, hybrid search, and review flows exist
 - local/S3-compatible backup and restore flows exist with checksum validation, rollback directory creation, and restart-required restore responses
 - Docker deployment, release archives, the one-command installer, the Homebrew alternate path, and Streamable HTTP MCP integration are supported local-first entry points

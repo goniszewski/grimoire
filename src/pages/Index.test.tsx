@@ -426,7 +426,7 @@ describe("Index update notification banner", () => {
       showBanner: true,
       dismiss: vi.fn(),
       result: {
-        current_version: "1.0.0",
+        current_version: "1.0.1",
         update_available: true,
         source: "https://api.github.com/repos/goniszewski/grimoire/releases",
         channel: "stable",
@@ -439,7 +439,7 @@ describe("Index update notification banner", () => {
 
     expect(screen.getByTestId("update-banner")).toBeInTheDocument();
     expect(screen.getByTestId("update-tag")).toHaveTextContent("v1.1.0");
-    expect(screen.getByTestId("update-version")).toHaveTextContent("1.0.0");
+    expect(screen.getByTestId("update-version")).toHaveTextContent("1.0.1");
   });
 
   it("dismisses the update banner when dismiss is clicked", () => {
@@ -448,7 +448,7 @@ describe("Index update notification banner", () => {
       showBanner: true,
       dismiss,
       result: {
-        current_version: "1.0.0",
+        current_version: "1.0.1",
         update_available: true,
         source: "",
         channel: "stable",

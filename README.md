@@ -7,7 +7,7 @@
 <br>
 
 [![Quality Gates](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml)
-![Release target](https://img.shields.io/badge/release-1.0.0-7c3aed)
+![Release target](https://img.shields.io/badge/release-1.0.1-7c3aed)
 ![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 

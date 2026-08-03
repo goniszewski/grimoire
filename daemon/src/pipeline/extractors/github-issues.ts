@@ -7,6 +7,7 @@
  */
 
 import { ExtractionResult } from "./types.js";
+import { version as APP_VERSION } from "../../../package.json";
 
 const GITHUB_API = "https://api.github.com";
 const TIMEOUT_MS = 15_000;
@@ -53,7 +54,7 @@ async function ghIssueFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "Grimoire/1.0.0",
+    "User-Agent": `Grimoire/${APP_VERSION}`,
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 

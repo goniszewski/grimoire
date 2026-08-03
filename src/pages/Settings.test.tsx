@@ -169,7 +169,7 @@ beforeEach(() => {
   mockedGetDiagnostics.mockResolvedValue({
     data: {
       generated_at: "2026-05-27T08:00:00.000Z",
-      version: "1.0.0",
+      version: "1.0.1",
       platform: { os: "darwin", arch: "arm64", node_env: "production", host: "127.0.0.1", port: 3210 },
       install: { mode: "native" },
       paths: {
@@ -198,7 +198,7 @@ beforeEach(() => {
   });
   mockedCheckForUpdates.mockResolvedValue({
     data: {
-      current_version: "1.0.0",
+      current_version: "1.0.1",
       update_available: false,
       source: "https://api.github.com/repos/goniszewski/grimoire/releases",
       channel: "stable",
@@ -279,7 +279,7 @@ describe("Settings update checks", () => {
   it("checks for updates and shows the available release", async () => {
     mockedCheckForUpdates.mockResolvedValue({
       data: {
-        current_version: "1.0.0",
+        current_version: "1.0.1",
         update_available: true,
         source: "https://api.github.com/repos/goniszewski/grimoire/releases",
         channel: "stable",
@@ -593,14 +593,14 @@ describe("Settings diagnostics", () => {
     render(<Settings />, { wrapper: makeWrapper() });
 
     expect(await screen.findByText("Diagnostics")).toBeInTheDocument();
-    expect(screen.getByText("1.0.0")).toBeInTheDocument();
+    expect(screen.getByText("1.0.1")).toBeInTheDocument();
     expect(screen.getByText("native · darwin/arm64")).toBeInTheDocument();
     expect(screen.getByText("/Users/me/.local/share/littleimp")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Copy diagnostics" }));
 
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"version": "1.0.0"'));
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"version": "1.0.1"'));
     });
     expect(writeText.mock.calls[0][0]).not.toContain("openai-secret");
     expect(writeText.mock.calls[0][0]).not.toContain("s3-secret-key");

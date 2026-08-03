@@ -65,7 +65,7 @@ describe("daemon health API", () => {
     vi.spyOn(Date, "now").mockReturnValue(now);
     mockHealthResponse({
       status: "ok",
-      version: "1.0.0",
+      version: "1.0.1",
       uptime: 10_000,
       queueSize: 0,
     });
@@ -79,7 +79,7 @@ describe("daemon health API", () => {
     vi.spyOn(Date, "now").mockReturnValue(now);
     mockHealthResponse({
       status: "ok",
-      version: "1.0.0",
+      version: "1.0.1",
       uptime: 120_000,
       queueSize: 0,
     });
