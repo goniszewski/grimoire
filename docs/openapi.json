@@ -6583,7 +6583,8 @@
               "archived_duplicate",
               "trashed_duplicate",
               "invalid_url",
-              "private_url"
+              "private_url",
+              "credential_url"
             ]
           },
           "action": {
@@ -6867,7 +6868,8 @@
               "archived_duplicate",
               "trashed_duplicate",
               "invalid_url",
-              "private_url"
+              "private_url",
+              "credential_url"
             ]
           },
           "url": {
@@ -8435,10 +8437,6 @@
           "password": {
             "type": "string",
             "description": "Password used to decrypt the encrypted package"
-          },
-          "allow_unsafe_no_checksum": {
-            "type": "boolean",
-            "description": "Allow restoring a backup with no checksum file"
           }
         },
         "additionalProperties": false

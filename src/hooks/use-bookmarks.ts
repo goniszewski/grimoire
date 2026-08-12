@@ -612,7 +612,7 @@ export function useBookmarks() {
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
-    category: selectedCategory ?? undefined,
+    category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
     date_from: dateFrom,
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
@@ -635,7 +635,7 @@ export function useBookmarks() {
     tag: selectedTag ?? undefined,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
-    category: selectedCategory ?? undefined,
+    category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
     date_from: dateFrom,
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
@@ -787,6 +787,8 @@ export function useBookmarks() {
     mutationFn: (url: string) => createBookmark(url),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: ["search"] });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
       qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
     },
   });
@@ -799,11 +801,13 @@ export function useBookmarks() {
       return { snapshot };
     },
     onError: (_err, _id, ctx) => {
-      // If there's an error we don't need to roll back - just refetch
       void ctx;
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
+      qc.invalidateQueries({ queryKey: ["search"] });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
+      qc.invalidateQueries({ queryKey: bookmarkKeys.archive });
       qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
     },
   });
@@ -876,13 +880,13 @@ export function useBookmarks() {
 
   // ─── Public API matching use-bookmark-store interface ─────────────────────
 
-  const addBookmark = useCallback((url: string) => {
-    addBookmarkMutation.mutate(url);
+  const addBookmark = useCallback(async (url: string) => {
+    await addBookmarkMutation.mutateAsync(url);
   }, [addBookmarkMutation]);
 
-  const deleteBookmarkFn = useCallback((id: string) => {
+  const deleteBookmarkFn = useCallback(async (id: string) => {
     const deleted = bookmarks.find((b) => b.id === id);
-    deleteBookmarkMutation.mutate(id);
+    await deleteBookmarkMutation.mutateAsync(id);
     return deleted;
   }, [bookmarks, deleteBookmarkMutation]);
 
@@ -890,6 +894,7 @@ export function useBookmarks() {
     await apiRestoreBookmark(id);
     qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
     qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
+    qc.invalidateQueries({ queryKey: ["search"] });
     qc.invalidateQueries({ queryKey: bookmarkKeys.tags });
     qc.invalidateQueries({ queryKey: [...bookmarkKeys.all, "aggregates"] });
   }, [qc]);
@@ -898,15 +903,15 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { tags } });
   }, [updateBookmarkMutation]);
 
-  const updateBookmarkCategory = useCallback((id: string, categoryName: string) => {
-    // Find category_id by name — skip update if the category doesn't exist
-    let category_id: string | null = null;
-    let found = false;
-    for (const [cid, cname] of categoryMap) {
-      if (cname === categoryName) { category_id = cid; found = true; break; }
+  const updateBookmarkCategory = useCallback((id: string, categoryIdOrName: string) => {
+    // Prefer category ID when provided; fall back to a unique name match.
+    if (categoryMap.has(categoryIdOrName)) {
+      updateBookmarkMutation.mutate({ id, patch: { category_id: categoryIdOrName } });
+      return;
     }
-    if (!found) return;
-    updateBookmarkMutation.mutate({ id, patch: { category_id } });
+    const matches = [...categoryMap.entries()].filter(([, name]) => name === categoryIdOrName);
+    if (matches.length !== 1) return;
+    updateBookmarkMutation.mutate({ id, patch: { category_id: matches[0][0] } });
   }, [updateBookmarkMutation, categoryMap]);
 
   const updateBookmarkField = useCallback((id: string, field: "title" | "url" | "summary", value: string) => {

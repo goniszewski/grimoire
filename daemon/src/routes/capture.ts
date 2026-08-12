@@ -6,7 +6,10 @@ import { CategoryRepository } from "../db/category-repository.js";
 import { CaptureRepository, type CaptureMetadataInput, type BookmarkCaptureMetadataRow } from "../db/capture-repository.js";
 import { IntegrationTokenRepository } from "../db/integration-token-repository.js";
 import { requireIntegrationToken } from "../lib/integration-auth.js";
-import { isPrivateHost } from "../lib/network.js";
+import {
+  parsePublicHttpUrl,
+  publicUrlRejectionMessage,
+} from "../lib/public-url.js";
 import { log } from "../logger.js";
 
 interface CaptureDeps {
@@ -65,25 +68,12 @@ function parsePublicUrl(value: unknown, field: string): string {
     throw new ValidationError(`\`${field}\` field (string) is required`);
   }
 
-  const raw = value.trim();
-  let parsed: URL;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new ValidationError(`\`${field}\` must be a valid http or https URL`);
+  const parsed = parsePublicHttpUrl(value);
+  if (!parsed.ok) {
+    throw new ValidationError(publicUrlRejectionMessage(parsed.reason, field));
   }
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new ValidationError(`\`${field}\` must be a valid http or https URL`);
-  }
-  if (parsed.username || parsed.password) {
-    throw new ValidationError(`\`${field}\` must not include embedded credentials`);
-  }
-  if (isPrivateHost(parsed.hostname)) {
-    throw new ValidationError(`\`${field}\` must not target a private or loopback host`);
-  }
-
-  return raw;
+  return parsed.href;
 }
 
 function parseOptionalText(
