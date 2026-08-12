@@ -2488,6 +2488,98 @@
         "x-grimoire-source-method": "POST"
       }
     },
+    "/settings/ai-models": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List models available from an AI provider catalog (currently OpenRouter).",
+        "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+        "operationId": "getSettingsAiModels",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "description": "Provider to list models for",
+            "schema": {
+              "type": "string",
+              "description": "Provider to list models for",
+              "enum": [
+                "openrouter"
+              ]
+            }
+          },
+          {
+            "name": "free",
+            "in": "query",
+            "required": false,
+            "description": "When true, only free models are returned",
+            "schema": {
+              "type": "string",
+              "description": "When true, only free models are returned",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI model catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported provider",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing X-LittleImp-Frontend header",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Configured OpenRouter base URL is invalid",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider model catalog could not be fetched",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "GET"
+      }
+    },
     "/backup": {
       "post": {
         "tags": [
@@ -7831,6 +7923,90 @@
         },
         "required": [
           "ok"
+        ],
+        "additionalProperties": false
+      },
+      "AiModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Provider model slug, e.g. openai/gpt-4o"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable model name"
+          },
+          "context_length": {
+            "type": "integer",
+            "description": "Context window in tokens, when advertised",
+            "nullable": true
+          },
+          "prompt_price": {
+            "type": "string",
+            "description": "Prompt price per token as a decimal string; \"0\" means free",
+            "nullable": true
+          },
+          "completion_price": {
+            "type": "string",
+            "description": "Completion price per token as a decimal string; \"0\" means free",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "context_length",
+          "prompt_price",
+          "completion_price"
+        ],
+        "additionalProperties": false
+      },
+      "AiModelCatalog": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Provider the catalog was fetched from",
+            "enum": [
+              "openrouter"
+            ]
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Whether only free models were requested"
+          },
+          "fetched_at": {
+            "type": "string",
+            "description": "Catalog fetch timestamp",
+            "format": "date-time"
+          },
+          "models": {
+            "type": "array",
+            "description": "Available models",
+            "items": {
+              "$ref": "#/components/schemas/AiModel"
+            }
+          }
+        },
+        "required": [
+          "provider",
+          "free",
+          "fetched_at",
+          "models"
+        ],
+        "additionalProperties": false
+      },
+      "AiModelCatalogResponse": {
+        "type": "object",
+        "description": "AI model catalog response",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AiModelCatalog"
+          }
+        },
+        "required": [
+          "data"
         ],
         "additionalProperties": false
       },

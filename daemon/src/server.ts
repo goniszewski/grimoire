@@ -241,7 +241,7 @@ export function createApp(deps: AppDeps): Hono {
     cors({
       origin: (origin) => (isAllowedLocalOrigin(origin) ? origin : undefined),
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "X-LittleImp-Frontend"],
     })
   );
   app.use("*", validatePresentedIntegrationToken(deps.db, new Set(["/mcp", "/capture"])));

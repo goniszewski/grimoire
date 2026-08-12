@@ -1592,6 +1592,70 @@ Responses:
 |---|---|---|---|
 | `200` | application/json | `ConnectivityTestResponse` | Connectivity result |
 
+#### GET /settings/ai-models
+
+List models available from an AI provider catalog (currently OpenRouter).
+
+The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `provider` | "openrouter" | no | Provider to list models for |
+| `free` | "true" \| "false" | no | When true, only free models are returned |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `AiModelCatalogResponse` | AI model catalog |
+| `400` | application/problem+json | `ProblemDetails` | Unsupported provider |
+| `403` | application/problem+json | `ProblemDetails` | Missing X-LittleImp-Frontend header |
+| `422` | application/problem+json | `ProblemDetails` | Configured OpenRouter base URL is invalid |
+| `502` | application/problem+json | `ProblemDetails` | Provider model catalog could not be fetched |
+
+Examples:
+
+**List free OpenRouter models**
+
+Request:
+
+```bash
+curl -H "X-LittleImp-Frontend: 1" "http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "provider": "openrouter",
+    "free": true,
+    "fetched_at": "2026-06-01T09:30:00.000Z",
+    "models": [
+      {
+        "id": "inclusionai/ling-3.0-flash:free",
+        "name": "Ling-3.0-flash (free)",
+        "context_length": 262144,
+        "prompt_price": "0",
+        "completion_price": "0"
+      },
+      {
+        "id": "meta-llama/llama-3.2-3b-instruct:free",
+        "name": "Meta: Llama 3.2 3B Instruct (free)",
+        "context_length": 131072,
+        "prompt_price": "0",
+        "completion_price": "0"
+      }
+    ]
+  }
+}
+```
+
 ### Backup
 
 #### POST /backup
@@ -3878,6 +3942,37 @@ Response data
 | `ok` | boolean | yes | Whether the connectivity check succeeded |
 | `error` | string | no | Failure reason |
 | `message` | string | no | Success message |
+
+### AiModel
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Provider model slug, e.g. openai/gpt-4o |
+| `name` | string | yes | Human-readable model name |
+| `context_length` | integer \| null | yes | Context window in tokens, when advertised |
+| `prompt_price` | string \| null | yes | Prompt price per token as a decimal string; "0" means free |
+| `completion_price` | string \| null | yes | Completion price per token as a decimal string; "0" means free |
+
+### AiModelCatalog
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `free` | boolean | yes | Whether only free models were requested |
+| `fetched_at` | string | yes | Catalog fetch timestamp |
+| `models` | array<AiModel> | yes | Available models |
+
+### AiModelCatalogResponse
+
+AI model catalog response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | AiModelCatalog | yes |  |
+| `data.provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `data.free` | boolean | yes | Whether only free models were requested |
+| `data.fetched_at` | string | yes | Catalog fetch timestamp |
+| `data.models` | array<AiModel> | yes | Available models |
 
 ### BackupSchedule
 

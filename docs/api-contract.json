@@ -3839,6 +3839,90 @@
       ],
       "additionalProperties": false
     },
+    "AiModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Provider model slug, e.g. openai/gpt-4o"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable model name"
+        },
+        "context_length": {
+          "type": "integer",
+          "description": "Context window in tokens, when advertised",
+          "nullable": true
+        },
+        "prompt_price": {
+          "type": "string",
+          "description": "Prompt price per token as a decimal string; \"0\" means free",
+          "nullable": true
+        },
+        "completion_price": {
+          "type": "string",
+          "description": "Completion price per token as a decimal string; \"0\" means free",
+          "nullable": true
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "context_length",
+        "prompt_price",
+        "completion_price"
+      ],
+      "additionalProperties": false
+    },
+    "AiModelCatalog": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider the catalog was fetched from",
+          "enum": [
+            "openrouter"
+          ]
+        },
+        "free": {
+          "type": "boolean",
+          "description": "Whether only free models were requested"
+        },
+        "fetched_at": {
+          "type": "string",
+          "description": "Catalog fetch timestamp",
+          "format": "date-time"
+        },
+        "models": {
+          "type": "array",
+          "description": "Available models",
+          "items": {
+            "ref": "AiModel"
+          }
+        }
+      },
+      "required": [
+        "provider",
+        "free",
+        "fetched_at",
+        "models"
+      ],
+      "additionalProperties": false
+    },
+    "AiModelCatalogResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "AiModelCatalog"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "AI model catalog response"
+    },
     "BackupSchedule": {
       "type": "object",
       "properties": {
@@ -7593,6 +7677,107 @@
           }
         }
       }
+    },
+    {
+      "method": "GET",
+      "path": "/settings/ai-models",
+      "tag": "Settings",
+      "summary": "List models available from an AI provider catalog (currently OpenRouter).",
+      "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+      "request": {
+        "query": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "Provider to list models for",
+              "enum": [
+                "openrouter"
+              ]
+            },
+            "free": {
+              "type": "string",
+              "description": "When true, only free models are returned",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "AI model catalog",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "AiModelCatalogResponse"
+          }
+        },
+        "400": {
+          "description": "Unsupported provider",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "403": {
+          "description": "Missing X-LittleImp-Frontend header",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "422": {
+          "description": "Configured OpenRouter base URL is invalid",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "502": {
+          "description": "Provider model catalog could not be fetched",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "List free OpenRouter models",
+          "request": "curl -H \"X-LittleImp-Frontend: 1\" \"http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true\"",
+          "response": {
+            "status": 200,
+            "contentType": "application/json",
+            "body": {
+              "data": {
+                "provider": "openrouter",
+                "free": true,
+                "fetched_at": "2026-06-01T09:30:00.000Z",
+                "models": [
+                  {
+                    "id": "inclusionai/ling-3.0-flash:free",
+                    "name": "Ling-3.0-flash (free)",
+                    "context_length": 262144,
+                    "prompt_price": "0",
+                    "completion_price": "0"
+                  },
+                  {
+                    "id": "meta-llama/llama-3.2-3b-instruct:free",
+                    "name": "Meta: Llama 3.2 3B Instruct (free)",
+                    "context_length": 131072,
+                    "prompt_price": "0",
+                    "completion_price": "0"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
     },
     {
       "method": "POST",

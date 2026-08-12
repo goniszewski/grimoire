@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   checkForUpdates,
   checkHealthAfterRestore,
+  fetchAiModels,
   getDiagnostics,
   getReprocessStatus,
   getSettings,
@@ -19,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -125,6 +128,7 @@ interface EmbeddingsFormState {
 export const settingsKeys = {
   all: ["settings"] as const,
   diagnostics: ["settings", "diagnostics"] as const,
+  aiModels: (free: boolean) => ["settings", "ai-models", "openrouter", free] as const,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,6 +137,15 @@ const REDACTED = "***";
 
 function isKeyRedacted(key: string) {
   return key === REDACTED;
+}
+
+/**
+ * Strips OpenRouter's optional "~" fallback prefix (e.g. "~openai/gpt-latest").
+ * The prefix is valid OpenRouter syntax but is not shown in the dashboard or
+ * the model catalog, so stored values are normalized to plain slugs.
+ */
+function stripModelTilde(model: string | undefined): string {
+  return model ? model.replace(/^~+/, "") : "";
 }
 
 function secretProviderPatch(provider: ApiKeyProviderFormState) {
@@ -159,7 +172,7 @@ const apiKeyProviderMeta: Record<ApiKeyProvider, {
   openrouter: {
     apiKeyPlaceholder: "sk-or-...",
     baseUrlPlaceholder: "https://openrouter.ai/api/v1",
-    modelPlaceholder: "~openai/gpt-latest",
+    modelPlaceholder: "openai/gpt-latest",
   },
   openai_compatible: {
     apiKeyPlaceholder: "optional",
@@ -186,7 +199,7 @@ function defaultAiFormState(): AiFormState {
     openrouter: {
       api_key: "",
       base_url: "https://openrouter.ai/api/v1",
-      model: "~openai/gpt-latest",
+      model: "openai/gpt-latest",
     },
     openai_compatible: {
       api_key: "",
@@ -222,13 +235,18 @@ function mergeApiKeyProvider(
 
 function aiFormStateFromSettings(settings: Partial<ApiSettings["ai"]> | undefined): AiFormState {
   const defaults = defaultAiFormState();
+  const storedOpenRouter = settings?.openrouter as Partial<ApiKeyProviderFormState> | undefined;
   return {
     ...defaults,
     provider: settings?.provider ?? defaults.provider,
     openai: { ...defaults.openai, ...(settings?.openai as Partial<AiFormState["openai"]> | undefined) },
     ollama: { ...defaults.ollama, ...(settings?.ollama as Partial<AiFormState["ollama"]> | undefined) },
     anthropic: mergeApiKeyProvider(defaults.anthropic, settings?.anthropic),
-    openrouter: mergeApiKeyProvider(defaults.openrouter, settings?.openrouter),
+    openrouter: {
+      ...defaults.openrouter,
+      ...storedOpenRouter,
+      model: stripModelTilde(storedOpenRouter?.model ?? defaults.openrouter.model),
+    },
     openai_compatible: mergeApiKeyProvider(defaults.openai_compatible, settings?.openai_compatible),
     deepseek: mergeApiKeyProvider(defaults.deepseek, settings?.deepseek),
   };
@@ -668,6 +686,26 @@ const Settings = () => {
     }
   }, [data]);
 
+  // ─── OpenRouter model catalog ──────────────────────────────────────────────
+  const [freeModelsOnly, setFreeModelsOnly] = useState(true);
+  const openRouterModelsQuery = useQuery({
+    queryKey: settingsKeys.aiModels(freeModelsOnly),
+    queryFn: () => fetchAiModels("openrouter", freeModelsOnly),
+    enabled: ai.provider === "openrouter",
+    staleTime: 5 * 60_000,
+  });
+  const openRouterModelItems = useMemo(
+    () =>
+      (openRouterModelsQuery.data ?? []).map((model) => ({
+        value: model.id,
+        label: model.name,
+        hint: model.context_length
+          ? `${(model.context_length / 1000).toFixed(0)}k context`
+          : undefined,
+      })),
+    [openRouterModelsQuery.data]
+  );
+
   const saveMutation = useMutation({
     mutationFn: () => {
       // Build the patch. For API keys that are still showing the redacted
@@ -701,6 +739,9 @@ const Settings = () => {
       setDirty(false);
       setTestResult(null);
       qc.invalidateQueries({ queryKey: settingsKeys.all });
+      // The catalog is fetched from the persisted base_url; refetch it after
+      // a save so a changed OpenRouter base URL is reflected immediately.
+      qc.invalidateQueries({ queryKey: ["settings", "ai-models"] });
       toast.success("Settings saved");
     },
     onError: (err: Error) => {
@@ -849,7 +890,7 @@ const Settings = () => {
     });
   }
 
-  function renderApiKeyProviderFields(provider: ApiKeyProvider) {
+  function renderApiKeyFields(provider: ApiKeyProvider) {
     const config = ai[provider];
     const meta = apiKeyProviderMeta[provider];
     return (
@@ -873,15 +914,31 @@ const Settings = () => {
             className="h-8 text-sm font-mono"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Model</Label>
-          <Input
-            value={config.model}
-            onChange={(e) => updateAiApiKeyProvider(provider, { model: e.target.value })}
-            placeholder={meta.modelPlaceholder}
-            className="h-8 text-sm font-mono"
-          />
-        </div>
+      </>
+    );
+  }
+
+  function renderModelField(provider: ApiKeyProvider) {
+    const config = ai[provider];
+    const meta = apiKeyProviderMeta[provider];
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-xs">Model</Label>
+        <Input
+          value={config.model}
+          onChange={(e) => updateAiApiKeyProvider(provider, { model: e.target.value })}
+          placeholder={meta.modelPlaceholder}
+          className="h-8 text-sm font-mono"
+        />
+      </div>
+    );
+  }
+
+  function renderApiKeyProviderFields(provider: ApiKeyProvider) {
+    return (
+      <>
+        {renderApiKeyFields(provider)}
+        {renderModelField(provider)}
       </>
     );
   }
@@ -1037,7 +1094,48 @@ const Settings = () => {
                 )}
 
                 {ai.provider === "anthropic" && renderApiKeyProviderFields("anthropic")}
-                {ai.provider === "openrouter" && renderApiKeyProviderFields("openrouter")}
+                {ai.provider === "openrouter" && (
+                  <>
+                    {renderApiKeyFields("openrouter")}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Model</Label>
+                      <Combobox
+                        value={ai.openrouter.model}
+                        onValueChange={(model) =>
+                          updateAiApiKeyProvider("openrouter", { model: stripModelTilde(model) })
+                        }
+                        items={openRouterModelItems}
+                        ariaLabel="Model"
+                        placeholder="Select a model…"
+                        searchPlaceholder="Search OpenRouter models…"
+                        emptyText="No matching models"
+                        allowCustom
+                        loading={openRouterModelsQuery.isLoading}
+                        error={
+                          openRouterModelsQuery.isError
+                            ? openRouterModelsQuery.error instanceof Error
+                              ? openRouterModelsQuery.error.message
+                              : "Failed to load models"
+                            : null
+                        }
+                        onRetry={() => void openRouterModelsQuery.refetch()}
+                      />
+                      <div className="flex items-center gap-2 pt-1">
+                        <Checkbox
+                          id="free-models-only"
+                          checked={freeModelsOnly}
+                          onCheckedChange={(checked) => setFreeModelsOnly(checked === true)}
+                        />
+                        <Label
+                          htmlFor="free-models-only"
+                          className="cursor-pointer text-xs font-normal text-muted-foreground"
+                        >
+                          Free models only
+                        </Label>
+                      </div>
+                    </div>
+                  </>
+                )}
                 {ai.provider === "openai_compatible" && renderApiKeyProviderFields("openai_compatible")}
                 {ai.provider === "deepseek" && renderApiKeyProviderFields("deepseek")}
 

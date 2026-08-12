@@ -13,6 +13,7 @@ vi.mock("@/lib/api", () => ({
   DAEMON_URL: "http://127.0.0.1:3210",
   ApiError: class ApiError extends Error {},
   checkForUpdates: vi.fn(),
+  fetchAiModels: vi.fn(),
   getReprocessStatus: vi.fn(),
   getDiagnostics: vi.fn(),
   getSettings: vi.fn(),
@@ -50,6 +51,7 @@ import * as api from "@/lib/api";
 import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
+const mockedFetchAiModels = (api as unknown as { fetchAiModels: ReturnType<typeof vi.fn> }).fetchAiModels;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
 const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterRestore: ReturnType<typeof vi.fn> }).checkHealthAfterRestore;
 const mockedGetDiagnostics = (api as unknown as { getDiagnostics: ReturnType<typeof vi.fn> }).getDiagnostics;
@@ -83,7 +85,7 @@ function settingsResponse(aiPatch: Record<string, unknown> = {}) {
     openrouter: {
       api_key: "",
       base_url: "https://openrouter.ai/api/v1",
-      model: "~openai/gpt-latest",
+      model: "openai/gpt-latest",
     },
     openai_compatible: {
       api_key: "",
@@ -166,6 +168,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   mockedGetSettings.mockResolvedValue(settingsResponse());
+  mockedFetchAiModels.mockResolvedValue([]);
   mockedGetDiagnostics.mockResolvedValue({
     data: {
       generated_at: "2026-05-27T08:00:00.000Z",
@@ -636,11 +639,20 @@ describe("Settings AI providers", () => {
         model: "~openai/gpt-latest",
       },
     }));
+    mockedFetchAiModels.mockResolvedValue([
+      { id: "openai/gpt-latest", name: "OpenAI: GPT (latest)", context_length: 400000, prompt_price: "0.000001", completion_price: "0.000004" },
+      { id: "openai/gpt-5.2", name: "OpenAI: GPT-5.2", context_length: 400000, prompt_price: "0.000001", completion_price: "0.000004" },
+    ]);
 
     render(<Settings />, { wrapper: makeWrapper() });
 
-    const model = await screen.findByDisplayValue("~openai/gpt-latest");
-    fireEvent.change(model, { target: { value: "openai/gpt-5.2" } });
+    // The leading "~" fallback prefix is stripped from the stored model value.
+    const trigger = await screen.findByRole("combobox", { name: "Model" });
+    fireEvent.click(trigger);
+    fireEvent.change(screen.getByPlaceholderText("Search OpenRouter models…"), {
+      target: { value: "gpt-5.2" },
+    });
+    fireEvent.click(screen.getByRole("option", { name: /OpenAI: GPT-5\.2/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
@@ -648,13 +660,121 @@ describe("Settings AI providers", () => {
         expect.objectContaining({
           ai: expect.objectContaining({
             provider: "openrouter",
-            openrouter: {
+            openrouter: expect.objectContaining({
               base_url: "https://openrouter.ai/api/v1",
               model: "openai/gpt-5.2",
-            },
+            }),
           }),
         })
       );
+    });
+  });
+
+  it("fetches free OpenRouter models by default and re-fetches when the filter is toggled", async () => {
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels).toHaveBeenCalledWith("openrouter", true);
+    });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Free models only" }));
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels).toHaveBeenCalledWith("openrouter", false);
+    });
+  });
+
+  it("refetches the catalog after saving so a changed base URL is reflected", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels).toHaveBeenCalledWith("openrouter", true);
+    });
+
+    fireEvent.change(screen.getByDisplayValue("https://openrouter.ai/api/v1"), {
+      target: { value: "https://or.example.test/v1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("lets the user type a custom model not present in the catalog", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const trigger = await screen.findByRole("combobox", { name: "Model" });
+    fireEvent.click(trigger);
+    fireEvent.change(screen.getByPlaceholderText("Search OpenRouter models…"), {
+      target: { value: "my/custom-router-model" },
+    });
+    fireEvent.click(screen.getByRole("option", { name: /my\/custom-router-model/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            openrouter: expect.objectContaining({ model: "my/custom-router-model" }),
+          }),
+        })
+      );
+    });
+  });
+
+  it("surfaces catalog load errors with a retry action", async () => {
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+    mockedFetchAiModels.mockRejectedValue(new Error("HTTP 502"));
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const trigger = await screen.findByRole("combobox", { name: "Model" });
+    fireEvent.click(trigger);
+
+    expect(await screen.findByText("HTTP 502")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 

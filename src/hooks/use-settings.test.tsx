@@ -28,7 +28,7 @@ function settingsResponse(runtimeEnrichment: boolean) {
         openai: { api_key: "", model: "gpt-4o-mini" },
         ollama: { base_url: "http://localhost:11434", model: "llama3" },
         anthropic: { api_key: "", base_url: "https://api.anthropic.com", model: "claude-sonnet-4-6" },
-        openrouter: { api_key: "", base_url: "https://openrouter.ai/api/v1", model: "~openai/gpt-latest" },
+        openrouter: { api_key: "", base_url: "https://openrouter.ai/api/v1", model: "openai/gpt-latest" },
         openai_compatible: { api_key: "", base_url: "http://localhost:8000/v1", model: "custom-chat-model" },
         deepseek: { api_key: "", base_url: "https://api.deepseek.com", model: "deepseek-v4-flash" },
         embeddings: {

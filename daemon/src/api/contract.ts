@@ -1152,6 +1152,26 @@ const schemas = {
     },
     ["ok"]
   ),
+  AiModel: objectSchema(
+    {
+      id: stringSchema("Provider model slug, e.g. openai/gpt-4o"),
+      name: stringSchema("Human-readable model name"),
+      context_length: nullable(integerSchema("Context window in tokens, when advertised")),
+      prompt_price: nullable(stringSchema('Prompt price per token as a decimal string; "0" means free')),
+      completion_price: nullable(stringSchema('Completion price per token as a decimal string; "0" means free')),
+    },
+    ["id", "name", "context_length", "prompt_price", "completion_price"]
+  ),
+  AiModelCatalog: objectSchema(
+    {
+      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter"] }),
+      free: booleanSchema("Whether only free models were requested"),
+      fetched_at: stringSchema("Catalog fetch timestamp", { format: "date-time" }),
+      models: arrayOf(ref("AiModel"), "Available models"),
+    },
+    ["provider", "free", "fetched_at", "models"]
+  ),
+  AiModelCatalogResponse: envelope(ref("AiModelCatalog"), "AI model catalog response"),
   BackupSchedule: objectSchema(
     {
       enabled: booleanSchema("Enable scheduled snapshots"),
@@ -2568,6 +2588,61 @@ export const apiContract = {
       tag: "Settings",
       summary: "Test connectivity to the configured LLM provider.",
       responses: { "200": jsonResponse("Connectivity result", ref("ConnectivityTestResponse")) },
+    },
+    {
+      method: "GET",
+      path: "/settings/ai-models",
+      tag: "Settings",
+      summary: "List models available from an AI provider catalog (currently OpenRouter).",
+      description:
+        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+      request: {
+        query: objectSchema({
+          provider: stringSchema("Provider to list models for", { enum: ["openrouter"] }),
+          free: stringSchema("When true, only free models are returned", { enum: ["true", "false"] }),
+        }),
+      },
+      responses: {
+        "200": jsonResponse("AI model catalog", ref("AiModelCatalogResponse")),
+        "400": problemResponse("Unsupported provider"),
+        "403": problemResponse("Missing X-LittleImp-Frontend header"),
+        "422": problemResponse("Configured OpenRouter base URL is invalid"),
+        "502": problemResponse("Provider model catalog could not be fetched"),
+      },
+      examples: [
+        {
+          title: "List free OpenRouter models",
+          request:
+            'curl -H "X-LittleImp-Frontend: 1" "http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                provider: "openrouter",
+                free: true,
+                fetched_at: exampleTimestamp,
+                models: [
+                  {
+                    id: "inclusionai/ling-3.0-flash:free",
+                    name: "Ling-3.0-flash (free)",
+                    context_length: 262144,
+                    prompt_price: "0",
+                    completion_price: "0",
+                  },
+                  {
+                    id: "meta-llama/llama-3.2-3b-instruct:free",
+                    name: "Meta: Llama 3.2 3B Instruct (free)",
+                    context_length: 131072,
+                    prompt_price: "0",
+                    completion_price: "0",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
     },
     {
       method: "POST",

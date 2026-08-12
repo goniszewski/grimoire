@@ -3,6 +3,7 @@
  */
 
 import type {
+  AiModelCatalogResponseDto,
   BackupDestinationDto,
   BackupDestinationPatchDto,
   BackupDestinationResponseDto,
@@ -908,6 +909,23 @@ export async function rejectSuggestion(id: string): Promise<{ data: SuggestionDt
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
+export interface ApiAiModel {
+  id: AiModelCatalogResponseDto["data"]["models"][number]["id"];
+  name: AiModelCatalogResponseDto["data"]["models"][number]["name"];
+  context_length: AiModelCatalogResponseDto["data"]["models"][number]["context_length"];
+  prompt_price: AiModelCatalogResponseDto["data"]["models"][number]["prompt_price"];
+  completion_price: AiModelCatalogResponseDto["data"]["models"][number]["completion_price"];
+}
+
+export interface ApiAiModelCatalog {
+  provider: AiModelCatalogResponseDto["data"]["provider"];
+  free: AiModelCatalogResponseDto["data"]["free"];
+  fetched_at: AiModelCatalogResponseDto["data"]["fetched_at"];
+  models: ApiAiModel[];
+}
+
+export type ApiAiModelCatalogResponse = Simplify<{ data: ApiAiModelCatalog }>;
+
 export async function getSettings(): Promise<{ data: ApiSettings }> {
   return apiFetch<{ data: ApiSettings }>("/settings");
 }
@@ -921,6 +939,20 @@ export async function updateSettings(patch: ApiSettingsPatch): Promise<{ data: A
 
 export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
   return apiFetch<{ data: ApiDiagnostics }>("/diagnostics");
+}
+
+/**
+ * Lists models from an AI provider catalog (currently OpenRouter).
+ * The daemon fetches the public catalog; `free` filters to zero-cost models.
+ * The custom header is required by the daemon so foreign web pages cannot
+ * blind-trigger outbound catalog fetches.
+ */
+export async function fetchAiModels(provider: "openrouter", free: boolean): Promise<ApiAiModel[]> {
+  const query = new URLSearchParams({ provider, free: String(free) });
+  const res = await apiFetch<ApiAiModelCatalogResponse>(`/settings/ai-models?${query.toString()}`, {
+    headers: { "X-LittleImp-Frontend": "1" },
+  });
+  return res.data.models;
 }
 
 // ─── Updates ──────────────────────────────────────────────────────────────────
