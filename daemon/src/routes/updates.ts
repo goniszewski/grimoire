@@ -37,11 +37,20 @@ export function createUpdatesRoute(): Hono {
       throw err;
     }
 
+    // HTTP update checks always use the default / env-configured source.
+    // Arbitrary `source` query params are rejected to prevent SSRF via GET
+    // (which is not covered by Origin enforcement for unsafe methods).
+    if (c.req.query("source") != null && c.req.query("source") !== "") {
+      return problem(
+        c,
+        422,
+        "Unprocessable Entity",
+        "The source query parameter is not accepted on the HTTP update check. Configure LITTLEIMP_UPDATE_SOURCE or use the CLI."
+      );
+    }
+
     try {
-      const result = await checkForUpdates({
-        source: c.req.query("source"),
-        channel,
-      });
+      const result = await checkForUpdates({ channel });
       return c.json({ data: result });
     } catch (err) {
       if (err instanceof UpdateCheckError) {

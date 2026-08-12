@@ -54,6 +54,7 @@ ENV XDG_CONFIG_HOME=/data/config
 ENV HOME=/data
 ENV NODE_ENV=production
 ENV LOG_FORMAT=json
+ENV LITTLEIMP_IN_CONTAINER=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

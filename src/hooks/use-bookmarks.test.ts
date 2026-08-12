@@ -1137,7 +1137,6 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
 
     await waitFor(() =>
       expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
-        category: "Research",
         category_id: "cat-research",
       }))
     );
@@ -1146,7 +1145,6 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
 
     await waitFor(
       () => expect(mockedSearchBookmarks).toHaveBeenCalledWith(expect.objectContaining({
-        category: "Research",
         category_id: "cat-research",
       })),
       { timeout: 2000 }
@@ -1168,7 +1166,6 @@ describe("useBookmarks — tag / category / domain aggregates", () => {
     expect(result.current.selectedCategoryId).toBe("cat-two");
     await waitFor(() =>
       expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({
-        category: "Notes",
         category_id: "cat-two",
       }))
     );

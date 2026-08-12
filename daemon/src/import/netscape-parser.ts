@@ -13,7 +13,7 @@
  *   </DL>
  */
 
-import { isPrivateHost } from "../lib/network.js";
+import { parsePublicHttpUrl } from "../lib/public-url.js";
 
 export interface ParsedBookmark {
   /** Source bookmark row order among <A> tags. */
@@ -34,7 +34,8 @@ export type ParsedSkippedBookmarkReason =
   | "missing_href"
   | "invalid_url"
   | "non_http_url"
-  | "private_url";
+  | "private_url"
+  | "credential_url";
 
 export interface ParsedSkippedBookmark {
   /** Source bookmark row order among <A> tags. */
@@ -226,25 +227,27 @@ export function parseNetscapeBookmarks(html: string): ParseResult {
           break;
         }
 
-        // Validate URL: must be http/https and must not point to a private/loopback host
+        // Validate URL: must be http/https without credentials or private hosts
         let valid = false;
         let skipReason: ParsedSkippedBookmarkReason | null = null;
         let skipMessage = "";
-        try {
-          const u = new URL(href);
-          if (u.protocol !== "http:" && u.protocol !== "https:") {
+        const parsed = parsePublicHttpUrl(href);
+        if (!parsed.ok) {
+          if (parsed.reason === "protocol") {
             skipReason = "non_http_url";
             skipMessage = `Skipped non-http(s) URL: ${href.slice(0, 80)}`;
-          } else if (isPrivateHost(u.hostname)) {
-            // Reject private/loopback URLs to prevent SSRF via batch import
+          } else if (parsed.reason === "private") {
             skipReason = "private_url";
             skipMessage = `Skipped private/internal URL: ${href.slice(0, 80)}`;
+          } else if (parsed.reason === "credentials") {
+            skipReason = "credential_url";
+            skipMessage = `Skipped URL with embedded credentials near position ${tok.pos}`;
           } else {
-            valid = true;
+            skipReason = "invalid_url";
+            skipMessage = `Skipped malformed URL near position ${tok.pos}`;
           }
-        } catch {
-          skipReason = "invalid_url";
-          skipMessage = `Skipped malformed URL near position ${tok.pos}`;
+        } else {
+          valid = true;
         }
 
         if (!valid) {

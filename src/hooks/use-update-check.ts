@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { DAEMON_URL } from "@/lib/api";
+import { checkForUpdates } from "@/lib/api";
 
 const STORAGE_KEY_LAST_CHECK = "littleimp_update_last_check_ms";
 const STORAGE_KEY_DISMISSED_VERSION = "littleimp_update_dismissed_version";
@@ -63,11 +63,7 @@ export function useUpdateCheck(): UseUpdateCheckResult {
     }
 
     setLoading(true);
-    fetch(`${DAEMON_URL}/updates/check`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ data: UpdateCheckResult }>;
-      })
+    void checkForUpdates()
       .then((json) => {
         setResult(json.data ?? null);
         try {

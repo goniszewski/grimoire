@@ -82,7 +82,7 @@ operator-owned wrapper, not a Grimoire public-server mode.
 | Daemon to fetched bookmark URLs | Extracted content and metadata | User-supplied public URLs can be hostile | Private and loopback host blocking, request timeouts, response size and content-type limits |
 | Daemon to AI providers | Extracted content, summaries, tags, embeddings, API keys | Providers are optional user configuration | Keys stay local and redacted; no provider is required for core use |
 | Daemon to S3-compatible backups | Backup snapshots, non-secret settings | Optional user-managed remote destination | Local snapshot first, settings secrets omitted, S3 credentials redacted |
-| Daemon to update source | Release metadata | Default public GitHub source or user-provided source | Daemon update checks reject private and loopback source hosts; installs verify checksums and signatures where available |
+| Daemon to update source | Release metadata | Default public GitHub source or CLI-provided source | HTTP update checks reject arbitrary `source` query params; private/loopback hosts are blocked; installs require checksums and detached signatures (unsigned only via explicit escape hatch) |
 
 ## Current Threat Model
 

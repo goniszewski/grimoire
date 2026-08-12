@@ -240,7 +240,20 @@ export interface ApiRuntimeCapabilities {
   };
 }
 
-export type ApiUpdateCheckResult = UpdateCheckResultDto;
+export type ApiUpdateCheckResult = {
+  current_version: string;
+  update_available: boolean;
+  source: string;
+  channel: string;
+  latest: {
+    version: string;
+    tag: string;
+    name: string;
+    prerelease: boolean;
+    published_at: string;
+    url: string;
+  } | null;
+};
 
 export interface ApiDiagnosticsProviderStatus {
   provider: string;
@@ -912,8 +925,56 @@ export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
 
 // ─── Updates ──────────────────────────────────────────────────────────────────
 
-export async function checkForUpdates(): Promise<UpdateCheckResponseDto> {
-  return apiFetch<UpdateCheckResponseDto>("/updates/check");
+export async function checkForUpdates(): Promise<{ data: ApiUpdateCheckResult }> {
+  return apiFetch<{ data: ApiUpdateCheckResult }>("/updates/check");
+}
+
+export async function testAiConnection(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    return await apiFetch<{ ok: boolean; error?: string }>("/settings/test-ai", {
+      method: "POST",
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return {
+        ok: false,
+        error: `Server returned ${err.status}: ${err.detail ?? err.message}`,
+      };
+    }
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function downloadExport(
+  format: "json" | "csv",
+  filters: {
+    tag?: string;
+    domain?: string;
+    category_id?: string;
+    category?: string;
+    date_from?: string;
+    date_to?: string;
+    read_later?: boolean;
+  } & LibraryParityFilterParams = {}
+): Promise<{ blob: Blob; filename: string }> {
+  const params = new URLSearchParams({ format });
+  if (filters.tag) params.set("tag", filters.tag);
+  if (filters.domain) params.set("domain", filters.domain);
+  if (filters.category_id) params.set("category_id", filters.category_id);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.read_later != null) params.set("read_later", filters.read_later ? "true" : "false");
+  appendLibraryParityFilters(params, filters);
+
+  const res = await fetch(`${DAEMON_URL}/export?${params.toString()}`);
+  if (!res.ok) {
+    throw new ApiError(res.status, `Export failed: ${res.status}`, await res.text().catch(() => undefined));
+  }
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? `bookmarks.${format}`;
+  return { blob: await res.blob(), filename };
 }
 
 // ─── Backup & Restore ─────────────────────────────────────────────────────────
