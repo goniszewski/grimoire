@@ -174,7 +174,7 @@ describe("Backup API", () => {
         openrouter: {
           api_key: "backup-openrouter-secret",
           base_url: "https://openrouter.ai/api/v1",
-          model: "~openai/gpt-latest",
+          model: "openai/gpt-latest",
         },
         openai_compatible: {
           api_key: "backup-custom-secret",
@@ -261,7 +261,7 @@ describe("Backup API", () => {
     });
     expect(backupSettings.ai.openrouter).toEqual({
       base_url: "https://openrouter.ai/api/v1",
-      model: "~openai/gpt-latest",
+      model: "openai/gpt-latest",
     });
     expect(backupSettings.ai.openai_compatible).toEqual({
       base_url: "https://llm.backup.example/v1",
@@ -846,7 +846,7 @@ describe("Backup API", () => {
         openrouter: {
           api_key: "backup-openrouter-secret",
           base_url: "https://openrouter.ai/api/v1",
-          model: "~openai/gpt-latest",
+          model: "openai/gpt-latest",
         },
         openai_compatible: {
           api_key: "backup-custom-secret",
@@ -950,7 +950,7 @@ describe("Backup API", () => {
     expect(restored.ai.ollama.model).toBe("llama3.2");
     expect(restored.ai.anthropic.model).toBe("claude-sonnet-4-6");
     expect(restored.ai.anthropic.api_key).toBe("current-anthropic-secret");
-    expect(restored.ai.openrouter.model).toBe("~openai/gpt-latest");
+    expect(restored.ai.openrouter.model).toBe("openai/gpt-latest");
     expect(restored.ai.openrouter.api_key).toBe("current-openrouter-secret");
     expect(restored.ai.openai_compatible.model).toBe("custom-backup-chat");
     expect(restored.ai.openai_compatible.api_key).toBe("current-custom-secret");

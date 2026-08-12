@@ -499,7 +499,7 @@ describe("settings-driven AI runtime configuration", () => {
           openrouter: {
             api_key: "openrouter-secret",
             base_url: "https://openrouter.ai/api/v1",
-            model: "~openai/gpt-latest",
+            model: "openai/gpt-latest",
           },
           openai_compatible: {
             api_key: "custom-secret",
@@ -748,12 +748,12 @@ describe("settings-driven AI runtime configuration", () => {
           openrouter: {
             api_key: "openrouter-key",
             base_url: "https://openrouter.ai/api/v1",
-            model: "~openai/gpt-latest",
+            model: "openai/gpt-latest",
           },
         },
         expectedUrl: "https://openrouter.ai/api/v1/chat/completions",
         expectedAuth: "Bearer openrouter-key",
-        expectedModel: "~openai/gpt-latest",
+        expectedModel: "openai/gpt-latest",
         expectedOpenRouterTitle: "Grimoire",
       },
       {
