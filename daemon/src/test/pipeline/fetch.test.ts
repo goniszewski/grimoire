@@ -132,6 +132,18 @@ describe("fetchPage", () => {
     await expect(fetchPage("https://example.com/slow")).rejects.toThrow(/aborted/i);
   });
 
+  it("sends the current Grimoire user-agent", async () => {
+    let userAgent = "";
+    globalThis.fetch = mockFetch(async (_input, init) => {
+      userAgent = new Headers(init?.headers).get("user-agent") ?? "";
+      return makeResponse();
+    });
+
+    await fetchPage("https://example.com/page");
+
+    expect(userAgent).toMatch(/^Mozilla\/5\.0 \(compatible; Grimoire\/[\d.]+; \+https:\/\/github\.com\/goniszewski\/grimoire\)$/);
+  });
+
   // ── Redirects ───────────────────────────────────────────────────────────
 
   it("follows redirects and returns the final URL", async () => {

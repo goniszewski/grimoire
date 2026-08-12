@@ -210,7 +210,8 @@ export function findLatestCompatibleRelease(
 export async function fetchUpdateReleases(
   fetchImpl: typeof fetch,
   source: string,
-  currentVersion = APP_VERSION
+  currentVersion = APP_VERSION,
+  options: { allowPrivateHosts?: boolean } = {}
 ): Promise<GitHubRelease[]> {
   const headers = {
     accept: "application/vnd.github+json",
@@ -220,9 +221,13 @@ export async function fetchUpdateReleases(
   let res: Response;
   try {
     // Default fetch uses manual redirect validation. Injected fetchImpl
-    // (tests / CLI mocks) is called as provided.
+    // (tests / CLI mocks) is called as provided. Private update sources
+    // (CLI-local testing) keep the previous plain-fetch behavior so an
+    // explicitly allowed private host is not re-blocked by the SSRF guard.
     if (fetchImpl === fetch) {
-      res = await fetchFollowingSafeRedirects(source, { headers });
+      res = options.allowPrivateHosts
+        ? await fetch(source, { headers })
+        : await fetchFollowingSafeRedirects(source, { headers });
     } else {
       res = await fetchImpl(source, { headers });
     }
@@ -267,7 +272,9 @@ export async function checkForUpdates(options: {
   const currentVersion = options.currentVersion ?? APP_VERSION;
   const source = resolveUpdateSource(options.source, { allowPrivateHosts: options.allowPrivateHosts });
   const channel = options.channel ?? defaultUpdateChannel(currentVersion);
-  const releases = await fetchUpdateReleases(options.fetchImpl ?? fetch, source, currentVersion);
+  const releases = await fetchUpdateReleases(options.fetchImpl ?? fetch, source, currentVersion, {
+    allowPrivateHosts: options.allowPrivateHosts,
+  });
   const latest = findLatestCompatibleRelease(releases, channel);
 
   return {

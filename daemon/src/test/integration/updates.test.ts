@@ -3,7 +3,7 @@ import { Database } from "bun:sqlite";
 import { createApp } from "../../server.js";
 import { JobQueue } from "../../queue.js";
 import { makeTestDb } from "../helpers/db.js";
-import { DEFAULT_UPDATE_SOURCE } from "../../update/service.js";
+import { DEFAULT_UPDATE_SOURCE, checkForUpdates } from "../../update/service.js";
 
 type FetchCall = {
   url: string;
@@ -138,5 +138,35 @@ describe("Updates API", () => {
     expect(calls[0].url).toBe(DEFAULT_UPDATE_SOURCE);
     const problem = await res.json() as { detail?: string };
     expect(problem.detail).toBe(`Update source ${DEFAULT_UPDATE_SOURCE} returned 404: Not Found`);
+  });
+
+  it("checkForUpdates keeps fetching a private source when allowPrivateHosts is set (CLI local testing)", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = (async (url) => {
+      urls.push(String(url));
+      return releasesResponse([]);
+    }) as typeof fetch;
+
+    const result = await checkForUpdates({
+      source: "http://127.0.0.1:9999/releases",
+      allowPrivateHosts: true,
+    });
+
+    expect(urls).toEqual(["http://127.0.0.1:9999/releases"]);
+    expect(result.source).toBe("http://127.0.0.1:9999/releases");
+  });
+
+  it("checkForUpdates rejects private sources before any fetch by default", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = (async (url) => {
+      urls.push(String(url));
+      return releasesResponse([]);
+    }) as typeof fetch;
+
+    await expect(
+      checkForUpdates({ source: "http://127.0.0.1:9999/releases" })
+    ).rejects.toThrow(/private or loopback/);
+
+    expect(urls).toEqual([]);
   });
 });

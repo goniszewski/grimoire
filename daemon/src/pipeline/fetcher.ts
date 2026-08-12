@@ -9,9 +9,10 @@
 
 import { fetchFollowingSafeRedirects } from "../lib/safe-fetch.js";
 import { parsePublicHttpUrl } from "../lib/public-url.js";
+import { version as APP_VERSION } from "../../package.json";
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)";
+  `Mozilla/5.0 (compatible; Grimoire/${APP_VERSION}; +https://github.com/goniszewski/grimoire)`;
 
 const FETCH_TIMEOUT_MS = 20_000;
 /** Reject responses larger than this to prevent memory exhaustion. */
