@@ -316,7 +316,19 @@ Then rerun the normal commands.
 
 ## Documentation
 
-- [FAQ](./docs/faq.md)
+Guides in this repo (also on the web at **[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**):
+
+- [Docs index](./docs/grimoire/README.md)
+- [Introduction](./docs/grimoire/01-intro.md)
+- [Quick start](./docs/grimoire/02-quick-start.md)
+- [Using Grimoire](./docs/grimoire/03-using-grimoire.md)
+- [Development](./docs/grimoire/04-development.md)
+- [Install without Docker](./docs/grimoire/05-install-without-docker.md)
+- [Remote access](./docs/grimoire/06-remote-access.md)
+- [FAQ](./docs/grimoire/faq.md)
+
+Reference and engineering:
+
 - [API Reference](./API.md)
 - [API Contract](./docs/api-contract.json)
 - [Project Overview](./docs/overview.md)
