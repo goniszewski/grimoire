@@ -26,7 +26,7 @@ After save, Grimoire pulls readable content when it can:
 - **Categories** — create, rename, nest (max three levels), drag to reorder or reparent
 - **Tags** — create, rename, attach; browse from Tags pages
 - **Per bookmark** — title, notes, pin, read/unread, read later, archive, trash, restore, permanent delete
-- **Bulk** — select bookmarks to delete or move
+- **Bulk** — select bookmarks to delete, move, or toggle read later
 - **Filters** — category, tag, domain, date, and related library filters
 
 Optional AI can suggest summary, tags, and a broad category during ingest. When an **embedding** provider is configured, an organization agent may propose duplicates or similar categories; review them in **Review Queue**.
@@ -60,7 +60,7 @@ From Settings or the `littleimp` CLI you can create, list, verify, and restore l
 
 ## Local integrations
 
-- **REST** — see [API.md](../../API.md); health at `GET /health`
+- **REST** — see [API.md](../API.md); health at `GET /health`
 - **MCP** — Streamable HTTP at `http://127.0.0.1:3210/mcp` with an integration bearer token
 - **Capture API** — token-protected `POST /capture` for same-machine clients
 

@@ -57,4 +57,4 @@ npm run tools:setup
 export PATH="$PWD/local/bin:$PATH"
 ```
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution expectations.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution expectations.

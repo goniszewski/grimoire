@@ -40,4 +40,4 @@ Optional AI keys can be seeded in `docker-compose.yml` for first start; day-to-d
 - [Using Grimoire](./03-using-grimoire.md)
 - [Development](./04-development.md)
 - [Install without Docker](./05-install-without-docker.md)
-- Longer Docker notes: [docker-deployment.md](../docker-deployment.md)
+- Longer Docker notes: [docker-deployment.md](./docker-deployment.md)

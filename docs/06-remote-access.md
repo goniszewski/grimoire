@@ -33,4 +33,4 @@ Use the Serve URL Tailscale prints. Prefer this over opening firewall ports. Det
 - Do not treat Grimoire as a multi-user public web app — it is single-user and local-trust
 - If you use a reverse proxy, terminate auth at the proxy or VPN and keep Grimoire on `127.0.0.1`
 
-Threat model: [security-boundaries.md](../security-boundaries.md). Docker notes: [docker-deployment.md](../docker-deployment.md).
+Threat model: [security-boundaries.md](./security-boundaries.md). Docker notes: [docker-deployment.md](./docker-deployment.md).
