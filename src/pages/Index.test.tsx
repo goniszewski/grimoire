@@ -204,6 +204,7 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
     unpinBookmark: vi.fn(),
     markReadLater: vi.fn(),
     clearReadLater: vi.fn(),
+    setReadLater: vi.fn(async () => undefined),
     archiveBookmark: vi.fn(),
     unarchiveBookmark: vi.fn(),
     markAsRead: vi.fn(),
