@@ -32,6 +32,7 @@ export function getDatabase(): Database {
 
   runMigrations(db);
   ensureBookmarksUpdatedAtTrigger(db);
+  // Migrate may leave media-cache dirs if the process dies before COMMIT.
   cleanupOrphanBookmarkMedia(db, Config.DATA_DIR);
   new EmbeddingRepository(db).rebuildVectorIndex();
 

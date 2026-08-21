@@ -18,7 +18,6 @@ import {
   inspectLegacyV05Source,
   migrateLegacyV05Source,
 } from "../migrate/legacy-migrate.js";
-import { LegacyConflictError } from "../migrate/legacy-errors.js";
 
 interface MigrateDeps {
   db: Database;
@@ -161,9 +160,6 @@ export function createMigrateRoute(deps: MigrateDeps): Hono {
     } catch (err) {
       if (err instanceof LegacyAuthError) {
         return problem(c, 401, "Unauthorized", err.message);
-      }
-      if (err instanceof LegacyConflictError) {
-        return problem(c, 409, "Conflict", err.message);
       }
       if (err instanceof LegacySourceError) {
         return problem(c, 422, "Unprocessable Entity", err.message);

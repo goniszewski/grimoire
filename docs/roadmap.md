@@ -59,7 +59,7 @@ Notes:
   pin, or archive state.
 - **Partial apply:** individual bookmark failures soft-skip inside one transaction
   (HTTP 207 / CLI exit 1 when any fail). A crash before commit rolls the whole
-  apply back. Overlapping apply returns 409.
+  apply back. Overlapping apply on the same daemon returns 409.
 - Archives may be `.zip`, `.tar`, `.tar.gz`/`.tgz`, `.tar.bz2`/`.tbz2`, or `.tar.xz`/`.txz`
   and must contain `db.sqlite` (ideally under `data/`) plus optional `user-uploads/`.
   Symlink/hardlink members are refused before extract.

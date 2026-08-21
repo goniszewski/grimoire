@@ -13,10 +13,3 @@ export class LegacyAuthError extends Error {
     this.name = "LegacyAuthError";
   }
 }
-
-export class LegacyConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "LegacyConflictError";
-  }
-}

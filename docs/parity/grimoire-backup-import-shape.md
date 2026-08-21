@@ -31,8 +31,7 @@ Shipped behavior:
 - Supports `--dry-run` / `dryRun` to preview create/merge/skip counts without writing
   to the 1.x library or media cache.
 - Apply is additive (never wipes the destination library) and commits as one
-  SQLite transaction; concurrent apply is rejected with HTTP 409 (in-process +
-  on-disk lock under the 1.x data dir).
+  SQLite transaction; concurrent apply on the same daemon is rejected with HTTP 409.
 - Optional password verification against `user.password_hash` proves ownership
   only — it does **not** create Grimoire 1.x accounts.
 - Imports bookmarks, categories, tags, approved parity fields, and local media.
@@ -123,7 +122,7 @@ Covered by daemon tests under `daemon/src/test/legacy-migrate.test.ts`,
 - zip / tar.gz / tar.bz2 archive apply and zip-slip rejection
 - WAL-mode source DB open, corrupt DB rejection, S3 media skip, deep categories, cycles
 - re-run skip / `--merge` note append + activity preservation
-- concurrent apply returns 409; whitespace/NUL title sanitization
+- concurrent apply on the same daemon returns 409; whitespace/NUL title sanitization
 - merge preserves local archive; cross-owner media skip; other-owner residual warning
 - failed bookmark rollback + orphan media cleanup; missing uploadsDir soft-skip
 - extensionless ICO magic-byte sniff; in-tree hardlinks allowed (symlink escape still rejected); dry-run media after apply

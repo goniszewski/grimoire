@@ -1610,7 +1610,7 @@ Responses:
 | `207` | application/json | `LegacyMigrateApplyResponse` | Partial migration apply summary (bookmarksFailed > 0) |
 | `400` | application/problem+json | `ProblemDetails` | Invalid request body |
 | `401` | application/problem+json | `ProblemDetails` | Owner password verification failed |
-| `409` | application/problem+json | `ProblemDetails` | Legacy migration apply already in progress |
+| `409` | application/problem+json | `ProblemDetails` | Legacy migration apply already in progress on this daemon |
 | `422` | application/problem+json | `ProblemDetails` | Database is invalid or owner selection is required |
 | `500` | application/problem+json | `ProblemDetails` | Apply failed unexpectedly |
 

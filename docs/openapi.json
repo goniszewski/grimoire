@@ -2509,7 +2509,7 @@
             }
           },
           "409": {
-            "description": "Legacy migration apply already in progress",
+            "description": "Legacy migration apply already in progress on this daemon",
             "content": {
               "application/problem+json": {
                 "schema": {

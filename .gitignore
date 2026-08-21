@@ -39,6 +39,7 @@ local/
 data/
 build/
 coverage/
+*.tsbuildinfo
 .svelte-kit/
 .omc/
 *.timestamp-*.mjs

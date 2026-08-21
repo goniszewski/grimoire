@@ -2725,7 +2725,7 @@ export const apiContract = {
         ),
         "400": problemResponse("Invalid request body"),
         "401": problemResponse("Owner password verification failed"),
-        "409": problemResponse("Legacy migration apply already in progress"),
+        "409": problemResponse("Legacy migration apply already in progress on this daemon"),
         "422": problemResponse("Database is invalid or owner selection is required"),
         "500": problemResponse("Apply failed unexpectedly"),
       },

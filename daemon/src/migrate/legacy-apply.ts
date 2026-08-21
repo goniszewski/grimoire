@@ -13,14 +13,13 @@ import {
 } from "fs";
 import { extname, join } from "path";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
-import { ensureBookmarksUpdatedAtTrigger, installBookmarksUpdatedAtPassthrough } from "../db/bookmarks-updated-at-trigger.js";
+import { ensureBookmarksUpdatedAtTrigger } from "../db/bookmarks-updated-at-trigger.js";
 import { CategoryRepository } from "../db/category-repository.js";
 import { TagRepository } from "../db/tag-repository.js";
 import type { JobQueue } from "../queue.js";
 import { combineFtsSummary } from "../lib/fts-summary.js";
 import { cleanupOrphanBookmarkMedia } from "../media/cleanup-orphan-bookmark-media.js";
 import { limitImportCategoryPath, canonicalUrlKey } from "./legacy-normalize.js";
-import { acquireLegacyApplyLock } from "./legacy-apply-lock.js";
 import type {
   LegacyApplySummary,
   NormalizedLegacyBookmark,
@@ -958,28 +957,13 @@ export async function applyLegacyLibrary(
     return simulateLegacyLibrary(library, deps);
   }
 
-  const releaseLock = acquireLegacyApplyLock(deps.dataDir);
-  try {
-    // Passthrough trigger lets applyParityFields keep legacy updated_at values.
-    // Prefer no-op over DROP so a crash mid-apply does not leave the trigger missing;
-    // ensureBookmarksUpdatedAtTrigger always recreates the real body afterward / on boot.
-    installBookmarksUpdatedAtPassthrough(deps.db);
-    try {
-      return await applyLegacyLibraryWithWrites(library, deps);
-    } finally {
-      ensureBookmarksUpdatedAtTrigger(deps.db);
-    }
-  } finally {
-    releaseLock();
-  }
+  return applyLegacyLibraryWithWrites(library, deps);
 }
 
 async function applyLegacyLibraryWithWrites(
   library: NormalizedLegacyLibrary,
   deps: LegacyApplyDeps
 ): Promise<LegacyApplySummary> {
-  cleanupOrphanBookmarkMedia(deps.db, deps.dataDir);
-
   const bookmarkRepo = new BookmarkRepository(deps.db, { dataDir: deps.dataDir });
   const categoryRepo = new CategoryRepository(deps.db);
   const tagRepo = new TagRepository(deps.db);
@@ -987,9 +971,6 @@ async function applyLegacyLibraryWithWrites(
   const enqueueIngest = deps.enqueueIngest !== false;
 
   const summary = emptySummary(library.owner, false, [...library.warnings]);
-  summary.warnings.unshift(
-    "Apply is additive and commits as one transaction: back up your 1.x library first if it already has data; individual bookmark failures soft-skip, but a crash before commit rolls the whole apply back."
-  );
   summary.bookmarksSkipped = library.skippedBookmarks.length;
 
   for (const skipped of library.skippedBookmarks) {
@@ -1014,7 +995,6 @@ async function applyLegacyLibraryWithWrites(
     }
   }
   const seenTags = new Set<string>();
-  const urlIndex = buildCanonicalUrlIndex(deps.db);
 
   const pendingIngest: Array<{ bookmarkId: string; url: string }> = [];
   const applyMediaPaths: string[] = [];
@@ -1023,6 +1003,16 @@ async function applyLegacyLibraryWithWrites(
   try {
     deps.db.exec("BEGIN IMMEDIATE");
     txnOpen = true;
+    // Keep filesystem cleanup and trigger changes under the same write lock.
+    // This prevents another process from deleting media belonging to an
+    // uncommitted bookmark or restoring the trigger while this apply is active.
+    cleanupOrphanBookmarkMedia(deps.db, deps.dataDir);
+    // Preserve legacy updated_at values written by applyParityFields.
+    deps.db.exec("DROP TRIGGER IF EXISTS trg_bookmarks_updated_at");
+    // Build the canonical lookup after acquiring the write lock so a second
+    // process cannot commit a differently-cased duplicate between the scan and
+    // this transaction.
+    const urlIndex = buildCanonicalUrlIndex(deps.db);
 
     for (let index = 0; index < library.bookmarks.length; index += 1) {
       const bookmark = library.bookmarks[index];
@@ -1179,6 +1169,9 @@ async function applyLegacyLibraryWithWrites(
       }
     }
 
+    // Restore the normal trigger before releasing the SQLite write lock. If
+    // the transaction rolls back, SQLite also rolls back the temporary drop.
+    ensureBookmarksUpdatedAtTrigger(deps.db);
     deps.db.exec("COMMIT");
     txnOpen = false;
   } catch (err) {
@@ -1197,7 +1190,7 @@ async function applyLegacyLibraryWithWrites(
         // best-effort
       }
     }
-    cleanupOrphanBookmarkMedia(deps.db, deps.dataDir);
+    repairAfterRollback(deps.db, deps.dataDir);
     throw err;
   }
 
@@ -1213,4 +1206,26 @@ async function applyLegacyLibraryWithWrites(
   summary.categoriesCreated = categoryStats.created;
   summary.categoriesReused = categoryStats.reused;
   return summary;
+}
+
+function repairAfterRollback(db: Database, dataDir: string): void {
+  let repairTxnOpen = false;
+  try {
+    // Reacquire the write lock before inspecting the filesystem or repairing
+    // the trigger. Another process may have started an apply after rollback.
+    db.exec("BEGIN IMMEDIATE");
+    repairTxnOpen = true;
+    cleanupOrphanBookmarkMedia(db, dataDir);
+    ensureBookmarksUpdatedAtTrigger(db);
+    db.exec("COMMIT");
+    repairTxnOpen = false;
+  } catch {
+    if (repairTxnOpen) {
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        // best-effort; daemon boot repairs schema/media leftovers
+      }
+    }
+  }
 }

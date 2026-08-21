@@ -12,14 +12,12 @@ import { join } from "path";
 import { spawnSync } from "child_process";
 import { runMigrations } from "../db/migrations.js";
 import { LEGACY_MIGRATE_MEDIA_LIMITS, legacyMediaSourceUrl } from "../migrate/legacy-apply.js";
-import { acquireLegacyApplyLock } from "../migrate/legacy-apply-lock.js";
 import {
   findLegacyOwner,
   inspectLegacyV05Source,
   migrateLegacyV05Source,
   openLegacyV05Database,
   LegacySourceError,
-  LegacyConflictError,
 } from "../migrate/legacy-migrate.js";
 import { normalizeLegacyLibrary } from "../migrate/legacy-normalize.js";
 import { resolveLegacySourcePaths } from "../migrate/legacy-paths.js";
@@ -3496,7 +3494,65 @@ describe("v0.5 migration dirty user-data cases", () => {
         )
         .get();
       expect(trigger?.name).toBe("trg_bookmarks_updated_at");
+
+      // Body must auto-touch updated_at again (not a leftover no-op / missing trigger).
+      target.db.run(
+        `UPDATE bookmarks
+         SET title = 'Touched', updated_at = '2000-01-01T00:00:00.000Z'
+         WHERE url = 'https://example.com/trigger'`
+      );
+      const row = target.db
+        .query<{ updated_at: string }, []>(
+          "SELECT updated_at FROM bookmarks WHERE url = 'https://example.com/trigger'"
+        )
+        .get();
+      expect(row?.updated_at).not.toBe("2000-01-01T00:00:00.000Z");
+      expect(row?.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     } finally {
+      target.db.close();
+      rmSync(fixture.dataDir, { recursive: true, force: true });
+      rmSync(target.dataDir, { recursive: true, force: true });
+    }
+  });
+
+  it("repairs a missing updated_at trigger when apply fails before commit", async () => {
+    const fixture = await makeDirtyFixture({
+      bookmarks: [
+        {
+          id: 1,
+          url: "https://example.com/trigger-repair",
+          title: "Trigger repair",
+          ownerId: 1,
+          categoryId: 1,
+        },
+      ],
+    });
+    const target = freshTarget();
+    const originalExec = target.db.exec.bind(target.db);
+    let dropAttempts = 0;
+    target.db.exec("DROP TRIGGER IF EXISTS trg_bookmarks_updated_at");
+    target.db.exec = ((sql: string) => {
+      if (/DROP TRIGGER IF EXISTS trg_bookmarks_updated_at/i.test(sql) && dropAttempts++ === 0) {
+        throw new Error("injected trigger drop failure");
+      }
+      return originalExec(sql);
+    }) as typeof target.db.exec;
+    try {
+      await expect(
+        migrateLegacyV05Source(
+          { dataDir: fixture.dataDir },
+          { db: target.db, dataDir: target.dataDir, enqueueIngest: false }
+        )
+      ).rejects.toThrow(/injected trigger drop failure/i);
+
+      const trigger = target.db
+        .query<{ name: string }, []>(
+          "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'trg_bookmarks_updated_at'"
+        )
+        .get();
+      expect(trigger?.name).toBe("trg_bookmarks_updated_at");
+    } finally {
+      target.db.exec = originalExec;
       target.db.close();
       rmSync(fixture.dataDir, { recursive: true, force: true });
       rmSync(target.dataDir, { recursive: true, force: true });
@@ -4928,35 +4984,6 @@ describe("v0.5 migration dirty user-data cases", () => {
       }
     } finally {
       target.db.exec = originalExec;
-      target.db.close();
-      rmSync(fixture.dataDir, { recursive: true, force: true });
-      rmSync(target.dataDir, { recursive: true, force: true });
-    }
-  });
-
-  it("refuses a second apply while the on-disk apply lock is held", async () => {
-    const fixture = await makeDirtyFixture({
-      bookmarks: [
-        {
-          id: 1,
-          url: "https://example.com/lock-holder",
-          title: "Lock",
-          ownerId: 1,
-          categoryId: 1,
-        },
-      ],
-    });
-    const target = freshTarget();
-    const release = acquireLegacyApplyLock(target.dataDir);
-    try {
-      await expect(
-        migrateLegacyV05Source(
-          { dataDir: fixture.dataDir },
-          { db: target.db, dataDir: target.dataDir, enqueueIngest: false }
-        )
-      ).rejects.toBeInstanceOf(LegacyConflictError);
-    } finally {
-      release();
       target.db.close();
       rmSync(fixture.dataDir, { recursive: true, force: true });
       rmSync(target.dataDir, { recursive: true, force: true });

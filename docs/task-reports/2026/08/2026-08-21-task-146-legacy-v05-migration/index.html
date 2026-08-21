@@ -92,8 +92,9 @@ code {
         Point at a v0.5 <code>data/</code> directory (<code>db.sqlite</code> +
         <code>user-uploads/</code>), or a packed archive
         (<code>.zip</code> / <code>.tar.gz</code> / …). Multi-user databases require an owner;
-        optional password verifies the v0.5 account hash. PocketBase-era
-        backups are out of scope. No Grimoire 1.x login accounts were added.
+        optional password verifies the v0.5 account hash. The supported source is
+        v0.5 SQLite data or an archive of it; PocketBase-era backups are out of
+        scope. No Grimoire 1.x login accounts were added.
       </p>
 
       <div class="asset">
@@ -110,7 +111,7 @@ code {
 
       <h2>Verification</h2>
       <ul>
-        <li><code>bun test</code> for legacy migrate, CLI, and route suites (15 passing)</li>
+        <li><code>bun test</code> for the legacy migrate, CLI, route, and dirty-data suites</li>
         <li><code>bun run check</code> in <code>daemon/</code></li>
         <li><code>npm run docs:api</code> / <code>docs:api:check</code></li>
       </ul>

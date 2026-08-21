@@ -4,7 +4,7 @@ import { join } from "path";
 
 /**
  * Remove media-cache/bookmarks/<id> directories with no matching bookmarks row.
- * Used after migrate rollbacks and on daemon open to clear crash-window orphans.
+ * Clears crash-window orphans after migrate rollback and on daemon open.
  */
 export function cleanupOrphanBookmarkMedia(db: Database, dataDir: string): void {
   const cacheRoot = join(dataDir, "media-cache", "bookmarks");

@@ -107,9 +107,9 @@ Ship a first-class migration path from legacy Grimoire **v0.5 SQLite**
   - Production non-destructive hardening:
     - Source DB opened via temp snapshot (+ WAL/SHM/journal copy); user path hash-stable
     - Archive symlink/hardlink refused from listing before extract; empty destDir required
-    - Cross-process apply lock under 1.x dataDir (409 / LegacyConflictError); in-process mutex retained
-    - updated_at trigger swapped to passthrough during apply; ensure* always DROP+CREATE real body
+    - In-process apply mutex → HTTP 409 on overlap
+    - updated_at trigger dropped inside the apply transaction and restored before commit;
+      daemon boot repairs older crash leftovers
     - Apply uses BEGIN IMMEDIATE…COMMIT (soft-fail per bookmark via SAVEPOINT); crash before
       commit rolls back whole apply + unlinks written media; orphan media cleaned on apply/boot
-    - Apply summary warns: additive / backup-first / transactional commit
     - FAQ + roadmap + parity docs document non-destructive source + additive target workflow
