@@ -50,8 +50,19 @@ littleimp migrate apply --data-dir /path/to/grimoire/data --owner alice --passwo
 
 Notes:
 
+- **Non-destructive source:** v0.5 `db.sqlite` / `user-uploads/` are read via a
+  temp snapshot; the migrator does not write into that directory.
+- **Additive target:** apply never wipes the 1.x library. Prefer a 1.x backup
+  first if the destination already has data. `--dry-run` writes nothing to 1.x.
+- **Re-run / merge:** without `--merge`, existing URLs are skipped; with
+  `--merge`, notes/tags/media combine without overwriting a chosen category,
+  pin, or archive state.
+- **Partial apply:** individual bookmark failures soft-skip inside one transaction
+  (HTTP 207 / CLI exit 1 when any fail). A crash before commit rolls the whole
+  apply back. Overlapping apply returns 409.
 - Archives may be `.zip`, `.tar`, `.tar.gz`/`.tgz`, `.tar.bz2`/`.tbz2`, or `.tar.xz`/`.txz`
   and must contain `db.sqlite` (ideally under `data/`) plus optional `user-uploads/`.
+  Symlink/hardlink members are refused before extract.
 - Multi-user v0.5 databases require `--owner` (username, email, or id). Only that
   owner's bookmarks, categories, and tags are imported into the local single-user library.
 - Optional password verification checks `user.password_hash`. It does **not**
@@ -104,7 +115,7 @@ Not yet implemented:
 | Install without cloning the repository | Shipped through release archives and the one-command release installer |
 | Install through Homebrew | Alternate MVP path implemented; full install validation is gated on publicly reachable release artifacts |
 | Generate local diagnostics | Shipped |
-| Migrate data from legacy Grimoire (v0.4+) | Planned (high priority) |
+| Migrate data from legacy Grimoire (v0.5) | Shipped (CLI + API; additive / non-destructive source) |
 | Sync live data across devices | Future |
 
 ## Milestone Summary

@@ -140,6 +140,32 @@ describe("legacy migrate routes (v0.5)", () => {
     expect(count).toBe(0);
   });
 
+  it("POST /migrate/legacy/apply returns 409 when another apply is in progress", async () => {
+    const first = app.request("/migrate/legacy/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dataDir: fixture.dataDir,
+        owner: "ada",
+        password: fixture.password,
+        requirePassword: true,
+      }),
+    });
+    const second = app.request("/migrate/legacy/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dataDir: fixture.dataDir,
+        owner: "ada",
+        password: fixture.password,
+        requirePassword: true,
+      }),
+    });
+    const [r1, r2] = await Promise.all([first, second]);
+    const statuses = [r1.status, r2.status].sort((a, b) => a - b);
+    expect(statuses).toEqual([200, 409]);
+  });
+
   it("POST /migrate/legacy/apply rejects bad passwords", async () => {
     const res = await app.request("/migrate/legacy/apply", {
       method: "POST",
@@ -177,5 +203,37 @@ describe("legacy migrate routes (v0.5)", () => {
     } finally {
       multi.cleanup();
     }
+  });
+
+  it("POST /migrate/legacy/apply returns 401 when requirePassword is set without a password", async () => {
+    const res = await app.request("/migrate/legacy/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dataDir: fixture.dataDir,
+        owner: "ada",
+        requirePassword: true,
+      }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /migrate/legacy/apply returns 207 when bookmarksFailed > 0", async () => {
+    db.exec(`
+      CREATE TRIGGER trg_inject_migrate_fail
+      BEFORE INSERT ON bookmarks
+      BEGIN
+        SELECT RAISE(ABORT, 'injected migrate failure');
+      END;
+    `);
+
+    const res = await app.request("/migrate/legacy/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dataDir: fixture.dataDir, owner: "ada" }),
+    });
+    expect(res.status).toBe(207);
+    const body = await res.json();
+    expect(body.data.bookmarksFailed).toBeGreaterThan(0);
   });
 });

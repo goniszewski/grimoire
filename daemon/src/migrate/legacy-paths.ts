@@ -134,7 +134,9 @@ export function resolveLegacyUploadPath(
   } catch {
     return null;
   }
-  // Reject symlinks outright so a crafted user-uploads tree cannot redirect reads.
+  // Reject symlinks so a crafted user-uploads tree cannot redirect reads.
+  // Hardlinks whose path resolves under uploads are allowed (common for linked
+  // backups); symlink + path-escape checks still apply.
   if (st.isSymbolicLink() || !st.isFile()) return null;
 
   let realFile: string;

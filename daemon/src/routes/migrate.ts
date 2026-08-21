@@ -18,6 +18,7 @@ import {
   inspectLegacyV05Source,
   migrateLegacyV05Source,
 } from "../migrate/legacy-migrate.js";
+import { LegacyConflictError } from "../migrate/legacy-errors.js";
 
 interface MigrateDeps {
   db: Database;
@@ -27,7 +28,7 @@ interface MigrateDeps {
 
 function problem(
   c: Context,
-  status: 400 | 401 | 422 | 500,
+  status: 400 | 401 | 409 | 422 | 500,
   title: string,
   detail?: string
 ) {
@@ -93,6 +94,8 @@ async function readJsonBody(c: Context): Promise<SourceBody | Response> {
 
 export function createMigrateRoute(deps: MigrateDeps): Hono {
   const router = new Hono();
+  /** Prevent overlapping apply runs from corrupting the local library mid-import. */
+  let applyInProgress = false;
 
   router.post("/migrate/legacy/inspect", async (c) => {
     const body = await readJsonBody(c);
@@ -116,10 +119,20 @@ export function createMigrateRoute(deps: MigrateDeps): Hono {
   });
 
   router.post("/migrate/legacy/apply", async (c) => {
-    const body = await readJsonBody(c);
-    if (body instanceof Response) return body;
+    if (applyInProgress) {
+      return problem(
+        c,
+        409,
+        "Conflict",
+        "A legacy migration apply is already in progress"
+      );
+    }
 
+    applyInProgress = true;
     try {
+      const body = await readJsonBody(c);
+      if (body instanceof Response) return body;
+
       const summary = await migrateLegacyV05Source(
         {
           dataDir: body.dataDir,
@@ -139,16 +152,26 @@ export function createMigrateRoute(deps: MigrateDeps): Hono {
           enqueueIngest: !body.dryRun,
         }
       );
+      // Partial apply (some bookmarks failed) is still a successful HTTP write of
+      // the summary, but clients must not treat it as a clean import.
+      if (summary.bookmarksFailed > 0) {
+        return c.json({ data: summary }, 207);
+      }
       return c.json({ data: summary });
     } catch (err) {
       if (err instanceof LegacyAuthError) {
         return problem(c, 401, "Unauthorized", err.message);
+      }
+      if (err instanceof LegacyConflictError) {
+        return problem(c, 409, "Conflict", err.message);
       }
       if (err instanceof LegacySourceError) {
         return problem(c, 422, "Unprocessable Entity", err.message);
       }
       log.error("Legacy migrate apply failed", { error: String(err) });
       return problem(c, 500, "Internal Server Error", "Failed to apply v0.5 migration");
+    } finally {
+      applyInProgress = false;
     }
   });
 

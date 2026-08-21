@@ -2710,7 +2710,7 @@ export const apiContract = {
       tag: "Migrate",
       summary: "Import one v0.5 owner's library into this local Grimoire 1.x instance.",
       description:
-        "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported.",
+        "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
       request: {
         body: {
           contentType: "application/json",
@@ -2719,8 +2719,13 @@ export const apiContract = {
       },
       responses: {
         "200": jsonResponse("Migration apply summary", ref("LegacyMigrateApplyResponse")),
+        "207": jsonResponse(
+          "Partial migration apply summary (bookmarksFailed > 0)",
+          ref("LegacyMigrateApplyResponse")
+        ),
         "400": problemResponse("Invalid request body"),
         "401": problemResponse("Owner password verification failed"),
+        "409": problemResponse("Legacy migration apply already in progress"),
         "422": problemResponse("Database is invalid or owner selection is required"),
         "500": problemResponse("Apply failed unexpectedly"),
       },

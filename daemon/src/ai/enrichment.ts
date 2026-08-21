@@ -123,6 +123,11 @@ export interface EnrichInput {
 export interface EnrichOptions {
   preserveCategory?: boolean;
   preserveTags?: boolean;
+  /**
+   * When true, do not overwrite a non-blank bookmarks.description (used after
+   * legacy migrate / import with preserveExistingContent).
+   */
+  preserveDescription?: boolean;
 }
 
 /**
@@ -159,8 +164,9 @@ export async function enrichBookmark(
   });
 
   const existingFields = db
-    .query<{ category_id: string | null; tag_count: number }, [string]>(
+    .query<{ category_id: string | null; tag_count: number; description: string | null }, [string]>(
       `SELECT b.category_id,
+              b.description,
               (SELECT COUNT(*) FROM bookmark_tags bt WHERE bt.bookmark_id = b.id) AS tag_count
        FROM bookmarks b
        WHERE b.id = ?`
@@ -168,6 +174,8 @@ export async function enrichBookmark(
     .get(bookmarkId);
   const shouldWriteCategory = !options.preserveCategory || !existingFields?.category_id;
   const shouldWriteTags = !options.preserveTags || (existingFields?.tag_count ?? 0) === 0;
+  const shouldWriteDescription =
+    !options.preserveDescription || !(existingFields?.description?.trim());
 
   // Persist atomically
   db.transaction(() => {
@@ -182,9 +190,14 @@ export async function enrichBookmark(
          ON CONFLICT(bookmark_id) DO UPDATE SET summary = excluded.summary`,
         [bookmarkId, result.summary]
       );
-      // Truncate to 300 chars for the description quick-access field
-      const descriptionExcerpt = result.summary.slice(0, 300);
-      db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [descriptionExcerpt, bookmarkId]);
+      if (shouldWriteDescription) {
+        // Truncate to 300 chars for the description quick-access field
+        const descriptionExcerpt = result.summary.slice(0, 300);
+        db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [
+          descriptionExcerpt,
+          bookmarkId,
+        ]);
+      }
     }
 
     // Category

@@ -7977,7 +7977,7 @@
       "path": "/migrate/legacy/apply",
       "tag": "Migrate",
       "summary": "Import one v0.5 owner's library into this local Grimoire 1.x instance.",
-      "description": "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported.",
+      "description": "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
       "request": {
         "body": {
           "contentType": "application/json",
@@ -7994,6 +7994,13 @@
             "ref": "LegacyMigrateApplyResponse"
           }
         },
+        "207": {
+          "description": "Partial migration apply summary (bookmarksFailed > 0)",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "LegacyMigrateApplyResponse"
+          }
+        },
         "400": {
           "description": "Invalid request body",
           "contentType": "application/problem+json",
@@ -8003,6 +8010,13 @@
         },
         "401": {
           "description": "Owner password verification failed",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        },
+        "409": {
+          "description": "Legacy migration apply already in progress",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

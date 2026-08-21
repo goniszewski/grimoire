@@ -1,4 +1,7 @@
 import { describe, it, expect } from "bun:test";
+import { mkdtempSync, writeFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { runLittleImpCli } from "../cli.js";
 
 type FetchCall = {
@@ -156,5 +159,131 @@ describe("littleimp migrate CLI", () => {
     });
     expect(harness.stdout.join("\n")).toContain("Dry run");
     expect(harness.stdout.join("\n")).toContain("Would migrate owner: alice");
+  });
+
+  it("apply reads password from --password-file and env", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "migrate-pw-"));
+    const pwFile = join(dir, "pw.txt");
+    writeFileSync(pwFile, "file-secret\n");
+    try {
+      const fromFile = makeCliHarness({
+        data: {
+          owner: { username: "alice" },
+          dryRun: false,
+          categoriesCreated: 0,
+          categoriesReused: 0,
+          tagsCreated: 0,
+          tagsReused: 0,
+          bookmarksCreated: 0,
+          bookmarksMerged: 0,
+          bookmarksSkipped: 0,
+          bookmarksFailed: 0,
+          mediaImported: 0,
+          mediaSkipped: 0,
+          warnings: [],
+        },
+      });
+      expect(
+        await fromFile.run([
+          "migrate",
+          "apply",
+          "--data-dir",
+          "/tmp/v05-data",
+          "--password-file",
+          pwFile,
+          "--yes",
+        ])
+      ).toBe(0);
+      expect(JSON.parse(String(fromFile.calls[0]?.init?.body)).password).toBe("file-secret");
+
+      const stdout: string[] = [];
+      const stderr: string[] = [];
+      const calls: FetchCall[] = [];
+      const code = await runLittleImpCli(
+        ["migrate", "apply", "--data-dir", "/tmp/v05-data", "--yes"],
+        {
+          env: { LITTLEIMP_MIGRATE_PASSWORD: "env-secret" },
+          fetch: (async (url: string | URL | Request, init?: RequestInit) => {
+            calls.push({ url: String(url), init });
+            return new Response(
+              JSON.stringify({
+                data: {
+                  owner: { username: "alice" },
+                  dryRun: false,
+                  categoriesCreated: 0,
+                  categoriesReused: 0,
+                  tagsCreated: 0,
+                  tagsReused: 0,
+                  bookmarksCreated: 0,
+                  bookmarksMerged: 0,
+                  bookmarksSkipped: 0,
+                  bookmarksFailed: 0,
+                  mediaImported: 0,
+                  mediaSkipped: 0,
+                  warnings: [],
+                },
+              }),
+              { status: 200, headers: { "content-type": "application/json" } }
+            );
+          }) as typeof fetch,
+          stdout: (line) => stdout.push(line),
+          stderr: (line) => stderr.push(line),
+        }
+      );
+      expect(code).toBe(0);
+      expect(JSON.parse(String(calls[0]?.init?.body)).password).toBe("env-secret");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("apply exits non-zero when bookmarksFailed > 0", async () => {
+    const harness = makeCliHarness({
+      data: {
+        owner: { username: "alice" },
+        dryRun: false,
+        categoriesCreated: 0,
+        categoriesReused: 0,
+        tagsCreated: 0,
+        tagsReused: 0,
+        bookmarksCreated: 0,
+        bookmarksMerged: 0,
+        bookmarksSkipped: 0,
+        bookmarksFailed: 2,
+        mediaImported: 0,
+        mediaSkipped: 0,
+        warnings: ["Failed https://example.com/x: boom"],
+      },
+    }, 207);
+    expect(
+      await harness.run(["migrate", "apply", "--data-dir", "/tmp/v05-data", "--yes"])
+    ).toBe(1);
+    expect(harness.stdout.join("\n")).toContain("failed 2");
+    expect(harness.stderr.join("\n")).toMatch(/Partial apply: 2 bookmark\(s\) failed/i);
+  });
+
+  it("surfaces problem+json detail from migrate auth failures", async () => {
+    const harness = makeCliHarness(
+      {
+        type: "https://littleimp.app/problems/unauthorized",
+        title: "Unauthorized",
+        status: 401,
+        detail: 'Password does not match v0.5 user "alice"',
+      },
+      401
+    );
+    expect(
+      await harness.run([
+        "migrate",
+        "apply",
+        "--data-dir",
+        "/tmp/v05-data",
+        "--password",
+        "wrong",
+        "--yes",
+      ])
+    ).toBe(1);
+    expect(harness.stderr.join("\n")).toContain('Password does not match v0.5 user "alice"');
+    expect(harness.stderr.join("\n")).not.toContain("status 401");
   });
 });

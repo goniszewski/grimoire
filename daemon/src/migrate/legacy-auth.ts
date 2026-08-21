@@ -11,7 +11,7 @@ export function findLegacyOwner(
     throw new LegacySourceError("v0.5 database contains no users to migrate");
   }
 
-  if (!ownerQuery) {
+  if (!ownerQuery || !ownerQuery.trim()) {
     if (contents.users.length === 1) return contents.users[0];
     throw new LegacySourceError(
       "v0.5 database contains multiple users. Pass --owner <username|email|id> to select one."

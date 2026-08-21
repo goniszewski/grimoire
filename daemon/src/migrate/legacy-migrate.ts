@@ -8,6 +8,7 @@ import {
   verifyLegacyOwnerPassword,
   LegacyAuthError,
 } from "./legacy-auth.js";
+import { LegacyConflictError } from "./legacy-errors.js";
 import { normalizeLegacyLibrary } from "./legacy-normalize.js";
 import { applyLegacyLibrary, type LegacyApplyDeps } from "./legacy-apply.js";
 import type {
@@ -19,6 +20,7 @@ import type {
 export {
   LegacySourceError,
   LegacyAuthError,
+  LegacyConflictError,
   inspectLegacyBackup,
   openLegacyV05Database,
   findLegacyOwner,

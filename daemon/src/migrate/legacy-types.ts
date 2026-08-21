@@ -76,7 +76,7 @@ export interface LegacyBookmark {
   openedLast: number | null;
   openedTimes: number;
   ownerId: number;
-  categoryId: number;
+  categoryId: number | null;
   created: number;
   updated: number;
   tagIds: number[];
@@ -141,11 +141,23 @@ export interface NormalizedLegacyBookmark {
   mainImageUrl: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  /**
+   * True when the URL targets a private/LAN/loopback host. Migrated into SQLite
+   * for data fidelity, but post-migrate ingest is skipped (SSRF).
+   */
+  isPrivateHost: boolean;
   media: Array<{
     kind: "favicon" | "image" | "screenshot";
     filename: string;
     sourceUrl: string | null;
     absolutePath: string | null;
+    /**
+     * Stable v0.5 identity for legacy:// source_url hashing (usually relative_path).
+     * Must not include host absolute paths so remount/re-extract --merge dedupes.
+     */
+    stableKey: string;
+    /** Declared v0.5 `file."mime-type"` when present; used as fallback after sniff. */
+    declaredMimeType: string | null;
   }>;
 }
 

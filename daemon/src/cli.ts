@@ -233,14 +233,23 @@ async function requestJson<T>(
   }
 
   if (!res.ok) {
-    const message =
-      typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
-        ? payload.error
-        : `littleimpd request failed with status ${res.status}`;
+    const message = formatDaemonErrorMessage(payload, res.status);
     throw new CliError(message);
   }
 
   return payload as T;
+}
+
+function formatDaemonErrorMessage(payload: unknown, status: number): string {
+  if (typeof payload === "object" && payload !== null) {
+    const record = payload as Record<string, unknown>;
+    // Prefer RFC 7807 problem+json fields used by migrate/auth routes.
+    if (typeof record.detail === "string" && record.detail.trim()) return record.detail;
+    if (typeof record.title === "string" && record.title.trim()) return record.title;
+    if (typeof record.error === "string" && record.error.trim()) return record.error;
+    if (typeof record.message === "string" && record.message.trim()) return record.message;
+  }
+  return `littleimpd request failed with status ${status}`;
 }
 
 function printJson(io: Required<Pick<CliIO, "stdout">>, value: unknown): void {
@@ -594,6 +603,15 @@ async function handleMigrateCommand(args: string[], io: CliRuntime): Promise<num
     );
     if (json) printJson(io, result);
     else printMigrateApply(io, result.data);
+    if (!dryRun && result.data.bookmarksFailed > 0) {
+      // Daemon returns 207 for partial apply; still treat as a failed CLI run.
+      if (!json) {
+        io.stderr(
+          `Partial apply: ${result.data.bookmarksFailed} bookmark(s) failed — see warnings above.`
+        );
+      }
+      return 1;
+    }
     return 0;
   }
 

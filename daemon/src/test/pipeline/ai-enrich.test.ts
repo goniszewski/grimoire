@@ -294,6 +294,45 @@ describe("enrichBookmark", () => {
     expect(tags.map((t) => t.name)).toEqual(["ai-generated"]);
   });
 
+  it("preserves non-blank description when preserveDescription is set", async () => {
+    const bookmarkId = insertBookmark(db);
+    db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [
+      "Migrated legacy description",
+      bookmarkId,
+    ]);
+
+    globalThis.fetch = mockFetch(async () =>
+      makeLlmResponse(
+        JSON.stringify({
+          summary: "LLM summary that must not clobber description.",
+          tags: ["ai"],
+          category: "Article",
+          confidence: 0.9,
+        })
+      ));
+
+    await enrichBookmark(
+      db,
+      LLM_CONFIG,
+      { bookmarkId, title: "Title", content: "Content" },
+      { preserveDescription: true }
+    );
+
+    const bm = db
+      .query<{ description: string | null }, [string]>(
+        "SELECT description FROM bookmarks WHERE id = ?"
+      )
+      .get(bookmarkId);
+    expect(bm?.description).toBe("Migrated legacy description");
+
+    const content = db
+      .query<{ summary: string | null }, [string]>(
+        "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+      )
+      .get(bookmarkId);
+    expect(content?.summary).toBe("LLM summary that must not clobber description.");
+  });
+
   // ── HTTP error from LLM ─────────────────────────────────────────────────
 
   it("throws on LLM HTTP 400 (non-retryable) error", async () => {

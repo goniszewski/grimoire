@@ -237,15 +237,16 @@ describe("Grimoire v0.5 SQLite migration", () => {
     await expect(verifyLegacyOwnerPassword(owner, "wrong")).rejects.toBeInstanceOf(LegacyAuthError);
   });
 
-  it("normalizes parity fields, media paths, and blocks private URLs", () => {
+  it("normalizes parity fields, media paths, and imports private URLs with a warning", () => {
     const contents = openLegacyV05Database({ dataDir: fixture.dataDir });
     const owner = findLegacyOwner(contents, "alice");
     const library = normalizeLegacyLibrary(contents, owner);
-    expect(library.bookmarks).toHaveLength(1);
-    expect(library.skippedBookmarks).toHaveLength(1);
-    expect(library.skippedBookmarks[0].reason).toBe("private_url");
+    expect(library.bookmarks).toHaveLength(2);
+    expect(library.skippedBookmarks).toHaveLength(0);
+    expect(library.bookmarks.some((b) => b.isPrivateHost)).toBe(true);
+    expect(library.warnings.some((w) => /private\/LAN URL/i.test(w))).toBe(true);
 
-    const bm = library.bookmarks[0];
+    const bm = library.bookmarks.find((b) => !b.isPrivateHost)!;
     expect(bm.isPinned).toBe(true);
     expect(bm.readAt).toContain("2023");
     expect(bm.openedCount).toBe(7);
@@ -285,12 +286,13 @@ describe("Grimoire v0.5 SQLite migration", () => {
         { db, dataDir, queue, enqueueIngest: false }
       );
 
-      expect(summary.bookmarksCreated).toBe(1);
-      expect(summary.bookmarksSkipped).toBe(1);
+      expect(summary.bookmarksCreated).toBe(2);
+      expect(summary.bookmarksSkipped).toBe(0);
       expect(summary.dryRun).toBe(false);
       expect(summary.categoriesCreated).toBeGreaterThanOrEqual(2);
       expect(summary.tagsCreated).toBe(1);
       expect(summary.mediaImported).toBeGreaterThanOrEqual(1);
+      expect(summary.warnings.some((w) => /private\/LAN URL/i.test(w))).toBe(true);
 
       const row = db
         .query<{
@@ -299,13 +301,22 @@ describe("Grimoire v0.5 SQLite migration", () => {
           notes: string | null;
           opened_count: number;
           read_at: string | null;
-        }, []>("SELECT title, is_pinned, notes, opened_count, read_at FROM bookmarks")
+        }, []>(
+          "SELECT title, is_pinned, notes, opened_count, read_at FROM bookmarks WHERE title = 'Example Article'"
+        )
         .get();
       expect(row?.title).toBe("Example Article");
       expect(row?.is_pinned).toBe(1);
       expect(row?.notes).toBe("Personal note");
       expect(row?.opened_count).toBe(7);
       expect(row?.read_at).toBeTruthy();
+
+      const privateRow = db
+        .query<{ c: number }, []>(
+          "SELECT COUNT(*) AS c FROM bookmarks WHERE url LIKE 'http://127.0.0.1/%'"
+        )
+        .get();
+      expect(privateRow?.c).toBe(1);
 
       const content = db
         .query<{ markdown: string | null; author: string | null; published_at: string | null }, []>(
@@ -333,8 +344,8 @@ describe("Grimoire v0.5 SQLite migration", () => {
       );
 
       expect(summary.dryRun).toBe(true);
-      expect(summary.bookmarksCreated).toBe(1);
-      expect(summary.bookmarksSkipped).toBe(1);
+      expect(summary.bookmarksCreated).toBe(2);
+      expect(summary.bookmarksSkipped).toBe(0);
       expect(summary.categoriesCreated).toBeGreaterThanOrEqual(2);
       expect(summary.tagsCreated).toBe(1);
       expect(summary.mediaImported).toBeGreaterThanOrEqual(1);
@@ -457,7 +468,7 @@ describe("Grimoire v0.5 SQLite migration", () => {
           { archivePath: zipPath, owner: "alice" },
           { db, dataDir: outDir, enqueueIngest: false }
         );
-        expect(summary.bookmarksCreated).toBe(1);
+        expect(summary.bookmarksCreated).toBe(2);
         expect(summary.mediaImported).toBeGreaterThanOrEqual(1);
       } finally {
         db.close();

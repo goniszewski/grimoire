@@ -30,6 +30,12 @@ export type PingJob = Job<PingJobPayload>;
 export interface IngestJobPayload {
   bookmarkId: string;
   url: string;
+  /**
+   * When true, ingest must not overwrite title/description/content already
+   * present (e.g. legacy migrate imported HTML/notes). Empty fields may still
+   * be filled from the live fetch.
+   */
+  preserveExistingContent?: boolean;
 }
 
 export type IngestJob = Job<IngestJobPayload>;

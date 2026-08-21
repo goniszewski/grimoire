@@ -1,4 +1,7 @@
 import { Database } from "bun:sqlite";
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { resolveLegacySourcePaths, resolveLegacyUploadPath, LegacySourceError } from "./legacy-paths.js";
 import type {
   LegacyBackupContents,
@@ -10,6 +13,43 @@ import type {
   LegacyTag,
   LegacyUser,
 } from "./legacy-types.js";
+
+/**
+ * Copy source db (+ WAL/SHM/journal sidecars) into a temp dir so inspect/apply
+ * never create or mutate files next to the user's v0.5 database.
+ */
+function openSourceDbSnapshot(dbPath: string): {
+  db: Database;
+  cleanup: () => void;
+} {
+  const dir = mkdtempSync(join(tmpdir(), "grimoire-v05-src-"));
+  const snapshotPath = join(dir, "db.sqlite");
+  copyFileSync(dbPath, snapshotPath);
+  for (const suffix of ["-wal", "-shm", "-journal"] as const) {
+    const side = `${dbPath}${suffix}`;
+    if (existsSync(side)) {
+      copyFileSync(side, `${snapshotPath}${suffix}`);
+    }
+  }
+
+  const cleanup = (): void => {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // best-effort temp cleanup
+    }
+  };
+
+  try {
+    // Open the disposable snapshot read-write so WAL -shm can be created beside
+    // the copy. query_only still blocks mutations; the user's source path is untouched.
+    const db = new Database(snapshotPath);
+    return { db, cleanup };
+  } catch (err) {
+    cleanup();
+    throw err;
+  }
+}
 
 function asString(value: unknown, fallback = ""): string {
   if (value === null || value === undefined) return fallback;
@@ -182,7 +222,7 @@ function readBookmarks(db: Database): LegacyBookmark[] {
       openedLast: asNullableNumber(row.opened_last),
       openedTimes: asNumber(row.opened_times, 0),
       ownerId: asNumber(row.owner_id),
-      categoryId: asNumber(row.category_id),
+      categoryId: asNullableNumber(row.category_id),
       created: asNumber(row.created),
       updated: asNumber(row.updated),
       tagIds: tagMap.get(id) ?? [],
@@ -238,10 +278,20 @@ export function openLegacyV05Database(input: {
   archivePath?: string;
 }): LegacyBackupContents {
   const paths = resolveLegacySourcePaths(input);
+  let snapshotCleanup: (() => void) | undefined;
   try {
-    const db = new Database(paths.dbPath, { readonly: true, create: false });
+    const snapshot = openSourceDbSnapshot(paths.dbPath);
+    snapshotCleanup = snapshot.cleanup;
+    const db = snapshot.db;
     try {
+      // Defense in depth: refuse mutations even if a later query regresses.
+      db.exec("PRAGMA query_only = ON;");
       assertV05Schema(db);
+      const combinedCleanup = (): void => {
+        snapshotCleanup?.();
+        snapshotCleanup = undefined;
+        paths.cleanup?.();
+      };
       return {
         dbPath: paths.dbPath,
         uploadsDir: paths.uploadsDir,
@@ -250,12 +300,13 @@ export function openLegacyV05Database(input: {
         tags: readTags(db),
         bookmarks: readBookmarks(db),
         files: readFiles(db),
-        cleanup: paths.cleanup,
+        cleanup: combinedCleanup,
       };
     } finally {
       db.close();
     }
   } catch (err) {
+    snapshotCleanup?.();
     paths.cleanup?.();
     throw err;
   }

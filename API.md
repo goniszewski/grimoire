@@ -1583,7 +1583,7 @@ Content-Type: application/json
 
 Import one v0.5 owner's library into this local Grimoire 1.x instance.
 
-Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported.
+Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).
 
 Request body:
 
@@ -1607,8 +1607,10 @@ Responses:
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json | `LegacyMigrateApplyResponse` | Migration apply summary |
+| `207` | application/json | `LegacyMigrateApplyResponse` | Partial migration apply summary (bookmarksFailed > 0) |
 | `400` | application/problem+json | `ProblemDetails` | Invalid request body |
 | `401` | application/problem+json | `ProblemDetails` | Owner password verification failed |
+| `409` | application/problem+json | `ProblemDetails` | Legacy migration apply already in progress |
 | `422` | application/problem+json | `ProblemDetails` | Database is invalid or owner selection is required |
 | `500` | application/problem+json | `ProblemDetails` | Apply failed unexpectedly |
 

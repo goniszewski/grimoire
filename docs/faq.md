@@ -30,6 +30,19 @@ or embeddings need a configured provider.
 
 ## How do I migrate from Grimoire 0.5.x?
 
+Migration is **non-destructive** for your v0.5 data and **additive** for Grimoire 1.x:
+
+- The migrator reads a snapshot of `db.sqlite` and never writes into the v0.5
+  data directory (including WAL sidecars).
+- `--dry-run` previews counts without changing the 1.x library or media cache.
+- Apply inserts/merges into the existing 1.x library; it does not wipe it.
+- Apply commits as one SQLite transaction (individual bookmark failures soft-skip;
+  a crash before commit rolls the whole apply back).
+- Re-running without `--merge` skips URLs that already exist.
+- Stop the old Grimoire v0.5 process first, and take a 1.x backup before apply
+  if the local library already has bookmarks you care about.
+- Apply is per-bookmark (partial success possible: HTTP 207 / CLI exit 1).
+
 Point the migrator at your v0.5 `data/` directory (the folder that contains
 `db.sqlite` and usually `user-uploads/`), install Grimoire 1.x, start the daemon,
 then run:
