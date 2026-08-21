@@ -28,6 +28,28 @@ backup/restore, diagnostics, and local integrations work without AI. The UI
 shows degraded-mode guidance when summaries, generated tags, semantic search,
 or embeddings need a configured provider.
 
+## How do I migrate from Grimoire 0.5.x?
+
+Point the migrator at your v0.5 `data/` directory (the folder that contains
+`db.sqlite` and usually `user-uploads/`), install Grimoire 1.x, start the daemon,
+then run:
+
+```sh
+littleimp migrate inspect --data-dir /path/to/grimoire/data
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
+# Or pack the data folder first:
+littleimp migrate apply --archive /path/to/grimoire-data.tar.gz --owner YOUR_USERNAME --yes
+```
+
+If the database has multiple users, `--owner` is required. You can optionally pass
+`--password` / `--password-file` to verify the v0.5 account password before
+import. Supported archives: `.zip`, `.tar`, `.tar.gz`/`.tgz`, `.tar.bz2`, `.tar.xz`.
+Grimoire 1.x does not recreate multi-user logins — it imports one owner's
+library into the local single-user library. PocketBase-era backups (≤0.3.x) are
+not supported. Details:
+[roadmap migration section](./roadmap.md#migration-from-legacy-grimoire-high-priority).
+
 ## How do I upgrade?
 
 For source or unpacked release installs, run `daemon/install.sh --upgrade`.

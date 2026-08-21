@@ -30,21 +30,35 @@ Shipped product areas:
 
 ## Migration from Legacy Grimoire (High Priority)
 
-Grimoire 1.0 is a complete rewrite. The legacy Grimoire (SvelteKit + PocketBase) is
+Grimoire 1.0 is a complete rewrite. The legacy Grimoire (SvelteKit + SQLite) is
 preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x)
-branch. A direct data-migration path is a **high-priority** post-1.0 item — no
-automated tool ships yet.
+branch.
 
-- **Supported source versions: Grimoire v0.4 or newer.** Older releases are out of
-  scope for the automated importer.
-- The source data shape and field mapping from a PocketBase admin backup ZIP are
-  already documented in
+**Supported source: Grimoire v0.5** (`data/db.sqlite` + optional `data/user-uploads/`).
+Older PocketBase-era installs (≤0.3.x) are out of scope.
+
+```sh
+# With the 1.x daemon running locally:
+littleimp migrate inspect --data-dir /path/to/grimoire/data
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner alice --dry-run
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner alice --yes
+# Or from a packed data folder:
+littleimp migrate apply --archive /path/to/grimoire-data.zip --owner alice --yes
+# Optional: prove ownership with the v0.5 account password
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner alice --password-file ./pw.txt --yes
+```
+
+Notes:
+
+- Archives may be `.zip`, `.tar`, `.tar.gz`/`.tgz`, `.tar.bz2`/`.tbz2`, or `.tar.xz`/`.txz`
+  and must contain `db.sqlite` (ideally under `data/`) plus optional `user-uploads/`.
+- Multi-user v0.5 databases require `--owner` (username, email, or id). Only that
+  owner's bookmarks, categories, and tags are imported into the local single-user library.
+- Optional password verification checks `user.password_hash`. It does **not**
+  create Grimoire 1.x login accounts — 1.x remains local-first and single-user.
+- Field mapping details live in
   [docs/parity/grimoire-backup-import-shape.md](./parity/grimoire-backup-import-shape.md).
-- The importer will build on the existing browser/Netscape import pipeline and the
-  JSON/CSV export parity fields (notes, read/archive/pinned state, read-later,
-  opened metrics) already shipped for round-tripping.
-- Until the tool lands, v0.4+ users can export from the legacy app and use the current
-  import flows as an interim path.
+- Importance and multi-user account recreation are intentionally out of scope.
 
 ## Future Ideas
 
@@ -56,8 +70,6 @@ Not yet implemented:
 - Multi-user or public-network deployment mode, tracked as post-MVP direction
   research in [docs/multi-user-post-mvp-research.md](./multi-user-post-mvp-research.md).
 - Optional authentication/rate limiting for non-local deployments.
-- Direct legacy Grimoire backup import tooling (see
-  [Migration from Legacy Grimoire](#migration-from-legacy-grimoire-high-priority) above).
 - Plugin system.
 - GitHub Issues extractor.
 - Provider-specific consumer cloud APIs for Google Drive, Dropbox, OneDrive, or iCloud beyond normal synced folders.

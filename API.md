@@ -1498,6 +1498,212 @@ Responses:
 | `200` | text/event-stream | `ImportProgressEvent` | SSE stream of progress events |
 | `404` | application/problem+json | `ProblemDetails` | Import ID not found |
 
+### Migrate
+
+#### POST /migrate/legacy/inspect
+
+Inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.
+
+Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `LegacyMigrateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `LegacyMigrateInspectResponse` | Legacy backup summary |
+| `400` | application/problem+json | `ProblemDetails` | Invalid request body |
+| `422` | application/problem+json | `ProblemDetails` | Path is missing or not a recognized v0.5 SQLite database |
+| `500` | application/problem+json | `ProblemDetails` | Inspect failed unexpectedly |
+
+Examples:
+
+**Inspect a local v0.5 data directory**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/inspect \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "source": "grimoire-v05-sqlite",
+    "dbPath": "/path/to/grimoire/data/db.sqlite",
+    "uploadsDir": "/path/to/grimoire/data/user-uploads",
+    "users": [
+      {
+        "id": "1",
+        "username": "alice",
+        "email": "alice@example.com",
+        "name": "Alice",
+        "bookmarkCount": 12,
+        "categoryCount": 3,
+        "tagCount": 5,
+        "disabled": false
+      }
+    ],
+    "totals": {
+      "users": 1,
+      "categories": 3,
+      "tags": 5,
+      "bookmarks": 12,
+      "mediaFilesReferenced": 4
+    },
+    "requiresOwnerSelection": false
+  }
+}
+```
+
+#### POST /migrate/legacy/apply
+
+Import one v0.5 owner's library into this local Grimoire 1.x instance.
+
+Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `LegacyMigrateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `LegacyMigrateApplyResponse` | Migration apply summary |
+| `400` | application/problem+json | `ProblemDetails` | Invalid request body |
+| `401` | application/problem+json | `ProblemDetails` | Owner password verification failed |
+| `422` | application/problem+json | `ProblemDetails` | Database is invalid or owner selection is required |
+| `500` | application/problem+json | `ProblemDetails` | Apply failed unexpectedly |
+
+Examples:
+
+**Apply a v0.5 library for one owner**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data","owner":"alice","password":"secret","requirePassword":true}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "owner": {
+      "id": "1",
+      "username": "alice",
+      "email": "alice@example.com",
+      "name": "Alice",
+      "bookmarkCount": 12,
+      "categoryCount": 3,
+      "tagCount": 5,
+      "disabled": false
+    },
+    "dryRun": false,
+    "categoriesCreated": 3,
+    "categoriesReused": 0,
+    "tagsCreated": 5,
+    "tagsReused": 0,
+    "bookmarksCreated": 11,
+    "bookmarksMerged": 0,
+    "bookmarksSkipped": 1,
+    "bookmarksFailed": 0,
+    "mediaImported": 3,
+    "mediaSkipped": 1,
+    "warnings": []
+  }
+}
+```
+
+**Dry-run apply without writing**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data","owner":"alice","dryRun":true}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "owner": {
+      "id": "1",
+      "username": "alice",
+      "email": "alice@example.com",
+      "name": "Alice",
+      "bookmarkCount": 12,
+      "categoryCount": 3,
+      "tagCount": 5,
+      "disabled": false
+    },
+    "dryRun": true,
+    "categoriesCreated": 3,
+    "categoriesReused": 0,
+    "tagsCreated": 5,
+    "tagsReused": 0,
+    "bookmarksCreated": 11,
+    "bookmarksMerged": 0,
+    "bookmarksSkipped": 1,
+    "bookmarksFailed": 0,
+    "mediaImported": 3,
+    "mediaSkipped": 1,
+    "warnings": [
+      "Dry run — no changes were written to the local library."
+    ]
+  }
+}
+```
+
 ### Settings
 
 #### GET /settings
@@ -3685,6 +3891,125 @@ Response data
 | `result.summary.categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
 | `result.warnings` | array<string> | yes | Parser warnings |
 | `result.rows` | array<ImportResultRow> | yes | Committed row results |
+
+### LegacyMigrateOwner
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Legacy v0.5 user ID |
+| `username` | string | yes | Legacy username |
+| `email` | string | yes | Legacy email |
+| `name` | string | yes | Legacy display name |
+| `bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `categoryCount` | integer | yes | Categories owned by this user |
+| `tagCount` | integer | yes | Tags owned by this user |
+| `disabled` | boolean | yes | Whether the legacy user was disabled |
+
+### LegacyMigrateInspect
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `source` | "grimoire-v05-sqlite" | yes | Recognized backup source |
+| `dbPath` | string | yes | Resolved absolute path to v0.5 db.sqlite |
+| `uploadsDir` | string \| null | yes | Resolved absolute path to user-uploads when present |
+| `users` | array<LegacyMigrateOwner> | yes | Legacy owners in the database |
+| `totals` | object | yes |  |
+| `totals.users` | integer | yes | User count |
+| `totals.categories` | integer | yes | Category count |
+| `totals.tags` | integer | yes | Tag count |
+| `totals.bookmarks` | integer | yes | Bookmark count |
+| `totals.mediaFilesReferenced` | integer | yes | Media file references |
+| `requiresOwnerSelection` | boolean | yes | True when more than one legacy user is present |
+
+### LegacyMigrateInspectResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | LegacyMigrateInspect | yes |  |
+| `data.source` | "grimoire-v05-sqlite" | yes | Recognized backup source |
+| `data.dbPath` | string | yes | Resolved absolute path to v0.5 db.sqlite |
+| `data.uploadsDir` | string \| null | yes | Resolved absolute path to user-uploads when present |
+| `data.users` | array<LegacyMigrateOwner> | yes | Legacy owners in the database |
+| `data.totals` | object | yes |  |
+| `data.totals.users` | integer | yes | User count |
+| `data.totals.categories` | integer | yes | Category count |
+| `data.totals.tags` | integer | yes | Tag count |
+| `data.totals.bookmarks` | integer | yes | Bookmark count |
+| `data.totals.mediaFilesReferenced` | integer | yes | Media file references |
+| `data.requiresOwnerSelection` | boolean | yes | True when more than one legacy user is present |
+
+### LegacyMigrateApplySummary
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `owner` | LegacyMigrateOwner | yes |  |
+| `owner.id` | string | yes | Legacy v0.5 user ID |
+| `owner.username` | string | yes | Legacy username |
+| `owner.email` | string | yes | Legacy email |
+| `owner.name` | string | yes | Legacy display name |
+| `owner.bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `owner.categoryCount` | integer | yes | Categories owned by this user |
+| `owner.tagCount` | integer | yes | Tags owned by this user |
+| `owner.disabled` | boolean | yes | Whether the legacy user was disabled |
+| `dryRun` | boolean | yes | True when this summary came from a dry-run (no writes) |
+| `categoriesCreated` | integer | yes | Categories created |
+| `categoriesReused` | integer | yes | Existing categories reused |
+| `tagsCreated` | integer | yes | Tags created |
+| `tagsReused` | integer | yes | Existing tags reused |
+| `bookmarksCreated` | integer | yes | Bookmarks created |
+| `bookmarksMerged` | integer | yes | Bookmarks merged into existing URLs |
+| `bookmarksSkipped` | integer | yes | Bookmarks skipped |
+| `bookmarksFailed` | integer | yes | Bookmarks that failed during apply |
+| `mediaImported` | integer | yes | Local media files imported |
+| `mediaSkipped` | integer | yes | Media files skipped |
+| `warnings` | array<string> | yes | Non-fatal migration warnings |
+
+### LegacyMigrateApplyResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | LegacyMigrateApplySummary | yes |  |
+| `data.owner` | LegacyMigrateOwner | yes |  |
+| `data.owner.id` | string | yes | Legacy v0.5 user ID |
+| `data.owner.username` | string | yes | Legacy username |
+| `data.owner.email` | string | yes | Legacy email |
+| `data.owner.name` | string | yes | Legacy display name |
+| `data.owner.bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `data.owner.categoryCount` | integer | yes | Categories owned by this user |
+| `data.owner.tagCount` | integer | yes | Tags owned by this user |
+| `data.owner.disabled` | boolean | yes | Whether the legacy user was disabled |
+| `data.dryRun` | boolean | yes | True when this summary came from a dry-run (no writes) |
+| `data.categoriesCreated` | integer | yes | Categories created |
+| `data.categoriesReused` | integer | yes | Existing categories reused |
+| `data.tagsCreated` | integer | yes | Tags created |
+| `data.tagsReused` | integer | yes | Existing tags reused |
+| `data.bookmarksCreated` | integer | yes | Bookmarks created |
+| `data.bookmarksMerged` | integer | yes | Bookmarks merged into existing URLs |
+| `data.bookmarksSkipped` | integer | yes | Bookmarks skipped |
+| `data.bookmarksFailed` | integer | yes | Bookmarks that failed during apply |
+| `data.mediaImported` | integer | yes | Local media files imported |
+| `data.mediaSkipped` | integer | yes | Media files skipped |
+| `data.warnings` | array<string> | yes | Non-fatal migration warnings |
+
+### LegacyMigrateRequest
+
+v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
 
 ### RuntimeLlmCapability
 

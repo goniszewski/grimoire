@@ -12,6 +12,7 @@ import { createDiagnosticsRoute } from "./routes/diagnostics.js";
 import { createBookmarksRoute } from "./routes/bookmarks.js";
 import { createSearchRoute } from "./routes/search.js";
 import { createImportRoute } from "./routes/import.js";
+import { createMigrateRoute } from "./routes/migrate.js";
 import { createCategoriesRoute } from "./routes/categories.js";
 import { createTagsRoute } from "./routes/tags.js";
 import { createExportRoute } from "./routes/export.js";
@@ -58,6 +59,8 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/restore",
   "/settings/test-s3",
   "/demo/load",
+  "/migrate/legacy/inspect",
+  "/migrate/legacy/apply",
 ]);
 
 /** Larger JSON mutators that still need an explicit higher cap. */
@@ -155,6 +158,7 @@ function securityHeaders(): Record<string, string> {
 function bodyLimitFor(path: string, method: string): number | null {
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return null;
   if (path === "/import") return IMPORT_MAX_BYTES;
+  if (path === "/import/preview") return IMPORT_MAX_BYTES;
   if (path === "/capture") return CAPTURE_JSON_BODY_MAX_BYTES;
   if (LOCAL_JSON_BODY_LIMIT_PATHS.has(path)) return LOCAL_JSON_BODY_MAX_BYTES;
   const large = LARGE_JSON_BODY_LIMIT_PATHS.get(path);
@@ -268,6 +272,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createMigrateRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createCategoriesRoute({ db: deps.db }));
   app.route("/", createTagsRoute({ db: deps.db }));
   app.route("/", createExportRoute({ db: deps.db }));

@@ -15,7 +15,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md#migration-from-legacy-grimoire-high-priority).
+> Coming from v0.5.x? Point `littleimp migrate` at your v0.5 `data/` directory (`db.sqlite` + `user-uploads/`), or at a `.zip`/`.tar.gz` of that folder. See the [migration section](./docs/roadmap.md#migration-from-legacy-grimoire-high-priority).
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
