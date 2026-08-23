@@ -25,6 +25,7 @@ test.describe("public demo", () => {
     await page.getByText("SQLite foreign key support").click();
     await expect(page.getByRole("dialog")).toContainText("SQLite foreign key support");
     await expect(page.getByRole("dialog")).toContainText("This original demo note");
+    await expect(page.getByRole("dialog").getByText("Indexed", { exact: true })).toHaveCount(1);
 
     expect([...origins]).toEqual([new URL(page.url()).origin]);
   });
@@ -38,6 +39,10 @@ test.describe("public demo", () => {
     await page.goto("/");
     await page.getByText("Skip tour").click();
     await page.getByRole("button", { name: /Export/ }).click();
+    expect(await page.evaluate(() => document.body.dataset.demoMode)).toBe("true");
+    await expect.poll(() => page.evaluate(() => document.body.getAttribute("data-scroll-locked"))).toBe("1");
+    expect(await page.evaluate(() => getComputedStyle(document.body).marginRight)).toBe("0px");
+    expect(await page.evaluate(() => getComputedStyle(document.body).paddingRight)).toBe("0px");
     const downloadPromise = page.waitForEvent("download");
     await page.getByText("Export as JSON").click();
     const download = await downloadPromise;

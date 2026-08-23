@@ -106,6 +106,13 @@
   html, body {
     overflow-x: clip;
   }
+  /* In the static demo, Radix locks the page while overlays are open and
+     compensates for the scrollbar with a body margin. That compensation
+     becomes a visible gutter with the app's narrow custom scrollbar. */
+  html body[data-demo-mode][data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
   code, .font-mono {
     font-family: var(--font-mono);
   }

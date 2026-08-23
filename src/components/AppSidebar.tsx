@@ -551,7 +551,7 @@ export function AppSidebar({
             {!collapsed && (
               <div>
                 <h1 className="font-semibold text-sm tracking-tight">Grimoire</h1>
-                <p className="text-[10px] text-muted-foreground font-mono">{totalCount} bookmarks</p>
+                <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground font-mono">{totalCount} bookmarks</p>
               </div>
             )}
           </div>

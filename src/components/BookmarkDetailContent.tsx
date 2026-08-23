@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
-import { PipelineBadge } from "./PipelineBadge";
 import { PipelineRecoveryPanel } from "./PipelineRecoveryPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,10 +146,9 @@ export function BookmarkDetailContent({
   };
 
   return (
-    <div className="space-y-5 mt-2">
+      <div className="space-y-5 mt-2">
 
       <div className="flex items-center gap-2">
-        <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
         {!!bookmark.read_later && (
           <Badge
             variant="outline"

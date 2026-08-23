@@ -8,12 +8,6 @@ import type { ComponentProps } from "react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock("./PipelineBadge", () => ({
-  PipelineBadge: ({ initialStatus }: { initialStatus: string }) => (
-    <span data-testid="pipeline-badge">{initialStatus}</span>
-  ),
-}));
-
 vi.mock("./PipelineRecoveryPanel", () => ({
   PipelineRecoveryPanel: () => null,
 }));
@@ -109,9 +103,9 @@ function defaultProps(
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
 describe("BookmarkDetailContent — rendering", () => {
-  it("renders the pipeline badge with the bookmark status", () => {
+  it("does not render a duplicate pipeline badge in the detail body", () => {
     render(<BookmarkDetailContent {...defaultProps(makeBookmark({ status: "indexed" }))} />);
-    expect(screen.getByTestId("pipeline-badge")).toHaveTextContent("indexed");
+    expect(screen.queryByText("Indexed", { exact: true })).not.toBeInTheDocument();
   });
 
   it("renders the summary text", () => {
