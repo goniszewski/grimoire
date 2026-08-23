@@ -15,6 +15,8 @@ import CategoryDetail from "./pages/CategoryDetail";
 import Tags from "./pages/Tags";
 import TagDetail from "./pages/TagDetail";
 import NotFound from "./pages/NotFound";
+import { demoRouterBasename, isDemoMode } from "@/demo/enabled";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +25,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={demoRouterBasename}>
+        {isDemoMode && <DemoModeBanner />}
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<Index />} />

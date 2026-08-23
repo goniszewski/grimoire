@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Globe, Search } from "lucide-react";
+import { generatedFavicon } from "@/lib/media-url";
 
 const Domains = () => {
   const store = useBookmarks();
@@ -53,7 +54,7 @@ const Domains = () => {
               className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-accent group"
             >
               <img
-                src={`https://www.google.com/s2/favicons?domain=${d.domain}&sz=16`}
+                src={generatedFavicon(d.domain)}
                 alt=""
                 className="h-4 w-4 rounded-sm shrink-0"
               />

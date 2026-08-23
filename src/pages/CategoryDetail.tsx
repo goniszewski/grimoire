@@ -25,6 +25,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { openBookmarkExternal } from "@/lib/bookmark-open";
+import { isDemoMode } from "@/demo/enabled";
+import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 
 const PAGE_SIZE = 20;
 
@@ -168,6 +170,7 @@ const CategoryDetail = () => {
     is_public: false,
   });
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [demoPromptOpen, setDemoPromptOpen] = useState(false);
   const offset = pageState.categoryId === categoryId ? pageState.offset : 0;
 
   function setPageOffset(nextOffset: (currentOffset: number) => number) {
@@ -424,7 +427,12 @@ const CategoryDetail = () => {
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" size="sm" onClick={startMetadataEdit} aria-label="Edit metadata">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => isDemoMode ? setDemoPromptOpen(true) : startMetadataEdit()}
+                aria-label={isDemoMode ? "Editing category metadata requires installing Grimoire" : "Edit metadata"}
+              >
                 <Pencil className="h-4 w-4" />
                 Edit metadata
               </Button>
@@ -641,6 +649,12 @@ const CategoryDetail = () => {
           )}
         </section>
       </main>
+
+      <DemoInstallPrompt
+        open={demoPromptOpen}
+        onOpenChange={setDemoPromptOpen}
+        action="Edit category metadata"
+      />
     </div>
   );
 };

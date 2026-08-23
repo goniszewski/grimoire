@@ -35,6 +35,23 @@ tokens. Any process on the same machine that can reach the loopback port remains
 in the local trust model unless a route is explicitly protected by integration
 token middleware.
 
+## Static Public Demo Boundary
+
+Grimoire may also be built as a static public demo, but this is a client-only
+UI profile and not a public-network daemon mode. The demo loads the real React
+frontend with synthetic fixtures and an in-browser API router under a same-origin
+virtual `/__api` path. It does not start Bun, open a port, use SQLite, accept
+live URL ingestion, call AI or embedding providers, or expose any daemon route.
+
+The demo's session mutations are held in memory for the current browser tab and
+are discarded on reload or reset. The build must contain no secrets or personal
+data and must make no automatic API, provider, asset, or tracking requests in
+demo mode; explicit user navigation to a bookmark or install link is separate.
+Launch configuration must also keep cookies, third-party scripts,
+fingerprinting, and client-side tracking out of the demo. This boundary does
+not relax `resolveBindHost`,
+`resolveDaemonUrl`, CORS, fetch safety, or any other daemon security control.
+
 ## In Scope
 
 These clients are in scope for the current parity batch:

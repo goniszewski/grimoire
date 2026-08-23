@@ -157,6 +157,7 @@ tasks/
 | TASK-144 | [Targeted Frontend Decomposition and Loading](backlog/TASK-144-targeted-frontend-decomposition.md) | Post-beta maintainability | medium | backlog |
 | TASK-145 | [Evidence-Based Roadmap Reset](backlog/TASK-145-evidence-based-roadmap-reset.md) | Post-beta planning | high | backlog |
 | TASK-146 | [Hallmark UI System Remediation](done/TASK-146-hallmark-ui-system-remediation.md) | Product reset and public beta | medium | done |
+| TASK-147 | [Public Demo Mode](in-progress/TASK-147-public-demo-mode.md) | Product reset and public beta | high | in-progress |
 
 ## Current Status
 
@@ -360,6 +361,10 @@ TASK-123, and TASK-124 backlog split is consolidated into TASK-140 and TASK-142.
 TASK-146 is complete with semantic visual-system remediation, keyboard and
 touch-safe bookmark actions, responsive-header verification, focused regression
 coverage, and visual task-report evidence.
+
+TASK-147 is in progress with the static client-only public demo implementation;
+launch-host, analytics, and ownership decisions remain explicitly open until
+they are confirmed.
 
 Completed release validation evidence:
 

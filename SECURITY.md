@@ -43,6 +43,10 @@ Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
 - Public-network exposure is not a supported Grimoire mode. Any remote access
   must be protected before requests reach the daemon, for example with an
   authenticated tunnel, VPN, or reverse proxy.
+- The optional static public demo is not a daemon deployment mode. Its demo
+  build runs the real frontend against an in-browser fixture router, keeps
+  session state in memory, and contains no server database, secrets, cookies,
+  third-party scripts, or fingerprinting.
 
 The canonical threat model and release gates for any future non-loopback mode
 are documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
@@ -131,6 +135,10 @@ claimed while unauthenticated release URLs return `404`.
 - External AI providers are optional. If configured, provider-bound content and
   API keys are subject to that provider's security model and the security of
   the local machine.
+- The static public demo intentionally omits live URL capture, AI and embedding
+  calls, imports, backups, diagnostics, integration tokens, update checks, and
+  subpath hosting. It must not be presented as a hosted Grimoire account or a
+  remotely exposed daemon.
 
 ## User Best Practices
 

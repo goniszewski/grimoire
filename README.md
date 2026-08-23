@@ -22,6 +22,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
+- [Try the Public Demo](#try-the-public-demo)
 - [What Grimoire Does](#what-grimoire-does)
 - [How It Works](#how-it-works)
 - [Install And Upgrade Paths](#install-and-upgrade-paths)
@@ -45,6 +46,22 @@ The screenshots below use synthetic/demo data from the local UI audit set.
 | ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
 
 ## Quick Start
+
+### Try the Public Demo
+
+The demo build is a static, client-only profile of the real Grimoire UI. It
+uses synthetic fixtures and an in-memory API in the browser; it does not start
+the daemon, create an account, or persist a hosted library.
+
+```sh
+npm install
+npm run build:demo
+npm run preview:demo
+```
+
+Open the preview at `http://127.0.0.1:4173`. The public hostname, launch
+indexing policy, and analytics policy remain deployment decisions; no public
+URL is implied by this local preview command.
 
 ### Source Checkout
 
@@ -192,6 +209,10 @@ Grimoire is local-first and loopback-first:
   tokens.
 - Public-network exposure is not a supported mode; put an authenticated tunnel,
   VPN, or reverse proxy in front of it if you deliberately need remote access.
+
+The static public demo is a separate client-only build: it ships synthetic
+fixtures, keeps session mutations in memory, makes no daemon or provider
+requests, and uses no cookies, third-party scripts, or fingerprinting.
 
 See [SECURITY.md](./SECURITY.md) and
 [security-boundaries.md](./docs/security-boundaries.md).
