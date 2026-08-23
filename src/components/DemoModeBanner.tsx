@@ -23,8 +23,8 @@ export function DemoModeBanner({ onReset }: { onReset?: () => void }) {
   };
 
   return (
-    <div className="relative z-50 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-primary/20 bg-primary/10 px-4 py-2 text-xs text-foreground md:pl-64">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div data-testid="demo-mode-banner" className="relative z-50 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-primary/20 bg-primary/10 px-4 py-2 text-xs text-foreground md:pl-[17rem]">
+      <div data-testid="demo-mode-banner-content" className="flex min-w-0 flex-1 items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
         <p>
           <strong>Public demo</strong> — sample data lives only in this browser tab. Install Grimoire to keep a private local library.

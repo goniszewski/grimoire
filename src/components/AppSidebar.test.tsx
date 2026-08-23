@@ -212,7 +212,7 @@ describe("AppSidebar — renders category tree", () => {
   it("separates the bookmark count from the sidebar title", () => {
     render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapper() });
 
-    expect(screen.getByText("15 bookmarks")).toHaveClass("mt-0.5", "leading-tight");
+    expect(screen.getByText("15 bookmarks")).toHaveClass("mt-1", "leading-tight");
   });
 
   it("renders tags", () => {

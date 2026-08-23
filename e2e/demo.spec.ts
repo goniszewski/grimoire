@@ -15,6 +15,12 @@ test.describe("public demo", () => {
     await expect(page.locator('[data-testid="bookmark-results"]')).toBeVisible();
     await expect(page.getByText("26 results")).toBeVisible();
 
+    const bannerContentBox = await page.getByTestId("demo-mode-banner-content").boundingBox();
+    const sidebarTriggerBox = await page.getByRole("button", { name: "Toggle Sidebar" }).first().boundingBox();
+    expect(bannerContentBox).not.toBeNull();
+    expect(sidebarTriggerBox).not.toBeNull();
+    expect(Math.abs((bannerContentBox?.x ?? 0) - (sidebarTriggerBox?.x ?? 0))).toBeLessThanOrEqual(1);
+
     await page.getByRole("button", { name: "Toggle Sidebar" }).first().click();
     expect(await page.evaluate(() => document.cookie)).toBe("");
 

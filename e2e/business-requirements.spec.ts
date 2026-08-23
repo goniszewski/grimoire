@@ -46,7 +46,7 @@ test.describe("Documented business requirements smoke", () => {
 
     await page.goto("/");
 
-    await page.getByRole("button", { name: /^Import$/ }).click();
+    await page.getByRole("button", { name: /^Import bookmarks$/ }).click();
     await expect(page.getByRole("heading", { name: /import bookmarks/i })).toBeVisible();
     await expect(page.getByText(/drop your bookmark file here/i)).toBeVisible();
 
@@ -184,7 +184,7 @@ test.describe("Documented business requirements smoke", () => {
     await expect(page.getByRole("heading", { name: "Backup & Restore" })).toBeVisible();
 
     await page.getByRole("button", { name: /check for updates/i }).click();
-    await expect(page.getByText(/Grimoire 1\.0\.1 is up to date/i)).toBeVisible();
+    await expect(page.getByText(/Grimoire 1\.1\.0 is up to date/i)).toBeVisible();
     await expect.poll(() => daemon.requests.updateChecks).toBe(1);
 
     await page.getByTitle("Verify backup integrity").click();

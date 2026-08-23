@@ -32,18 +32,19 @@
       <li>Added 30 curated synthetic bookmarks with real reference URLs, original summaries, categories, tags, timeline events, suggestions, detail content, related-bookmark matching, and JSON/CSV export.</li>
       <li>Added persistent demo framing, install guidance for local-only actions, read-only demo settings, disabled app lock behavior, reset cleanup, no sidebar cookie writes, and local inline favicons with no third-party image requests.</li>
       <li>Added a small vertical gap and tighter line-height for the sidebar bookmark count under the Grimoire label.</li>
+      <li>Aligned the desktop demo banner with the main toolbar's inner gutter while keeping the mobile banner padding unchanged.</li>
       <li>Removed Radix overlay scroll-lock compensation from the page edge so popovers and modals do not expose a visible right-hand gutter.</li>
       <li>Kept the pipeline status in the bookmark-detail header only, removing the duplicate badge from the content row beside Read Later.</li>
       <li>Added focused router tests, hermetic Playwright demo tests, a CI demo job, README/security-boundary notes, and desktop/narrow/detail evidence.</li>
     </ul></section>
-    <section><h2>Result</h2><p>The demo now loads 26 active fixture bookmarks without Bun or SQLite, supports search, filters, deep links, detail content, related items, export, and session-only actions, and clearly routes local-only actions toward installation. The sidebar identity block reads cleanly, and opening an overlay keeps the workspace flush to the viewport edge. Reset clears the in-memory state and known demo-local storage keys.</p></section>
+    <section><h2>Result</h2><p>The demo now loads 26 active fixture bookmarks without Bun or SQLite, supports search, filters, deep links, detail content, related items, export, and session-only actions, and clearly routes local-only actions toward installation. The sidebar identity block and desktop banner now share a deliberate spacing rhythm, while overlays keep the workspace flush to the viewport edge. Reset clears the in-memory state and known demo-local storage keys.</p></section>
     <section><h2>Verification</h2><ul>
       <li><code>npm test -- --run src/demo/api/router.test.ts</code> — 5 tests passed.</li>
       <li><code>npm test -- --run src/components/AppSidebar.test.tsx</code> — 20 tests passed, including the count-label spacing regression.</li>
       <li><code>npm run build:demo</code> and <code>npm run verify:demo-bundle</code> — passed; no <code>127.0.0.1:3210</code> or <code>localhost:3210</code> found in <code>dist/</code>.</li>
-      <li><code>npm run test:e2e:demo</code> — 4 tests passed for browsing/search/detail, deep-link/export, reset cleanup, and install gating for Settings/category/tag actions; the detail flow asserts exactly one <code>Indexed</code> label, and the export flow asserts that Radix scroll locking leaves body margin and padding at <code>0px</code>.</li>
+      <li><code>npm run test:e2e:demo</code> — 4 tests passed for browsing/search/detail, desktop banner-gutter alignment, deep-link/export, reset cleanup, and install gating for Settings/category/tag actions; the detail flow asserts exactly one <code>Indexed</code> label, and the export flow asserts that Radix scroll locking leaves body margin and padding at <code>0px</code>.</li>
       <li><code>npm run lint</code> and <code>npm run type-check:frontend</code> — passed; lint retains 8 existing Fast Refresh warnings and no errors.</li>
-      <li>Fresh Playwright captures were inspected at desktop 1440px, narrow 390px, popover-open, and modal-open states.</li>
+      <li>Fresh Playwright captures were inspected at desktop 1440px and narrow 390px for the updated spacing, alongside the existing popover-open and modal-open states.</li>
     </ul></section>
 
     <details open><summary>Additional screenshots</summary><div class="shot-grid">
@@ -53,6 +54,8 @@
       <figure><img src="assets/06-after-popover.png" alt="Desktop public demo library with the Export popover open and no right-edge gutter"><figcaption>Popover state: the workspace remains flush to the right edge while the menu is open.</figcaption></figure>
       <figure><img src="assets/07-after-mobile-modal.png" alt="Narrow public demo library with the local-only modal open and no right-edge gutter"><figcaption>Modal state: the narrow layout keeps its full viewport width while the install prompt is open.</figcaption></figure>
       <figure><img src="assets/08-after-detail-modal.png" alt="Desktop public demo bookmark detail modal showing one Indexed badge in the header and Read Later below"><figcaption>Detail state: the pipeline status appears once in the header; the content row retains only the Read Later badge.</figcaption></figure>
+      <figure><img src="assets/09-after-spacing-desktop.png" alt="Desktop public demo showing the banner aligned with the toolbar gutter and the spaced sidebar bookmark count"><figcaption>Spacing pass: the desktop banner begins on the same inner gutter as the toolbar, and the sidebar count breathes below the title.</figcaption></figure>
+      <figure><img src="assets/10-after-spacing-mobile.png" alt="Narrow public demo showing the responsive banner and controls after spacing polish"><figcaption>Narrow spacing pass: the banner keeps its compact responsive padding while the controls remain usable.</figcaption></figure>
     </div></details>
 
     <details><summary>Implementation notes</summary><p>The daemon remains loopback-only and unchanged. Launch hostname, CTA destination, indexing policy, analytics, fixture ownership, accessibility/performance gates, static-host fallback configuration, kill-switch ownership, and the full Playwright mock-daemon adapter promotion remain explicit follow-ups from the plan rather than being guessed in this slice. The demo build also reports the existing large frontend chunk and stale Browserslist data as warnings; neither invalidated the focused demo checks.</p></details>
