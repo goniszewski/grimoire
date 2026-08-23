@@ -1,9 +1,9 @@
 # Grimoire Release Checklist
 
-Release target: `0.1.0-beta`
+Release target: `1.1.0`
 
 Use this checklist before tagging, while publishing, and immediately after
-publishing a beta build. Items that require published GitHub release artifacts
+publishing a release build. Items that require published GitHub release artifacts
 are called out explicitly.
 
 ## Preflight
@@ -23,10 +23,10 @@ The MVP native installer supports this exact OS matrix:
 
 | Target | Architecture | Service manager | Release artifact | Required before publish |
 |---|---|---|---|---|
-| macOS 12+ arm64 | Apple Silicon | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Validate on the available Apple Silicon host or VM. |
-| macOS 12+ x64 | Intel | LaunchAgent | `little-imp-0.1.0-beta-macos.tar.gz` | Best-effort target; validated when Intel hardware or an x64 macOS VM is available. macOS arm64 is the validated Mac target. |
-| Ubuntu 24.04 LTS | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
-| Debian 12 | Host architecture | systemd user unit | `little-imp-0.1.0-beta-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
+| macOS 12+ arm64 | Apple Silicon | LaunchAgent | `little-imp-1.1.0-macos.tar.gz` | Validate on the available Apple Silicon host or VM. |
+| macOS 12+ x64 | Intel | LaunchAgent | `little-imp-1.1.0-macos.tar.gz` | Best-effort target; validated when Intel hardware or an x64 macOS VM is available. macOS arm64 is the validated Mac target. |
+| Ubuntu 24.04 LTS | Host architecture | systemd user unit | `little-imp-1.1.0-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
+| Debian 12 | Host architecture | systemd user unit | `little-imp-1.1.0-linux.tar.gz` | Run the Linux matrix smoke or record why Docker/systemd was unavailable. |
 
 Record command output, host details, and deviations in
 [installer-matrix-validation.md](./installer-matrix-validation.md).
@@ -35,10 +35,10 @@ Record command output, host details, and deviations in
 
 - From a clean checkout, run `npm run package:release`.
 - Confirm `release/` contains:
-  - `little-imp-0.1.0-beta-macos.tar.gz`
-  - `little-imp-0.1.0-beta-macos.tar.gz.sha256`
-  - `little-imp-0.1.0-beta-linux.tar.gz`
-  - `little-imp-0.1.0-beta-linux.tar.gz.sha256`
+  - `little-imp-1.1.0-macos.tar.gz`
+  - `little-imp-1.1.0-macos.tar.gz.sha256`
+  - `little-imp-1.1.0-linux.tar.gz`
+  - `little-imp-1.1.0-linux.tar.gz.sha256`
   - `release-manifest.json`
 - Run `npm run release:validate`.
 - Verify checksums from inside `release/` with `shasum -a 256 -c *.sha256`
@@ -50,7 +50,7 @@ Record command output, host details, and deviations in
 - Confirm root `install.sh` is executable and references the current release
   target.
 - Before artifacts are published, validate local archive install and upgrade by
-  extracting `release/little-imp-0.1.0-beta-PLATFORM.tar.gz`, running
+  extracting `release/little-imp-1.1.0-PLATFORM.tar.gz`, running
   `daemon/install.sh`, and then running `daemon/install.sh --upgrade` over the
   existing install.
 - Run the packaged CLI local archive upgrade path against a downloaded archive
@@ -62,7 +62,7 @@ Record command output, host details, and deviations in
   containers are available.
 - On macOS, run `cd daemon && ./install.sh` on a clean profile or VM for each
   available architecture, then verify
-  `curl http://127.0.0.1:3210/health` returns `version: "0.1.0-beta"`.
+  `curl http://127.0.0.1:3210/health` returns `version: "1.1.0"`.
 - Verify LaunchAgent or systemd user service starts the daemon after login.
 - Run `cd daemon && ./install.sh --upgrade` over an existing native install and
   confirm data is preserved.
@@ -72,11 +72,11 @@ Record command output, host details, and deviations in
 After the GitHub release artifacts are published:
 
 - Run the one-command installer path against the published release URL:
-  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash`.
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/grimoire/v1.1.0/install.sh | bash`.
 - Run the one-command upgrade path over an existing install:
-  `curl -fsSL https://raw.githubusercontent.com/goniszewski/little-imp/v0.1.0-beta/install.sh | bash -s -- --upgrade`.
+  `curl -fsSL https://raw.githubusercontent.com/goniszewski/grimoire/v1.1.0/install.sh | bash -s -- --upgrade`.
 - Run the packaged CLI upgrade path against the published release artifacts:
-  `littleimp update install --version 0.1.0-beta`.
+  `littleimp update install --version 1.1.0`.
 - If any post-publish installer check fails, keep the release in draft or mark
   it pre-release until the failing path is corrected or documented.
 
@@ -93,9 +93,9 @@ After the GitHub release artifacts are published:
   expected 404 caused by unpublished archive URLs.
 - After release artifacts are published, run
   `brew install goniszewski/grimoire/grimoire`.
-- Confirm `littleimp --help` reports `0.1.0-beta`.
+- Confirm `littleimp --help` reports `1.1.0`.
 - Start the Homebrew service with `brew services start grimoire`, then verify
-  `curl http://127.0.0.1:3210/health` reports `version: "0.1.0-beta"`.
+  `curl http://127.0.0.1:3210/health` reports `version: "1.1.0"`.
 - Stop the Homebrew service with `brew services stop grimoire`.
 - Run `brew uninstall grimoire` and confirm
   `$(brew --prefix)/var/little-imp` remains unless it is explicitly removed.
@@ -110,7 +110,7 @@ After the GitHub release artifacts are published:
   check, daemon health, upgrade data preservation, and uninstall without purge.
 - After the GitHub release assets are publicly downloadable, run
   `npm run test:e2e:installed:published`; the command downloads
-  `v0.1.0-beta` from the GitHub release URL, verifies the archive checksum and
+  `v1.1.0` from the GitHub release URL, verifies the archive checksum and
   detached signature, then runs the same installed-app smoke in an isolated
   temporary home.
 - If the smoke fails, inspect the temp root printed by the command, especially
@@ -213,7 +213,7 @@ Apply these thresholds consistently:
 - Confirm `README.md`, `CHANGELOG.md`, `SECURITY.md`, `tasks/README.md`,
   `docs/roadmap.md`, `docs/prd.md`, `docs/overview.md`,
   `docs/release-checklist.md`, and `docs/update-system.md` all name
-  `0.1.0-beta` as the current release target and `v0.1.0-beta` as the release
+  `1.1.0` as the current release target and `v1.1.0` as the release
   tag where tag-qualified URLs are required.
 - Confirm links in `README.md`, `CONTRIBUTING.md`, and `tasks/README.md` resolve to existing files.
 - Confirm backup, Docker, MCP, and API source-of-truth docs match the shipped routes and defaults.

@@ -43,6 +43,47 @@ describe("EmbeddingRepository vector index", () => {
     ].sort(byBookmarkId));
   });
 
+  it("rebuildVectorIndex restores vector tables from the embeddings table when available", () => {
+    const db = makeTestDb();
+    const bookmarks = new BookmarkRepository(db);
+    const embeddings = new EmbeddingRepository(db);
+
+    const vectorIndexAvailable = embeddings.isVectorIndexAvailable(2);
+    if (!vectorIndexAvailable) {
+      expect(vectorIndexAvailable).toBe(false);
+      return;
+    }
+
+    const first = bookmarks.create("https://vectors.example.com/rebuild-a", "Rebuild A");
+    const second = bookmarks.create("https://vectors.example.com/rebuild-b", "Rebuild B");
+    embeddings.upsert(first.id, "test-model", [1, 0]);
+    embeddings.upsert(second.id, "test-model", [0, 1]);
+
+    // Simulate a stale or partially-written index (e.g. a crash between the
+    // embeddings write and the vec mirror, or a pre-sqlite-vec database).
+    db.run("DELETE FROM embedding_vec_2");
+    expect(
+      db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM embedding_vec_2").get()?.c
+    ).toBe(0);
+
+    embeddings.rebuildVectorIndex();
+
+    const restoredRows = db
+      .query<{ bookmark_id: string }, []>(
+        "SELECT bookmark_id FROM embedding_vec_2 ORDER BY bookmark_id"
+      )
+      .all();
+    expect(restoredRows.map((row) => row.bookmark_id).sort()).toEqual(
+      [first.id, second.id].sort()
+    );
+
+    const nearest = embeddings.findNearest("test-model", [0.99, 0.01], {
+      limit: 1,
+      excludeBookmarkId: null,
+    });
+    expect(nearest.map((row) => row.bookmarkId)).toEqual([first.id]);
+  });
+
   it("returns nearest neighbors from sqlite-vec with cosine similarity scores when available", () => {
     const db = makeTestDb();
     const bookmarks = new BookmarkRepository(db);

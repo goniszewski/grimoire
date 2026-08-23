@@ -57,17 +57,17 @@ async function setupBaseMocks(page: Page) {
 function makeUpdateAvailableResponse(): { data: UpdateCheckResultDto } {
   return {
     data: {
-      current_version: "0.1.0-beta",
+      current_version: "1.1.0",
       update_available: true,
-      source: "https://github.com/goniszewski/little-imp/releases",
+      source: "https://github.com/goniszewski/grimoire/releases",
       channel: "stable",
       latest: {
-        version: "0.2.0",
-        tag: "v0.2.0",
-        name: "v0.2.0",
+        version: "1.1.0",
+        tag: "v1.1.0",
+        name: "v1.1.0",
         prerelease: false,
         published_at: "2026-07-15T00:00:00Z",
-        url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0",
       },
     },
   };
@@ -76,9 +76,9 @@ function makeUpdateAvailableResponse(): { data: UpdateCheckResultDto } {
 function makeUpToDateResponse(): { data: UpdateCheckResultDto } {
   return {
     data: {
-      current_version: "0.1.0-beta",
+      current_version: "1.1.0",
       update_available: false,
-      source: "https://github.com/goniszewski/little-imp/releases",
+      source: "https://github.com/goniszewski/grimoire/releases",
       channel: "stable",
       latest: null,
     },
@@ -103,7 +103,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // Assert: the update banner is visible
-    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v1\.1\.0 is available/ });
     await expect(banner).toBeVisible();
     // The dismiss button should be present
     await expect(banner.getByRole("button", { name: /Dismiss/i })).toBeVisible();
@@ -138,7 +138,7 @@ test.describe("In-app update notification", () => {
     await page.goto("/");
 
     // Banner should be visible
-    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v1\.1\.0 is available/ });
     await expect(banner).toBeVisible();
 
     // Dismiss it
@@ -160,7 +160,7 @@ test.describe("In-app update notification", () => {
 
     await page.goto("/");
 
-    const banner = page.getByRole("note").filter({ hasText: /Grimoire v0\.2\.0 is available/ });
+    const banner = page.getByRole("note").filter({ hasText: /Grimoire v1\.1\.0 is available/ });
     await expect(banner).toBeVisible();
 
     // Click "View update"

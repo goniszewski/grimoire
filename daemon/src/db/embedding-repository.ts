@@ -123,12 +123,30 @@ export class EmbeddingRepository {
         .query<EmbeddingRow, []>("SELECT * FROM embeddings")
         .all();
 
-      for (const table of this.listVectorTables()) {
-        this.db.run(`DELETE FROM ${table}`);
-      }
-      for (const row of rows) {
-        this.upsertVectorIndex(row.bookmark_id, row.model, row.dimensions, row.vector);
-      }
+      // One transaction for the whole rebuild: per-row transactions would be
+      // thousands of BEGIN/COMMIT cycles on every daemon start, and the single
+      // transaction also keeps the index atomic if a crash interrupts a boot.
+      this.db.transaction(() => {
+        for (const table of this.listVectorTables()) {
+          this.db.run(`DELETE FROM ${table}`);
+        }
+        for (const row of rows) {
+          const table = vectorTableName(row.dimensions);
+          this.db.exec(
+            `CREATE VIRTUAL TABLE IF NOT EXISTS ${table} USING vec0(
+              bookmark_id TEXT PRIMARY KEY,
+              model TEXT PARTITION KEY,
+              embedding FLOAT[${row.dimensions}] distance_metric=cosine
+            )`
+          );
+          this.db
+            .query<unknown, [string, string, Uint8Array]>(
+              `INSERT INTO ${table} (bookmark_id, model, embedding)
+               VALUES (?, ?, ?)`
+            )
+            .run(row.bookmark_id, row.model, row.vector);
+        }
+      })();
     } catch (error) {
       this.disableVectorIndex(error);
     }

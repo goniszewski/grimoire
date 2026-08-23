@@ -193,34 +193,47 @@ const Index = () => {
 
   const handleBulkDelete = useCallback(() => {
     const ids = [...selectedIds];
-    const deletedBookmarks = ids
-      .map((id) => store.filteredBookmarks.find((b) => b.id === id) ?? store.bookmarks.find((b) => b.id === id))
-      .filter((b): b is NonNullable<typeof b> => Boolean(b));
+    const deletedBookmarks = ids.map(
+      (id) => store.filteredBookmarks.find((b) => b.id === id) ?? store.bookmarks.find((b) => b.id === id) ?? null
+    );
 
-    void Promise.all(ids.map((id) => store.deleteBookmark(id)))
-      .then(() => {
-        const count = deletedBookmarks.length;
-        toast({
-          title: `${count} bookmark${count !== 1 ? "s" : ""} deleted`,
-          action: (
-            <ToastAction
-              altText="Undo delete"
-              onClick={() => deletedBookmarks.forEach((b) => void store.restoreBookmark(b.id))}
-            >
-              Undo
-            </ToastAction>
-          ),
-        });
-        exitSelectionMode();
-        setBulkDeleteOpen(false);
-      })
-      .catch((err) => {
+    void Promise.allSettled(ids.map((id) => store.deleteBookmark(id))).then((results) => {
+      const succeeded = results.flatMap((result, index) => {
+        if (result.status !== "fulfilled") return [];
+        const bookmark = deletedBookmarks[index];
+        return bookmark ? [bookmark] : [];
+      });
+      const failed = results.filter((result) => result.status === "rejected");
+
+      if (succeeded.length === 0) {
+        const firstError = failed[0]?.status === "rejected" ? failed[0].reason : undefined;
         toast({
           title: "Could not delete bookmarks",
-          description: err instanceof Error ? err.message : "Unknown error",
+          description: firstError instanceof Error ? firstError.message : "Unknown error",
           variant: "destructive",
         });
+        return;
+      }
+
+      const count = succeeded.length;
+      toast({
+        title:
+          failed.length > 0
+            ? `Deleted ${count} of ${ids.length} bookmarks`
+            : `${count} bookmark${count !== 1 ? "s" : ""} deleted`,
+        description: failed.length > 0 ? `${failed.length} could not be deleted` : undefined,
+        action: (
+          <ToastAction
+            altText="Undo delete"
+            onClick={() => succeeded.forEach((b) => void store.restoreBookmark(b.id))}
+          >
+            Undo
+          </ToastAction>
+        ),
       });
+      exitSelectionMode();
+      setBulkDeleteOpen(false);
+    });
   }, [selectedIds, store, exitSelectionMode]);
 
   const handleBulkMoveCategory = useCallback((categoryId: string) => {
@@ -236,15 +249,7 @@ const Index = () => {
 
   const handleBulkReadLater = useCallback((readLater: boolean) => {
     const ids = [...selectedIds];
-    void Promise.all(
-      ids.map(
-        (id) =>
-          new Promise<void>((resolve, reject) => {
-            if (readLater) store.markReadLater(id, { onSuccess: () => resolve(), onError: () => reject(new Error("failed")) });
-            else store.clearReadLater(id, { onSuccess: () => resolve(), onError: () => reject(new Error("failed")) });
-          })
-      )
-    )
+    void Promise.all(ids.map((id) => store.setReadLater(id, readLater)))
       .then(() => {
         toast({
           title: readLater

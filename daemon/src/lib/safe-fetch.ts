@@ -8,7 +8,10 @@ import { parsePublicHttpUrl } from "./public-url.js";
 const DEFAULT_MAX_REDIRECTS = 10;
 
 export function isRedirectStatus(status: number): boolean {
-  return status >= 300 && status < 400;
+  // These are the redirect statuses that Fetch follows automatically. 304
+  // (Not Modified), 300 (Multiple Choices), and the obsolete 305/306 codes
+  // are ordinary responses for this helper and must be returned to callers.
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
 }
 
 export function resolveSafeRedirectUrl(

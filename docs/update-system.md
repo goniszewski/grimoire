@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the update behavior shipped for the `0.1.0-beta`
+This document describes the update behavior shipped for the `1.1.0`
 release target and separates it from post-MVP update-management ideas.
 
 Grimoire updates are explicit and user-controlled. The shipped system can
@@ -11,7 +11,7 @@ the archive, run the native installer in upgrade mode, restart the daemon, and
 verify the daemon reports the upgraded version. It does not perform automatic
 updates.
 
-## Shipped In 0.1.0-beta
+## Shipped In 1.1.0
 
 Implemented update paths:
 
@@ -80,7 +80,7 @@ verifies the published checksum, verifies a detached signature when published,
 and delegates to the native installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/goniszewski/grimoire/v0.1.0-beta/install.sh | bash -s -- --upgrade
+curl -fsSL https://raw.githubusercontent.com/goniszewski/grimoire/v1.1.0/install.sh | bash -s -- --upgrade
 ```
 
 If no detached signature is published, the installer prints a checksum-only
@@ -88,7 +88,7 @@ warning and does not claim signature verification.
 
 ## Rollback
 
-Rollback is manual in `0.1.0-beta`.
+Rollback is manual in `1.1.0`.
 
 Failed upgrades after installer execution print rollback guidance that directs
 the user to rerun the previous verified release installer with `--upgrade`.
@@ -106,14 +106,14 @@ Current shipped configuration:
 |---|---|---|
 | `LITTLEIMP_UPDATE_SOURCE` | CLI and daemon update check | Override the default GitHub Releases-compatible source. |
 | `LITTLEIMP_RELEASE_BASE_URL` | CLI upgrade and one-command installer | Override the base URL that contains archive, checksum, and optional signature files. |
-| `LITTLEIMP_VERSION` | One-command installer | Select the release version to download. Defaults to `0.1.0-beta`. |
+| `LITTLEIMP_VERSION` | One-command installer | Select the release version to download. Defaults to `1.1.0`. |
 
 Beta builds check the beta channel by default. Stable builds check the stable
 channel by default.
 
 ## Deferred Update Management
 
-These ideas are not shipped in `0.1.0-beta`:
+These ideas are not shipped in `1.1.0`:
 
 - Automatic scheduled update checks.
 - System tray notifications or critical-update banners.

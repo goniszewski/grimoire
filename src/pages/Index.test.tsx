@@ -204,6 +204,7 @@ function makeStore(overrides: Partial<MockStore> = {}): MockStore {
     unpinBookmark: vi.fn(),
     markReadLater: vi.fn(),
     clearReadLater: vi.fn(),
+    setReadLater: vi.fn(async () => undefined),
     archiveBookmark: vi.fn(),
     unarchiveBookmark: vi.fn(),
     markAsRead: vi.fn(),
@@ -426,11 +427,11 @@ describe("Index update notification banner", () => {
       showBanner: true,
       dismiss: vi.fn(),
       result: {
-        current_version: "0.1.0-beta",
+        current_version: "1.1.0",
         update_available: true,
-        source: "https://api.github.com/repos/goniszewski/little-imp/releases",
+        source: "https://api.github.com/repos/goniszewski/grimoire/releases",
         channel: "stable",
-        latest: { version: "0.2.0", tag: "v0.2.0", name: "v0.2.0", prerelease: false, published_at: "2026-07-15", url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0" },
+        latest: { version: "1.1.0", tag: "v1.1.0", name: "v1.1.0", prerelease: false, published_at: "2026-07-15", url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0" },
       },
       loading: false,
     });
@@ -438,8 +439,8 @@ describe("Index update notification banner", () => {
     renderIndex();
 
     expect(screen.getByTestId("update-banner")).toBeInTheDocument();
-    expect(screen.getByTestId("update-tag")).toHaveTextContent("v0.2.0");
-    expect(screen.getByTestId("update-version")).toHaveTextContent("0.1.0-beta");
+    expect(screen.getByTestId("update-tag")).toHaveTextContent("v1.1.0");
+    expect(screen.getByTestId("update-version")).toHaveTextContent("1.1.0");
   });
 
   it("dismisses the update banner when dismiss is clicked", () => {
@@ -448,11 +449,11 @@ describe("Index update notification banner", () => {
       showBanner: true,
       dismiss,
       result: {
-        current_version: "0.1.0-beta",
+        current_version: "1.1.0",
         update_available: true,
         source: "",
         channel: "stable",
-        latest: { version: "0.2.0", tag: "v0.2.0", name: "v0.2.0", prerelease: false, published_at: "2026-07-15", url: "" },
+        latest: { version: "1.1.0", tag: "v1.1.0", name: "v1.1.0", prerelease: false, published_at: "2026-07-15", url: "" },
       },
       loading: false,
     });

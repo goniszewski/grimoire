@@ -40,20 +40,20 @@ describe("Updates API", () => {
       calls.push({ url: String(url), init });
       return releasesResponse([
         {
-          tag_name: "v1.1.0-beta.1",
-          name: "Grimoire 1.1.0 beta 1",
+          tag_name: "v1.2.0-beta.1",
+          name: "Grimoire 1.2.0 beta 1",
           draft: false,
           prerelease: true,
           published_at: "2026-05-19T10:00:00Z",
-          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0-beta.1",
+          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.2.0-beta.1",
         },
         {
-          tag_name: "v1.0.1",
-          name: "Grimoire 1.0.1",
+          tag_name: "v1.2.0",
+          name: "Grimoire 1.2.0",
           draft: false,
           prerelease: false,
           published_at: "2026-05-18T10:00:00Z",
-          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
+          html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.2.0",
         },
       ]);
     }) as typeof fetch;
@@ -63,6 +63,10 @@ describe("Updates API", () => {
     expect(res.status).toBe(200);
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe(DEFAULT_UPDATE_SOURCE);
+    expect(calls[0].init?.headers).toEqual({
+      accept: "application/vnd.github+json",
+      "user-agent": "littleimp-update-check/1.1.0",
+    });
     const json = await res.json() as {
       data: {
         current_version: string;
@@ -80,17 +84,17 @@ describe("Updates API", () => {
       };
     };
     expect(json.data).toEqual({
-      current_version: "1.0.0",
+      current_version: "1.1.0",
       update_available: true,
       source: DEFAULT_UPDATE_SOURCE,
       channel: "stable",
       latest: {
-        version: "1.0.1",
-        tag: "v1.0.1",
-        name: "Grimoire 1.0.1",
+        version: "1.2.0",
+        tag: "v1.2.0",
+        name: "Grimoire 1.2.0",
         prerelease: false,
         published_at: "2026-05-18T10:00:00Z",
-        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.0.1",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.2.0",
       },
     });
   });

@@ -7,7 +7,7 @@
 <br>
 
 [![Quality Gates](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml)
-![Release target](https://img.shields.io/badge/release-1.0.0-7c3aed)
+![Release target](https://img.shields.io/badge/release-1.1.0-7c3aed)
 ![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
@@ -316,7 +316,19 @@ Then rerun the normal commands.
 
 ## Documentation
 
+Guides in this repo (also on the web at **[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**):
+
+- [Docs index](./docs/README.md)
+- [Introduction](./docs/01-intro.md)
+- [Quick start](./docs/02-quick-start.md)
+- [Using Grimoire](./docs/03-using-grimoire.md)
+- [Development](./docs/04-development.md)
+- [Install without Docker](./docs/05-install-without-docker.md)
+- [Remote access](./docs/06-remote-access.md)
 - [FAQ](./docs/faq.md)
+
+Reference and engineering:
+
 - [API Reference](./API.md)
 - [API Contract](./docs/api-contract.json)
 - [Project Overview](./docs/overview.md)

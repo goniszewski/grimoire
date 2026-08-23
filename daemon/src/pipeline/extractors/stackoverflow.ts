@@ -10,6 +10,7 @@
  */
 
 import { ExtractionResult } from "./types.js";
+import { version as APP_VERSION } from "../../../package.json";
 
 const SE_API = "https://api.stackexchange.com/2.3";
 const TIMEOUT_MS = 15_000;
@@ -49,7 +50,7 @@ async function seFetch(path: string, site: string): Promise<unknown> {
     const res = await fetch(
       `${SE_API}${path}${path.includes("?") ? "&" : "?"}${siteParam}${keyParam}`,
       {
-        headers: { "User-Agent": "LittleImp/0.0" },
+        headers: { "User-Agent": `Grimoire/${APP_VERSION}` },
         signal: controller.signal,
       }
     );

@@ -1,6 +1,6 @@
 # Grimoire Overview
 
-Version: `1.0.0`
+Version: `1.1.0`
 Status: current implementation overview
 Last updated: May 2026
 

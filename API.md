@@ -2456,7 +2456,7 @@ Request:
 curl -X POST http://127.0.0.1:3210/mcp \
   -H "Authorization: Bearer limp_it_example" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.0"}}}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.1.0"}}}'
 ```
 
 Response:
@@ -2473,7 +2473,7 @@ Content-Type: application/json
     "capabilities": {},
     "serverInfo": {
       "name": "grimoire",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   }
 }

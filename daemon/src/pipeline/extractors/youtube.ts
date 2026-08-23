@@ -14,6 +14,7 @@
 import { ExtractionResult } from "./types.js";
 import { log } from "../../logger.js";
 import { isPrivateHost } from "../../lib/network.js";
+import { version as APP_VERSION } from "../../../package.json";
 
 const TIMEOUT_MS = 15_000;
 const MAX_TRANSCRIPT_CHARS = 500_000;
@@ -124,7 +125,7 @@ async function fetchCaptionTracks(videoId: string): Promise<TimedTextTrack[]> {
       headers: {
         "Content-Type": "application/json",
         "User-Agent":
-          "Mozilla/5.0 (compatible; LittleImp/0.0; +https://github.com/goniszewski/little-imp)",
+          `Mozilla/5.0 (compatible; Grimoire/${APP_VERSION}; +https://github.com/goniszewski/grimoire)`,
       },
       body,
     });
