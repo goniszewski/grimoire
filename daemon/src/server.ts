@@ -82,21 +82,7 @@ function normalizeOrigin(origin: string): string | null {
   }
 }
 
-function isLoopbackOrigin(origin: string): boolean {
-  try {
-    const parsed = new URL(origin);
-    return (
-      parsed.hostname === "localhost" ||
-      parsed.hostname === "127.0.0.1" ||
-      parsed.hostname === "::1" ||
-      parsed.hostname === "[::1]"
-    );
-  } catch {
-    return false;
-  }
-}
-
-function allowedLocalOrigins(): Set<string> {
+function allowedBrowserOrigins(): Set<string> {
   const origins = new Set<string>([
     `http://localhost:${Config.PORT}`,
     `http://127.0.0.1:${Config.PORT}`,
@@ -105,7 +91,7 @@ function allowedLocalOrigins(): Set<string> {
 
   for (const origin of Config.CORS_ORIGINS) {
     const normalized = normalizeOrigin(origin);
-    if (normalized && isLoopbackOrigin(normalized)) {
+    if (normalized) {
       origins.add(normalized);
     }
   }
@@ -116,7 +102,7 @@ function allowedLocalOrigins(): Set<string> {
 function isAllowedLocalOrigin(origin: string | undefined): boolean {
   if (!origin) return true;
   const normalized = normalizeOrigin(origin);
-  return !!normalized && allowedLocalOrigins().has(normalized);
+  return !!normalized && allowedBrowserOrigins().has(normalized);
 }
 
 function isValidCspSourceOrigin(origin: string): boolean {
@@ -129,7 +115,7 @@ function isValidCspSourceOrigin(origin: string): boolean {
 }
 
 function securityHeaders(): Record<string, string> {
-  const connectSrc = ["'self'", ...[...allowedLocalOrigins()].filter(isValidCspSourceOrigin)].join(" ");
+  const connectSrc = ["'self'", ...[...allowedBrowserOrigins()].filter(isValidCspSourceOrigin)].join(" ");
   return {
     "Content-Security-Policy": [
       "default-src 'self'",

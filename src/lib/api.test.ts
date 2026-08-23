@@ -27,6 +27,12 @@ describe("daemon URL resolution", () => {
     expect(resolveDaemonUrl("http://localhost:3220/")).toBe("http://localhost:3220");
   });
 
+  it("uses the current browser origin for explicitly remote production hosting", () => {
+    expect(resolveDaemonUrl(undefined, "https://roberts-mac-mini.tailae45c7.ts.net:8443")).toBe(
+      "https://roberts-mac-mini.tailae45c7.ts.net:8443"
+    );
+  });
+
   it("rejects non-loopback daemon URL overrides", () => {
     expect(() => resolveDaemonUrl("https://example.com:3220")).toThrow(
       "VITE_DAEMON_URL must point to localhost, 127.0.0.1, or ::1"

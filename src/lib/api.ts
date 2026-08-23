@@ -82,9 +82,18 @@ function isLoopbackHostname(hostname: string): boolean {
   );
 }
 
-export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): string {
+export function resolveDaemonUrl(
+  rawUrl = import.meta.env.VITE_DAEMON_URL,
+  currentOrigin = typeof window !== "undefined" ? window.location.origin : undefined
+): string {
   const trimmedUrl = rawUrl?.trim();
-  if (!trimmedUrl) return DEFAULT_DAEMON_URL;
+  if (!trimmedUrl) {
+    if (currentOrigin) {
+      const parsedOrigin = new URL(currentOrigin);
+      if (!isLoopbackHostname(parsedOrigin.hostname)) return parsedOrigin.origin;
+    }
+    return DEFAULT_DAEMON_URL;
+  }
 
   let parsed: URL;
   try {
