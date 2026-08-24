@@ -58,6 +58,9 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { generatedFavicon } from "@/lib/media-url";
+import { isDemoMode } from "@/demo/enabled";
+import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 
 const DOMAINS_COLLAPSED_COUNT = 5;
 const DOMAINS_PAGE_THRESHOLD = 20;
@@ -111,7 +114,7 @@ function DraggableCategory({
   const selected = isCategorySelected(cat, selectedCategory, selectedCategoryId);
   const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
     id: cat.id,
-    disabled: collapsed,
+    disabled: collapsed || isDemoMode,
   });
   const { setNodeRef: setDropRef } = useDroppable({ id: cat.id });
 
@@ -134,7 +137,7 @@ function DraggableCategory({
             isDropTarget && "ring-2 ring-primary/60 bg-primary/10"
           )}
         >
-          {!collapsed && isDraggingAny && (
+          {!collapsed && !isDemoMode && isDraggingAny && (
             <span
               {...attributes}
               {...listeners}
@@ -144,7 +147,7 @@ function DraggableCategory({
               <GripVertical className="h-3 w-3" />
             </span>
           )}
-          {!collapsed && !isDraggingAny && (
+          {!collapsed && !isDemoMode && !isDraggingAny && (
             <span
               {...attributes}
               {...listeners}
@@ -286,6 +289,7 @@ export function AppSidebar({
   // Move state — tracks category id (used by "Move to…" dropdown)
   const [movingCategoryId, setMovingCategoryId] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string>("");
+  const [demoPromptOpen, setDemoPromptOpen] = useState(false);
 
   // Drag-and-drop state
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -405,11 +409,19 @@ export function AppSidebar({
   }
 
   function openAddCategory() {
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
     setAddingCategory(true);
     setTimeout(() => newCategoryInputRef.current?.focus(), 0);
   }
 
   function startRename(cat: UICategory) {
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
     setRenamingCategoryId(cat.id);
     setRenameValue(cat.name);
     setTimeout(() => renameInputRef.current?.focus(), 0);
@@ -439,6 +451,10 @@ export function AppSidebar({
   }
 
   function startDelete(cat: UICategory) {
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
     setDeletingCategoryId(cat.id);
   }
 
@@ -449,6 +465,10 @@ export function AppSidebar({
   }
 
   function startMove(cat: UICategory) {
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
     setMovingCategoryId(cat.id);
     setMoveTargetId("__root__");
   }
@@ -473,6 +493,11 @@ export function AppSidebar({
     const targetId = event.over?.id as string | undefined;
     setDraggingId(null);
     setDragOverId(null);
+
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
 
     if (!targetId || targetId === draggedId) return;
 
@@ -526,7 +551,7 @@ export function AppSidebar({
             {!collapsed && (
               <div>
                 <h1 className="font-semibold text-sm tracking-tight">Grimoire</h1>
-                <p className="text-[10px] text-muted-foreground font-mono">{totalCount} bookmarks</p>
+                <p className="mt-1 text-[10px] leading-tight text-muted-foreground font-mono">{totalCount} bookmarks</p>
               </div>
             )}
           </div>
@@ -544,7 +569,8 @@ export function AppSidebar({
                 <button
                   onClick={openAddCategory}
                   className="ml-auto h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                  title="New category"
+                  title={isDemoMode ? "Editing categories requires installing Grimoire" : "New category"}
+                  aria-label={isDemoMode ? "Editing categories requires installing Grimoire" : "New category"}
                 >
                   <Plus className="h-3 w-3" />
                 </button>
@@ -758,7 +784,7 @@ export function AppSidebar({
                       tooltip={collapsed ? `${d.domain} (${d.count})` : undefined}
                     >
                       <img
-                        src={`https://www.google.com/s2/favicons?domain=${d.domain}&sz=16`}
+                        src={generatedFavicon(d.domain)}
                         alt=""
                         className="h-3.5 w-3.5 shrink-0 rounded-sm"
                       />
@@ -989,6 +1015,12 @@ export function AppSidebar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoInstallPrompt
+        open={demoPromptOpen}
+        onOpenChange={setDemoPromptOpen}
+        action="Edit categories"
+      />
     </>
   );
 }

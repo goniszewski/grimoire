@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Bookmark, PipelineStatus, PipelineError, PIPELINE_STAGES, Category, TagCount, DomainCount } from "@/types/bookmark";
 import { MOCK_BOOKMARKS } from "@/data/mock-bookmarks";
+import { generatedFavicon } from "@/lib/media-url";
 
 export type SortOption = "newest" | "oldest" | "title-az" | "title-za" | "domain-az" | "domain-za";
 
@@ -44,7 +45,7 @@ export function useBookmarkStore() {
       summary: "Processing...",
       content: "",
       domain,
-      favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+      favicon: generatedFavicon(domain),
       tags: [],
       category: "Uncategorized",
       status: "saved",
@@ -158,7 +159,7 @@ export function useBookmarkStore() {
           try {
             const domain = new URL(value).hostname.replace("www.", "");
             updates.domain = domain;
-            updates.favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            updates.favicon = generatedFavicon(domain);
           } catch {
             // Keep the edited URL text even when it is not parseable yet.
           }

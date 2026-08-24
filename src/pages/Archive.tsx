@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { formatDistanceToNow } from "date-fns";
 import { openBookmarkExternal } from "@/lib/bookmark-open";
+import { generatedFavicon } from "@/lib/media-url";
 
 const archiveQueryKey = bookmarkKeys.archive;
 
@@ -34,7 +35,7 @@ const Archive = () => {
       rawTitle: bm.title,
       summary: bm.description ?? "",
       domain: bm.domain,
-      favicon: bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`,
+      favicon: bm.favicon_url ?? generatedFavicon(bm.domain),
       tags: bm.tags,
       category: "Uncategorized",
       category_id: bm.category_id,

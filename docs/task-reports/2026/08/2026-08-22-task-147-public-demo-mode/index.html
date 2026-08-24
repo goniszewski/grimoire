@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public Demo Mode - Grimoire Task Report</title>
+<style>
+:root{--bg:#f7f7fa;--surface:#fff;--ink:#191827;--muted:#626475;--line:#dedfec;--violet:#7c3aed;--blue:#0f7fbf;--green:#15803d;--shadow:0 18px 45px rgba(30,32,50,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}.page{width:min(1120px,calc(100vw - 40px));margin:auto;padding:56px 0}.breadcrumbs{margin-bottom:24px;color:var(--muted);font-size:.9rem}.breadcrumbs a{text-decoration:none}.eyebrow{margin:0 0 8px;color:var(--violet);font-size:.78rem;font-weight:800;text-transform:uppercase}h1{margin:0;font-size:clamp(2.2rem,6vw,4.4rem);line-height:1}h2{margin:0 0 10px;font-size:1.15rem}.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.meta-row span,.pill{border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:.78rem;font-weight:700}.task-card{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:24px;box-shadow:var(--shadow)}.hero-shot{margin:28px 0 32px}.hero-shot img,.shot-grid img{display:block;width:100%;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;cursor:zoom-in}.hero-shot figcaption,.shot-grid figcaption{margin-top:8px;color:var(--muted);font-size:.85rem;line-height:1.45}.task-card section{margin-top:26px}.task-card p,.task-card li{line-height:1.55}.task-card ul{padding-left:22px}.shot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;align-items:start}.shot-grid figure{min-width:0;margin:0}.task-card details{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}.task-card summary{cursor:pointer;font-weight:700}.code-list{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86rem}.status{color:var(--green)}@media(max-width:640px){.page{width:min(100% - 28px,1120px);padding:36px 0}.task-card{padding:18px}}
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../index.html">August 2026</a></nav>
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Grimoire Task Report</p>
+      <h1>Public Demo Mode</h1>
+      <div class="meta-row"><span>August 22–23, 2026</span><span>TASK-147</span><span class="status">Demo polish follow-up</span></div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/02-after-main.png" alt="Grimoire public demo library with a persistent demo banner, fixture bookmarks, categories, domains, and filters">
+      <figcaption>After: the real library UI runs against a same-origin in-browser fixture API, with the demo framing visible above the workspace.</figcaption>
+    </figure>
+
+    <section><h2>Before</h2><p>Grimoire's real frontend expected a local loopback daemon and SQLite-backed data. There was no static client-only profile that visitors could open without installation.</p></section>
+    <section><h2>Problem</h2><p>A public UI preview must demonstrate real navigation and data behavior without exposing the daemon, implying hosted storage, making provider calls, or silently pretending that local-only actions succeeded.</p></section>
+    <section><h2>Changes Added</h2><ul>
+      <li>Added a demo build profile with an injectable API transport, same-origin <code>/__api</code> base, dynamic demo-router loading, and a bundle guard for loopback daemon URLs.</li>
+      <li>Added 30 curated synthetic bookmarks with real reference URLs, original summaries, categories, tags, timeline events, suggestions, detail content, related-bookmark matching, and JSON/CSV export.</li>
+      <li>Added persistent demo framing, install guidance for local-only actions, read-only demo settings, disabled app lock behavior, reset cleanup, no sidebar cookie writes, and local inline favicons with no third-party image requests.</li>
+      <li>Added a small vertical gap and tighter line-height for the sidebar bookmark count under the Grimoire label.</li>
+      <li>Aligned the desktop demo banner with the main toolbar's inner gutter while keeping the mobile banner padding unchanged.</li>
+      <li>Removed Radix overlay scroll-lock compensation from the page edge so popovers and modals do not expose a visible right-hand gutter.</li>
+      <li>Kept the pipeline status in the bookmark-detail header only, removing the duplicate badge from the content row beside Read Later.</li>
+      <li>Added focused router tests, hermetic Playwright demo tests, a CI demo job, README/security-boundary notes, and desktop/narrow/detail evidence.</li>
+    </ul></section>
+    <section><h2>Result</h2><p>The demo now loads 26 active fixture bookmarks without Bun or SQLite, supports search, filters, deep links, detail content, related items, export, and session-only actions, and clearly routes local-only actions toward installation. The sidebar identity block and desktop banner now share a deliberate spacing rhythm, while overlays keep the workspace flush to the viewport edge. Reset clears the in-memory state and known demo-local storage keys.</p></section>
+    <section><h2>Verification</h2><ul>
+      <li><code>npm test -- --run src/demo/api/router.test.ts</code> — 5 tests passed.</li>
+      <li><code>npm test -- --run src/components/AppSidebar.test.tsx</code> — 20 tests passed, including the count-label spacing regression.</li>
+      <li><code>npm run build:demo</code> and <code>npm run verify:demo-bundle</code> — passed; no <code>127.0.0.1:3210</code> or <code>localhost:3210</code> found in <code>dist/</code>.</li>
+      <li><code>npm run test:e2e:demo</code> — 4 tests passed for browsing/search/detail, desktop banner-gutter alignment, deep-link/export, reset cleanup, and install gating for Settings/category/tag actions; the detail flow asserts exactly one <code>Indexed</code> label, and the export flow asserts that Radix scroll locking leaves body margin and padding at <code>0px</code>.</li>
+      <li><code>npm run lint</code> and <code>npm run type-check:frontend</code> — passed; lint retains 8 existing Fast Refresh warnings and no errors.</li>
+      <li>Fresh Playwright captures were inspected at desktop 1440px and narrow 390px for the updated spacing, alongside the existing popover-open and modal-open states.</li>
+    </ul></section>
+
+    <details open><summary>Additional screenshots</summary><div class="shot-grid">
+      <figure><img src="assets/03-after-mobile.png" alt="Narrow Grimoire public demo library with readable banner, search, controls, and stacked bookmark cards"><figcaption>Narrow state: the banner, search controls, cards, and pagination remain usable at 390px.</figcaption></figure>
+      <figure><img src="assets/04-detail-state.png" alt="Grimoire public demo bookmark detail drawer showing extracted content, tags, category, actions, and a related bookmark"><figcaption>Detail state: synthetic extracted content and related-bookmark behavior are visible without a daemon.</figcaption></figure>
+      <figure><img src="assets/05-after-topbar.png" alt="Desktop public demo library with the spaced Grimoire bookmark count in the sidebar header"><figcaption>Topbar polish: the bookmark count has deliberate separation beneath the Grimoire label.</figcaption></figure>
+      <figure><img src="assets/06-after-popover.png" alt="Desktop public demo library with the Export popover open and no right-edge gutter"><figcaption>Popover state: the workspace remains flush to the right edge while the menu is open.</figcaption></figure>
+      <figure><img src="assets/07-after-mobile-modal.png" alt="Narrow public demo library with the local-only modal open and no right-edge gutter"><figcaption>Modal state: the narrow layout keeps its full viewport width while the install prompt is open.</figcaption></figure>
+      <figure><img src="assets/08-after-detail-modal.png" alt="Desktop public demo bookmark detail modal showing one Indexed badge in the header and Read Later below"><figcaption>Detail state: the pipeline status appears once in the header; the content row retains only the Read Later badge.</figcaption></figure>
+      <figure><img src="assets/09-after-spacing-desktop.png" alt="Desktop public demo showing the banner aligned with the toolbar gutter and the spaced sidebar bookmark count"><figcaption>Spacing pass: the desktop banner begins on the same inner gutter as the toolbar, and the sidebar count breathes below the title.</figcaption></figure>
+      <figure><img src="assets/10-after-spacing-mobile.png" alt="Narrow public demo showing the responsive banner and controls after spacing polish"><figcaption>Narrow spacing pass: the banner keeps its compact responsive padding while the controls remain usable.</figcaption></figure>
+    </div></details>
+
+    <details><summary>Implementation notes</summary><p>The daemon remains loopback-only and unchanged. Launch hostname, CTA destination, indexing policy, analytics, fixture ownership, accessibility/performance gates, static-host fallback configuration, kill-switch ownership, and the full Playwright mock-daemon adapter promotion remain explicit follow-ups from the plan rather than being guessed in this slice. The demo build also reports the existing large frontend chunk and stale Browserslist data as warnings; neither invalidated the focused demo checks.</p></details>
+    <details><summary>Files changed</summary><ul class="code-list">
+      <li><a href="../../../../../src/demo/api/router.ts">src/demo/api/router.ts</a>, <a href="../../../../../src/demo/api/state.ts">state.ts</a>, <a href="../../../../../src/demo/api/fixtures.ts">fixtures.ts</a></li>
+      <li><a href="../../../../../src/lib/api.ts">src/lib/api.ts</a>, <a href="../../../../../src/lib/api/transport.ts">src/lib/api/transport.ts</a>, <a href="../../../../../src/demo/enabled.ts">src/demo/enabled.ts</a></li>
+      <li><a href="../../../../../src/components/DemoModeBanner.tsx">src/components/DemoModeBanner.tsx</a>, <a href="../../../../../src/components/DemoInstallPrompt.tsx">DemoInstallPrompt.tsx</a>, <a href="../../../../../src/pages/DemoSettings.tsx">DemoSettings.tsx</a></li>
+      <li><a href="../../../../../src/components/AppSidebar.tsx">src/components/AppSidebar.tsx</a>, <a href="../../../../../src/main.tsx">src/main.tsx</a>, <a href="../../../../../src/index.css">src/index.css</a>, <a href="../../../../../src/components/AppSidebar.test.tsx">AppSidebar.test.tsx</a></li>
+      <li><a href="../../../../../src/components/BookmarkDetail.tsx">src/components/BookmarkDetail.tsx</a>, <a href="../../../../../src/components/BookmarkDetailContent.tsx">BookmarkDetailContent.tsx</a>, <a href="../../../../../src/components/BookmarkDetailContent.test.tsx">BookmarkDetailContent.test.tsx</a></li>
+      <li><a href="../../../../../e2e/demo.spec.ts">e2e/demo.spec.ts</a>, <a href="../../../../../playwright.demo.config.ts">playwright.demo.config.ts</a>, <a href="../../../../../.github/workflows/quality.yml">.github/workflows/quality.yml</a></li>
+      <li><a href="../../../../../README.md">README.md</a>, <a href="../../../../../SECURITY.md">SECURITY.md</a>, <a href="../../../../../docs/security-boundaries.md">docs/security-boundaries.md</a>, <a href="../../../../../tasks/in-progress/TASK-147-public-demo-mode.md">TASK-147</a></li>
+    </ul></details>
+  </article>
+</main>
+</body>
+</html>

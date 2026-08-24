@@ -24,8 +24,8 @@ export const Config = {
   DATA_DIR: resolveDataDir(
     process.env.DATA_DIR ?? "~/.local/share/littleimp"
   ),
-  // Comma-separated list of additional trusted browser origins. Runtime policy
-  // accepts only http/https loopback origins and ignores non-loopback entries.
+  // Comma-separated list of additional trusted browser origins. Non-loopback
+  // origins must be explicitly configured; defaults remain loopback-only.
   CORS_ORIGINS: (process.env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080")
     .split(",")
     .map((o) => o.trim())

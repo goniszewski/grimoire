@@ -95,6 +95,8 @@ import type {
   ApiUpdateCheckResult,
 } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
+import { isDemoMode } from "@/demo/enabled";
+import DemoSettings from "@/pages/DemoSettings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -490,7 +492,7 @@ function EncryptedPackageAction({
   );
 }
 
-const Settings = () => {
+const LocalSettings = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -2526,5 +2528,7 @@ function BrowserIntegration() {
     </section>
   );
 }
+
+const Settings = () => (isDemoMode ? <DemoSettings /> : <LocalSettings />);
 
 export default Settings;

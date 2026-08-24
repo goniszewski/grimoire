@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { LayoutGrid, List, Lock, ShieldCheck, ShieldOff } from "lucide-react";
 import { ViewMode } from "@/hooks/use-preferences";
 import { toast } from "sonner";
+import { isDemoMode } from "@/demo/enabled";
 
 interface PreferencesDialogProps {
   open: boolean;
@@ -117,7 +118,11 @@ export function PreferencesDialog({
               <Label className="text-sm font-medium">App Lock</Label>
             </div>
 
-            {securityMode === "idle" && (
+            {isDemoMode ? (
+              <p className="text-xs text-muted-foreground">
+                App Lock is disabled in the public demo so a visitor cannot lock themselves out. Install Grimoire to protect a private local library.
+              </p>
+            ) : securityMode === "idle" && (
               <div className="space-y-3">
                 {hasPassword ? (
                   <>

@@ -142,9 +142,9 @@ describe("Security hardening", () => {
     expect(json.error).toContain("Origin is not allowed");
   });
 
-  it("ignores configured non-loopback CORS origins while allowing configured loopback origins", async () => {
+  it("allows explicitly configured remote origins while rejecting unconfigured origins", async () => {
     const originalOrigins = Config.CORS_ORIGINS;
-    (Config as MutableConfig).CORS_ORIGINS = ["https://evil.example", "http://localhost:4567"];
+    (Config as MutableConfig).CORS_ORIGINS = ["https://roberts-mac-mini.tailae45c7.ts.net:8443", "http://localhost:4567"];
 
     try {
       const app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test", staticDir: false });
@@ -158,6 +158,17 @@ describe("Security hardening", () => {
         body: JSON.stringify({ url: "https://example.com/configured-non-loopback-origin" }),
       });
       expect(rejected.status).toBe(403);
+
+      const remote = await app.request("/bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://roberts-mac-mini.tailae45c7.ts.net:8443",
+        },
+        body: JSON.stringify({ url: "https://example.com/configured-remote-origin" }),
+      });
+      expect(remote.status).toBe(201);
+      expect(remote.headers.get("access-control-allow-origin")).toBe("https://roberts-mac-mini.tailae45c7.ts.net:8443");
 
       const allowed = await app.request("/bookmarks", {
         method: "POST",

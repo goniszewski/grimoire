@@ -22,6 +22,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { MAX_TAG_NAME_LEN, normaliseTagName, validateTagName } from "@/lib/tag-names";
 import { applyRenamedTagToCache } from "@/lib/tag-cache";
+import { isDemoMode } from "@/demo/enabled";
+import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 
 function bookmarkCountLabel(count: number): string {
   return `${count} bookmark${count === 1 ? "" : "s"}`;
@@ -35,6 +37,7 @@ const Tags = () => {
   const [deleteTarget, setDeleteTarget] = useState<ApiTag | null>(null);
   const [renameTarget, setRenameTarget] = useState<ApiTag | null>(null);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [demoPromptOpen, setDemoPromptOpen] = useState(false);
 
   const tagsQuery = useQuery({
     queryKey: bookmarkKeys.tags,
@@ -109,6 +112,10 @@ const Tags = () => {
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isDemoMode) {
+      setDemoPromptOpen(true);
+      return;
+    }
     const name = normaliseTagName(tagInput);
     const validationError = validateTagName(name);
     if (validationError) {
@@ -143,39 +150,49 @@ const Tags = () => {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6">
-        <form
-          onSubmit={handleCreate}
-          className="mb-6 grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[1fr_auto]"
-        >
-          <div className="min-w-0 space-y-2">
-            <Label htmlFor="tag-name">Tag name</Label>
-            <Input
-              id="tag-name"
-              value={tagInput}
-              onChange={(event) => {
-                setTagInput(event.target.value);
-                if (formError) setFormError(null);
-              }}
-              placeholder="typescript"
-              maxLength={MAX_TAG_NAME_LEN + 8}
-              aria-invalid={!!formError}
-              aria-describedby={formError ? "tag-name-error" : undefined}
-            />
-            {formError && (
-              <p id="tag-name-error" className="text-xs text-destructive">
-                {formError}
-              </p>
-            )}
-          </div>
-          <Button type="submit" className="self-end" disabled={createMutation.isPending}>
-            {createMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            Create tag
-          </Button>
-        </form>
+        {isDemoMode ? (
+          <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed bg-muted/30 p-4">
+            <div>
+              <h2 className="text-sm font-medium">Tag management is local-only</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Install Grimoire to create, rename, or delete tags in a private library.</p>
+            </div>
+            <Button size="sm" onClick={() => setDemoPromptOpen(true)}>Install Grimoire</Button>
+          </section>
+        ) : (
+          <form
+            onSubmit={handleCreate}
+            className="mb-6 grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[1fr_auto]"
+          >
+            <div className="min-w-0 space-y-2">
+              <Label htmlFor="tag-name">Tag name</Label>
+              <Input
+                id="tag-name"
+                value={tagInput}
+                onChange={(event) => {
+                  setTagInput(event.target.value);
+                  if (formError) setFormError(null);
+                }}
+                placeholder="typescript"
+                maxLength={MAX_TAG_NAME_LEN + 8}
+                aria-invalid={!!formError}
+                aria-describedby={formError ? "tag-name-error" : undefined}
+              />
+              {formError && (
+                <p id="tag-name-error" className="text-xs text-destructive">
+                  {formError}
+                </p>
+              )}
+            </div>
+            <Button type="submit" className="self-end" disabled={createMutation.isPending}>
+              {createMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              Create tag
+            </Button>
+          </form>
+        )}
 
         {tagsQuery.isLoading && (
           <div className="flex min-h-48 items-center justify-center text-sm text-muted-foreground">
@@ -227,6 +244,10 @@ const Tags = () => {
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     onClick={() => {
+                      if (isDemoMode) {
+                        setDemoPromptOpen(true);
+                        return;
+                      }
                       setRenameTarget(tag);
                       setRenameError(null);
                     }}
@@ -239,7 +260,7 @@ const Tags = () => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteTarget(tag)}
+                    onClick={() => isDemoMode ? setDemoPromptOpen(true) : setDeleteTarget(tag)}
                     aria-label={`Delete ${tag.name} tag`}
                     title={`Delete ${tag.name} tag`}
                   >
@@ -291,6 +312,12 @@ const Tags = () => {
           setRenameError(null);
           renameMutation.mutate({ id: renameTarget.id, name });
         }}
+      />
+
+      <DemoInstallPrompt
+        open={demoPromptOpen}
+        onOpenChange={setDemoPromptOpen}
+        action="Manage tags"
       />
     </div>
   );
