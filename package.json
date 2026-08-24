@@ -4,9 +4,14 @@
   "version": "1.1.0",
   "license": "MIT",
   "author": "Robert Goniszewski",
-  "repository": { "type": "git", "url": "git+https://github.com/goniszewski/grimoire.git" },
-  "homepage": "https://github.com/goniszewski/grimoire#readme",
-  "bugs": { "url": "https://github.com/goniszewski/grimoire/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/goniszewski/grimoire.git"
+  },
+  "homepage": "https://goniszewski.com/grimoire/",
+  "bugs": {
+    "url": "https://github.com/goniszewski/grimoire/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

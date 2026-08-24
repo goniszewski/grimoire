@@ -124,17 +124,10 @@ describe("Homebrew formula packaging", () => {
 
   it("documents Homebrew as a pending path until live validation passes", () => {
     const readme = readProjectFile("README.md");
-    const releaseChecklist = readProjectFile("docs/release-checklist.md");
 
     expect(readme).toContain("### Homebrew (pending live validation)");
-    expect(readme).toContain("not a supported beta installation path yet");
+    expect(readme).toContain("not a supported installation path yet");
     expect(readme).not.toContain("brew install little-imp");
     expect(readme).not.toContain("brew services start little-imp");
-
-    expect(releaseChecklist).toContain("brew tap oven-sh/bun");
-    expect(releaseChecklist).toContain('brew tap goniszewski/grimoire "$PWD"');
-    expect(releaseChecklist).toContain("brew audit --strict goniszewski/grimoire/grimoire");
-    expect(releaseChecklist).toContain("brew install goniszewski/grimoire/grimoire");
-    expect(releaseChecklist).toContain("brew uninstall grimoire");
   });
 });

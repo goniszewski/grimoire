@@ -48,8 +48,8 @@ Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
   session state in memory, and contains no server database, secrets, cookies,
   third-party scripts, or fingerprinting.
 
-The canonical threat model and release gates for any future non-loopback mode
-are documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
+Any future non-loopback mode requires a separate security review and explicit
+authentication, origin, secrets, and network-exposure controls.
 
 ## Implemented Controls
 
