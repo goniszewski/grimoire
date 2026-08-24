@@ -44,8 +44,8 @@ Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
   must be protected before requests reach the daemon, for example with an
   authenticated tunnel, VPN, or reverse proxy.
 
-The canonical threat model and release gates for any future non-loopback mode
-are documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
+Any future non-loopback mode requires a separate security review and explicit
+authentication, origin, secrets, and network-exposure controls.
 
 ## Implemented Controls
 

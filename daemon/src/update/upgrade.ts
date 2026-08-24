@@ -235,6 +235,38 @@ function configuredSigningFingerprints(env?: Record<string, string | undefined>)
     .filter(Boolean);
 }
 
+async function readBodyWithCap(res: Response, maxBytes: number, label: string): Promise<Uint8Array> {
+  const contentLength = res.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+    await res.body?.cancel();
+    throw new UpgradeError(`${label} Content-Length ${contentLength} exceeds ${maxBytes} byte limit.`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) return new Uint8Array(0);
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new UpgradeError(`${label} exceeded ${maxBytes} byte download limit.`);
+    }
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+
 async function downloadRequired(
   fetchImpl: typeof fetch,
   url: string,
@@ -245,18 +277,7 @@ async function downloadRequired(
   if (!res.ok) {
     throw new UpgradeError(`Could not download ${label} from ${url} (HTTP ${res.status}).`);
   }
-  const contentLength = res.headers.get("content-length");
-  if (contentLength && parseInt(contentLength, 10) > MAX_UPGRADE_ARTIFACT_BYTES) {
-    throw new UpgradeError(
-      `${label} Content-Length ${contentLength} exceeds ${MAX_UPGRADE_ARTIFACT_BYTES} byte limit.`
-    );
-  }
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.byteLength > MAX_UPGRADE_ARTIFACT_BYTES) {
-    throw new UpgradeError(
-      `${label} exceeded ${MAX_UPGRADE_ARTIFACT_BYTES} byte download limit.`
-    );
-  }
+  const bytes = await readBodyWithCap(res, MAX_UPGRADE_ARTIFACT_BYTES, label);
   writeFileSync(outputPath, bytes);
 }
 
@@ -266,14 +287,10 @@ async function downloadOptional(fetchImpl: typeof fetch, url: string, outputPath
   if (!res.ok) {
     throw new UpgradeError(`Could not download detached signature from ${url} (HTTP ${res.status}).`);
   }
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.byteLength > MAX_UPGRADE_ARTIFACT_BYTES) {
-    throw new UpgradeError("Detached signature exceeded download size limit.");
-  }
+  const bytes = await readBodyWithCap(res, MAX_UPGRADE_ARTIFACT_BYTES, "Detached signature");
   writeFileSync(outputPath, bytes);
   return true;
 }
-
 async function fetchArtifact(fetchImpl: typeof fetch, url: string, label: string): Promise<Response> {
   try {
     return await fetchImpl(url);
