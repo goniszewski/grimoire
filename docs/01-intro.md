@@ -2,7 +2,9 @@
 
 Grimoire is a local-first bookmark manager. Save links, extract readable content, organize with tags and categories, and find things later with keyword or meaning-based search. Your library stays on your machine.
 
-It is a full rewrite of the old 0.x app. Same idea — private bookmark library — with a new local daemon and UI. There is no multi-user signup and no published browser-store extension yet.
+It provides a private bookmark library through a local daemon and UI. The
+default deployment is single-user and loopback-bound, keeping the library on
+your machine while leaving integrations optional.
 
 ## What you get
 

@@ -13,17 +13,18 @@ Guidance for coding agents working in this repository.
 
 Before meaningful edits, skim:
 
+- `CONTEXT.md` for the private task board and task-report workspace.
 - `README.md` for product shape, installation paths, and development expectations.
 - `README.md` and the relevant public guide under `docs/` for product context.
 - `docs/api-contract.json` and `API.md` before changing daemon routes or frontend API clients.
-- Relevant task file under `tasks/` if the work maps to a task ID.
+- Relevant task file under `../_project-work/grimoire/tasks/` if the work maps to a task ID.
 
 ## Repository Layout
 
 - `src/`: React app, UI components, hooks, pages, types, and frontend tests.
 - `daemon/`: Bun daemon, REST routes, SQLite repositories, migrations, pipeline workers, CLI, and daemon tests.
 - `docs/`: public product, operational, API, and presentation documentation.
-- `tasks/`: local file-based implementation board.
+- `CONTEXT.md`: pointer to the maintainer-only task and evidence workspace.
 - `scripts/`: release, validation, documentation, and smoke-test helpers.
 - `release/`: generated release artifacts and manifests.
 - `dist/`: built frontend output.
@@ -49,9 +50,11 @@ Before meaningful edits, skim:
 
 ## Data, Docs, And Task Hygiene
 
-- Keep task IDs stable and move Markdown task files between `tasks/backlog`, `todo`, `in-progress`, `in-review`, and `done` as appropriate.
-- Prefer updating an existing task over creating a duplicate.
+- Keep task IDs stable and move Markdown task files between `../_project-work/grimoire/tasks/{backlog,todo,in-progress,in-review,done}` as appropriate.
+- Prefer updating an existing task in the private workspace over creating a duplicate.
 - Do not hand-edit generated docs when the generator is the source of truth. Use `npm run docs:api` for API documentation updates.
+- Keep task reports and visual evidence under `../_project-work/grimoire/docs/task-reports/`, following its `INSTRUCTION.md`.
+- Do not recreate the private task board or task-report archive inside this repository. If the sibling workspace is unavailable, ask before creating local-only work records.
 
 ## Verification
 

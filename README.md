@@ -14,7 +14,7 @@
 Grimoire is a local-first bookmark manager for people who save technical resources and need to find them later. Save links, import browser bookmarks, extract readable content, search by keyword or meaning, and let optional AI providers summarize and organize your library — while your data stays on your machine.
 
 > [!NOTE]
-> **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
+> The current Grimoire application is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
 > If you are coming from v0.5.x: no direct migration tool is included yet.
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
@@ -34,15 +34,15 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 ## Screenshots
 
-The screenshots below use synthetic/demo data from the local UI audit set.
+The screenshots below use synthetic demo data.
 
 | Library | Search | Bookmark detail |
 | --- | --- | --- |
-| ![Grimoire library list with categories, domains, tags, and processing badges](./docs/presentations/ui-ux-audit-assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/presentations/ui-ux-audit-assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/presentations/ui-ux-audit-assets/bookmark-detail-standard.png) |
+| ![Grimoire library list with categories, domains, tags, and processing badges](./docs/assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/assets/bookmark-detail-standard.png) |
 
 | Settings and browser integration | Import flow | Mobile library |
 | --- | --- | --- |
-| ![Grimoire settings screen with browser integration and local configuration controls](./docs/presentations/ui-ux-audit-assets/settings-long-form.png) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
+| ![Grimoire settings screen with browser integration and local configuration controls](./docs/assets/settings-long-form.png) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/assets/mobile-library-stack.png) |
 
 ## Quick Start
 

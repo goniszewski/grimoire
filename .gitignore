@@ -25,6 +25,7 @@ release/
 *.sw?
 
 .claude
+.hallmark
 .codegraph
 .reasonix
 
@@ -47,4 +48,4 @@ coverage/
 
 # Internal development artifacts not suitable for the public repo
 docs/superpowers/
-docs/presentations/little-imp-*.html
+docs/presentations/

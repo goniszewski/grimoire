@@ -1,4 +1,4 @@
-# CLAUDE.md — Grimoire 1.0
+# CLAUDE.md — Grimoire 1.1
 
 ## Project
 

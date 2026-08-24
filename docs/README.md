@@ -1,6 +1,8 @@
 # Grimoire docs
 
-Product guides and engineering notes for Grimoire 1.x live in this folder. The same product guides are published at **[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**.
+Public product guides and reference documentation for Grimoire live in this
+folder. The product guides are also published at
+**[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**.
 
 ## Product guides
 
@@ -14,18 +16,12 @@ Product guides and engineering notes for Grimoire 1.x live in this folder. The s
 | [Remote access](./06-remote-access.md) | Loopback default and safe remote use |
 | [FAQ](./faq.md) | Common questions |
 
-## Engineering reference
+## Reference
 
 | Doc | What it covers |
 | --- | --- |
-| [overview.md](./overview.md) | Architecture and current behavior |
-| [prd.md](./prd.md) | Product requirements |
 | [docker-deployment.md](./docker-deployment.md) | Docker deployment details |
-| [security-boundaries.md](./security-boundaries.md) | Threat model and trust boundaries |
-| [update-system.md](./update-system.md) | Update and upgrade flows |
-| [backup-design.md](./backup-design.md) | Backup and restore design |
 | [diagnostics.md](./diagnostics.md) | Diagnostics surface |
 | [api-contract.json](./api-contract.json) | API contract source of truth |
-| [roadmap.md](./roadmap.md) | Roadmap |
 
 Repo-root references: [API.md](../API.md), [SECURITY.md](../SECURITY.md), [CONTRIBUTING.md](../CONTRIBUTING.md).
