@@ -128,11 +128,6 @@ The source API contract lives in `daemon/src/api/contract.ts`. Generated
 outputs are [API.md](./API.md), [docs/api-contract.json](./docs/api-contract.json),
 and [docs/openapi.json](./docs/openapi.json).
 
-For non-trivial visible UI, user-flow, documentation-presentation, release
-packaging, installer, API, or important runtime behavior work, add or update a
-task report under [docs/task-reports](./docs/task-reports/index.html) following
-[INSTRUCTION.md](./docs/task-reports/INSTRUCTION.md).
-
 ## Task Board Hygiene
 
 Tasks live under `tasks/`:
@@ -154,11 +149,9 @@ for it or the maintainer asks.
 
 1. Keep changes focused.
 2. Explain the user-facing behavior, API behavior, or documentation outcome.
-3. Include screenshots or task-report links for visible changes.
+3. Include screenshots or other relevant user-facing evidence for visible changes.
 4. List verification commands and any checks that could not be run.
 5. Use semantic commit messages, for example `docs: refresh public README`.
 
-Before tagging or publishing a release, run the
-[release checklist](./docs/release-checklist.md). Public one-command,
-published-artifact, and Homebrew validation must not be claimed while
-unauthenticated release URLs return `404`.
+Public one-command, published-artifact, and Homebrew validation must not be
+claimed while unauthenticated release URLs return `404`.

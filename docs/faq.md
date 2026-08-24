@@ -32,8 +32,7 @@ or embeddings need a configured provider.
 
 For source or unpacked release installs, run `daemon/install.sh --upgrade`.
 Packaged installs can use `littleimp update install` once a reachable release
-source is configured. Settings can also check for update availability. See
-[update-system.md](./update-system.md).
+source is configured. Settings can also check for update availability.
 
 ## Does it work on Windows?
 
@@ -46,5 +45,4 @@ example `127.0.0.1:3210:3210`.
 Yes through Docker, but Grimoire itself is not a public-server product in
 `1.0.0`. Keep the daemon loopback-bound or put an authenticated tunnel,
 VPN, or reverse proxy in front of it before traffic reaches Grimoire. See
-[security-boundaries.md](./security-boundaries.md) and
-[docker-deployment.md](./docker-deployment.md).
+[SECURITY.md](../SECURITY.md) and [docker-deployment.md](./docker-deployment.md).

@@ -14,16 +14,15 @@ Guidance for coding agents working in this repository.
 Before meaningful edits, skim:
 
 - `README.md` for product shape, installation paths, and development expectations.
-- `docs/overview.md` and `docs/prd.md` for product context.
+- `README.md` and the relevant public guide under `docs/` for product context.
 - `docs/api-contract.json` and `API.md` before changing daemon routes or frontend API clients.
-- `docs/task-reports/INSTRUCTION.md` for every non-trivial task so visual task reports and index links stay consistent.
 - Relevant task file under `tasks/` if the work maps to a task ID.
 
 ## Repository Layout
 
 - `src/`: React app, UI components, hooks, pages, types, and frontend tests.
 - `daemon/`: Bun daemon, REST routes, SQLite repositories, migrations, pipeline workers, CLI, and daemon tests.
-- `docs/`: product, release, operational, API, presentation, and task-report documentation.
+- `docs/`: public product, operational, API, and presentation documentation.
 - `tasks/`: local file-based implementation board.
 - `scripts/`: release, validation, documentation, and smoke-test helpers.
 - `release/`: generated release artifacts and manifests.
@@ -53,7 +52,6 @@ Before meaningful edits, skim:
 - Keep task IDs stable and move Markdown task files between `tasks/backlog`, `todo`, `in-progress`, `in-review`, and `done` as appropriate.
 - Prefer updating an existing task over creating a duplicate.
 - Do not hand-edit generated docs when the generator is the source of truth. Use `npm run docs:api` for API documentation updates.
-- For non-trivial visible, flow, documentation-presentation, release-packaging, or runtime-behavior work, create or update a task report under `docs/task-reports/` following `docs/task-reports/INSTRUCTION.md`.
 
 ## Verification
 
@@ -62,7 +60,7 @@ Before meaningful edits, skim:
 - Run `npm run docs:api:check` when API contracts or route behavior may affect generated docs.
 - Run `npm run build` for changes that affect bundling, routing, Tailwind, or release output.
 - Run `npm run test:e2e` for user-flow changes that affect core app behavior.
-- For meaningful UI layout, visibility, interaction, or styling changes, launch the app, capture screenshots of the affected desktop and mobile/narrow states, inspect them, and include relevant assets in the task report.
+- For meaningful UI layout, visibility, interaction, or styling changes, launch the app, capture screenshots of the affected desktop and mobile/narrow states, and inspect them before handoff. Keep exploratory evidence local unless it is intentionally part of the public documentation.
 - If verification cannot be run locally (no system node/bun), see **Tooling Fallbacks** below to provision portable runtimes.
 
 ## Tooling Fallbacks

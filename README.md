@@ -15,7 +15,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md#migration-from-legacy-grimoire-high-priority).
+> If you are coming from v0.5.x: no direct migration tool is included yet.
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
@@ -42,7 +42,7 @@ The screenshots below use synthetic/demo data from the local UI audit set.
 
 | Settings and browser integration | Import flow | Mobile library |
 | --- | --- | --- |
-| ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
+| ![Grimoire settings screen with browser integration and local configuration controls](./docs/presentations/ui-ux-audit-assets/settings-long-form.png) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
 
 ## Quick Start
 
@@ -164,8 +164,7 @@ cd daemon
 
 The repository includes a Homebrew formula, but public install, service
 lifecycle, and data-preservation checks have not passed against release assets.
-It is not a supported beta installation path yet. The release decision records
-the validation required before these commands are published for users.
+It is not a supported installation path yet.
 
 ## Data, Privacy, And Security
 
@@ -193,8 +192,7 @@ Grimoire is local-first and loopback-first:
 - Public-network exposure is not a supported mode; put an authenticated tunnel,
   VPN, or reverse proxy in front of it if you deliberately need remote access.
 
-See [SECURITY.md](./SECURITY.md) and
-[security-boundaries.md](./docs/security-boundaries.md).
+See [SECURITY.md](./SECURITY.md) for the supported network boundary.
 
 ## Configuration
 
@@ -242,8 +240,7 @@ LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
 ```
 
 Restores verify checksums, create a rollback directory, replace local data, and
-return a restart command plus `/health` URL. See
-[backup-design.md](./docs/backup-design.md).
+return a restart command plus `/health` URL.
 
 ## Local Integrations
 
@@ -319,12 +316,8 @@ Then rerun the normal commands.
 - [FAQ](./docs/faq.md)
 - [API Reference](./API.md)
 - [API Contract](./docs/api-contract.json)
-- [Project Overview](./docs/overview.md)
-- [Roadmap](./docs/roadmap.md)
-- [Backup Design](./docs/backup-design.md)
 - [Diagnostics](./docs/diagnostics.md)
 - [Docker Deployment](./docs/docker-deployment.md)
-- [Update System](./docs/update-system.md)
 - [Security Policy](./SECURITY.md)
 - [Contributing Guide](./CONTRIBUTING.md)
 
