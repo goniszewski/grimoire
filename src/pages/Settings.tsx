@@ -2301,10 +2301,12 @@ function BrowserIntegration() {
         <div className="rounded border px-4 py-3 text-xs bg-muted/30 space-y-2">
           <p className="font-medium text-sm">Installing the bookmarklet</p>
           <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-            <li>Create an integration token below (or use an existing one).</li>
+            <li>Create a new integration token below. Existing token rows only expose a prefix and cannot generate a bookmarklet.</li>
             <li>Copy the full token shown after creation — it is only displayed once.</li>
-            <li>Click the "Copy bookmarklet" button next to a token row to copy the bookmarklet link.</li>
+            <li>While the new token is still available, click its "Bookmarklet" button or use the copy link in the token-created message.</li>
             <li>Paste the bookmarklet code into a browser bookmark's URL field, or drag the link to your bookmarks bar.</li>
+            <li>When clicked, the bookmarklet opens a short-lived Grimoire capture window. Allow popups for the page if your browser blocks it.</li>
+            <li>Replace bookmarklets created by older Grimoire versions — create a new token because the old full secret cannot be recovered.</li>
           </ol>
           <p className="font-medium text-sm mt-3">Browser notes</p>
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">

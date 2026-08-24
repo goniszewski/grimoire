@@ -262,71 +262,35 @@ describe("capture endpoint", () => {
     expect(ambiguousCategory.status).toBe(422);
   });
 
-  describe("bookmarklet endpoint (GET /capture/bookmarklet)", () => {
-    it("returns 400 when token is missing", async () => {
-      const res = await app.request("/capture/bookmarklet?url=https://example.com/test");
-      expect(res.status).toBe(400);
-      const text = await res.text();
-      expect(text).toContain("Missing token");
-    });
-
-    it("returns 400 when url is missing", async () => {
-      const token = await createToken();
-      const res = await app.request(`/capture/bookmarklet?token=${token}`);
-      expect(res.status).toBe(400);
-      const text = await res.text();
-      expect(text).toContain("Missing url");
-    });
-
-    it("returns 401 for invalid token", async () => {
-      const res = await app.request("/capture/bookmarklet?token=invalid&url=https://example.com/test");
-      expect(res.status).toBe(401);
-      const text = await res.text();
-      expect(text).toContain("Invalid or revoked token");
-    });
-
-    it("returns 422 for private URLs", async () => {
-      const token = await createToken();
-      const res = await app.request(`/capture/bookmarklet?token=${token}&url=http://127.0.0.1/internal`);
-      expect(res.status).toBe(422);
-      const text = await res.text();
-      expect(text).toContain("must not target a private or loopback host");
-    });
-
-    it("returns 201 and saves a new bookmark via bookmarklet", async () => {
-      const token = await createToken();
+  describe("bookmarklet bridge", () => {
+    it("returns a non-mutating top-level bridge without query-string authentication", async () => {
       const res = await app.request(
-        `/capture/bookmarklet?token=${token}&url=${encodeURIComponent("https://example.com/bookmarklet-test")}&title=${encodeURIComponent("Bookmarklet Test")}`
+        "/capture/bookmarklet?token=legacy-token&url=https://example.com/should-not-save"
       );
-      expect(res.status).toBe(201);
-      const text = await res.text();
-      expect(text).toContain("Saved");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(res.headers.get("cross-origin-opener-policy")).toBe("unsafe-none");
 
-      // Confirm the bookmark was persisted
-      const bookmark = db
-        .query<{ id: string; title: string }, [string]>("SELECT id, title FROM bookmarks WHERE url = ?")
-        .get("https://example.com/bookmarklet-test");
-      expect(bookmark).not.toBeNull();
-      expect(bookmark?.title).toBe("Bookmarklet Test");
+      const text = await res.text();
+      expect(text).toContain('id="grimoire-capture-status"');
+      expect(text).toContain('/capture/bookmarklet.js"');
+      expect(text).not.toContain("legacy-token");
+
+      const count = db.query<{ count: number }, []>("SELECT COUNT(*) AS count FROM bookmarks").get();
+      expect(count?.count).toBe(0);
     });
 
-    it("returns 200 HTML for a duplicate URL (already exists)", async () => {
-      const token = await createToken();
-      const url = "https://example.com/bookmarklet-dup";
+    it("serves the same-origin bridge script that posts authenticated capture requests", async () => {
+      const res = await app.request("/capture/bookmarklet.js");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(res.headers.get("content-type")).toContain("application/javascript");
 
-      // First capture
-      const first = await app.request(
-        `/capture/bookmarklet?token=${token}&url=${encodeURIComponent(url)}&title=First`
-      );
-      expect(first.status).toBe(201);
-
-      // Duplicate via bookmarklet
-      const second = await app.request(
-        `/capture/bookmarklet?token=${token}&url=${encodeURIComponent(url)}&title=Second`
-      );
-      expect(second.status).toBe(200);
-      const text = await second.text();
-      expect(text).toContain("Already saved");
+      const text = await res.text();
+      expect(text).toContain('fetch("/capture"');
+      expect(text).toContain('Authorization: "Bearer " + request.token');
+      expect(text).toContain("grimoire-bookmarklet-result");
+      expect(text).not.toContain("token=");
     });
   });
 });

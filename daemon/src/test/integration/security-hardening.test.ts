@@ -51,6 +51,7 @@ describe("Security hardening", () => {
       expect(res.headers.get("x-content-type-options")).toBe("nosniff");
       expect(res.headers.get("x-frame-options")).toBe("DENY");
       expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+      expect(res.headers.get("cross-origin-opener-policy")).toBe("same-origin");
       expect(res.headers.get("cross-origin-resource-policy")).toBe("same-origin");
       expect(res.headers.get("permissions-policy")).toContain("camera=()");
       expect(res.headers.get("content-security-policy")).toContain("default-src 'self'");

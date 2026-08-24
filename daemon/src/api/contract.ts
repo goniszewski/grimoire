@@ -2997,24 +2997,22 @@ export const apiContract = {
       method: "GET",
       path: "/capture/bookmarklet",
       tag: "Integrations",
-      summary: "Bookmarklet capture page (hidden iframe target, no auth header).",
+      summary: "Bookmarklet capture bridge page.",
       description:
-        "The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.",
-      request: {
-        query: objectSchema({
-          token: stringSchema("Integration bearer token (query-param auth)"),
-          url: stringSchema("The URL to capture"),
-          title: stringSchema("Page title"),
-          selection: stringSchema("User-selected text"),
-        }, ["token", "url"]),
-      },
+        "The browser bookmarklet opens this top-level HTML bridge to escape restrictive host-page frame CSP. The bridge is non-mutating, receives the capture payload and integration token only through a constrained postMessage handshake, and performs the authenticated same-origin POST /capture from the daemon origin. It is designed for the Settings → Browser Integration bookmarklet flow.",
       responses: {
-        "200": { description: "Bookmark already exists (not duplicated)" },
-        "201": { description: "Bookmark captured successfully" },
-        "400": problemResponse("Missing token or url"),
-        "401": problemResponse("Invalid or revoked token"),
-        "409": problemResponse("URL exists in trash or archive"),
-        "422": problemResponse("Invalid URL"),
+        "200": { description: "Bookmarklet bridge HTML page", contentType: "text/html" },
+      },
+    },
+    {
+      method: "GET",
+      path: "/capture/bookmarklet.js",
+      tag: "Integrations",
+      summary: "Bookmarklet capture bridge script.",
+      description:
+        "Same-origin JavaScript for the bookmarklet bridge page. It accepts one postMessage request from its opener, sends the authenticated POST /capture, returns the HTTP result through postMessage, and closes the bridge window.",
+      responses: {
+        "200": { description: "Bookmarklet bridge JavaScript", contentType: "application/javascript" },
       },
     },
     {

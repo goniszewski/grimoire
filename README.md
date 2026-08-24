@@ -273,7 +273,14 @@ Settings -> Browser Integration can create a token-backed bookmarklet. Drag it
 to your browser bookmarks bar, then click it on a page to capture the current
 URL, title, and selected text into Grimoire.
 
+The bookmarklet opens a short-lived local Grimoire capture window so restrictive
+page CSPs (including GitHub's) cannot block the request. Grimoire reports
+success only after the daemon confirms the capture. Allow popups for the page
+if your browser blocks the capture window.
+
 The bookmarklet embeds an integration token. Treat it like a password.
+Bookmarklets created before the current bridge flow must be replaced after an
+upgrade; create a new token because the old full secret cannot be recovered.
 
 ## Development
 
