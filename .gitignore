@@ -43,6 +43,7 @@ coverage/
 .omc/
 *.timestamp-*.mjs
 .env
+*.tsbuildinfo
 
 # Internal development artifacts not suitable for the public repo
 docs/superpowers/

@@ -13,6 +13,9 @@ describe("parsePublicHttpUrl", () => {
 
   it("rejects private hosts, credentials, and non-http schemes", () => {
     expect(parsePublicHttpUrl("http://127.0.0.1/x")).toEqual({ ok: false, reason: "private" });
+    expect(parsePublicHttpUrl("http://[::ffff:127.0.0.1]/x")).toEqual({ ok: false, reason: "private" });
+    expect(parsePublicHttpUrl("http://[::ffff:192.168.1.10]/x")).toEqual({ ok: false, reason: "private" });
+    expect(parsePublicHttpUrl("http://[::ffff:8.8.8.8]/x").ok).toBe(true);
     expect(parsePublicHttpUrl("https://user:pass@example.com/x")).toEqual({
       ok: false,
       reason: "credentials",

@@ -113,8 +113,11 @@ describe("Combobox", () => {
     expect(screen.getByText("HTTP 502")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("option")).not.toBeInTheDocument();
-    expect(onValueChange).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByPlaceholderText("Search…"), {
+      target: { value: "my/offline-model" },
+    });
+    fireEvent.click(screen.getByRole("option", { name: /my\/offline-model/ }));
+    expect(onValueChange).toHaveBeenCalledWith("my/offline-model");
   });
 
   it("renders the hint next to matching items", async () => {

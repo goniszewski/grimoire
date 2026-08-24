@@ -7,6 +7,7 @@
  */
 
 import { ExtractionResult } from "./types.js";
+import { version as APP_VERSION } from "../../../package.json";
 
 const GITHUB_API = "https://api.github.com";
 const TIMEOUT_MS = 15_000;
@@ -53,7 +54,7 @@ async function ghIssueFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "LittleImp/0.0",
+    "User-Agent": `Grimoire/${APP_VERSION}`,
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -79,7 +80,8 @@ async function ghIssueFetch(path: string): Promise<unknown> {
 export function parseGitHubIssueUrl(url: string): GitHubIssueUrl | null {
   try {
     const parsedUrl = new URL(url);
-    if (parsedUrl.hostname !== "github.com") return null;
+    // GitHub redirects www.github.com to github.com; treat both as canonical.
+    if (parsedUrl.hostname.replace(/^www\./, "") !== "github.com") return null;
 
     const parts = parsedUrl.pathname.split("/").filter(Boolean);
     if (parts.length < 4 || parts[2] !== "issues") return null;
@@ -90,6 +92,7 @@ export function parseGitHubIssueUrl(url: string): GitHubIssueUrl | null {
 
     return {
       owner: parts[0],
+      // A trailing .git is common in pasted repo URLs; the API rejects it.
       repo: parts[1].replace(/\.git$/, ""),
       number,
     };

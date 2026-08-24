@@ -292,20 +292,40 @@ describe("GET /settings/ai-models", () => {
     expect(body.title).toBe("Forbidden");
   });
 
-  it("rejects a redirect to a private host", async () => {
-    globalThis.fetch = (async () =>
-      ({
-        redirected: true,
-        url: "http://127.0.0.1:9999/v1/models",
-        ok: true,
-        status: 200,
-        body: null,
-      }) as unknown as Response) as unknown as typeof fetch;
+  it("rejects a redirect to a private host before following it", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = (async (input, init) => {
+      urls.push(requestUrl(input));
+      expect(init?.redirect).toBe("manual");
+      return new Response(null, {
+        status: 302,
+        headers: { location: "http://127.0.0.1:9999/v1/models" },
+      });
+    }) as typeof fetch;
 
     const res = await catalogRequest("/settings/ai-models?provider=openrouter&free=true");
     expect(res.status).toBe(502);
+    expect(urls).toEqual(["https://openrouter.ai/api/v1/models"]);
     const body = (await res.json()) as { title: string; detail?: string };
-    expect(body.detail).toContain("redirected to a private host");
+    expect(body.detail).toContain("Redirect to private or invalid host blocked");
+  });
+
+  it("rejects an IPv4-mapped IPv6 private redirect before following it", async () => {
+    const urls: string[] = [];
+    globalThis.fetch = (async (input, init) => {
+      urls.push(requestUrl(input));
+      expect(init?.redirect).toBe("manual");
+      return new Response(null, {
+        status: 302,
+        headers: { location: "http://[::ffff:127.0.0.1]:9999/v1/models" },
+      });
+    }) as typeof fetch;
+
+    const res = await catalogRequest("/settings/ai-models?provider=openrouter&free=true");
+    expect(res.status).toBe(502);
+    expect(urls).toEqual(["https://openrouter.ai/api/v1/models"]);
+    const body = (await res.json()) as { detail?: string };
+    expect(body.detail).toContain("Redirect to private or invalid host blocked");
   });
 
   it("returns 502 when the upstream body exceeds the size cap", async () => {

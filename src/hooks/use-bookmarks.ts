@@ -948,6 +948,10 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { read_later: 0 } }, callbacks);
   }, [updateBookmarkMutation]);
 
+  const setReadLater = useCallback(async (id: string, readLater: boolean) => {
+    await updateBookmarkMutation.mutateAsync({ id, patch: { read_later: readLater ? 1 : 0 } });
+  }, [updateBookmarkMutation]);
+
   const archiveBookmark = useCallback((id: string, callbacks?: { onSuccess?: () => void; onError?: () => void }) => {
     updateBookmarkMutation.mutate({ id, patch: { is_archived: 1 } }, callbacks);
   }, [updateBookmarkMutation]);
@@ -1043,6 +1047,7 @@ export function useBookmarks() {
     unpinBookmark,
     markReadLater,
     clearReadLater,
+    setReadLater,
     archiveBookmark,
     unarchiveBookmark,
     markAsRead,

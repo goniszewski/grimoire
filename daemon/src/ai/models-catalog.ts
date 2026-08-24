@@ -1,6 +1,7 @@
 import { log } from "../logger.js";
 import { normalizeHttpsBaseUrl } from "../lib/base-url.js";
 import { isPrivateHost } from "../lib/network.js";
+import { fetchFollowingSafeRedirects } from "../lib/safe-fetch.js";
 
 /**
  * Model catalog fetching for AI providers.
@@ -88,11 +89,12 @@ async function fetchJsonWithTimeout(url: string): Promise<Record<string, unknown
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(url, { signal: controller.signal, redirect: "follow" });
-    // SSRF guard: reject redirect chains that land on private hosts. Like
-    // pipeline/fetcher.ts this only inspects the final hop; intermediate hops
-    // are the same accepted risk documented in lib/network.ts.
-    if (res.redirected && isPrivateHost(new URL(res.url).hostname)) {
+    // Validate every redirect target before following it. Automatic redirect
+    // handling could contact a private intermediate host before this function
+    // gets a chance to inspect the final response.
+    const res = await fetchFollowingSafeRedirects(url, { signal: controller.signal });
+    const finalUrl = res.url || url;
+    if (isPrivateHost(new URL(finalUrl).hostname)) {
       res.body?.cancel();
       throw new Error("Model catalog redirected to a private host");
     }

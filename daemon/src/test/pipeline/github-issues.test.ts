@@ -134,6 +134,38 @@ describe("GitHub issue extraction", () => {
     expect(result.markdown).toContain("The import preview already has the folder data.");
   });
 
+  it("routes www.github.com issue URLs to the issue extractor", async () => {
+    const calls: string[] = [];
+    const wwwIssueUrl = "https://www.github.com/littleimp/demo/issues/42";
+
+    globalThis.fetch = mockFetch(async (input) => {
+      const url = String(input);
+      calls.push(url);
+
+      if (url.endsWith("/repos/littleimp/demo/issues/42")) {
+        return jsonResponse({
+          number: 42,
+          title: "Preserve imported bookmark folders",
+          body: "Importer should keep the nested browser folder context.",
+          state: "open",
+          labels: [{ name: "bug" }],
+          created_at: "2026-06-01T10:00:00Z",
+          updated_at: "2026-06-02T10:00:00Z",
+          user: { login: "alice" },
+          assignees: [{ login: "bob" }],
+          comments: 0,
+        });
+      }
+
+      return jsonResponse({ message: "not found" }, 404);
+    });
+
+    const result = await extractContent(wwwIssueUrl, makeFetchedHtml(wwwIssueUrl), null);
+
+    expect(calls.some((url) => url.endsWith("/repos/littleimp/demo/issues/42"))).toBe(true);
+    expect(result.title).toBe("Preserve imported bookmark folders");
+  });
+
   it("leaves non-issue GitHub URLs on the repository extractor", async () => {
     const calls: string[] = [];
     const pullUrl = "https://github.com/littleimp/demo/pull/42";
@@ -171,9 +203,21 @@ describe("GitHub issue extraction", () => {
       repo: "demo",
       number: 42,
     });
+    expect(parseGitHubIssueUrl("https://www.github.com/littleimp/demo/issues/42")).toEqual({
+      owner: "littleimp",
+      repo: "demo",
+      number: 42,
+    });
+    expect(parseGitHubIssueUrl("https://github.com/littleimp/demo.git/issues/42")).toEqual({
+      owner: "littleimp",
+      repo: "demo",
+      number: 42,
+    });
     expect(parseGitHubIssueUrl("https://github.com/littleimp/demo/pull/42")).toBeNull();
+    expect(parseGitHubIssueUrl("https://www.github.com/littleimp/demo/pull/42")).toBeNull();
     expect(parseGitHubIssueUrl("https://github.com/littleimp/demo")).toBeNull();
     expect(parseGitHubIssueUrl("https://example.com/littleimp/demo/issues/42")).toBeNull();
+    expect(parseGitHubIssueUrl("https://www.example.com/littleimp/demo/issues/42")).toBeNull();
   });
 
   it("sends GITHUB_TOKEN as an authorization header when configured", async () => {

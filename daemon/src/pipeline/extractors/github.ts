@@ -10,6 +10,7 @@
  */
 
 import { ExtractionResult } from "./types.js";
+import { version as APP_VERSION } from "../../../package.json";
 
 const GITHUB_API = "https://api.github.com";
 const TIMEOUT_MS = 15_000;
@@ -38,7 +39,7 @@ async function ghFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "LittleImp/0.0",
+    "User-Agent": `Grimoire/${APP_VERSION}`,
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -58,9 +59,11 @@ async function ghFetch(path: string): Promise<unknown> {
 export function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   try {
     const u = new URL(url);
-    if (u.hostname !== "github.com") return null;
+    // GitHub redirects www.github.com to github.com; treat both as canonical.
+    if (u.hostname.replace(/^www\./, "") !== "github.com") return null;
     const parts = u.pathname.split("/").filter(Boolean);
     if (parts.length < 2) return null;
+    // A trailing .git is common in pasted repo URLs; the API rejects it.
     return { owner: parts[0], repo: parts[1].replace(/\.git$/, "") };
   } catch {
     return null;

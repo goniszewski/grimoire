@@ -172,7 +172,7 @@ beforeEach(() => {
   mockedGetDiagnostics.mockResolvedValue({
     data: {
       generated_at: "2026-05-27T08:00:00.000Z",
-      version: "0.1.0-beta",
+      version: "1.1.0",
       platform: { os: "darwin", arch: "arm64", node_env: "production", host: "127.0.0.1", port: 3210 },
       install: { mode: "native" },
       paths: {
@@ -201,10 +201,10 @@ beforeEach(() => {
   });
   mockedCheckForUpdates.mockResolvedValue({
     data: {
-      current_version: "0.1.0-beta",
+      current_version: "1.1.0",
       update_available: false,
-      source: "https://api.github.com/repos/goniszewski/little-imp/releases",
-      channel: "beta",
+      source: "https://api.github.com/repos/goniszewski/grimoire/releases",
+      channel: "stable",
       latest: null,
     },
   });
@@ -282,17 +282,17 @@ describe("Settings update checks", () => {
   it("checks for updates and shows the available release", async () => {
     mockedCheckForUpdates.mockResolvedValue({
       data: {
-        current_version: "0.1.0-beta",
+        current_version: "1.1.0",
         update_available: true,
-        source: "https://api.github.com/repos/goniszewski/little-imp/releases",
-        channel: "beta",
+        source: "https://api.github.com/repos/goniszewski/grimoire/releases",
+        channel: "stable",
         latest: {
-          version: "0.2.0-beta.1",
-          tag: "v0.2.0-beta.1",
-          name: "Little Imp 0.2.0 beta 1",
-          prerelease: true,
+          version: "1.1.0",
+          tag: "v1.1.0",
+          name: "Grimoire 1.1.0",
+          prerelease: false,
           published_at: "2026-05-19T10:00:00.000Z",
-          url: "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1",
+          url: "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0",
         },
       },
     });
@@ -304,10 +304,10 @@ describe("Settings update checks", () => {
     await waitFor(() => {
       expect(mockedCheckForUpdates).toHaveBeenCalledWith();
     });
-    expect(await screen.findByText(/v0\.2\.0-beta\.1 is available/)).toBeInTheDocument();
+    expect(await screen.findByText(/v1\.1\.0 is available/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View release" })).toHaveAttribute(
       "href",
-      "https://github.com/goniszewski/little-imp/releases/tag/v0.2.0-beta.1"
+      "https://github.com/goniszewski/grimoire/releases/tag/v1.1.0"
     );
   });
 });
@@ -596,14 +596,14 @@ describe("Settings diagnostics", () => {
     render(<Settings />, { wrapper: makeWrapper() });
 
     expect(await screen.findByText("Diagnostics")).toBeInTheDocument();
-    expect(screen.getByText("0.1.0-beta")).toBeInTheDocument();
+    expect(screen.getByText("1.1.0")).toBeInTheDocument();
     expect(screen.getByText("native · darwin/arm64")).toBeInTheDocument();
     expect(screen.getByText("/Users/me/.local/share/littleimp")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Copy diagnostics" }));
 
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"version": "0.1.0-beta"'));
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"version": "1.1.0"'));
     });
     expect(writeText.mock.calls[0][0]).not.toContain("openai-secret");
     expect(writeText.mock.calls[0][0]).not.toContain("s3-secret-key");

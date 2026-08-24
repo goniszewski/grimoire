@@ -7,7 +7,7 @@ Guidance for coding agents working in this repository.
 - Grimoire is a local-first bookmark manager.
 - The frontend is a React 18 + Vite + TypeScript SPA under `src/`.
 - The background daemon is a Bun service under `daemon/` that listens on `127.0.0.1:3210`, stores data in SQLite, and exposes the REST API used by the frontend.
-- Current release: `1.0.0`.
+- Current release: `1.1.0`.
 
 ## First Reads
 

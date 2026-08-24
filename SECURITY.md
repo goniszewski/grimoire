@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| `1.0.0` | Yes |
+| `1.1.0` | Yes |
+| `1.0.x` | No |
 | `0.1.0-beta` | No |
 
 ## Reporting A Vulnerability
@@ -29,7 +30,7 @@ Please include:
 
 ## Security Boundary Summary
 
-Grimoire is local-first, single-user, and loopback-first for `1.0.0`.
+Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
@@ -122,7 +123,7 @@ claimed while unauthenticated release URLs return `404`.
 - Any local process that can reach `127.0.0.1:3210` can call unprotected REST
   routes. This is part of the local-first trust model.
 - Grimoire is not designed for multi-user hosts or shared public servers in
-  `1.0.0`.
+  `1.1.0`.
 - DNS rebinding is not fully mitigated and is accepted only because the daemon
   is loopback-only.
 - Content extraction fetches user-supplied public URLs. Protections reduce
@@ -159,7 +160,7 @@ When contributing:
 
 ## Future Security Work
 
-These are not shipped in `1.0.0`:
+These are not shipped in `1.1.0`:
 
 - Optional authentication for future public or multi-user modes.
 - Per-client rate limiting for authenticated non-local deployment modes.

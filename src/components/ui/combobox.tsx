@@ -106,78 +106,81 @@ export function Combobox({
               className="h-9"
             />
           </div>
-          {error ? (
-            <div className="p-3 text-xs text-destructive">
-              <p className="break-words">{error}</p>
-              {onRetry && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 h-7"
-                  onClick={() => onRetry()}
-                >
-                  <RotateCcw className="mr-1.5 h-3 w-3" />
-                  Retry
-                </Button>
-              )}
-            </div>
-          ) : (
-            <CommandList>
-              {loading && items.length === 0 ? (
-                <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Loading models…
-                </div>
-              ) : (
-                <>
-                  {customMatch && allowCustom && (
-                    <CommandGroup>
-                      <CommandItem
-                        value={trimmedQuery}
-                        onSelect={() => {
-                          onValueChange(trimmedQuery);
-                          setOpen(false);
-                        }}
-                      >
-                        Use “{trimmedQuery}”
-                      </CommandItem>
-                    </CommandGroup>
-                  )}
+          <CommandList>
+            {error && (
+              <div className="p-3 text-xs text-destructive">
+                <p className="break-words">{error}</p>
+                {onRetry && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-7"
+                    onClick={() => onRetry()}
+                  >
+                    <RotateCcw className="mr-1.5 h-3 w-3" />
+                    Retry
+                  </Button>
+                )}
+              </div>
+            )}
+            {loading && items.length === 0 && !error ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading models…
+              </div>
+            ) : (
+              <>
+                {customMatch && allowCustom && (
                   <CommandGroup>
-                    {filteredItems.map((item) => (
-                      <CommandItem
-                        key={item.value}
-                        value={item.value}
-                        onSelect={() => {
-                          onValueChange(item.value);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-3.5 w-3.5 shrink-0",
-                            value === item.value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <span className="truncate">{item.label}</span>
-                        {item.hint && (
-                          <span className="ml-auto pl-2 text-[10px] text-muted-foreground">
-                            {item.hint}
-                          </span>
-                        )}
-                      </CommandItem>
-                    ))}
+                    <CommandItem
+                      value={trimmedQuery}
+                      onSelect={() => {
+                        onValueChange(trimmedQuery);
+                        setOpen(false);
+                      }}
+                    >
+                      Use “{trimmedQuery}”
+                    </CommandItem>
                   </CommandGroup>
-                  {filteredItems.length === 0 && !(customMatch && allowCustom) && (
-                    <div className="py-6 text-center text-xs text-muted-foreground">
-                      {emptyText}
-                    </div>
-                  )}
-                </>
-              )}
-            </CommandList>
-          )}
+                )}
+                {!error && (
+                  <>
+                    <CommandGroup>
+                      {filteredItems.map((item) => (
+                        <CommandItem
+                          key={item.value}
+                          value={item.value}
+                          onSelect={() => {
+                            onValueChange(item.value);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-3.5 w-3.5 shrink-0",
+                              value === item.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="truncate">{item.label}</span>
+                          {item.hint && (
+                            <span className="ml-auto pl-2 text-[10px] text-muted-foreground">
+                              {item.hint}
+                            </span>
+                          )}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {filteredItems.length === 0 && !(customMatch && allowCustom) && (
+                      <div className="py-6 text-center text-xs text-muted-foreground">
+                        {emptyText}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
