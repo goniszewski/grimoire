@@ -1108,6 +1108,15 @@ async function applyLegacyLibraryWithWrites(
           upsertBookmarkContent(deps.db, bookmarkId, bookmark);
         }
 
+        // Mark the row explicitly so later Retry jobs can distinguish migrated
+        // content from content produced by an ordinary live pipeline run.
+        deps.db
+          .query(
+            `INSERT OR IGNORE INTO bookmark_provenance (bookmark_id, source)
+             VALUES (?, 'legacy-v05')`
+          )
+          .run(bookmarkId);
+
         writtenMediaPaths.push(
           ...importLocalMedia(deps.db, deps.dataDir, bookmarkId, bookmark, summary)
         );

@@ -20,6 +20,10 @@ Yes. Saving, importing, keyword search, tags, categories, archive/trash, backup/
 
 ## How do I migrate from Grimoire 0.5.x?
 
+The v0.5 migration tools are **experimental**. Review the dry-run output and
+keep backups of both the v0.5 data and the Grimoire 1.x library before applying
+a migration.
+
 Migration is **non-destructive** for your v0.5 data and **additive** for Grimoire 1.x:
 
 - The migrator reads a snapshot of `db.sqlite` and never writes into the v0.5

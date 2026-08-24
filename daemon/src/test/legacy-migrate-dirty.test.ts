@@ -432,6 +432,12 @@ describe("v0.5 migration dirty user-data cases", () => {
         .query<{ c: number }, []>("SELECT COUNT(*) AS c FROM bookmarks")
         .get()?.c;
       expect(count).toBe(1);
+      const provenance = target.db
+        .query<{ c: number }, []>(
+          "SELECT COUNT(*) AS c FROM bookmark_provenance WHERE source = 'legacy-v05'"
+        )
+        .get()?.c;
+      expect(provenance).toBe(1);
 
       const dry = await migrateLegacyV05Source(
         { dataDir: fixture.dataDir },
@@ -1311,17 +1317,27 @@ describe("v0.5 migration dirty user-data cases", () => {
     });
     const walDb = new Database(fixture.dbPath);
     walDb.exec("PRAGMA journal_mode=WAL;");
-    walDb.close();
-    expect(existsSync(`${fixture.dbPath}-wal`) || true).toBe(true);
+    walDb.run(
+      `INSERT INTO bookmark (
+        id, url, domain, title, description, author, content_text, content_html, content_type,
+        content_published_date, note, main_image_url, main_image_id, icon_url, icon_id, screenshotId,
+        importance, flagged, read, archived, owner_id, category_id, opened_last, opened_times, created, updated
+      ) VALUES (2, 'https://example.com/wal-live', 'example.com', 'WAL live', NULL, NULL, NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, 1, NULL, 0, 1700000001, 1700000001)`
+    );
+    expect(existsSync(`${fixture.dbPath}-wal`)).toBe(true);
 
     const target = freshTarget();
     try {
+      const inspect = inspectLegacyV05Source({ dataDir: fixture.dataDir });
+      expect(inspect.totals.bookmarks).toBe(2);
       const summary = await migrateLegacyV05Source(
         { dataDir: fixture.dataDir },
         { db: target.db, dataDir: target.dataDir, enqueueIngest: false }
       );
-      expect(summary.bookmarksCreated).toBe(1);
+      expect(summary.bookmarksCreated).toBe(2);
     } finally {
+      walDb.close();
       target.db.close();
       rmSync(target.dataDir, { recursive: true, force: true });
       rmSync(fixture.dataDir, { recursive: true, force: true });

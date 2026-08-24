@@ -2393,8 +2393,8 @@
         "tags": [
           "Migrate"
         ],
-        "summary": "Inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
-        "description": "Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
+        "summary": "Experimental: inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
+        "description": "Experimental v0.5 migration tool. Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
         "operationId": "postMigrateLegacyInspect",
         "requestBody": {
           "content": {
@@ -2407,7 +2407,7 @@
         },
         "responses": {
           "200": {
-            "description": "Legacy backup summary",
+            "description": "Experimental legacy backup summary",
             "content": {
               "application/json": {
                 "schema": {
@@ -2455,8 +2455,8 @@
         "tags": [
           "Migrate"
         ],
-        "summary": "Import one v0.5 owner's library into this local Grimoire 1.x instance.",
-        "description": "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
+        "summary": "Experimental: import one v0.5 owner's library into this local Grimoire 1.x instance.",
+        "description": "Experimental v0.5 migration tool. Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
         "operationId": "postMigrateLegacyApply",
         "requestBody": {
           "content": {
@@ -2469,7 +2469,7 @@
         },
         "responses": {
           "200": {
-            "description": "Migration apply summary",
+            "description": "Experimental migration apply summary",
             "content": {
               "application/json": {
                 "schema": {
@@ -2479,7 +2479,7 @@
             }
           },
           "207": {
-            "description": "Partial migration apply summary (bookmarksFailed > 0)",
+            "description": "Partial experimental migration apply summary (bookmarksFailed > 0)",
             "content": {
               "application/json": {
                 "schema": {
@@ -7547,7 +7547,7 @@
       },
       "LegacyMigrateRequest": {
         "type": "object",
-        "description": "v0.5 migrate request. Provide dataDir, dbPath, or archivePath.",
+        "description": "Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.",
         "properties": {
           "dataDir": {
             "type": "string",

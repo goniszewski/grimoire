@@ -11,6 +11,10 @@ describe("shouldPreserveExistingOnReprocess", () => {
        VALUES (?, 'https://example.com/d', 'example.com', 'T', 'Migrated description', 'saved')`,
       [id]
     );
+    db.run(
+      `INSERT INTO bookmark_provenance (bookmark_id, source) VALUES (?, 'legacy-v05')`,
+      [id]
+    );
     expect(shouldPreserveExistingOnReprocess(db, id, false)).toBe(true);
     expect(shouldPreserveExistingOnReprocess(db, id, undefined)).toBe(true);
   });
@@ -56,8 +60,28 @@ describe("shouldPreserveExistingOnReprocess", () => {
        VALUES (?, 'Ada Lovelace', '2024-01-15')`,
       [id]
     );
+    db.run(
+      `INSERT INTO bookmark_provenance (bookmark_id, source) VALUES (?, 'legacy-v05')`,
+      [id]
+    );
     expect(shouldPreserveExistingOnReprocess(db, id, false)).toBe(true);
     expect(shouldPreserveExistingOnReprocess(db, id, true)).toBe(false);
+  });
+
+  it("does not preserve content produced by a normal live pipeline run", () => {
+    const db = makeTestDb();
+    const id = crypto.randomUUID();
+    db.run(
+      `INSERT INTO bookmarks (id, url, domain, title, description, status)
+       VALUES (?, 'https://example.com/live', 'example.com', 'T', 'Live description', 'indexed')`,
+      [id]
+    );
+    db.run(
+      `INSERT INTO bookmark_content (bookmark_id, raw_html, markdown)
+       VALUES (?, '<p>live</p>', 'live markdown')`,
+      [id]
+    );
+    expect(shouldPreserveExistingOnReprocess(db, id, false)).toBe(false);
   });
 
   it("returns false for empty bookmarks", () => {

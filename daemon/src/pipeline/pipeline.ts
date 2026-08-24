@@ -295,25 +295,11 @@ export async function runPipeline(
       fetched.finalUrl || url,
       extracted.rawHtml ?? fetched.html ?? ""
     );
-    const existingMediaCount = preserveExistingContent
-      ? (db
-          .query<{ c: number }, [string]>(
-            "SELECT COUNT(*) AS c FROM bookmark_media WHERE bookmark_id = ?"
-          )
-          .get(bookmarkId)?.c ?? 0)
-      : 0;
-    if (preserveExistingContent && existingMediaCount > 0) {
-      log.info("Pipeline: media cache skipped (preserving imported media)", {
-        bookmarkId,
-        existingMediaCount,
-      });
-    } else {
-      await cacheBookmarkMedia(db, {
-        bookmarkId,
-        dataDir: Config.DATA_DIR,
-        candidates: mediaCandidates,
-      });
-    }
+    await cacheBookmarkMedia(db, {
+      bookmarkId,
+      dataDir: Config.DATA_DIR,
+      candidates: mediaCandidates,
+    });
   } catch (err) {
     log.warn("Pipeline: media cache skipped", {
       bookmarkId,

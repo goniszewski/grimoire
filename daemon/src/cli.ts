@@ -391,6 +391,8 @@ function usage(): string {
     "  littleimp backup verify --file <snapshot-directory> [--json]",
     "  littleimp backup verify --encrypted --file FILE [--json] [--password-file FILE]",
     "  littleimp diagnostics [--json] [--daemon-url URL]",
+    "",
+    "Migration commands (experimental; v0.5 SQLite only):",
     "  littleimp migrate inspect --data-dir <v0.5-data-dir> [--json] [--daemon-url URL]",
     "  littleimp migrate inspect --db <db.sqlite> [--uploads-dir DIR] [--json] [--daemon-url URL]",
     "  littleimp migrate inspect --archive <data.zip|tar.gz|…> [--json] [--daemon-url URL]",
@@ -441,7 +443,7 @@ function printMigrateInspect(
     requiresOwnerSelection: boolean;
   }
 ): void {
-  io.stdout("Grimoire v0.5 SQLite library");
+  io.stdout("Experimental v0.5 migration — Grimoire SQLite library");
   io.stdout(
     `Totals: ${data.totals.bookmarks} bookmarks, ${data.totals.categories} categories, ${data.totals.tags} tags, ${data.totals.users} users, ${data.totals.mediaFilesReferenced} media refs`
   );
@@ -474,6 +476,7 @@ function printMigrateApply(
     warnings: string[];
   }
 ): void {
+  io.stdout("Experimental v0.5 migration");
   if (data.dryRun) {
     io.stdout("Dry run — no changes were written.");
   }

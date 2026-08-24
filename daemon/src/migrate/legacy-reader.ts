@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from "fs";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { resolveLegacySourcePaths, resolveLegacyUploadPath, LegacySourceError } from "./legacy-paths.js";
@@ -15,8 +15,8 @@ import type {
 } from "./legacy-types.js";
 
 /**
- * Copy source db (+ WAL/SHM/journal sidecars) into a temp dir so inspect/apply
- * never create or mutate files next to the user's v0.5 database.
+ * Serialize the source database into a temp dir so inspect/apply never create
+ * or mutate files next to the user's v0.5 database.
  */
 function openSourceDbSnapshot(dbPath: string): {
   db: Database;
@@ -24,13 +24,6 @@ function openSourceDbSnapshot(dbPath: string): {
 } {
   const dir = mkdtempSync(join(tmpdir(), "grimoire-v05-src-"));
   const snapshotPath = join(dir, "db.sqlite");
-  copyFileSync(dbPath, snapshotPath);
-  for (const suffix of ["-wal", "-shm", "-journal"] as const) {
-    const side = `${dbPath}${suffix}`;
-    if (existsSync(side)) {
-      copyFileSync(side, `${snapshotPath}${suffix}`);
-    }
-  }
 
   const cleanup = (): void => {
     try {
@@ -40,14 +33,35 @@ function openSourceDbSnapshot(dbPath: string): {
     }
   };
 
+  let source: Database | undefined;
+  let readTransactionOpen = false;
   try {
+    // Serialize the source from one read transaction. This includes committed
+    // WAL pages in one SQLite image instead of racing separate sidecar copies.
+    source = new Database(dbPath, { readonly: true });
+    source.exec("BEGIN;");
+    readTransactionOpen = true;
+    const bytes = source.serialize();
+    source.exec("COMMIT;");
+    readTransactionOpen = false;
+    writeFileSync(snapshotPath, bytes, { mode: 0o600 });
+
     // Open the disposable snapshot read-write so WAL -shm can be created beside
     // the copy. query_only still blocks mutations; the user's source path is untouched.
     const db = new Database(snapshotPath);
     return { db, cleanup };
   } catch (err) {
+    if (readTransactionOpen) {
+      try {
+        source?.exec("ROLLBACK;");
+      } catch {
+        // best-effort transaction cleanup
+      }
+    }
     cleanup();
     throw err;
+  } finally {
+    source?.close();
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Grimoire v0.5 → 1.x migration routes.
+ * Experimental Grimoire v0.5 → 1.x migration routes.
  *
  * POST /migrate/legacy/inspect — summarize users/counts from a v0.5 data dir / db.sqlite
  * POST /migrate/legacy/apply   — import one owner's library into this local instance

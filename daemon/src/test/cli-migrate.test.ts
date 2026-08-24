@@ -69,6 +69,7 @@ describe("littleimp migrate CLI", () => {
     expect(body.dataDir).toBe("/tmp/v05-data");
     expect(harness.stdout.join("\n")).toContain("alice");
     expect(harness.stdout.join("\n")).toContain("v0.5");
+    expect(harness.stdout.join("\n")).toContain("Experimental v0.5 migration");
   });
 
   it("apply requires --yes and forwards owner password", async () => {
@@ -120,6 +121,7 @@ describe("littleimp migrate CLI", () => {
       dryRun: false,
     });
     expect(harness.stdout.join("\n")).toContain("Migrated owner: alice");
+    expect(harness.stdout.join("\n")).toContain("Experimental v0.5 migration");
   });
 
   it("dry-run apply skips --yes and forwards dryRun", async () => {

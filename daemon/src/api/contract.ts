@@ -988,7 +988,7 @@ const schemas = {
       dryRun: booleanSchema("When true, compute the apply summary without writing"),
     },
     [],
-    "v0.5 migrate request. Provide dataDir, dbPath, or archivePath."
+    "Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath."
   ),
   RuntimeLlmCapability: objectSchema(
     {
@@ -2650,9 +2650,9 @@ export const apiContract = {
       method: "POST",
       path: "/migrate/legacy/inspect",
       tag: "Migrate",
-      summary: "Inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
+      summary: "Experimental: inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
       description:
-        "Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
+        "Experimental v0.5 migration tool. Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
       request: {
         body: {
           contentType: "application/json",
@@ -2660,7 +2660,7 @@ export const apiContract = {
         },
       },
       responses: {
-        "200": jsonResponse("Legacy backup summary", ref("LegacyMigrateInspectResponse")),
+        "200": jsonResponse("Experimental legacy backup summary", ref("LegacyMigrateInspectResponse")),
         "400": problemResponse("Invalid request body"),
         "422": problemResponse("Path is missing or not a recognized v0.5 SQLite database"),
         "500": problemResponse("Inspect failed unexpectedly"),
@@ -2708,9 +2708,9 @@ export const apiContract = {
       method: "POST",
       path: "/migrate/legacy/apply",
       tag: "Migrate",
-      summary: "Import one v0.5 owner's library into this local Grimoire 1.x instance.",
+      summary: "Experimental: import one v0.5 owner's library into this local Grimoire 1.x instance.",
       description:
-        "Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
+        "Experimental v0.5 migration tool. Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
       request: {
         body: {
           contentType: "application/json",
@@ -2718,9 +2718,9 @@ export const apiContract = {
         },
       },
       responses: {
-        "200": jsonResponse("Migration apply summary", ref("LegacyMigrateApplyResponse")),
+        "200": jsonResponse("Experimental migration apply summary", ref("LegacyMigrateApplyResponse")),
         "207": jsonResponse(
-          "Partial migration apply summary (bookmarksFailed > 0)",
+          "Partial experimental migration apply summary (bookmarksFailed > 0)",
           ref("LegacyMigrateApplyResponse")
         ),
         "400": problemResponse("Invalid request body"),

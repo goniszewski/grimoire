@@ -353,7 +353,7 @@ describe("bookmark media cache", () => {
     expect(liveLeft).toBe(0);
   });
 
-  it("preserves legacy:// media when re-caching live candidates", async () => {
+  it("preserves legacy:// media while filling missing live candidates", async () => {
     const bookmark = repo.create("https://example.com/article", "Example");
     db.run(
       `INSERT INTO bookmark_media
@@ -362,9 +362,9 @@ describe("bookmark media cache", () => {
       [crypto.randomUUID(), bookmark.id]
     );
 
-    globalThis.fetch = mockFetch(async () =>
+    globalThis.fetch = mockFetch(async (input) =>
       imageResponse({
-        url: "https://cdn.example.com/live-favicon.png",
+        url: String(input),
         contentType: "image/png",
       })
     );
@@ -374,8 +374,18 @@ describe("bookmark media cache", () => {
       dataDir,
       candidates: {
         favicon: { kind: "favicon", sourceUrl: "https://cdn.example.com/live-favicon.png" },
-        screenshot: null,
-        images: [],
+        screenshot: {
+          kind: "screenshot",
+          sourceUrl: "https://cdn.example.com/live-screenshot.png",
+          alt: "Page preview",
+        },
+        images: [
+          {
+            kind: "image",
+            sourceUrl: "https://cdn.example.com/live-image.png",
+            alt: "Live image",
+          },
+        ],
       },
     });
 
@@ -384,7 +394,10 @@ describe("bookmark media cache", () => {
         "SELECT source_url, kind FROM bookmark_media WHERE bookmark_id = ?"
       )
       .all(bookmark.id);
+    expect(rows).toHaveLength(3);
     expect(rows.some((r) => r.source_url.startsWith("legacy://"))).toBe(true);
-    expect(rows.some((r) => r.source_url.startsWith("https://"))).toBe(false);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-screenshot.png")).toBe(true);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-image.png")).toBe(true);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-favicon.png")).toBe(false);
   });
 });

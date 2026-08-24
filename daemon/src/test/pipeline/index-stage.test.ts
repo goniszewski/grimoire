@@ -18,6 +18,7 @@ import * as extractor from "../../pipeline/extractor.js";
 import { SearchRepository } from "../../db/search-repository.js";
 import { makeTestDb } from "../helpers/db.js";
 import { mockFetch } from "../helpers/fetch.js";
+import * as bookmarkMedia from "../../media/bookmark-media.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -242,7 +243,17 @@ describe("pipeline index stage", () => {
     );
     globalThis.fetch = mockFetch(async () => makeHtmlResponse(html, url));
 
-    await runPipeline(db, { bookmarkId, url }, { preserveExistingContent: true });
+    const cacheSpy = spyOn(bookmarkMedia, "cacheBookmarkMedia").mockResolvedValue({
+      favicon: null,
+      screenshot: null,
+      images: [],
+    });
+    try {
+      await runPipeline(db, { bookmarkId, url }, { preserveExistingContent: true });
+      expect(cacheSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      cacheSpy.mockRestore();
+    }
 
     const bm = db
       .query<{ title: string | null }, [string]>("SELECT title FROM bookmarks WHERE id = ?")
