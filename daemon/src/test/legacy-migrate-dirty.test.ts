@@ -4625,7 +4625,7 @@ describe("v0.5 migration dirty user-data cases", () => {
     }
   });
 
-  it("filters script blocks with spaced end tags and decodes entities once", async () => {
+  it("filters script blocks with permissive end tags and decodes entities once", async () => {
     const fixture = await makeDirtyFixture({
       bookmarks: [
         {
@@ -4635,7 +4635,7 @@ describe("v0.5 migration dirty user-data cases", () => {
           ownerId: 1,
           categoryId: 1,
           contentHtml:
-            "<p>Tom &amp; Jerry &amp;lt;3 &lt;3 <script>unique-script-token</script > </p>",
+            "<p>Tom &amp; Jerry &amp;lt;3 &lt;3 <script>unique-script-token</script \t\n data-codeql=\"edge\"> </p>",
           contentText: null,
         },
       ],
