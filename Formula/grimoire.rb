@@ -7,10 +7,10 @@ class Grimoire < Formula
 
   if OS.mac?
     url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-macos.tar.gz"
-    sha256 "f9435a3d956bf47aaa7b724319e49e41699b51d462d8474d91eaf5ca1f325cd2"
+    sha256 "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f"
   elsif OS.linux?
     url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-linux.tar.gz"
-    sha256 "8b903ee96aa5ea9fa2edcec223c969c10e5e2231b1bfe4e7ad442be31d295b0c"
+    sha256 "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340"
   end
 
   def install
