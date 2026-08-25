@@ -52,7 +52,7 @@ describe("installed-app smoke suite", () => {
     expect(releaseArchiveName("0.1.0-beta", "linux")).toBe("little-imp-0.1.0-beta-linux.tar.gz");
     expect(releaseArchiveName("0.1.0-beta", "macos")).toBe("little-imp-0.1.0-beta-macos.tar.gz");
     expect(defaultPublishedReleaseBaseUrl("0.1.0-beta")).toBe(
-      "https://github.com/goniszewski/little-imp/releases/download/v0.1.0-beta"
+      "https://github.com/goniszewski/grimoire/releases/download/v0.1.0-beta"
     );
     expect(() => defaultPublishedReleaseBaseUrl("../0.1.0-beta")).toThrow(
       "Release version contains unsupported characters"
