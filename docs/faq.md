@@ -69,8 +69,11 @@ There is no native Windows installer in `1.1.0`. Docker on Windows with WSL2 is 
 
 ## Can I run it on a server?
 
-Yes through Docker, but Grimoire itself is not a public-server product in
-`1.1.0`. Keep the daemon loopback-bound or put an authenticated tunnel,
-VPN, or reverse proxy in front of it before traffic reaches Grimoire. See
+The [hosted public demo](https://goniszewski.com/grimoire/demo/) is only a
+static, client-only showcase with synthetic session data; it has no hosted
+library. For a private library, you can run Grimoire through Docker, but
+Grimoire itself is not a public-server product in `1.1.0`. Keep the daemon
+loopback-bound or put an authenticated tunnel, VPN, or reverse proxy in front
+of it before traffic reaches Grimoire. See
 [remote access](./06-remote-access.md), [SECURITY.md](../SECURITY.md), and
 [docker-deployment.md](./docker-deployment.md).

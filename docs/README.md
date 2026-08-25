@@ -4,6 +4,9 @@ Public product guides and reference documentation for Grimoire live in this
 folder. The product guides are also published at
 **[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**.
 
+Want to explore first? Try the [hosted public demo](https://goniszewski.com/grimoire/demo/).
+It uses synthetic data in the browser and does not provide a hosted library.
+
 ## Product guides
 
 | Guide | What it covers |

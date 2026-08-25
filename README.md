@@ -50,9 +50,13 @@ The screenshots below use synthetic demo data.
 
 ### Try the Public Demo
 
-The demo build is a static, client-only profile of the real Grimoire UI. It
-uses synthetic fixtures and an in-memory API in the browser; it does not start
-the daemon, create an account, or persist a hosted library.
+Explore the [hosted Grimoire demo](https://goniszewski.com/grimoire/demo/)
+without installing anything. The demo is a static, client-only profile of the
+real Grimoire UI. It uses synthetic fixtures and an in-memory API in the
+browser; it does not start the daemon, create an account, or persist a hosted
+library.
+
+To run the same demo locally:
 
 ```sh
 npm install
@@ -60,9 +64,7 @@ npm run build:demo
 npm run preview:demo
 ```
 
-Open the preview at `http://127.0.0.1:4173`. The public hostname, launch
-indexing policy, and analytics policy remain deployment decisions; no public
-URL is implied by this local preview command.
+Open the local preview at `http://127.0.0.1:4173`.
 
 ### Source Checkout
 
