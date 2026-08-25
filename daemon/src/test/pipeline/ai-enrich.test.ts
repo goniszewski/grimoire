@@ -159,15 +159,22 @@ describe("enrichBookmark", () => {
   it("throws when LLM returns invalid JSON", async () => {
     const bookmarkId = insertBookmark(db);
 
-    globalThis.fetch = mockFetch(async () => makeLlmResponse("not json at all }{"));
+    const invalidResponse = "not json at all }{";
+    globalThis.fetch = mockFetch(async () => makeLlmResponse(invalidResponse));
 
-    await expect(
-      enrichBookmark(db, LLM_CONFIG, {
-        bookmarkId,
-        title: "Title",
-        content: "Content",
-      })
-    ).rejects.toThrow();
+    const error = await enrichBookmark(db, LLM_CONFIG, {
+      bookmarkId,
+      title: "Title",
+      content: "Content",
+    }).then(
+      () => undefined,
+      (err: unknown) => err
+    );
+
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toBe("LLM returned incomplete or invalid enrichment response");
+    expect(message).not.toContain(invalidResponse);
   });
 
   it("throws when LLM returns markdown-fenced invalid JSON", async () => {
@@ -213,6 +220,72 @@ describe("enrichBookmark", () => {
       "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
     ).get(bookmarkId);
     expect(content?.summary).toBe("Fenced summary.");
+  });
+
+  it("retries a provider's empty JSON object before persisting enrichment", async () => {
+    const bookmarkId = insertBookmark(db);
+    let calls = 0;
+
+    globalThis.fetch = mockFetch(async () => {
+      calls++;
+      return calls === 1
+        ? makeLlmResponse("{}")
+        : makeLlmResponse(
+            JSON.stringify({
+              summary: "A recovered summary.",
+              tags: ["recovered"],
+              category: "Article",
+              confidence: 0.8,
+            })
+          );
+    });
+
+    await enrichBookmark(db, LLM_CONFIG, {
+      bookmarkId,
+      title: "Title",
+      content: "Content",
+    });
+
+    expect(calls).toBe(2);
+    const content = db
+      .query<{ summary: string | null }, [string]>(
+        "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+      )
+      .get(bookmarkId);
+    expect(content?.summary).toBe("A recovered summary.");
+  });
+
+  it("retries a provider's malformed JSON before persisting enrichment", async () => {
+    const bookmarkId = insertBookmark(db);
+    let calls = 0;
+
+    globalThis.fetch = mockFetch(async () => {
+      calls++;
+      return calls === 1
+        ? makeLlmResponse('{")} { ":") { "}')
+        : makeLlmResponse(
+            JSON.stringify({
+              summary: "Another recovered summary.",
+              tags: ["recovered"],
+              category: "Tutorial",
+              confidence: 0.8,
+            })
+          );
+    });
+
+    await enrichBookmark(db, LLM_CONFIG, {
+      bookmarkId,
+      title: "Title",
+      content: "Content",
+    });
+
+    expect(calls).toBe(2);
+    const content = db
+      .query<{ summary: string | null }, [string]>(
+        "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+      )
+      .get(bookmarkId);
+    expect(content?.summary).toBe("Another recovered summary.");
   });
 
   it("can refresh summary while preserving existing category and tags", async () => {

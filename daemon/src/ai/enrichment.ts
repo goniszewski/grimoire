@@ -64,12 +64,34 @@ function parseResponse(raw: string): EnrichmentResponse | null {
   if (typeof parsed !== "object" || parsed === null) return null;
   const p = parsed as Record<string, unknown>;
 
-  const summary = typeof p.summary === "string" ? p.summary.trim() : "";
-  const confidence = typeof p.confidence === "number"
-    ? Math.max(0, Math.min(1, p.confidence))
-    : 0.5;
+  // Do not turn a provider-side empty or partial object into successful
+  // enrichment by filling in defaults. Every field in the prompt is required;
+  // otherwise a 200 response such as `{}` would be persisted as an empty
+  // summary, no tags, and the default "Other" category.
+  if (
+    !Object.prototype.hasOwnProperty.call(p, "summary") ||
+    !Object.prototype.hasOwnProperty.call(p, "tags") ||
+    !Object.prototype.hasOwnProperty.call(p, "category") ||
+    !Object.prototype.hasOwnProperty.call(p, "confidence")
+  ) {
+    return null;
+  }
 
-  const rawTags = Array.isArray(p.tags) ? p.tags : [];
+  if (
+    typeof p.summary !== "string" ||
+    !Array.isArray(p.tags) ||
+    typeof p.category !== "string" ||
+    typeof p.confidence !== "number" ||
+    !Number.isFinite(p.confidence)
+  ) {
+    return null;
+  }
+
+  const summary = p.summary.trim();
+  if (!summary) return null;
+  const confidence = Math.max(0, Math.min(1, p.confidence));
+
+  const rawTags = p.tags;
   const tags = rawTags
     .filter((t): t is string => typeof t === "string")
     .map((t) => t.toLowerCase().trim().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""))
@@ -80,6 +102,12 @@ function parseResponse(raw: string): EnrichmentResponse | null {
   const category = VALID_CATEGORIES.has(rawCategory) ? rawCategory : "Other";
 
   return { summary, tags, category, confidence };
+}
+
+function validateResponse(raw: string): string | null {
+  return parseResponse(raw)
+    ? null
+    : "LLM returned incomplete or invalid enrichment response";
 }
 
 // ─── DB helpers ───────────────────────────────────────────────────────────────
@@ -148,7 +176,11 @@ export async function enrichBookmark(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserMessage(title, content) },
     ],
-    { jsonMode: true, maxTokens: 512 }
+    {
+      jsonMode: true,
+      maxTokens: 512,
+      validateContent: validateResponse,
+    }
   );
 
   const result = parseResponse(rawResponse);
