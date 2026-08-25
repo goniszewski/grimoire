@@ -15,13 +15,14 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > The current Grimoire application is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> If you are coming from v0.5.x: no direct migration tool is included yet.
+> Coming from v0.5.x? Use the **experimental** `littleimp migrate` tools with your v0.5 `data/` directory (`db.sqlite` + `user-uploads/`), or with a `.zip`/`.tar.gz` archive of that folder. See the [migration API reference](./API.md#migrate).
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
 
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
+- [Try the Public Demo](#try-the-public-demo)
 - [What Grimoire Does](#what-grimoire-does)
 - [How It Works](#how-it-works)
 - [Install And Upgrade Paths](#install-and-upgrade-paths)
@@ -45,6 +46,22 @@ The screenshots below use synthetic demo data.
 | ![Grimoire settings screen with browser integration and local configuration controls](./docs/assets/settings-long-form.png) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/assets/mobile-library-stack.png) |
 
 ## Quick Start
+
+### Try the Public Demo
+
+The demo build is a static, client-only profile of the real Grimoire UI. It
+uses synthetic fixtures and an in-memory API in the browser; it does not start
+the daemon, create an account, or persist a hosted library.
+
+```sh
+npm install
+npm run build:demo
+npm run preview:demo
+```
+
+Open the preview at `http://127.0.0.1:4173`. The public hostname, launch
+indexing policy, and analytics policy remain deployment decisions; no public
+URL is implied by this local preview command.
 
 ### Source Checkout
 
@@ -191,6 +208,10 @@ Grimoire is local-first and loopback-first:
   tokens.
 - Public-network exposure is not a supported mode; put an authenticated tunnel,
   VPN, or reverse proxy in front of it if you deliberately need remote access.
+
+The static public demo is a separate client-only build: it ships synthetic
+fixtures, keeps session mutations in memory, makes no daemon or provider
+requests, and uses no cookies, third-party scripts, or fingerprinting.
 
 See [SECURITY.md](./SECURITY.md) for the supported network boundary.
 

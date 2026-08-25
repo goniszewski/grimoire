@@ -5,7 +5,9 @@ import { Config } from "../config.js";
 import { log } from "../logger.js";
 import { EmbeddingRepository } from "./embedding-repository.js";
 import { runMigrations } from "./migrations.js";
+import { ensureBookmarksUpdatedAtTrigger } from "./bookmarks-updated-at-trigger.js";
 import { configureSqliteForVectorExtensions } from "./sqlite-vec.js";
+import { cleanupOrphanBookmarkMedia } from "../media/cleanup-orphan-bookmark-media.js";
 
 let _db: Database | null = null;
 
@@ -29,6 +31,9 @@ export function getDatabase(): Database {
   db.exec("PRAGMA recursive_triggers = OFF"); // guard against updated_at trigger recursion
 
   runMigrations(db);
+  ensureBookmarksUpdatedAtTrigger(db);
+  // Migrate may leave media-cache dirs if the process dies before COMMIT.
+  cleanupOrphanBookmarkMedia(db, Config.DATA_DIR);
   new EmbeddingRepository(db).rebuildVectorIndex();
 
   _db = db;

@@ -38,8 +38,8 @@ const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
     linux: "42cf4ea63bb31ea2380a0b3c8c4c65f7af943974ce1024dd9562a2484e343cff",
   },
   "1.1.0": {
-    macos: "f9435a3d956bf47aaa7b724319e49e41699b51d462d8474d91eaf5ca1f325cd2",
-    linux: "8b903ee96aa5ea9fa2edcec223c969c10e5e2231b1bfe4e7ad442be31d295b0c",
+    macos: "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f",
+    linux: "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340",
   },
 };
 

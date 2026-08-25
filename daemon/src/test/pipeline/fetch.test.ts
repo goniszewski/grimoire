@@ -214,6 +214,27 @@ describe("fetchPage", () => {
     await expect(fetchPage("http://10.0.0.1/evil")).rejects.toThrow(/private host/i);
   });
 
+  it("throws for IPv4-mapped IPv6 private addresses", async () => {
+    let called = false;
+    globalThis.fetch = mockFetch(async () => {
+      called = true;
+      return makeResponse();
+    });
+    await expect(fetchPage("http://[::ffff:192.168.1.1]/evil")).rejects.toThrow(/private host/i);
+    await expect(fetchPage("http://[::ffff:c0a8:101]/evil")).rejects.toThrow(/private host/i);
+    expect(called).toBe(false);
+  });
+
+  it("throws for localhost with a trailing FQDN dot", async () => {
+    let called = false;
+    globalThis.fetch = mockFetch(async () => {
+      called = true;
+      return makeResponse();
+    });
+    await expect(fetchPage("http://localhost./evil")).rejects.toThrow(/private host/i);
+    expect(called).toBe(false);
+  });
+
   // ── Oversized response ──────────────────────────────────────────────────
 
   it("throws when Content-Length exceeds 10 MB", async () => {

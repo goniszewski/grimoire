@@ -4,7 +4,7 @@ import { generateBookmarkletUrl } from "./bookmarklet";
 describe("generateBookmarkletUrl", () => {
   it("returns a javascript: URI", () => {
     const url = generateBookmarkletUrl("test-token");
-    expect(url.startsWith("javascript:")).toBe(true);
+    expect(url.split(":", 1)[0]).toBe("javascript");
   });
 
   it("embeds the token via JSON.stringify in the postMessage payload", () => {

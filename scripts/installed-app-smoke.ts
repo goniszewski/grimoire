@@ -120,7 +120,7 @@ export function releaseArchiveName(version: string, platform: ReleasePlatform): 
 
 export function defaultPublishedReleaseBaseUrl(version: string): string {
   assertSafeReleaseVersion(version);
-  return `https://github.com/goniszewski/little-imp/releases/download/v${version}`;
+  return `https://github.com/goniszewski/grimoire/releases/download/v${version}`;
 }
 
 export function backupNameFromPath(path: string): string {

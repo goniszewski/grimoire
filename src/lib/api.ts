@@ -68,6 +68,8 @@ import type {
   UpdateCheckResponseDto,
   UpdateCheckResultDto,
 } from "../../daemon/src/api/types";
+import { demoApiBase, isDemoMode } from "@/demo/enabled";
+import { transport } from "./api/transport";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
 
@@ -80,9 +82,18 @@ function isLoopbackHostname(hostname: string): boolean {
   );
 }
 
-export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): string {
+export function resolveDaemonUrl(
+  rawUrl = import.meta.env.VITE_DAEMON_URL,
+  currentOrigin = typeof window !== "undefined" ? window.location.origin : undefined
+): string {
   const trimmedUrl = rawUrl?.trim();
-  if (!trimmedUrl) return DEFAULT_DAEMON_URL;
+  if (!trimmedUrl) {
+    if (currentOrigin) {
+      const parsedOrigin = new URL(currentOrigin);
+      if (!isLoopbackHostname(parsedOrigin.hostname)) return parsedOrigin.origin;
+    }
+    return DEFAULT_DAEMON_URL;
+  }
 
   let parsed: URL;
   try {
@@ -102,7 +113,7 @@ export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): stri
   return parsed.origin;
 }
 
-export const DAEMON_URL = resolveDaemonUrl();
+export const DAEMON_URL = isDemoMode ? demoApiBase() : resolveDaemonUrl();
 
 // ─── API types (derived from daemon-owned contract) ──────────────────────────
 
@@ -419,7 +430,7 @@ async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${DAEMON_URL}${path}`, {
+  const res = await transport.fetch(`${DAEMON_URL}${path}`, {
     ...options,
     headers: {
       ...(options?.body ? { "Content-Type": "application/json" } : {}),
@@ -474,7 +485,7 @@ async function fetchHealth(url: string): Promise<HealthResponseDto | null> {
       timeout = setTimeout(() => controller.abort(), 3000);
       signal = controller.signal;
     }
-    const res = await fetch(url, signal ? { signal } : undefined);
+    const res = await transport.fetch(url, signal ? { signal } : undefined);
     if (!res.ok) return null;
     const body = await res.json() as Partial<HealthResponseDto>;
     if (
@@ -796,7 +807,7 @@ async function fetchImportForm<T>(
   duplicatePolicy?: ImportDuplicatePolicy,
   remapping?: ImportRemappingInput
 ): Promise<T> {
-  const res = await fetch(`${DAEMON_URL}${path}`, {
+  const res = await transport.fetch(`${DAEMON_URL}${path}`, {
     method: "POST",
     body: importFormData(file, duplicatePolicy, remapping),
   });
@@ -837,6 +848,13 @@ export function subscribeToImportProgress(
   importId: string,
   onProgress: (state: ImportProgressEventDto) => void
 ): () => void {
+  if (isDemoMode) {
+    throw new ApiError(
+      501,
+      "Import is not available in the public demo",
+      "Install Grimoire to import a browser bookmark file into your private library."
+    );
+  }
   const es = new EventSource(`${DAEMON_URL}/import/${importId}/progress`);
   es.addEventListener("progress", (e) => {
     try {
@@ -999,7 +1017,7 @@ export async function downloadExport(
   if (filters.read_later != null) params.set("read_later", filters.read_later ? "true" : "false");
   appendLibraryParityFilters(params, filters);
 
-  const res = await fetch(`${DAEMON_URL}/export?${params.toString()}`);
+  const res = await transport.fetch(`${DAEMON_URL}/export?${params.toString()}`);
   if (!res.ok) {
     throw new ApiError(res.status, `Export failed: ${res.status}`, await res.text().catch(() => undefined));
   }

@@ -1214,6 +1214,8 @@ async function processImport(
             category_id: categoryId,
             notes: bm.notes,
             restore: row.action === "restore_merge",
+            // Browser import "restore_merge" returns archived rows to the active library.
+            unarchive: row.action === "restore_merge",
           });
           if (row.action === "merge") {
             state.merged++;
@@ -1234,6 +1236,7 @@ async function processImport(
               category_id: categoryId,
               notes: bm.notes,
               restore: true,
+              unarchive: true,
             });
             state.restored++;
             addImportResultRow(report, row, "restored", existingAtCommit.id);
@@ -1243,6 +1246,7 @@ async function processImport(
               category_id: categoryId,
               notes: bm.notes,
               restore: true,
+              unarchive: true,
             });
             state.restored++;
             addImportResultRow(report, row, "restored", existingAtCommit.id);

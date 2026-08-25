@@ -233,14 +233,23 @@ async function requestJson<T>(
   }
 
   if (!res.ok) {
-    const message =
-      typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
-        ? payload.error
-        : `littleimpd request failed with status ${res.status}`;
+    const message = formatDaemonErrorMessage(payload, res.status);
     throw new CliError(message);
   }
 
   return payload as T;
+}
+
+function formatDaemonErrorMessage(payload: unknown, status: number): string {
+  if (typeof payload === "object" && payload !== null) {
+    const record = payload as Record<string, unknown>;
+    // Prefer RFC 7807 problem+json fields used by migrate/auth routes.
+    if (typeof record.detail === "string" && record.detail.trim()) return record.detail;
+    if (typeof record.title === "string" && record.title.trim()) return record.title;
+    if (typeof record.error === "string" && record.error.trim()) return record.error;
+    if (typeof record.message === "string" && record.message.trim()) return record.message;
+  }
+  return `littleimpd request failed with status ${status}`;
 }
 
 function printJson(io: Required<Pick<CliIO, "stdout">>, value: unknown): void {
@@ -383,12 +392,233 @@ function usage(): string {
     "  littleimp backup verify --encrypted --file FILE [--json] [--password-file FILE]",
     "  littleimp diagnostics [--json] [--daemon-url URL]",
     "",
+    "Migration commands (experimental; v0.5 SQLite only):",
+    "  littleimp migrate inspect --data-dir <v0.5-data-dir> [--json] [--daemon-url URL]",
+    "  littleimp migrate inspect --db <db.sqlite> [--uploads-dir DIR] [--json] [--daemon-url URL]",
+    "  littleimp migrate inspect --archive <data.zip|tar.gz|…> [--json] [--daemon-url URL]",
+    "  littleimp migrate apply --data-dir <v0.5-data-dir> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  littleimp migrate apply --db <db.sqlite> --yes [--uploads-dir DIR] [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  littleimp migrate apply --archive <data.zip|tar.gz|…> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  littleimp migrate apply --data-dir <v0.5-data-dir> --dry-run [--owner USER] [--merge] [--json] [--daemon-url URL]",
+    "",
     "Environment:",
     "  LITTLEIMP_DAEMON_URL  Defaults to http://127.0.0.1:3210",
     "  LITTLEIMP_BACKUP_PASSWORD  Password for encrypted backup packages",
+    "  LITTLEIMP_MIGRATE_PASSWORD  Optional password to verify a v0.5 account owner",
     "  LITTLEIMP_UPDATE_SOURCE  Defaults to the GitHub Releases API",
     "  LITTLEIMP_RELEASE_BASE_URL  Base URL for release archive downloads",
   ].join("\n");
+}
+
+function readOptionalMigratePassword(parsed: ParsedArgs, env: CliEnv): string | undefined {
+  const passwordFile = parsed.values.get("--password-file");
+  if (passwordFile) {
+    return readFileSync(resolve(passwordFile), "utf8").replace(/\r?\n$/, "");
+  }
+  const inline = parsed.values.get("--password");
+  if (inline !== undefined) return inline;
+  const fromEnv = env.LITTLEIMP_MIGRATE_PASSWORD;
+  return fromEnv && fromEnv.length > 0 ? fromEnv : undefined;
+}
+
+function printMigrateInspect(
+  io: CliRuntime,
+  data: {
+    users: Array<{
+      username: string;
+      email: string;
+      name: string;
+      bookmarkCount: number;
+      categoryCount: number;
+      tagCount: number;
+      disabled: boolean;
+    }>;
+    totals: {
+      users: number;
+      categories: number;
+      tags: number;
+      bookmarks: number;
+      mediaFilesReferenced: number;
+    };
+    requiresOwnerSelection: boolean;
+  }
+): void {
+  io.stdout("Experimental v0.5 migration — Grimoire SQLite library");
+  io.stdout(
+    `Totals: ${data.totals.bookmarks} bookmarks, ${data.totals.categories} categories, ${data.totals.tags} tags, ${data.totals.users} users, ${data.totals.mediaFilesReferenced} media refs`
+  );
+  if (data.requiresOwnerSelection) {
+    io.stdout("Multiple users found — pass --owner <username|email|id> when applying.");
+  }
+  for (const user of data.users) {
+    const disabled = user.disabled ? " (disabled)" : "";
+    io.stdout(
+      `- ${user.username}${disabled}: ${user.bookmarkCount} bookmarks, ${user.categoryCount} categories, ${user.tagCount} tags (${user.email || "no email"})`
+    );
+  }
+}
+
+function printMigrateApply(
+  io: CliRuntime,
+  data: {
+    owner: { username: string };
+    dryRun?: boolean;
+    categoriesCreated: number;
+    categoriesReused: number;
+    tagsCreated: number;
+    tagsReused: number;
+    bookmarksCreated: number;
+    bookmarksMerged: number;
+    bookmarksSkipped: number;
+    bookmarksFailed: number;
+    mediaImported: number;
+    mediaSkipped: number;
+    warnings: string[];
+  }
+): void {
+  io.stdout("Experimental v0.5 migration");
+  if (data.dryRun) {
+    io.stdout("Dry run — no changes were written.");
+  }
+  io.stdout(`${data.dryRun ? "Would migrate" : "Migrated"} owner: ${data.owner.username}`);
+  io.stdout(
+    `Bookmarks: created ${data.bookmarksCreated}, merged ${data.bookmarksMerged}, skipped ${data.bookmarksSkipped}, failed ${data.bookmarksFailed}`
+  );
+  io.stdout(
+    `Categories: created ${data.categoriesCreated}, reused ${data.categoriesReused}`
+  );
+  io.stdout(`Tags: created ${data.tagsCreated}, reused ${data.tagsReused}`);
+  io.stdout(`Media: imported ${data.mediaImported}, skipped ${data.mediaSkipped}`);
+  if (data.warnings.length > 0) {
+    io.stdout(`Warnings (${data.warnings.length}):`);
+    for (const warning of data.warnings.slice(0, 20)) {
+      io.stdout(`- ${warning}`);
+    }
+    if (data.warnings.length > 20) {
+      io.stdout(`- …and ${data.warnings.length - 20} more`);
+    }
+  }
+}
+
+async function handleMigrateCommand(args: string[], io: CliRuntime): Promise<number> {
+  const [command, ...rest] = args;
+  if (!command || command === "--help" || command === "-h") {
+    io.stdout(usage());
+    return command ? 0 : 2;
+  }
+
+  function resolveSourceBody(parsed: ParsedArgs): Record<string, unknown> {
+    const dataDir = parsed.values.get("--data-dir");
+    const dbPath = parsed.values.get("--db");
+    const uploadsDir = parsed.values.get("--uploads-dir");
+    const archivePath = parsed.values.get("--archive");
+    const sources = [dataDir, dbPath, archivePath].filter(Boolean);
+    if (sources.length > 1) {
+      throw new CliError("Use only one of --data-dir, --db, or --archive.", 2);
+    }
+    if (sources.length === 0) {
+      throw new CliError(
+        "Provide --data-dir <v0.5 data folder>, --db <db.sqlite>, or --archive <zip|tar.gz|…>.",
+        2
+      );
+    }
+    if (uploadsDir && archivePath) {
+      throw new CliError(
+        "--uploads-dir cannot be combined with --archive; include user-uploads/ in the archive.",
+        2
+      );
+    }
+    const body: Record<string, unknown> = {};
+    if (dataDir) body.dataDir = resolve(dataDir);
+    if (dbPath) body.dbPath = resolve(dbPath);
+    if (uploadsDir) body.uploadsDir = resolve(uploadsDir);
+    if (archivePath) body.archivePath = resolve(archivePath);
+    return body;
+  }
+
+  if (command === "inspect") {
+    const parsed = parseArgs(rest, {
+      booleanFlags: ["--json"],
+      valueFlags: ["--data-dir", "--db", "--uploads-dir", "--archive", "--daemon-url"],
+    });
+    assertNoPositionals(parsed, "inspect", "migrate");
+    const json = parsed.flags.has("--json");
+    const body = resolveSourceBody(parsed);
+    const daemonUrl = getDaemonUrl(parsed, io.env);
+    const result = await requestJson<{ data: Parameters<typeof printMigrateInspect>[1] }>(
+      io,
+      `${daemonUrl}/migrate/legacy/inspect`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (json) printJson(io, result);
+    else printMigrateInspect(io, result.data);
+    return 0;
+  }
+
+  if (command === "apply") {
+    const parsed = parseArgs(rest, {
+      booleanFlags: ["--json", "--yes", "--merge", "--dry-run"],
+      valueFlags: [
+        "--data-dir",
+        "--db",
+        "--uploads-dir",
+        "--archive",
+        "--owner",
+        "--password",
+        "--password-file",
+        "--daemon-url",
+      ],
+    });
+    assertNoPositionals(parsed, "apply", "migrate");
+    const json = parsed.flags.has("--json");
+    const dryRun = parsed.flags.has("--dry-run");
+    if (!dryRun && !parsed.flags.has("--yes")) {
+      throw new CliError(
+        "migrate apply requires --yes to confirm writing into the local library (or pass --dry-run).",
+        2
+      );
+    }
+
+    const body = resolveSourceBody(parsed);
+    body.mergeDuplicates = parsed.flags.has("--merge");
+    body.dryRun = dryRun;
+    const owner = parsed.values.get("--owner");
+    if (owner) body.owner = owner;
+    const password = readOptionalMigratePassword(parsed, io.env);
+    if (password !== undefined) {
+      body.password = password;
+      body.requirePassword = true;
+    }
+
+    const daemonUrl = getDaemonUrl(parsed, io.env);
+    const result = await requestJson<{ data: Parameters<typeof printMigrateApply>[1] }>(
+      io,
+      `${daemonUrl}/migrate/legacy/apply`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (json) printJson(io, result);
+    else printMigrateApply(io, result.data);
+    if (!dryRun && result.data.bookmarksFailed > 0) {
+      // Daemon returns 207 for partial apply; still treat as a failed CLI run.
+      if (!json) {
+        io.stderr(
+          `Partial apply: ${result.data.bookmarksFailed} bookmark(s) failed — see warnings above.`
+        );
+      }
+      return 1;
+    }
+    return 0;
+  }
+
+  throw new CliError(`Unknown migrate command: ${command}`, 2);
 }
 
 async function handleUpdateCommand(args: string[], io: CliRuntime): Promise<number> {
@@ -851,6 +1081,9 @@ export async function runLittleImpCli(args: string[], options: CliIO = {}): Prom
     }
     if (command === "backup") {
       return await handleBackupCommand(rest, io);
+    }
+    if (command === "migrate") {
+      return await handleMigrateCommand(rest, io);
     }
     if (command === "diagnostics") {
       return await handleDiagnosticsCommand(rest, io);

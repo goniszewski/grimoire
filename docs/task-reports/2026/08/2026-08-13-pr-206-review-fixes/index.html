@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR 206 Review Fixes - Grimoire Task Report</title>
+<style>
+:root { --bg:#f7f7fa; --surface:#fff; --ink:#191827; --muted:#626475; --line:#dedfec; --violet:#7c3aed; --green:#15803d; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+a { color:inherit; }
+.page { width:min(920px,calc(100vw - 40px)); margin:0 auto; padding:56px 0; }
+.breadcrumbs { margin-bottom:24px; color:var(--muted); }
+.breadcrumbs a { text-decoration:none; }
+.eyebrow { margin:0 0 8px; color:var(--violet); font-size:.78rem; font-weight:800; text-transform:uppercase; }
+h1 { margin:0; font-size:clamp(2.2rem,6vw,4.4rem); line-height:1; }
+h2 { margin:28px 0 8px; font-size:1.2rem; }
+.lede, p, li { color:var(--muted); line-height:1.55; }
+.meta-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.pill { border:1px solid var(--line); border-radius:999px; padding:4px 10px; color:var(--muted); font-size:.78rem; font-weight:700; }
+.status { color:var(--green); }
+.task-card { border:1px solid var(--line); border-radius:10px; background:var(--surface); padding:24px; box-shadow:0 18px 45px rgba(30,32,50,.08); }
+.hero-shot { margin:28px 0; }
+.hero-shot img { display:block; width:100%; max-width:100%; height:auto; border:1px solid var(--line); border-radius:8px; }
+figcaption { margin-top:8px; color:var(--muted); font-size:.9rem; }
+details { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; }
+summary { cursor:pointer; font-weight:700; }
+code { color:var(--ink); }
+@media (max-width:640px) { .page { width:min(100% - 28px,920px); padding:36px 0; } .task-card { padding:18px; } }
+</style>
+<script src="../../../assets/task-report-lightbox.js" defer></script>
+</head>
+<body>
+<main class="page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../index.html">August 2026</a></nav>
+  <article class="task-card">
+    <header>
+      <p class="eyebrow">Grimoire Task Report</p>
+      <h1>PR #206 Review Fixes</h1>
+      <div class="meta-row">
+        <span class="pill">August 13, 2026</span>
+        <span class="pill">Security · Settings</span>
+        <span class="pill status">Completed</span>
+      </div>
+    </header>
+
+    <figure class="hero-shot">
+      <img src="assets/01-after-settings-catalog-error.png" alt="Settings OpenRouter model picker showing a catalog error, Retry action, and custom offline model option">
+      <figcaption>After: a catalog outage leaves the Retry action and custom model entry usable together.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before</h2>
+      <p>Fingerprint pinning scanned human-readable GPG output, catalog requests followed redirects automatically without guarding alternate private-host literals, and a catalog error replaced the entire model command list.</p>
+    </section>
+
+    <section>
+      <h2>Problem</h2>
+      <p>Those paths weakened upgrade key pinning, left an SSRF redirect gap, and made ordinary offline or provider-outage settings edits depend on remote catalog availability.</p>
+    </section>
+
+    <section>
+      <h2>Changes Added</h2>
+      <ul>
+        <li>Parse only GPG <code>VALIDSIG</code> status records for signing-key fingerprint allowlists.</li>
+        <li>Follow model-catalog redirects manually and reject private or invalid targets, including IPv4-mapped private literals, before the next request.</li>
+        <li>Keep the <code>Use …</code> custom model option visible alongside catalog errors and Retry.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Result</h2>
+      <p>Verified upgrades pin the key that actually produced the signature, syntactically private or invalid redirect targets are rejected before follow-up requests, and users can select a typed model while the catalog is unavailable.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <ul>
+        <li>Focused: 13 CLI-update tests, 18 AI-model endpoint tests, 3 public-URL guard tests, 3 safe-fetch tests, and 9 combobox tests passed.</li>
+        <li>Full frontend: 36 files / 325 tests passed.</li>
+        <li>Full daemon: 44 files / 521 tests passed.</li>
+        <li><code>npm run lint</code> (8 existing warnings), <code>npm run type-check</code>, <code>npm run build</code>, <code>npm run docs:api:check</code> (up to date; existing static-analysis warnings), and <code>git diff --check</code> passed.</li>
+        <li>Rendered localhost Settings check confirmed the error, Retry, and custom-entry state in one view.</li>
+        <li>Playwright E2E was attempted but remains environment-blocked because the Chromium executable is not installed.</li>
+      </ul>
+    </section>
+
+    <details>
+      <summary>Files Changed</summary>
+      <ul>
+        <li><code>daemon/src/update/upgrade.ts</code></li>
+        <li><code>daemon/src/ai/models-catalog.ts</code></li>
+        <li><code>daemon/src/lib/network.ts</code></li>
+        <li><code>daemon/src/lib/safe-fetch.ts</code></li>
+        <li><code>src/components/ui/combobox.tsx</code></li>
+        <li><code>daemon/src/test/lib/public-url.test.ts</code></li>
+        <li><code>daemon/src/test/lib/safe-fetch.test.ts</code></li>
+        <li>Focused regression tests under <code>daemon/src/test/</code> and <code>src/components/ui/</code></li>
+      </ul>
+    </details>
+  </article>
+</main>
+</body>
+</html>

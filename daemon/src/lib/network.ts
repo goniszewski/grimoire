@@ -12,22 +12,24 @@
  * considered an accepted risk for a local-only daemon.
  */
 export function isPrivateHost(hostname: string): boolean {
-  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  // Strip brackets, trailing FQDN dots (localhost. / localhost..), and case-fold.
+  const host = hostname
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.+$/g, "")
+    .toLowerCase();
 
   if (isPrivateIpv4(host)) return true;
 
   // IPv4-mapped and IPv4-compatible IPv6 literals can address the same
-  // private services as their dotted-quad forms (for example,
-  // [::ffff:7f00:1] is 127.0.0.1). Classify the embedded address before
-  // applying the IPv6-only checks below.
+  // private services as their dotted-quad forms. Classify the embedded address
+  // before applying the IPv6-only checks below.
   const embeddedIpv4 = embeddedIpv4Address(host);
   if (embeddedIpv4 && isPrivateIpv4(embeddedIpv4)) return true;
 
   // Loopback
   if (host === "localhost" || host === "::1") return true;
 
-  // Link-local (AWS IMDS, etc.)
-  if (/^169\.254\./.test(host)) return true;
+  // Link-local IPv6
   if (/^fe80:/i.test(host)) return true;
 
   // IPv6 ULA (Unique Local Address, RFC 4193) — fc00::/7 covers fc** and fd**
@@ -36,16 +38,8 @@ export function isPrivateHost(hostname: string): boolean {
   // IPv6 site-local (deprecated but still routable internally)
   if (/^fec[0-9a-f]:/i.test(host)) return true;
 
-  // Private ranges
-  if (/^10\./.test(host)) return true;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
-  if (/^192\.168\./.test(host)) return true;
-
-  // CGNAT / shared address space (RFC 6598)
-  if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return true;
-
-  // Unspecified / broadcast
-  if (host === "0.0.0.0" || host === "::") return true;
+  // Unspecified IPv6
+  if (host === "::") return true;
 
   return false;
 }

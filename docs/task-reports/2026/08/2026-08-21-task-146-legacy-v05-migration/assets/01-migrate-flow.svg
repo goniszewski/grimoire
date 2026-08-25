@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-label="Grimoire v0.5 data directory flows into Grimoire 1.x via littleimp migrate">
+  <rect width="960" height="420" fill="#f7f7fa"/>
+  <rect x="40" y="40" width="280" height="140" rx="12" fill="#fff" stroke="#dedfec"/>
+  <text x="60" y="78" fill="#191827" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">v0.5 data/</text>
+  <text x="60" y="108" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">db.sqlite</text>
+  <text x="60" y="136" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">user-uploads/</text>
+
+  <path d="M330 110 H390" stroke="#0f7fbf" stroke-width="3"/>
+  <polygon points="390,110 378,104 378,116" fill="#0f7fbf"/>
+
+  <rect x="400" y="40" width="280" height="140" rx="12" fill="#fff" stroke="#dedfec"/>
+  <text x="420" y="78" fill="#191827" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">littleimp migrate</text>
+  <text x="420" y="108" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">inspect ? owner (+ password)</text>
+  <text x="420" y="136" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">apply into local library</text>
+
+  <path d="M690 110 H770" stroke="#0f7fbf" stroke-width="3"/>
+  <polygon points="770,110 758,104 758,116" fill="#0f7fbf"/>
+
+  <rect x="780" y="40" width="140" height="140" rx="12" fill="#fff" stroke="#dedfec"/>
+  <text x="800" y="90" fill="#191827" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Grimoire</text>
+  <text x="800" y="118" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">1.x SQLite</text>
+
+  <rect x="40" y="220" width="880" height="160" rx="12" fill="#fff" stroke="#dedfec"/>
+  <text x="60" y="258" fill="#191827" font-family="ui-sans-serif,system-ui" font-size="18" font-weight="700">Compatible with</text>
+  <text x="60" y="290" fill="#15803d" font-family="ui-sans-serif,system-ui" font-size="14" font-weight="700">Grimoire v0.5 only (SQLite / Drizzle)</text>
+  <text x="60" y="322" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">PocketBase-era installs (?0.3.x) are not supported</text>
+  <text x="60" y="350" fill="#626475" font-family="ui-sans-serif,system-ui" font-size="14">Password verifies v0.5 owner only — no 1.x multi-user login</text>
+</svg>

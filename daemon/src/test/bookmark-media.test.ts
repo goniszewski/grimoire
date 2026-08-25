@@ -318,4 +318,86 @@ describe("bookmark media cache", () => {
       .get(bookmark.id)?.count;
     expect(remaining).toBe(0);
   });
+
+  it("does not evict migrated legacy:// media when the cache is over budget", async () => {
+    const migrated = repo.create("https://example.com/migrated", "Migrated");
+    const live = repo.create("https://example.com/live", "Live");
+    const { enforceTotalCacheLimit } = await import("../media/bookmark-media.js");
+
+    db.run(
+      `INSERT INTO bookmark_media
+         (id, bookmark_id, kind, source_url, cache_path, media_type, size_bytes, alt, display_order)
+       VALUES (?, ?, 'image', 'legacy://1/image/abc/icon.png', 'media-cache/bookmarks/m/a.png', 'image/png', ?, NULL, 0)`,
+      [crypto.randomUUID(), migrated.id, MEDIA_CACHE_LIMITS.maxTotalBytes - 1024]
+    );
+    db.run(
+      `INSERT INTO bookmark_media
+         (id, bookmark_id, kind, source_url, cache_path, media_type, size_bytes, alt, display_order)
+       VALUES (?, ?, 'image', 'https://cdn.example.com/live.png', 'media-cache/bookmarks/l/b.png', 'image/png', ?, NULL, 0)`,
+      [crypto.randomUUID(), live.id, MEDIA_CACHE_LIMITS.maxTotalBytes]
+    );
+
+    await enforceTotalCacheLimit(db, dataDir);
+
+    const legacyLeft = db
+      .query<{ c: number }, []>(
+        `SELECT COUNT(*) AS c FROM bookmark_media WHERE source_url LIKE 'legacy://%'`
+      )
+      .get()?.c;
+    const liveLeft = db
+      .query<{ c: number }, []>(
+        `SELECT COUNT(*) AS c FROM bookmark_media WHERE source_url LIKE 'https://%'`
+      )
+      .get()?.c;
+    expect(legacyLeft).toBe(1);
+    expect(liveLeft).toBe(0);
+  });
+
+  it("preserves legacy:// media while filling missing live candidates", async () => {
+    const bookmark = repo.create("https://example.com/article", "Example");
+    db.run(
+      `INSERT INTO bookmark_media
+         (id, bookmark_id, kind, source_url, cache_path, media_type, size_bytes, alt, display_order)
+       VALUES (?, ?, 'favicon', 'legacy://1/favicon/abc/icon.ico', 'media-cache/bookmarks/m/fav.ico', 'image/x-icon', 16, NULL, 0)`,
+      [crypto.randomUUID(), bookmark.id]
+    );
+
+    globalThis.fetch = mockFetch(async (input) =>
+      imageResponse({
+        url: String(input),
+        contentType: "image/png",
+      })
+    );
+
+    await cacheBookmarkMedia(db, {
+      bookmarkId: bookmark.id,
+      dataDir,
+      candidates: {
+        favicon: { kind: "favicon", sourceUrl: "https://cdn.example.com/live-favicon.png" },
+        screenshot: {
+          kind: "screenshot",
+          sourceUrl: "https://cdn.example.com/live-screenshot.png",
+          alt: "Page preview",
+        },
+        images: [
+          {
+            kind: "image",
+            sourceUrl: "https://cdn.example.com/live-image.png",
+            alt: "Live image",
+          },
+        ],
+      },
+    });
+
+    const rows = db
+      .query<{ source_url: string; kind: string }, [string]>(
+        "SELECT source_url, kind FROM bookmark_media WHERE bookmark_id = ?"
+      )
+      .all(bookmark.id);
+    expect(rows).toHaveLength(3);
+    expect(rows.some((r) => r.source_url.startsWith("legacy://"))).toBe(true);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-screenshot.png")).toBe(true);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-image.png")).toBe(true);
+    expect(rows.some((r) => r.source_url === "https://cdn.example.com/live-favicon.png")).toBe(false);
+  });
 });

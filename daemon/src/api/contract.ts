@@ -906,6 +906,90 @@ const schemas = {
       "result",
     ]
   ),
+  LegacyMigrateOwner: objectSchema(
+    {
+      id: stringSchema("Legacy v0.5 user ID"),
+      username: stringSchema("Legacy username"),
+      email: stringSchema("Legacy email"),
+      name: stringSchema("Legacy display name"),
+      bookmarkCount: integerSchema("Bookmarks owned by this user", { minimum: 0 }),
+      categoryCount: integerSchema("Categories owned by this user", { minimum: 0 }),
+      tagCount: integerSchema("Tags owned by this user", { minimum: 0 }),
+      disabled: booleanSchema("Whether the legacy user was disabled"),
+    },
+    ["id", "username", "email", "name", "bookmarkCount", "categoryCount", "tagCount", "disabled"]
+  ),
+  LegacyMigrateInspect: objectSchema(
+    {
+      source: stringSchema("Recognized backup source", { enum: ["grimoire-v05-sqlite"] }),
+      dbPath: stringSchema("Resolved absolute path to v0.5 db.sqlite"),
+      uploadsDir: nullable(stringSchema("Resolved absolute path to user-uploads when present")),
+      users: arrayOf(ref("LegacyMigrateOwner"), "Legacy owners in the database"),
+      totals: objectSchema(
+        {
+          users: integerSchema("User count", { minimum: 0 }),
+          categories: integerSchema("Category count", { minimum: 0 }),
+          tags: integerSchema("Tag count", { minimum: 0 }),
+          bookmarks: integerSchema("Bookmark count", { minimum: 0 }),
+          mediaFilesReferenced: integerSchema("Media file references", { minimum: 0 }),
+        },
+        ["users", "categories", "tags", "bookmarks", "mediaFilesReferenced"]
+      ),
+      requiresOwnerSelection: booleanSchema("True when more than one legacy user is present"),
+    },
+    ["source", "dbPath", "uploadsDir", "users", "totals", "requiresOwnerSelection"]
+  ),
+  LegacyMigrateInspectResponse: envelope(ref("LegacyMigrateInspect")),
+  LegacyMigrateApplySummary: objectSchema(
+    {
+      owner: ref("LegacyMigrateOwner"),
+      dryRun: booleanSchema("True when this summary came from a dry-run (no writes)"),
+      categoriesCreated: integerSchema("Categories created", { minimum: 0 }),
+      categoriesReused: integerSchema("Existing categories reused", { minimum: 0 }),
+      tagsCreated: integerSchema("Tags created", { minimum: 0 }),
+      tagsReused: integerSchema("Existing tags reused", { minimum: 0 }),
+      bookmarksCreated: integerSchema("Bookmarks created", { minimum: 0 }),
+      bookmarksMerged: integerSchema("Bookmarks merged into existing URLs", { minimum: 0 }),
+      bookmarksSkipped: integerSchema("Bookmarks skipped", { minimum: 0 }),
+      bookmarksFailed: integerSchema("Bookmarks that failed during apply", { minimum: 0 }),
+      mediaImported: integerSchema("Local media files imported", { minimum: 0 }),
+      mediaSkipped: integerSchema("Media files skipped", { minimum: 0 }),
+      warnings: arrayOf(stringSchema("Warning detail"), "Non-fatal migration warnings"),
+    },
+    [
+      "owner",
+      "dryRun",
+      "categoriesCreated",
+      "categoriesReused",
+      "tagsCreated",
+      "tagsReused",
+      "bookmarksCreated",
+      "bookmarksMerged",
+      "bookmarksSkipped",
+      "bookmarksFailed",
+      "mediaImported",
+      "mediaSkipped",
+      "warnings",
+    ]
+  ),
+  LegacyMigrateApplyResponse: envelope(ref("LegacyMigrateApplySummary")),
+  LegacyMigrateRequest: objectSchema(
+    {
+      dataDir: stringSchema("Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite)"),
+      dbPath: stringSchema("Absolute path to v0.5 db.sqlite (alternative to dataDir)"),
+      uploadsDir: stringSchema("Optional absolute path to v0.5 user-uploads directory"),
+      archivePath: stringSchema(
+        "Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz)"
+      ),
+      owner: stringSchema("v0.5 username, email, or user id to import"),
+      password: stringSchema("Optional v0.5 user password for ownership verification"),
+      requirePassword: booleanSchema("When true, password verification is required"),
+      mergeDuplicates: booleanSchema("When true, merge into existing URLs instead of skipping"),
+      dryRun: booleanSchema("When true, compute the apply summary without writing"),
+    },
+    [],
+    "Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath."
+  ),
   RuntimeLlmCapability: objectSchema(
     {
       enabled: booleanSchema("Whether this runtime feature is usable"),
@@ -2561,6 +2645,162 @@ export const apiContract = {
         },
         "404": problemResponse("Import ID not found"),
       },
+    },
+    {
+      method: "POST",
+      path: "/migrate/legacy/inspect",
+      tag: "Migrate",
+      summary: "Experimental: inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
+      description:
+        "Experimental v0.5 migration tool. Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
+      request: {
+        body: {
+          contentType: "application/json",
+          schema: ref("LegacyMigrateRequest"),
+        },
+      },
+      responses: {
+        "200": jsonResponse("Experimental legacy backup summary", ref("LegacyMigrateInspectResponse")),
+        "400": problemResponse("Invalid request body"),
+        "422": problemResponse("Path is missing or not a recognized v0.5 SQLite database"),
+        "500": problemResponse("Inspect failed unexpectedly"),
+      },
+      examples: [
+        {
+          title: "Inspect a local v0.5 data directory",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/inspect \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\"}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                source: "grimoire-v05-sqlite",
+                dbPath: "/path/to/grimoire/data/db.sqlite",
+                uploadsDir: "/path/to/grimoire/data/user-uploads",
+                users: [
+                  {
+                    id: "1",
+                    username: "alice",
+                    email: "alice@example.com",
+                    name: "Alice",
+                    bookmarkCount: 12,
+                    categoryCount: 3,
+                    tagCount: 5,
+                    disabled: false,
+                  },
+                ],
+                totals: {
+                  users: 1,
+                  categories: 3,
+                  tags: 5,
+                  bookmarks: 12,
+                  mediaFilesReferenced: 4,
+                },
+                requiresOwnerSelection: false,
+              },
+            },
+          },
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/migrate/legacy/apply",
+      tag: "Migrate",
+      summary: "Experimental: import one v0.5 owner's library into this local Grimoire 1.x instance.",
+      description:
+        "Experimental v0.5 migration tool. Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
+      request: {
+        body: {
+          contentType: "application/json",
+          schema: ref("LegacyMigrateRequest"),
+        },
+      },
+      responses: {
+        "200": jsonResponse("Experimental migration apply summary", ref("LegacyMigrateApplyResponse")),
+        "207": jsonResponse(
+          "Partial experimental migration apply summary (bookmarksFailed > 0)",
+          ref("LegacyMigrateApplyResponse")
+        ),
+        "400": problemResponse("Invalid request body"),
+        "401": problemResponse("Owner password verification failed"),
+        "409": problemResponse("Legacy migration apply already in progress on this daemon"),
+        "422": problemResponse("Database is invalid or owner selection is required"),
+        "500": problemResponse("Apply failed unexpectedly"),
+      },
+      examples: [
+        {
+          title: "Apply a v0.5 library for one owner",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\",\"owner\":\"alice\",\"password\":\"secret\",\"requirePassword\":true}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                owner: {
+                  id: "1",
+                  username: "alice",
+                  email: "alice@example.com",
+                  name: "Alice",
+                  bookmarkCount: 12,
+                  categoryCount: 3,
+                  tagCount: 5,
+                  disabled: false,
+                },
+                dryRun: false,
+                categoriesCreated: 3,
+                categoriesReused: 0,
+                tagsCreated: 5,
+                tagsReused: 0,
+                bookmarksCreated: 11,
+                bookmarksMerged: 0,
+                bookmarksSkipped: 1,
+                bookmarksFailed: 0,
+                mediaImported: 3,
+                mediaSkipped: 1,
+                warnings: [],
+              },
+            },
+          },
+        },
+        {
+          title: "Dry-run apply without writing",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\",\"owner\":\"alice\",\"dryRun\":true}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                owner: {
+                  id: "1",
+                  username: "alice",
+                  email: "alice@example.com",
+                  name: "Alice",
+                  bookmarkCount: 12,
+                  categoryCount: 3,
+                  tagCount: 5,
+                  disabled: false,
+                },
+                dryRun: true,
+                categoriesCreated: 3,
+                categoriesReused: 0,
+                tagsCreated: 5,
+                tagsReused: 0,
+                bookmarksCreated: 11,
+                bookmarksMerged: 0,
+                bookmarksSkipped: 1,
+                bookmarksFailed: 0,
+                mediaImported: 3,
+                mediaSkipped: 1,
+                warnings: ["Dry run — no changes were written to the local library."],
+              },
+            },
+          },
+        },
+      ],
     },
     {
       method: "GET",

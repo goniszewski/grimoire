@@ -12,6 +12,7 @@ import { createDiagnosticsRoute } from "./routes/diagnostics.js";
 import { createBookmarksRoute } from "./routes/bookmarks.js";
 import { createSearchRoute } from "./routes/search.js";
 import { createImportRoute } from "./routes/import.js";
+import { createMigrateRoute } from "./routes/migrate.js";
 import { createCategoriesRoute } from "./routes/categories.js";
 import { createTagsRoute } from "./routes/tags.js";
 import { createExportRoute } from "./routes/export.js";
@@ -58,6 +59,8 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/restore",
   "/settings/test-s3",
   "/demo/load",
+  "/migrate/legacy/inspect",
+  "/migrate/legacy/apply",
 ]);
 
 /** Larger JSON mutators that still need an explicit higher cap. */
@@ -82,21 +85,7 @@ function normalizeOrigin(origin: string): string | null {
   }
 }
 
-function isLoopbackOrigin(origin: string): boolean {
-  try {
-    const parsed = new URL(origin);
-    return (
-      parsed.hostname === "localhost" ||
-      parsed.hostname === "127.0.0.1" ||
-      parsed.hostname === "::1" ||
-      parsed.hostname === "[::1]"
-    );
-  } catch {
-    return false;
-  }
-}
-
-function allowedLocalOrigins(): Set<string> {
+function allowedBrowserOrigins(): Set<string> {
   const origins = new Set<string>([
     `http://localhost:${Config.PORT}`,
     `http://127.0.0.1:${Config.PORT}`,
@@ -105,7 +94,7 @@ function allowedLocalOrigins(): Set<string> {
 
   for (const origin of Config.CORS_ORIGINS) {
     const normalized = normalizeOrigin(origin);
-    if (normalized && isLoopbackOrigin(normalized)) {
+    if (normalized) {
       origins.add(normalized);
     }
   }
@@ -116,7 +105,7 @@ function allowedLocalOrigins(): Set<string> {
 function isAllowedLocalOrigin(origin: string | undefined): boolean {
   if (!origin) return true;
   const normalized = normalizeOrigin(origin);
-  return !!normalized && allowedLocalOrigins().has(normalized);
+  return !!normalized && allowedBrowserOrigins().has(normalized);
 }
 
 function isValidCspSourceOrigin(origin: string): boolean {
@@ -129,7 +118,7 @@ function isValidCspSourceOrigin(origin: string): boolean {
 }
 
 function securityHeaders(path?: string): Record<string, string> {
-  const connectSrc = ["'self'", ...[...allowedLocalOrigins()].filter(isValidCspSourceOrigin)].join(" ");
+  const connectSrc = ["'self'", ...[...allowedBrowserOrigins()].filter(isValidCspSourceOrigin)].join(" ");
   return {
     "Content-Security-Policy": [
       "default-src 'self'",
@@ -158,6 +147,7 @@ function securityHeaders(path?: string): Record<string, string> {
 function bodyLimitFor(path: string, method: string): number | null {
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") return null;
   if (path === "/import") return IMPORT_MAX_BYTES;
+  if (path === "/import/preview") return IMPORT_MAX_BYTES;
   if (path === "/capture") return CAPTURE_JSON_BODY_MAX_BYTES;
   if (LOCAL_JSON_BODY_LIMIT_PATHS.has(path)) return LOCAL_JSON_BODY_MAX_BYTES;
   const large = LARGE_JSON_BODY_LIMIT_PATHS.get(path);
@@ -271,6 +261,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createMigrateRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createCategoriesRoute({ db: deps.db }));
   app.route("/", createTagsRoute({ db: deps.db }));
   app.route("/", createExportRoute({ db: deps.db }));
