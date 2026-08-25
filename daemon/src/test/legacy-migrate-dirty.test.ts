@@ -4625,6 +4625,41 @@ describe("v0.5 migration dirty user-data cases", () => {
     }
   });
 
+  it("filters script blocks with spaced end tags and decodes entities once", async () => {
+    const fixture = await makeDirtyFixture({
+      bookmarks: [
+        {
+          id: 1,
+          url: "http://192.168.0.50/entities",
+          title: "HTML entities",
+          ownerId: 1,
+          categoryId: 1,
+          contentHtml:
+            "<p>Tom &amp; Jerry &amp;lt;3 &lt;3 <script>unique-script-token</script > </p>",
+          contentText: null,
+        },
+      ],
+    });
+    const target = freshTarget();
+    try {
+      await migrateLegacyV05Source(
+        { dataDir: fixture.dataDir },
+        { db: target.db, dataDir: target.dataDir, enqueueIngest: false }
+      );
+      const content = target.db
+        .query<{ markdown: string | null }, []>(
+          "SELECT markdown FROM bookmark_content"
+        )
+        .get();
+      expect(content?.markdown).toContain("Tom & Jerry &lt;3 <3");
+      expect(content?.markdown).not.toContain("unique-script-token");
+    } finally {
+      target.db.close();
+      rmSync(fixture.dataDir, { recursive: true, force: true });
+      rmSync(target.dataDir, { recursive: true, force: true });
+    }
+  });
+
   it("stress: kitchen-sink multi-edge library migrates without failures", async () => {
     const deepCats = [
       { id: 1, name: "L1", slug: "l1", ownerId: 1 },

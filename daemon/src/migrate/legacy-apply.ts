@@ -382,15 +382,27 @@ function importLocalMedia(
 function htmlToSearchableMarkdown(html: string): string {
   const strip = (value: string): string =>
     value
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
       .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/&lt;/gi, "<")
-      .replace(/&gt;/gi, ">")
-      .replace(/&quot;/gi, '"')
-      .replace(/&#39;/gi, "'")
+      .replace(/&(nbsp|amp|lt|gt|quot|#39);/gi, (entity) => {
+        switch (entity.toLowerCase()) {
+          case "&nbsp;":
+            return " ";
+          case "&amp;":
+            return "&";
+          case "&lt;":
+            return "<";
+          case "&gt;":
+            return ">";
+          case "&quot;":
+            return '"';
+          case "&#39;":
+            return "'";
+          default:
+            return entity;
+        }
+      })
       .replace(/\s+/g, " ")
       .trim();
 
