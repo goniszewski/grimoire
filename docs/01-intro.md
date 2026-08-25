@@ -22,8 +22,9 @@ AI providers are optional. Core save, organize, keyword search, import/export, a
 
 ## Start here
 
-1. [Quick start](./02-quick-start.md) — Docker
-2. [Using Grimoire](./03-using-grimoire.md) — day-to-day features
-3. [Install without Docker](./05-install-without-docker.md) — native macOS/Linux
+1. [Try the public demo](https://goniszewski.com/grimoire/demo/) — explore the UI with synthetic data
+2. [Quick start](./02-quick-start.md) — Docker
+3. [Using Grimoire](./03-using-grimoire.md) — day-to-day features
+4. [Install without Docker](./05-install-without-docker.md) — native macOS/Linux
 
 Also: [Development](./04-development.md) · [Remote access](./06-remote-access.md) · [FAQ](./faq.md)

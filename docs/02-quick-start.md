@@ -1,6 +1,12 @@
 # Quick start
 
-The fastest path is Docker. One container serves the UI and the API on your machine only.
+The fastest path to explore the UI is the [hosted public demo](https://goniszewski.com/grimoire/demo/).
+It is a static, client-only build with synthetic session data and no hosted
+library. For a private local library, use Docker below.
+
+## Run locally with Docker
+
+One container serves the UI and the API on your machine only.
 
 ## Prerequisites
 
