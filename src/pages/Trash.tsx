@@ -26,6 +26,7 @@ import { ArrowLeft, Trash2, ArchiveRestore, ExternalLink, Search } from "lucide-
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow, differenceInDays, addDays, parseISO } from "date-fns";
 import { openBookmarkExternal } from "@/lib/bookmark-open";
+import { generatedFavicon } from "@/lib/media-url";
 
 const RETENTION_DAYS = 30;
 
@@ -185,7 +186,7 @@ const Trash = () => {
                   className="group flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5 transition-[border-color,box-shadow] duration-150 ease-out hover:border-primary/30 hover:shadow-sm"
                 >
                   <img
-                    src={bm.favicon_url ?? `https://www.google.com/s2/favicons?domain=${bm.domain}&sz=32`}
+                    src={bm.favicon_url ?? generatedFavicon(bm.domain)}
                     alt=""
                     className="h-4 w-4 rounded-sm shrink-0 opacity-60"
                     onError={(e) => {

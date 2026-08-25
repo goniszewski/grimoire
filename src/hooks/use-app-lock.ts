@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { isDemoMode } from "@/demo/enabled";
 
 const LOCK_HASH_KEY = "little-imp-lock-hash";
 const LOCK_TIMEOUT_KEY = "little-imp-lock-timeout";
@@ -26,13 +27,17 @@ function isLockEnabled(): boolean {
   return localStorage.getItem(LOCK_ENABLED_KEY) === "true";
 }
 
+/**
+ * Local UI privacy lock only. This is NOT authentication for the daemon API:
+ * any local process that can reach the loopback daemon can still call REST routes.
+ */
 export function useAppLock() {
   const [locked, setLocked] = useState(() => {
-    return isLockEnabled() && !!getStoredHash();
+    return !isDemoMode && isLockEnabled() && !!getStoredHash();
   });
-  const [hasPassword, setHasPassword] = useState(() => !!getStoredHash());
+  const [hasPassword, setHasPassword] = useState(() => !isDemoMode && !!getStoredHash());
   const [autoLockMinutes, setAutoLockMinutesState] = useState(getAutoLockMinutes);
-  const [lockEnabled, setLockEnabledState] = useState(isLockEnabled);
+  const [lockEnabled, setLockEnabledState] = useState(() => !isDemoMode && isLockEnabled());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef(Date.now());
 
@@ -42,6 +47,7 @@ export function useAppLock() {
 
   // Inactivity auto-lock
   useEffect(() => {
+    if (isDemoMode) return;
     if (!lockEnabled || !hasPassword || locked) return;
 
     const events = ["mousemove", "keydown", "mousedown", "touchstart", "scroll"];
@@ -61,6 +67,7 @@ export function useAppLock() {
   }, [lockEnabled, hasPassword, locked, autoLockMinutes, resetTimer]);
 
   const unlock = useCallback(async (password: string): Promise<boolean> => {
+    if (isDemoMode) return true;
     const storedHash = getStoredHash();
     if (!storedHash) return true;
     const hash = await hashPassword(password);
@@ -73,6 +80,7 @@ export function useAppLock() {
   }, []);
 
   const setPassword = useCallback(async (password: string) => {
+    if (isDemoMode) return;
     const hash = await hashPassword(password);
     localStorage.setItem(LOCK_HASH_KEY, hash);
     localStorage.setItem(LOCK_ENABLED_KEY, "true");
@@ -81,6 +89,7 @@ export function useAppLock() {
   }, []);
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (isDemoMode) return false;
     const storedHash = getStoredHash();
     if (!storedHash) return false;
     const currentHash = await hashPassword(currentPassword);
@@ -91,6 +100,7 @@ export function useAppLock() {
   }, []);
 
   const removePassword = useCallback(async (currentPassword: string): Promise<boolean> => {
+    if (isDemoMode) return true;
     const storedHash = getStoredHash();
     if (!storedHash) return true;
     const hash = await hashPassword(currentPassword);
@@ -104,11 +114,13 @@ export function useAppLock() {
   }, []);
 
   const setAutoLockMinutes = useCallback((minutes: number) => {
+    if (isDemoMode) return;
     localStorage.setItem(LOCK_TIMEOUT_KEY, String(minutes));
     setAutoLockMinutesState(minutes);
   }, []);
 
   const lockNow = useCallback(() => {
+    if (isDemoMode) return;
     if (hasPassword && lockEnabled) {
       setLocked(true);
     }

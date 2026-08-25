@@ -53,8 +53,8 @@ The frontend runs at `http://127.0.0.1:8080`. The daemon listens on
 grimoire/
   src/          React app, components, hooks, pages, tests, and API client
   daemon/       Bun/Hono daemon, routes, SQLite repositories, pipeline, tests
-  docs/         Product, release, operations, API, parity, and task reports
-  tasks/        File-based task board
+  docs/         Public product, operations, API, and presentation documentation
+  CONTEXT.md    Pointer to the maintainer-only task and evidence workspace
   scripts/      Release, docs, validation, and smoke-test helpers
   e2e/          Playwright end-to-end tests
   Formula/      In-repository Homebrew formula
@@ -96,7 +96,8 @@ npm run test:e2e:installed
 ```
 
 Use focused tests for narrow changes, then broaden verification when a change
-touches shared behavior, API contracts, task reports, or user-visible flows.
+touches shared behavior, API contracts, public documentation, or user-visible
+flows.
 
 ## Development Guidelines
 
@@ -128,37 +129,29 @@ The source API contract lives in `daemon/src/api/contract.ts`. Generated
 outputs are [API.md](./API.md), [docs/api-contract.json](./docs/api-contract.json),
 and [docs/openapi.json](./docs/openapi.json).
 
-For non-trivial visible UI, user-flow, documentation-presentation, release
-packaging, installer, API, or important runtime behavior work, add or update a
-task report under [docs/task-reports](./docs/task-reports/index.html) following
-[INSTRUCTION.md](./docs/task-reports/INSTRUCTION.md).
+## Private Project Workspace
 
-## Task Board Hygiene
-
-Tasks live under `tasks/`:
+The public checkout intentionally excludes the maintainer's task board and
+task-report evidence. `CONTEXT.md` points to the sibling workspace used for
+those records:
 
 ```text
-tasks/backlog/
-tasks/todo/
-tasks/in-progress/
-tasks/in-review/
-tasks/done/
+../_project-work/grimoire/tasks/
+../_project-work/grimoire/docs/task-reports/
 ```
 
-Keep task IDs stable, update the existing task file instead of creating a
-duplicate, and keep [tasks/README.md](./tasks/README.md) in sync with moved
-task files. Do not move a task to `done` unless the workflow explicitly calls
-for it or the maintainer asks.
+When working in the maintainer checkout, keep task IDs and status in the
+external board, update an existing task instead of creating a duplicate, and
+follow the external task-report `INSTRUCTION.md` for non-trivial work. Do not
+recreate `tasks/` or `docs/task-reports/` in the public repository.
 
 ## Pull Requests
 
 1. Keep changes focused.
 2. Explain the user-facing behavior, API behavior, or documentation outcome.
-3. Include screenshots or task-report links for visible changes.
+3. Include screenshots or other relevant user-facing evidence for visible changes.
 4. List verification commands and any checks that could not be run.
 5. Use semantic commit messages, for example `docs: refresh public README`.
 
-Before tagging or publishing a release, run the
-[release checklist](./docs/release-checklist.md). Public one-command,
-published-artifact, and Homebrew validation must not be claimed while
-unauthenticated release URLs return `404`.
+Public one-command, published-artifact, and Homebrew validation must not be
+claimed while unauthenticated release URLs return `404`.

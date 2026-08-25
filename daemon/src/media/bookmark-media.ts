@@ -348,6 +348,7 @@ export async function deleteBookmarkMediaCache(
       `SELECT * FROM bookmark_media WHERE bookmark_id IN (${placeholders})`
     )
     .all(...bookmarkIds);
+  // Permanent delete / trash purge still remove everything, including migrated media.
   removeMediaRowsSync(db, dataDir, rows);
 }
 
@@ -366,14 +367,39 @@ export function deleteBookmarkMediaCacheSync(
   removeMediaRowsSync(db, dataDir, rows);
 }
 
-async function enforceTotalCacheLimit(db: Database, dataDir: string): Promise<void> {
+/** Drop only live-fetched cache rows; keep migrated `legacy://` media intact. */
+function deleteLiveBookmarkMediaCache(
+  db: Database,
+  dataDir: string,
+  bookmarkId: string
+): void {
+  const rows = db
+    .query<BookmarkMediaRow, [string]>(
+      `SELECT * FROM bookmark_media
+       WHERE bookmark_id = ? AND source_url NOT LIKE 'legacy://%'`
+    )
+    .all(bookmarkId);
+  removeMediaRowsSync(db, dataDir, rows);
+}
+
+export async function enforceTotalCacheLimit(db: Database, dataDir: string): Promise<void> {
   const rows = db
     .query<BookmarkMediaRow, []>("SELECT * FROM bookmark_media ORDER BY created_at ASC")
     .all();
   let total = rows.reduce((sum, row) => sum + row.size_bytes, 0);
   const toRemove: BookmarkMediaRow[] = [];
-  for (const row of rows) {
+  // Prefer evicting live-fetched cache entries. Never delete migrated
+  // `legacy://` media — those are user-curated copies from v0.5 uploads.
+  const evictionOrder = [
+    ...rows.filter((row) => !row.source_url.startsWith("legacy://")),
+    ...rows.filter((row) => row.source_url.startsWith("legacy://")),
+  ];
+  for (const row of evictionOrder) {
     if (total <= MEDIA_CACHE_LIMITS.maxTotalBytes) break;
+    if (row.source_url.startsWith("legacy://")) {
+      // Migrated media is protected even if the cache is over budget.
+      continue;
+    }
     toRemove.push(row);
     total -= row.size_bytes;
   }
@@ -393,7 +419,8 @@ export async function cacheBookmarkMedia(
     .get(opts.bookmarkId);
   if (!bookmark) return { favicon: null, screenshot: null, images: [] };
 
-  await deleteBookmarkMediaCache(db, opts.dataDir, [opts.bookmarkId]);
+  // Re-fetch must not wipe curated migrated media (`legacy://…`).
+  deleteLiveBookmarkMediaCache(db, opts.dataDir, opts.bookmarkId);
 
   const candidates = [
     opts.candidates.favicon,
@@ -404,9 +431,34 @@ export async function cacheBookmarkMedia(
   const bookmarkDir = join(MEDIA_CACHE_DIR, "bookmarks", opts.bookmarkId);
   await mkdir(resolveCachePath(opts.dataDir, bookmarkDir), { recursive: true });
 
-  let imageOrder = 0;
+  const existingLegacyKinds = new Set(
+    db
+      .query<{ kind: string }, [string]>(
+        `SELECT kind FROM bookmark_media
+         WHERE bookmark_id = ? AND source_url LIKE 'legacy://%'`
+      )
+      .all(opts.bookmarkId)
+      .map((row) => row.kind)
+  );
+
+  let imageOrder =
+    db
+      .query<{ m: number | null }, [string]>(
+        `SELECT MAX(display_order) AS m FROM bookmark_media
+         WHERE bookmark_id = ? AND kind = 'image'`
+      )
+      .get(opts.bookmarkId)?.m ?? -1;
+  imageOrder += 1;
   const insertedSourceKeys = new Set<string>();
   for (const candidate of candidates) {
+    // Keep migrated favicon/screenshot as the bookmark's primary media.
+    if (
+      (candidate.kind === "favicon" || candidate.kind === "screenshot") &&
+      existingLegacyKinds.has(candidate.kind)
+    ) {
+      continue;
+    }
+
     const fetched = await fetchMedia(candidate);
     if (!fetched) continue;
 

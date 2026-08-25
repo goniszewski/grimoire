@@ -64,12 +64,34 @@ function parseResponse(raw: string): EnrichmentResponse | null {
   if (typeof parsed !== "object" || parsed === null) return null;
   const p = parsed as Record<string, unknown>;
 
-  const summary = typeof p.summary === "string" ? p.summary.trim() : "";
-  const confidence = typeof p.confidence === "number"
-    ? Math.max(0, Math.min(1, p.confidence))
-    : 0.5;
+  // Do not turn a provider-side empty or partial object into successful
+  // enrichment by filling in defaults. Every field in the prompt is required;
+  // otherwise a 200 response such as `{}` would be persisted as an empty
+  // summary, no tags, and the default "Other" category.
+  if (
+    !Object.prototype.hasOwnProperty.call(p, "summary") ||
+    !Object.prototype.hasOwnProperty.call(p, "tags") ||
+    !Object.prototype.hasOwnProperty.call(p, "category") ||
+    !Object.prototype.hasOwnProperty.call(p, "confidence")
+  ) {
+    return null;
+  }
 
-  const rawTags = Array.isArray(p.tags) ? p.tags : [];
+  if (
+    typeof p.summary !== "string" ||
+    !Array.isArray(p.tags) ||
+    typeof p.category !== "string" ||
+    typeof p.confidence !== "number" ||
+    !Number.isFinite(p.confidence)
+  ) {
+    return null;
+  }
+
+  const summary = p.summary.trim();
+  if (!summary) return null;
+  const confidence = Math.max(0, Math.min(1, p.confidence));
+
+  const rawTags = p.tags;
   const tags = rawTags
     .filter((t): t is string => typeof t === "string")
     .map((t) => t.toLowerCase().trim().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""))
@@ -80,6 +102,12 @@ function parseResponse(raw: string): EnrichmentResponse | null {
   const category = VALID_CATEGORIES.has(rawCategory) ? rawCategory : "Other";
 
   return { summary, tags, category, confidence };
+}
+
+function validateResponse(raw: string): string | null {
+  return parseResponse(raw)
+    ? null
+    : "LLM returned incomplete or invalid enrichment response";
 }
 
 // ─── DB helpers ───────────────────────────────────────────────────────────────
@@ -123,6 +151,11 @@ export interface EnrichInput {
 export interface EnrichOptions {
   preserveCategory?: boolean;
   preserveTags?: boolean;
+  /**
+   * When true, do not overwrite a non-blank bookmarks.description (used after
+   * legacy migrate / import with preserveExistingContent).
+   */
+  preserveDescription?: boolean;
 }
 
 /**
@@ -143,7 +176,11 @@ export async function enrichBookmark(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserMessage(title, content) },
     ],
-    { jsonMode: true, maxTokens: 512 }
+    {
+      jsonMode: true,
+      maxTokens: 512,
+      validateContent: validateResponse,
+    }
   );
 
   const result = parseResponse(rawResponse);
@@ -159,8 +196,9 @@ export async function enrichBookmark(
   });
 
   const existingFields = db
-    .query<{ category_id: string | null; tag_count: number }, [string]>(
+    .query<{ category_id: string | null; tag_count: number; description: string | null }, [string]>(
       `SELECT b.category_id,
+              b.description,
               (SELECT COUNT(*) FROM bookmark_tags bt WHERE bt.bookmark_id = b.id) AS tag_count
        FROM bookmarks b
        WHERE b.id = ?`
@@ -168,6 +206,8 @@ export async function enrichBookmark(
     .get(bookmarkId);
   const shouldWriteCategory = !options.preserveCategory || !existingFields?.category_id;
   const shouldWriteTags = !options.preserveTags || (existingFields?.tag_count ?? 0) === 0;
+  const shouldWriteDescription =
+    !options.preserveDescription || !(existingFields?.description?.trim());
 
   // Persist atomically
   db.transaction(() => {
@@ -182,9 +222,14 @@ export async function enrichBookmark(
          ON CONFLICT(bookmark_id) DO UPDATE SET summary = excluded.summary`,
         [bookmarkId, result.summary]
       );
-      // Truncate to 300 chars for the description quick-access field
-      const descriptionExcerpt = result.summary.slice(0, 300);
-      db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [descriptionExcerpt, bookmarkId]);
+      if (shouldWriteDescription) {
+        // Truncate to 300 chars for the description quick-access field
+        const descriptionExcerpt = result.summary.slice(0, 300);
+        db.run("UPDATE bookmarks SET description = ? WHERE id = ?", [
+          descriptionExcerpt,
+          bookmarkId,
+        ]);
+      }
     }
 
     // Category

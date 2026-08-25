@@ -418,7 +418,10 @@ export class BookmarkRepository {
       tags?: string[];
       category_id?: string | null;
       notes?: string | null;
+      /** Clear trash only — matches `restore()`. Does not change archive state. */
       restore?: boolean;
+      /** Explicitly return an archived row to the active library (browser import). */
+      unarchive?: boolean;
     }
   ): BookmarkWithTags | null {
     const existing = this.db
@@ -436,7 +439,10 @@ export class BookmarkRepository {
       }
 
       if (patch.restore) {
-        sets.push("is_archived = 0", "is_trashed = 0", "trashed_at = NULL");
+        sets.push("is_trashed = 0", "trashed_at = NULL");
+      }
+      if (patch.unarchive) {
+        sets.push("is_archived = 0");
       }
 
       if (typeof patch.notes === "string" && patch.notes.trim()) {

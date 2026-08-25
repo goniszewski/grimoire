@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { UpdateAvailableBanner } from "./UpdateAvailableBanner";
 
-function renderBanner(latestTag = "v0.2.0", currentVersion = "1.0.1", onDismiss = vi.fn()) {
+function renderBanner(latestTag = "v0.2.0", currentVersion = "1.1.0", onDismiss = vi.fn()) {
   return render(
     <MemoryRouter>
       <UpdateAvailableBanner
@@ -17,9 +17,9 @@ function renderBanner(latestTag = "v0.2.0", currentVersion = "1.0.1", onDismiss 
 
 describe("UpdateAvailableBanner", () => {
   it("renders the available version and current version", () => {
-    renderBanner("v0.2.0", "1.0.1");
+    renderBanner("v0.2.0", "1.1.0");
     expect(screen.getByText(/Grimoire v0.2.0 is available/)).toBeInTheDocument();
-    expect(screen.getByText(/current: 1.0.1/)).toBeInTheDocument();
+    expect(screen.getByText(/current: 1.1.0/)).toBeInTheDocument();
   });
 
   it("renders a 'View update' link that navigates to /settings", () => {
@@ -33,7 +33,7 @@ describe("UpdateAvailableBanner", () => {
 
   it("calls onDismiss when the dismiss button is clicked", () => {
     const onDismiss = vi.fn();
-    renderBanner("v0.2.0", "1.0.1", onDismiss);
+    renderBanner("v0.2.0", "1.1.0", onDismiss);
     fireEvent.click(screen.getByRole("button", { name: /Dismiss/i }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });

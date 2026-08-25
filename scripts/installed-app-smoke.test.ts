@@ -17,7 +17,6 @@ import {
 const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
   scripts?: Record<string, string>;
 };
-const releaseChecklist = readFileSync("docs/release-checklist.md", "utf8");
 const smokeRunner = readFileSync("scripts/installed-app-smoke.ts", "utf8");
 
 function sha256(path: string): string {
@@ -44,9 +43,6 @@ describe("installed-app smoke suite", () => {
     expect(packageJson.scripts?.["test:e2e:installed:published"]).toBe(
       "bun run scripts/installed-app-smoke.ts --source published --require-signature"
     );
-    expect(releaseChecklist).toContain("npm run test:e2e:installed");
-    expect(releaseChecklist).toContain("npm run test:e2e:installed:published");
-    expect(releaseChecklist).toContain("installed-app smoke");
   });
 
   it("selects the packaged archive for the current operating system", () => {

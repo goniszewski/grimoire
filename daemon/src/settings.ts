@@ -133,7 +133,7 @@ const DEFAULT_SETTINGS: Settings = {
     openrouter: {
       api_key: "",
       base_url: "https://openrouter.ai/api/v1",
-      model: "~openai/gpt-latest",
+      model: "openai/gpt-latest",
     },
     openai_compatible: {
       api_key: "",

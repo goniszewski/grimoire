@@ -4,7 +4,7 @@ import { ArrowUpCircle, X } from "lucide-react";
 interface UpdateAvailableBannerProps {
   /** The tag name of the available update (e.g. "v0.2.0"). */
   latestTag: string;
-  /** The version string of the current app (e.g. "1.0.1"). */
+  /** The version string of the current app (e.g. "1.1.0"). */
   currentVersion: string;
   /** Called when the user dismisses the banner. */
   onDismiss: () => void;

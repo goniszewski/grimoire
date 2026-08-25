@@ -7,6 +7,7 @@ import { Scheduler } from "./scheduler.js";
 import { createApp } from "./server.js";
 import { getDatabase, closeDatabase } from "./db/database.js";
 import { runEmbeddingRefresh, runPipeline } from "./pipeline/pipeline.js";
+import { shouldPreserveExistingOnReprocess } from "./pipeline/reprocess-preserve.js";
 import { OrganizationAgent } from "./ai/organization-agent.js";
 import { BookmarkRepository } from "./db/bookmark-repository.js";
 import type { IngestJobPayload, ReprocessJobPayload } from "./types/job.js";
@@ -14,6 +15,7 @@ import { join } from "path";
 import { createBackupSnapshot, applyRetentionPolicy } from "./routes/backup.js";
 import { settingsManager } from "./settings.js";
 import { cronToIntervalMs } from "./lib/cron.js";
+import { BindHostError, resolveBindHost } from "./lib/bind-host.js";
 
 const startTime = new Date();
 
@@ -26,7 +28,11 @@ const scheduler = new Scheduler();
 // --- Register job handlers ---
 worker.registerHandler("ingest", async (job) => {
   const payload = job.payload as IngestJobPayload;
-  await runPipeline(db, { bookmarkId: payload.bookmarkId, url: payload.url });
+  await runPipeline(
+    db,
+    { bookmarkId: payload.bookmarkId, url: payload.url },
+    { preserveExistingContent: payload.preserveExistingContent === true }
+  );
 });
 
 worker.registerHandler("reprocess", async (job) => {
@@ -39,7 +45,14 @@ worker.registerHandler("reprocess", async (job) => {
   await runPipeline(
     db,
     { bookmarkId: payload.bookmarkId, url: payload.url },
-    { replaceAiFields: payload.replaceAiFields }
+    {
+      replaceAiFields: payload.replaceAiFields,
+      preserveExistingContent: shouldPreserveExistingOnReprocess(
+        db,
+        payload.bookmarkId,
+        payload.replaceAiFields
+      ),
+    }
   );
 });
 
@@ -86,14 +99,27 @@ const app = createApp({ db, queue, startTime, version: VERSION });
 worker.start();
 scheduler.start();
 
+let bindHost: string;
+try {
+  const resolved = resolveBindHost(Config.HOST);
+  bindHost = resolved.host;
+  if (resolved.warning) {
+    log.warn(resolved.warning, { host: resolved.host });
+  }
+} catch (err) {
+  const message = err instanceof BindHostError ? err.message : String(err);
+  log.error(message);
+  process.exit(1);
+}
+
 const server = Bun.serve({
   fetch: app.fetch,
   port: Config.PORT,
-  hostname: Config.HOST,
+  hostname: bindHost,
 });
 
 log.info("littleimpd started", {
-  host: Config.HOST,
+  host: bindHost,
   port: Config.PORT,
   dataDir: Config.DATA_DIR,
   version: VERSION,

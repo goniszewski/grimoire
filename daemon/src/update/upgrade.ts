@@ -86,18 +86,28 @@ export async function downloadUpgradeArtifact(options: {
   workDir: string;
   fetchImpl?: typeof fetch;
   platform?: ReleasePlatform;
+  /** When true (default), refuse upgrades without a detached signature. */
+  requireSignature?: boolean;
 }): Promise<DownloadedUpgradeArtifact> {
   const platform = options.platform ?? detectReleasePlatform();
   const archiveName = releaseArchiveName(options.version, platform);
-  const baseUrl = options.releaseBaseUrl.replace(/\/+$/, "");
+  const baseUrl = assertHttpsReleaseBaseUrl(options.releaseBaseUrl);
   const archivePath = join(options.workDir, archiveName);
   const checksumPath = `${archivePath}.sha256`;
   const signaturePath = `${archivePath}.asc`;
   const fetchImpl = options.fetchImpl ?? fetch;
+  const requireSignature = options.requireSignature !== false;
 
   await downloadRequired(fetchImpl, `${baseUrl}/${archiveName}`, archivePath, archiveName);
   await downloadRequired(fetchImpl, `${baseUrl}/${archiveName}.sha256`, checksumPath, `${archiveName}.sha256`);
   const hasSignature = await downloadOptional(fetchImpl, `${baseUrl}/${archiveName}.asc`, signaturePath);
+
+  if (requireSignature && !hasSignature) {
+    throw new UpgradeError(
+      `Detached signature ${archiveName}.asc is required for remote upgrades. ` +
+        `Refusing checksum-only install from ${baseUrl}.`
+    );
+  }
 
   return {
     archivePath,
@@ -113,10 +123,17 @@ export function verifyAndExtractUpgradeArtifact(options: {
   signatureRunner?: InstallerRunner;
   env?: Record<string, string | undefined>;
   workDir: string;
+  /**
+   * When true (default unless allow-unsigned escape hatch), refuse upgrades
+   * without a verified detached signature.
+   */
+  requireSignature?: boolean;
 }): VerifiedUpgradeArtifact {
   const archivePath = resolve(options.archivePath);
   const checksumPath = resolve(options.checksumPath);
   const archiveName = basename(archivePath);
+  const requireSignature =
+    options.requireSignature ?? !allowUnsignedUpgrade(options.env);
 
   verifyChecksum(archivePath, checksumPath, archiveName);
   const signatureVerified = verifySignatureIfPresent(
@@ -125,6 +142,14 @@ export function verifyAndExtractUpgradeArtifact(options: {
     options.signatureRunner,
     options.env
   );
+
+  if (requireSignature && !signatureVerified) {
+    throw new UpgradeError(
+      `Detached signature verification is required for ${archiveName}. ` +
+        `Provide a valid .asc signature, or set LITTLEIMP_ALLOW_UNSIGNED_UPGRADE=1 / pass --allow-unsigned for an emergency checksum-only install.`
+    );
+  }
+
   const archiveRoot = validateArchiveMembers(archivePath, archiveName);
   validateArchiveEntryTypes(archivePath, archiveName);
   extractArchive(archivePath, options.workDir, archiveName);
@@ -173,6 +198,75 @@ function assertSafeReleaseVersion(version: string): void {
   }
 }
 
+const MAX_UPGRADE_ARTIFACT_BYTES = 512 * 1024 * 1024; // 512 MiB
+
+function allowUnsignedUpgrade(env?: Record<string, string | undefined>): boolean {
+  const value = env?.LITTLEIMP_ALLOW_UNSIGNED_UPGRADE ?? process.env.LITTLEIMP_ALLOW_UNSIGNED_UPGRADE;
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+export function assertHttpsReleaseBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new UpgradeError(`Release base URL must be a valid https URL: ${raw}`);
+  }
+  if (url.protocol !== "https:") {
+    throw new UpgradeError(`Release base URL must use https: ${raw}`);
+  }
+  if (url.username || url.password) {
+    throw new UpgradeError("Release base URL must not include embedded credentials.");
+  }
+  return trimmed;
+}
+
+function configuredSigningFingerprints(env?: Record<string, string | undefined>): string[] {
+  const raw =
+    env?.LITTLEIMP_UPGRADE_SIGNING_KEY_FINGERPRINTS ??
+    process.env.LITTLEIMP_UPGRADE_SIGNING_KEY_FINGERPRINTS ??
+    "";
+  return raw
+    .split(",")
+    .map((part) => part.replace(/\s+/g, "").toUpperCase())
+    .filter(Boolean);
+}
+
+async function readBodyWithCap(res: Response, maxBytes: number, label: string): Promise<Uint8Array> {
+  const contentLength = res.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+    await res.body?.cancel();
+    throw new UpgradeError(`${label} Content-Length ${contentLength} exceeds ${maxBytes} byte limit.`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) return new Uint8Array(0);
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new UpgradeError(`${label} exceeded ${maxBytes} byte download limit.`);
+    }
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+
 async function downloadRequired(
   fetchImpl: typeof fetch,
   url: string,
@@ -183,7 +277,8 @@ async function downloadRequired(
   if (!res.ok) {
     throw new UpgradeError(`Could not download ${label} from ${url} (HTTP ${res.status}).`);
   }
-  writeFileSync(outputPath, new Uint8Array(await res.arrayBuffer()));
+  const bytes = await readBodyWithCap(res, MAX_UPGRADE_ARTIFACT_BYTES, label);
+  writeFileSync(outputPath, bytes);
 }
 
 async function downloadOptional(fetchImpl: typeof fetch, url: string, outputPath: string): Promise<boolean> {
@@ -192,10 +287,10 @@ async function downloadOptional(fetchImpl: typeof fetch, url: string, outputPath
   if (!res.ok) {
     throw new UpgradeError(`Could not download detached signature from ${url} (HTTP ${res.status}).`);
   }
-  writeFileSync(outputPath, new Uint8Array(await res.arrayBuffer()));
+  const bytes = await readBodyWithCap(res, MAX_UPGRADE_ARTIFACT_BYTES, "Detached signature");
+  writeFileSync(outputPath, bytes);
   return true;
 }
-
 async function fetchArtifact(fetchImpl: typeof fetch, url: string, label: string): Promise<Response> {
   try {
     return await fetchImpl(url);
@@ -236,7 +331,7 @@ function verifySignatureIfPresent(
   const resolvedSignaturePath = signaturePath ? resolve(signaturePath) : `${archivePath}.asc`;
   if (!existsSync(resolvedSignaturePath)) return false;
   const run = runner ?? defaultInstallerRunner;
-  const result = run("gpg", ["--verify", resolvedSignaturePath, archivePath], {
+  const result = run("gpg", ["--batch", "--status-fd", "1", "--verify", resolvedSignaturePath, archivePath], {
     encoding: "utf8",
     env: sanitizedEnv(env),
   });
@@ -247,6 +342,25 @@ function verifySignatureIfPresent(
   if (result.status !== 0) {
     throw new UpgradeError(`Signature verification failed for ${basename(archivePath)}. Refusing to upgrade.`);
   }
+
+  const allowedFingerprints = configuredSigningFingerprints(env);
+  if (allowedFingerprints.length > 0) {
+    // GPG's human-readable output includes signer UIDs and primary-key
+    // summaries, so it must not be used for key pinning. `VALIDSIG` is the
+    // machine-readable record for the key that produced the signature.
+    const found = outputToString(result.stdout)
+      .split(/\r?\n/)
+      .map((line) => line.match(/^\[GNUPG:\]\s+VALIDSIG\s+([A-F0-9]{40}|[A-F0-9]{64})(?:\s|$)/i)?.[1])
+      .filter((fingerprint): fingerprint is string => Boolean(fingerprint))
+      .map((fingerprint) => fingerprint.toUpperCase());
+    const matched = found.some((fp) => allowedFingerprints.includes(fp));
+    if (!matched) {
+      throw new UpgradeError(
+        `Signature key fingerprint is not in LITTLEIMP_UPGRADE_SIGNING_KEY_FINGERPRINTS. Refusing to upgrade.`
+      );
+    }
+  }
+
   return true;
 }
 

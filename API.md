@@ -1498,6 +1498,214 @@ Responses:
 | `200` | text/event-stream | `ImportProgressEvent` | SSE stream of progress events |
 | `404` | application/problem+json | `ProblemDetails` | Import ID not found |
 
+### Migrate
+
+#### POST /migrate/legacy/inspect
+
+Experimental: inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.
+
+Experimental v0.5 migration tool. Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `LegacyMigrateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `LegacyMigrateInspectResponse` | Experimental legacy backup summary |
+| `400` | application/problem+json | `ProblemDetails` | Invalid request body |
+| `422` | application/problem+json | `ProblemDetails` | Path is missing or not a recognized v0.5 SQLite database |
+| `500` | application/problem+json | `ProblemDetails` | Inspect failed unexpectedly |
+
+Examples:
+
+**Inspect a local v0.5 data directory**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/inspect \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data"}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "source": "grimoire-v05-sqlite",
+    "dbPath": "/path/to/grimoire/data/db.sqlite",
+    "uploadsDir": "/path/to/grimoire/data/user-uploads",
+    "users": [
+      {
+        "id": "1",
+        "username": "alice",
+        "email": "alice@example.com",
+        "name": "Alice",
+        "bookmarkCount": 12,
+        "categoryCount": 3,
+        "tagCount": 5,
+        "disabled": false
+      }
+    ],
+    "totals": {
+      "users": 1,
+      "categories": 3,
+      "tags": 5,
+      "bookmarks": 12,
+      "mediaFilesReferenced": 4
+    },
+    "requiresOwnerSelection": false
+  }
+}
+```
+
+#### POST /migrate/legacy/apply
+
+Experimental: import one v0.5 owner's library into this local Grimoire 1.x instance.
+
+Experimental v0.5 migration tool. Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `LegacyMigrateRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `LegacyMigrateApplyResponse` | Experimental migration apply summary |
+| `207` | application/json | `LegacyMigrateApplyResponse` | Partial experimental migration apply summary (bookmarksFailed > 0) |
+| `400` | application/problem+json | `ProblemDetails` | Invalid request body |
+| `401` | application/problem+json | `ProblemDetails` | Owner password verification failed |
+| `409` | application/problem+json | `ProblemDetails` | Legacy migration apply already in progress on this daemon |
+| `422` | application/problem+json | `ProblemDetails` | Database is invalid or owner selection is required |
+| `500` | application/problem+json | `ProblemDetails` | Apply failed unexpectedly |
+
+Examples:
+
+**Apply a v0.5 library for one owner**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data","owner":"alice","password":"secret","requirePassword":true}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "owner": {
+      "id": "1",
+      "username": "alice",
+      "email": "alice@example.com",
+      "name": "Alice",
+      "bookmarkCount": 12,
+      "categoryCount": 3,
+      "tagCount": 5,
+      "disabled": false
+    },
+    "dryRun": false,
+    "categoriesCreated": 3,
+    "categoriesReused": 0,
+    "tagsCreated": 5,
+    "tagsReused": 0,
+    "bookmarksCreated": 11,
+    "bookmarksMerged": 0,
+    "bookmarksSkipped": 1,
+    "bookmarksFailed": 0,
+    "mediaImported": 3,
+    "mediaSkipped": 1,
+    "warnings": []
+  }
+}
+```
+
+**Dry-run apply without writing**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \
+  -H 'content-type: application/json' \
+  -d '{"dataDir":"/path/to/grimoire/data","owner":"alice","dryRun":true}'
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "owner": {
+      "id": "1",
+      "username": "alice",
+      "email": "alice@example.com",
+      "name": "Alice",
+      "bookmarkCount": 12,
+      "categoryCount": 3,
+      "tagCount": 5,
+      "disabled": false
+    },
+    "dryRun": true,
+    "categoriesCreated": 3,
+    "categoriesReused": 0,
+    "tagsCreated": 5,
+    "tagsReused": 0,
+    "bookmarksCreated": 11,
+    "bookmarksMerged": 0,
+    "bookmarksSkipped": 1,
+    "bookmarksFailed": 0,
+    "mediaImported": 3,
+    "mediaSkipped": 1,
+    "warnings": [
+      "Dry run — no changes were written to the local library."
+    ]
+  }
+}
+```
+
 ### Settings
 
 #### GET /settings
@@ -1591,6 +1799,70 @@ Responses:
 | Status | Content type | Schema | Description |
 |---|---|---|---|
 | `200` | application/json | `ConnectivityTestResponse` | Connectivity result |
+
+#### GET /settings/ai-models
+
+List models available from an AI provider catalog (currently OpenRouter).
+
+The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
+
+Query parameters:
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `provider` | "openrouter" | no | Provider to list models for |
+| `free` | "true" \| "false" | no | When true, only free models are returned |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `AiModelCatalogResponse` | AI model catalog |
+| `400` | application/problem+json | `ProblemDetails` | Unsupported provider |
+| `403` | application/problem+json | `ProblemDetails` | Missing X-LittleImp-Frontend header |
+| `422` | application/problem+json | `ProblemDetails` | Configured OpenRouter base URL is invalid |
+| `502` | application/problem+json | `ProblemDetails` | Provider model catalog could not be fetched |
+
+Examples:
+
+**List free OpenRouter models**
+
+Request:
+
+```bash
+curl -H "X-LittleImp-Frontend: 1" "http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true"
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "data": {
+    "provider": "openrouter",
+    "free": true,
+    "fetched_at": "2026-06-01T09:30:00.000Z",
+    "models": [
+      {
+        "id": "inclusionai/ling-3.0-flash:free",
+        "name": "Ling-3.0-flash (free)",
+        "context_length": 262144,
+        "prompt_price": "0",
+        "completion_price": "0"
+      },
+      {
+        "id": "meta-llama/llama-3.2-3b-instruct:free",
+        "name": "Meta: Llama 3.2 3B Instruct (free)",
+        "context_length": 131072,
+        "prompt_price": "0",
+        "completion_price": "0"
+      }
+    ]
+  }
+}
+```
 
 ### Backup
 
@@ -1874,7 +2146,6 @@ Request body:
 | `key` | string | no | Remote S3 snapshot.db key |
 | `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
-| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 Responses:
 
@@ -2212,29 +2483,27 @@ Content-Type: application/json
 
 #### GET /capture/bookmarklet
 
-Bookmarklet capture page (hidden iframe target, no auth header).
+Bookmarklet capture bridge page.
 
-The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.
-
-Query parameters:
-
-| Field | Type | Required | Description |
-|---|---|---:|---|
-| `token` | string | yes | Integration bearer token (query-param auth) |
-| `url` | string | yes | The URL to capture |
-| `title` | string | no | Page title |
-| `selection` | string | no | User-selected text |
+The browser bookmarklet opens this top-level HTML bridge to escape restrictive host-page frame CSP. The bridge is non-mutating, receives the capture payload and integration token only through a constrained postMessage handshake, and performs the authenticated same-origin POST /capture from the daemon origin. It is designed for the Settings → Browser Integration bookmarklet flow.
 
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
-| `200` | - | - | Bookmark already exists (not duplicated) |
-| `201` | - | - | Bookmark captured successfully |
-| `400` | application/problem+json | `ProblemDetails` | Missing token or url |
-| `401` | application/problem+json | `ProblemDetails` | Invalid or revoked token |
-| `409` | application/problem+json | `ProblemDetails` | URL exists in trash or archive |
-| `422` | application/problem+json | `ProblemDetails` | Invalid URL |
+| `200` | text/html | - | Bookmarklet bridge HTML page |
+
+#### GET /capture/bookmarklet.js
+
+Bookmarklet capture bridge script.
+
+Same-origin JavaScript for the bookmarklet bridge page. It accepts one postMessage request from its opener, sends the authenticated POST /capture, returns the HTTP result through postMessage, and closes the bridge window.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/javascript | - | Bookmarklet bridge JavaScript |
 
 #### GET /integration-tokens
 
@@ -2393,7 +2662,7 @@ Request:
 curl -X POST http://127.0.0.1:3210/mcp \
   -H "Authorization: Bearer limp_it_example" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.1"}}}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.1.0"}}}'
 ```
 
 Response:
@@ -2410,7 +2679,7 @@ Content-Type: application/json
     "capabilities": {},
     "serverInfo": {
       "name": "grimoire",
-      "version": "1.0.1"
+      "version": "1.1.0"
     }
   }
 }
@@ -3402,7 +3671,7 @@ Resolved category and tag remapping decisions applied to an import preview or co
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" \| "credential_url" | yes | Import row classification |
 | `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Action that the selected policy would apply |
 | `url` | string \| null | yes | Source bookmark URL |
 | `title` | string | yes | Source bookmark title |
@@ -3505,7 +3774,7 @@ Final committed import row result
 |---|---|---:|---|
 | `status` | "created" \| "merged" \| "restored" \| "skipped" \| "failed" | yes | Final committed row status |
 | `action` | "create" \| "skip" \| "merge" \| "restore_merge" | yes | Requested action selected by the duplicate policy |
-| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" | yes | Import row classification |
+| `classification` | "new" \| "active_duplicate" \| "archived_duplicate" \| "trashed_duplicate" \| "invalid_url" \| "private_url" \| "credential_url" | yes | Import row classification |
 | `url` | string \| null | yes | Source bookmark URL |
 | `title` | string | yes | Source bookmark title |
 | `notes` | string \| null | yes | Source note text when the import format provides note-like metadata |
@@ -3622,6 +3891,125 @@ Response data
 | `result.summary.categoriesReused` | integer | yes | Existing categories reused for imported folder paths |
 | `result.warnings` | array<string> | yes | Parser warnings |
 | `result.rows` | array<ImportResultRow> | yes | Committed row results |
+
+### LegacyMigrateOwner
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Legacy v0.5 user ID |
+| `username` | string | yes | Legacy username |
+| `email` | string | yes | Legacy email |
+| `name` | string | yes | Legacy display name |
+| `bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `categoryCount` | integer | yes | Categories owned by this user |
+| `tagCount` | integer | yes | Tags owned by this user |
+| `disabled` | boolean | yes | Whether the legacy user was disabled |
+
+### LegacyMigrateInspect
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `source` | "grimoire-v05-sqlite" | yes | Recognized backup source |
+| `dbPath` | string | yes | Resolved absolute path to v0.5 db.sqlite |
+| `uploadsDir` | string \| null | yes | Resolved absolute path to user-uploads when present |
+| `users` | array<LegacyMigrateOwner> | yes | Legacy owners in the database |
+| `totals` | object | yes |  |
+| `totals.users` | integer | yes | User count |
+| `totals.categories` | integer | yes | Category count |
+| `totals.tags` | integer | yes | Tag count |
+| `totals.bookmarks` | integer | yes | Bookmark count |
+| `totals.mediaFilesReferenced` | integer | yes | Media file references |
+| `requiresOwnerSelection` | boolean | yes | True when more than one legacy user is present |
+
+### LegacyMigrateInspectResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | LegacyMigrateInspect | yes |  |
+| `data.source` | "grimoire-v05-sqlite" | yes | Recognized backup source |
+| `data.dbPath` | string | yes | Resolved absolute path to v0.5 db.sqlite |
+| `data.uploadsDir` | string \| null | yes | Resolved absolute path to user-uploads when present |
+| `data.users` | array<LegacyMigrateOwner> | yes | Legacy owners in the database |
+| `data.totals` | object | yes |  |
+| `data.totals.users` | integer | yes | User count |
+| `data.totals.categories` | integer | yes | Category count |
+| `data.totals.tags` | integer | yes | Tag count |
+| `data.totals.bookmarks` | integer | yes | Bookmark count |
+| `data.totals.mediaFilesReferenced` | integer | yes | Media file references |
+| `data.requiresOwnerSelection` | boolean | yes | True when more than one legacy user is present |
+
+### LegacyMigrateApplySummary
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `owner` | LegacyMigrateOwner | yes |  |
+| `owner.id` | string | yes | Legacy v0.5 user ID |
+| `owner.username` | string | yes | Legacy username |
+| `owner.email` | string | yes | Legacy email |
+| `owner.name` | string | yes | Legacy display name |
+| `owner.bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `owner.categoryCount` | integer | yes | Categories owned by this user |
+| `owner.tagCount` | integer | yes | Tags owned by this user |
+| `owner.disabled` | boolean | yes | Whether the legacy user was disabled |
+| `dryRun` | boolean | yes | True when this summary came from a dry-run (no writes) |
+| `categoriesCreated` | integer | yes | Categories created |
+| `categoriesReused` | integer | yes | Existing categories reused |
+| `tagsCreated` | integer | yes | Tags created |
+| `tagsReused` | integer | yes | Existing tags reused |
+| `bookmarksCreated` | integer | yes | Bookmarks created |
+| `bookmarksMerged` | integer | yes | Bookmarks merged into existing URLs |
+| `bookmarksSkipped` | integer | yes | Bookmarks skipped |
+| `bookmarksFailed` | integer | yes | Bookmarks that failed during apply |
+| `mediaImported` | integer | yes | Local media files imported |
+| `mediaSkipped` | integer | yes | Media files skipped |
+| `warnings` | array<string> | yes | Non-fatal migration warnings |
+
+### LegacyMigrateApplyResponse
+
+Response data
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | LegacyMigrateApplySummary | yes |  |
+| `data.owner` | LegacyMigrateOwner | yes |  |
+| `data.owner.id` | string | yes | Legacy v0.5 user ID |
+| `data.owner.username` | string | yes | Legacy username |
+| `data.owner.email` | string | yes | Legacy email |
+| `data.owner.name` | string | yes | Legacy display name |
+| `data.owner.bookmarkCount` | integer | yes | Bookmarks owned by this user |
+| `data.owner.categoryCount` | integer | yes | Categories owned by this user |
+| `data.owner.tagCount` | integer | yes | Tags owned by this user |
+| `data.owner.disabled` | boolean | yes | Whether the legacy user was disabled |
+| `data.dryRun` | boolean | yes | True when this summary came from a dry-run (no writes) |
+| `data.categoriesCreated` | integer | yes | Categories created |
+| `data.categoriesReused` | integer | yes | Existing categories reused |
+| `data.tagsCreated` | integer | yes | Tags created |
+| `data.tagsReused` | integer | yes | Existing tags reused |
+| `data.bookmarksCreated` | integer | yes | Bookmarks created |
+| `data.bookmarksMerged` | integer | yes | Bookmarks merged into existing URLs |
+| `data.bookmarksSkipped` | integer | yes | Bookmarks skipped |
+| `data.bookmarksFailed` | integer | yes | Bookmarks that failed during apply |
+| `data.mediaImported` | integer | yes | Local media files imported |
+| `data.mediaSkipped` | integer | yes | Media files skipped |
+| `data.warnings` | array<string> | yes | Non-fatal migration warnings |
+
+### LegacyMigrateRequest
+
+Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `dataDir` | string | no | Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite) |
+| `dbPath` | string | no | Absolute path to v0.5 db.sqlite (alternative to dataDir) |
+| `uploadsDir` | string | no | Optional absolute path to v0.5 user-uploads directory |
+| `archivePath` | string | no | Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz) |
+| `owner` | string | no | v0.5 username, email, or user id to import |
+| `password` | string | no | Optional v0.5 user password for ownership verification |
+| `requirePassword` | boolean | no | When true, password verification is required |
+| `mergeDuplicates` | boolean | no | When true, merge into existing URLs instead of skipping |
+| `dryRun` | boolean | no | When true, compute the apply summary without writing |
 
 ### RuntimeLlmCapability
 
@@ -3880,6 +4268,37 @@ Response data
 | `error` | string | no | Failure reason |
 | `message` | string | no | Success message |
 
+### AiModel
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Provider model slug, e.g. openai/gpt-4o |
+| `name` | string | yes | Human-readable model name |
+| `context_length` | integer \| null | yes | Context window in tokens, when advertised |
+| `prompt_price` | string \| null | yes | Prompt price per token as a decimal string; "0" means free |
+| `completion_price` | string \| null | yes | Completion price per token as a decimal string; "0" means free |
+
+### AiModelCatalog
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `free` | boolean | yes | Whether only free models were requested |
+| `fetched_at` | string | yes | Catalog fetch timestamp |
+| `models` | array<AiModel> | yes | Available models |
+
+### AiModelCatalogResponse
+
+AI model catalog response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | AiModelCatalog | yes |  |
+| `data.provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `data.free` | boolean | yes | Whether only free models were requested |
+| `data.fetched_at` | string | yes | Catalog fetch timestamp |
+| `data.models` | array<AiModel> | yes | Available models |
+
 ### BackupSchedule
 
 | Field | Type | Required | Description |
@@ -4032,7 +4451,6 @@ Response data
 | `key` | string | no | Remote S3 snapshot.db key |
 | `path` | string | no | Absolute path to an encrypted backup package file accessible by the daemon |
 | `password` | string | no | Password used to decrypt the encrypted package |
-| `allow_unsafe_no_checksum` | boolean | no | Allow restoring a backup with no checksum file |
 
 ### RestoreResult
 

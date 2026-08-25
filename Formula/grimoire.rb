@@ -6,11 +6,11 @@ class Grimoire < Formula
   depends_on "oven-sh/bun/bun"
 
   if OS.mac?
-    url "https://github.com/goniszewski/grimoire/releases/download/v1.0.1/little-imp-1.0.1-macos.tar.gz"
-    sha256 "a8c934821cc8db588ef9b3213f013c4cd99f1ae23ba8f18e400727191a9d49c1"
+    url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-macos.tar.gz"
+    sha256 "f9435a3d956bf47aaa7b724319e49e41699b51d462d8474d91eaf5ca1f325cd2"
   elsif OS.linux?
-    url "https://github.com/goniszewski/grimoire/releases/download/v1.0.1/little-imp-1.0.1-linux.tar.gz"
-    sha256 "42cf4ea63bb31ea2380a0b3c8c4c65f7af943974ce1024dd9562a2484e343cff"
+    url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-linux.tar.gz"
+    sha256 "8b903ee96aa5ea9fa2edcec223c969c10e5e2231b1bfe4e7ad442be31d295b0c"
   end
 
   def install

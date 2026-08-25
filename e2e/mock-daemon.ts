@@ -228,7 +228,7 @@ function makeRestoreResult(bookmarkCount: number): RestoreResultDto {
 
 function makeUpdateResult(): UpdateCheckResultDto {
   return {
-    current_version: "1.0.1",
+    current_version: "1.1.0",
     update_available: false,
     source: "https://github.com/goniszewski/grimoire/releases",
     channel: "beta",

@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Lint, types, unit tests, docs, build
@@ -24,7 +27,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install daemon dependencies
         working-directory: daemon
@@ -32,3 +35,39 @@ jobs:
 
       - name: Run canonical quality gate
         run: npm run check
+
+  demo:
+    name: Build and smoke-test static demo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build demo profile
+        run: npm run build:demo
+
+      - name: Guard demo bundle from daemon URLs
+        run: npm run verify:demo-bundle
+
+      - name: Install Chromium for demo smoke test
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run demo browser smoke test
+        run: npm run test:e2e:demo
+
+      - name: Upload demo bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grimoire-demo-dist
+          path: dist/
+          if-no-files-found: error

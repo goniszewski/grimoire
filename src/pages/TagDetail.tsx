@@ -21,6 +21,8 @@ import { openBookmarkExternal } from "@/lib/bookmark-open";
 import { TagRenameDialog } from "@/components/TagRenameDialog";
 import { toast } from "@/hooks/use-toast";
 import { applyRenamedTagToCache } from "@/lib/tag-cache";
+import { isDemoMode } from "@/demo/enabled";
+import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 
 const PAGE_SIZE = 20;
 
@@ -118,6 +120,7 @@ const TagDetail = () => {
   });
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [demoPromptOpen, setDemoPromptOpen] = useState(false);
   const offset = pageState.tag === tagName ? pageState.offset : 0;
 
   function setPageOffset(nextOffset: (currentOffset: number) => number) {
@@ -282,6 +285,10 @@ const TagDetail = () => {
               variant="outline"
               size="sm"
               onClick={() => {
+                if (isDemoMode) {
+                  setDemoPromptOpen(true);
+                  return;
+                }
                 setRenameError(null);
                 setRenameOpen(true);
               }}
@@ -390,6 +397,12 @@ const TagDetail = () => {
           setRenameError(null);
           renameMutation.mutate({ id: tag.id, name });
         }}
+      />
+
+      <DemoInstallPrompt
+        open={demoPromptOpen}
+        onOpenChange={setDemoPromptOpen}
+        action="Rename tags"
       />
     </div>
   );

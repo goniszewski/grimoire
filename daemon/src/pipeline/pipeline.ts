@@ -36,6 +36,7 @@ import {
   cacheBookmarkMedia,
   extractBookmarkMediaCandidates,
 } from "../media/bookmark-media.js";
+import { combineFtsSummary } from "../lib/fts-summary.js";
 
 export interface PipelinePayload {
   bookmarkId: string;
@@ -44,6 +45,8 @@ export interface PipelinePayload {
 
 export interface PipelineOptions {
   replaceAiFields?: boolean;
+  /** Prefer existing title/description/content over freshly extracted values. */
+  preserveExistingContent?: boolean;
 }
 
 // ─── DB helpers ───────────────────────────────────────────────────────────────
@@ -59,21 +62,36 @@ function setStatus(
 function upsertContent(
   db: Database,
   bookmarkId: string,
-  data: Partial<Omit<BookmarkContentRow, "bookmark_id" | "extracted_at">>
+  data: Partial<Omit<BookmarkContentRow, "bookmark_id" | "extracted_at">>,
+  options?: { preferExisting?: boolean }
 ): void {
+  const preferExisting = options?.preferExisting === true;
   db.run(
-    `INSERT INTO bookmark_content
-       (bookmark_id, raw_html, markdown, summary, author, published_at, word_count, language)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(bookmark_id) DO UPDATE SET
-       raw_html     = excluded.raw_html,
-       markdown     = excluded.markdown,
-       summary      = excluded.summary,
-       author       = excluded.author,
-       published_at = excluded.published_at,
-       word_count   = excluded.word_count,
-       language     = excluded.language,
-       extracted_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`,
+    preferExisting
+      ? `INSERT INTO bookmark_content
+           (bookmark_id, raw_html, markdown, summary, author, published_at, word_count, language)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(bookmark_id) DO UPDATE SET
+           raw_html     = COALESCE(bookmark_content.raw_html, excluded.raw_html),
+           markdown     = COALESCE(bookmark_content.markdown, excluded.markdown),
+           summary      = COALESCE(bookmark_content.summary, excluded.summary),
+           author       = COALESCE(bookmark_content.author, excluded.author),
+           published_at = COALESCE(bookmark_content.published_at, excluded.published_at),
+           word_count   = COALESCE(bookmark_content.word_count, excluded.word_count),
+           language     = COALESCE(bookmark_content.language, excluded.language),
+           extracted_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`
+      : `INSERT INTO bookmark_content
+           (bookmark_id, raw_html, markdown, summary, author, published_at, word_count, language)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(bookmark_id) DO UPDATE SET
+           raw_html     = excluded.raw_html,
+           markdown     = excluded.markdown,
+           summary      = excluded.summary,
+           author       = excluded.author,
+           published_at = excluded.published_at,
+           word_count   = excluded.word_count,
+           language     = excluded.language,
+           extracted_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`,
     [
       bookmarkId,
       data.raw_html ?? null,
@@ -94,13 +112,17 @@ function updateFts(
   content: string,
   tags: string
 ): void {
-  // Read the current summary from bookmark_content (may have been written by ai_enrich stage).
-  const summaryRow = db
-    .query<{ summary: string | null }, [string]>(
-      "SELECT summary FROM bookmark_content WHERE bookmark_id = ?"
+  // Index both LLM/content summary and bookmarks.description so migrate/import
+  // description tokens stay searchable after enrich writes a summary.
+  const row = db
+    .query<{ summary: string | null; description: string | null }, [string]>(
+      `SELECT bc.summary AS summary, b.description AS description
+       FROM bookmarks b
+       LEFT JOIN bookmark_content bc ON bc.bookmark_id = b.id
+       WHERE b.id = ?`
     )
     .get(bookmarkId);
-  const summary = summaryRow?.summary ?? "";
+  const summary = combineFtsSummary(row?.description, row?.summary);
 
   // The FTS triggers handle INSERT/UPDATE on bookmarks, but content/summary come
   // from bookmark_content. We manually sync all columns here.
@@ -125,16 +147,23 @@ export async function runPipeline(
   options: PipelineOptions = {}
 ): Promise<void> {
   const { bookmarkId, url } = payload;
-  const preserveExistingFields = options.replaceAiFields === false;
+  const preserveExistingContent = options.preserveExistingContent === true;
+  const preserveExistingFields =
+    options.replaceAiFields === false || preserveExistingContent;
   clearPipelineFailure(db, bookmarkId);
 
-  // Fetch current bookmark for fallback title
+  // Fetch current bookmark for fallback title/description
   const row = db
-    .query<{ title: string | null }, [string]>(
-      "SELECT title FROM bookmarks WHERE id = ?"
+    .query<{ title: string | null; description: string | null }, [string]>(
+      "SELECT title, description FROM bookmarks WHERE id = ?"
     )
     .get(bookmarkId);
   const existingTitle = row?.title ?? null;
+  const existingDescription = row?.description ?? null;
+  // Blank legacy titles are normalized to the URL; treat that stub as missing so
+  // live extraction can still upgrade the title under preserveExistingContent.
+  const titleIsUrlStub = Boolean(existingTitle) && existingTitle === url;
+  const hasPreservableTitle = Boolean(existingTitle) && !titleIsUrlStub;
 
   // ── Stage 1: fetch ────────────────────────────────────────────────────────
   log.info("Pipeline: fetch", { bookmarkId, url });
@@ -170,18 +199,44 @@ export async function runPipeline(
     });
     // Graceful degradation: store minimal content so bookmark is still usable.
     // Cap raw HTML to avoid storing up to 10 MB per failed bookmark.
-    upsertContent(db, bookmarkId, {
-      raw_html: fetched.html ? fetched.html.slice(0, 500_000) : null,
-      markdown: existingTitle ?? url,
-    });
+    upsertContent(
+      db,
+      bookmarkId,
+      {
+        raw_html: fetched.html ? fetched.html.slice(0, 500_000) : null,
+        markdown: existingTitle ?? url,
+      },
+      { preferExisting: preserveExistingContent }
+    );
     setStatus(db, bookmarkId, "extracted");
+    // bookmark_content INSERT trigger sets FTS summary from content.summary
+    // (often null → ''), wiping migrated description tokens. Rebuild before
+    // skipping the normal index stage.
+    const failTags =
+      db
+        .query<{ tags: string | null }, [string]>(
+          `SELECT GROUP_CONCAT(t.name, ' ') AS tags
+           FROM tags t JOIN bookmark_tags bt ON bt.tag_id = t.id
+           WHERE bt.bookmark_id = ?`
+        )
+        .get(bookmarkId)?.tags ?? "";
+    const failContent =
+      db
+        .query<{ markdown: string | null }, [string]>(
+          "SELECT markdown FROM bookmark_content WHERE bookmark_id = ?"
+        )
+        .get(bookmarkId)?.markdown ??
+      existingTitle ??
+      url;
+    updateFts(db, bookmarkId, existingTitle ?? url, failContent, failTags);
     return; // skip remaining stages
   }
 
   // Persist extraction results atomically.
-  const title = preserveExistingFields
-    ? existingTitle ?? extracted.title ?? url
-    : extracted.title ?? existingTitle ?? url;
+  const title =
+    preserveExistingFields && hasPreservableTitle
+      ? existingTitle ?? extracted.title ?? url
+      : extracted.title ?? existingTitle ?? url;
   db.transaction(() => {
     // Build a short description excerpt from markdown for the list view.
     // This is overwritten later if LLM enrichment produces a proper summary.
@@ -194,12 +249,12 @@ export async function runPipeline(
     if (
       extracted.title &&
       extracted.title !== existingTitle &&
-      (!preserveExistingFields || !existingTitle)
+      (!preserveExistingFields || !hasPreservableTitle)
     ) {
       sets.push("title = ?");
       setParams.push(extracted.title);
     }
-    if (descriptionExcerpt) {
+    if (descriptionExcerpt && (!preserveExistingContent || !existingDescription)) {
       sets.push("description = ?");
       setParams.push(descriptionExcerpt);
     }
@@ -209,16 +264,21 @@ export async function runPipeline(
     // Cap raw HTML stored in the DB to 500 KB — up to 10 MB may have been fetched.
     // Storing the full body would cause unbounded DB growth (10 MB per bookmark).
     const RAW_HTML_STORE_LIMIT = 500_000;
-    upsertContent(db, bookmarkId, {
-      raw_html: extracted.rawHtml
-        ? extracted.rawHtml.slice(0, RAW_HTML_STORE_LIMIT)
-        : null,
-      markdown: extracted.markdown,
-      author: extracted.author,
-      published_at: extracted.publishedAt,
-      word_count: extracted.wordCount,
-      language: extracted.language,
-    });
+    upsertContent(
+      db,
+      bookmarkId,
+      {
+        raw_html: extracted.rawHtml
+          ? extracted.rawHtml.slice(0, RAW_HTML_STORE_LIMIT)
+          : null,
+        markdown: extracted.markdown,
+        author: extracted.author,
+        published_at: extracted.publishedAt,
+        word_count: extracted.wordCount,
+        language: extracted.language,
+      },
+      { preferExisting: preserveExistingContent }
+    );
     const extractedTags = normalizeExtractedTags(extracted.tags);
     if (extractedTags.length > 0 && !preserveExistingFields) {
       // Merge with existing tags rather than replacing them. Manual/imported
@@ -262,6 +322,7 @@ export async function runPipeline(
       }, {
         preserveCategory: preserveExistingFields,
         preserveTags: preserveExistingFields,
+        preserveDescription: preserveExistingFields,
       });
       log.info("Pipeline: ai_enrich done", { bookmarkId });
     } catch (err) {
@@ -351,12 +412,20 @@ export async function runPipeline(
       )
       .get(bookmarkId);
     const tags = tagsRow?.tags ?? "";
+    // Index whatever content row actually stores (preserveExistingContent may have
+    // kept migrated markdown while extracted.markdown is empty/different).
+    const contentRow = db
+      .query<{ markdown: string | null }, [string]>(
+        "SELECT markdown FROM bookmark_content WHERE bookmark_id = ?"
+      )
+      .get(bookmarkId);
+    const ftsContent = contentRow?.markdown ?? extracted.markdown ?? "";
     db.transaction(() => {
       // setStatus fires trg_bookmarks_fts_update which resets content/tags to ''.
       // updateFts must run AFTER (inside the same transaction) to overwrite that
       // empty row with real content before the transaction commits.
       setStatus(db, bookmarkId, "indexed");
-      updateFts(db, bookmarkId, title, extracted.markdown ?? "", tags);
+      updateFts(db, bookmarkId, title, ftsContent, tags);
     })();
     log.info("Pipeline: index done", { bookmarkId });
   } catch (err) {

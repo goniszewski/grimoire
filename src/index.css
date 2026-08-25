@@ -1,6 +1,5 @@
 /* Hallmark · genre: modern-minimal · macrostructure: Workbench / Index-First · design-system: design.md · designed-as-app */
 @import url("../tokens.css");
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -106,6 +105,13 @@
   }
   html, body {
     overflow-x: clip;
+  }
+  /* In the static demo, Radix locks the page while overlays are open and
+     compensates for the scrollbar with a body margin. That compensation
+     becomes a visible gutter with the app's narrow custom scrollbar. */
+  html body[data-demo-mode][data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
   }
   code, .font-mono {
     font-family: var(--font-mono);

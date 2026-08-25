@@ -1,4 +1,4 @@
-# CLAUDE.md — Grimoire 1.0
+# CLAUDE.md — Grimoire 1.1
 
 ## Project
 
@@ -38,7 +38,7 @@ Local-first bookmark manager. Frontend: React 18 + Vite + TypeScript (`src/`). D
 
 ## Commit Style
 
-Conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `ci:`, `perf:`). Reference task IDs when applicable: `feat(TASK-123): description`.
+Conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `ci:`, `perf:`). Reference public issue or PR IDs when useful; omit internal task IDs from commit subjects.
 
 ## Git Workflow
 

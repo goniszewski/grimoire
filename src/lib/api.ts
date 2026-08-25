@@ -3,6 +3,7 @@
  */
 
 import type {
+  AiModelCatalogResponseDto,
   BackupDestinationDto,
   BackupDestinationPatchDto,
   BackupDestinationResponseDto,
@@ -67,6 +68,8 @@ import type {
   UpdateCheckResponseDto,
   UpdateCheckResultDto,
 } from "../../daemon/src/api/types";
+import { demoApiBase, isDemoMode } from "@/demo/enabled";
+import { transport } from "./api/transport";
 
 const DEFAULT_DAEMON_URL = "http://127.0.0.1:3210";
 
@@ -79,9 +82,18 @@ function isLoopbackHostname(hostname: string): boolean {
   );
 }
 
-export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): string {
+export function resolveDaemonUrl(
+  rawUrl = import.meta.env.VITE_DAEMON_URL,
+  currentOrigin = typeof window !== "undefined" ? window.location.origin : undefined
+): string {
   const trimmedUrl = rawUrl?.trim();
-  if (!trimmedUrl) return DEFAULT_DAEMON_URL;
+  if (!trimmedUrl) {
+    if (currentOrigin) {
+      const parsedOrigin = new URL(currentOrigin);
+      if (!isLoopbackHostname(parsedOrigin.hostname)) return parsedOrigin.origin;
+    }
+    return DEFAULT_DAEMON_URL;
+  }
 
   let parsed: URL;
   try {
@@ -101,7 +113,7 @@ export function resolveDaemonUrl(rawUrl = import.meta.env.VITE_DAEMON_URL): stri
   return parsed.origin;
 }
 
-export const DAEMON_URL = resolveDaemonUrl();
+export const DAEMON_URL = isDemoMode ? demoApiBase() : resolveDaemonUrl();
 
 // ─── API types (derived from daemon-owned contract) ──────────────────────────
 
@@ -240,7 +252,20 @@ export interface ApiRuntimeCapabilities {
   };
 }
 
-export type ApiUpdateCheckResult = UpdateCheckResultDto;
+export type ApiUpdateCheckResult = {
+  current_version: string;
+  update_available: boolean;
+  source: string;
+  channel: string;
+  latest: {
+    version: string;
+    tag: string;
+    name: string;
+    prerelease: boolean;
+    published_at: string;
+    url: string;
+  } | null;
+};
 
 export interface ApiDiagnosticsProviderStatus {
   provider: string;
@@ -405,7 +430,7 @@ async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${DAEMON_URL}${path}`, {
+  const res = await transport.fetch(`${DAEMON_URL}${path}`, {
     ...options,
     headers: {
       ...(options?.body ? { "Content-Type": "application/json" } : {}),
@@ -460,7 +485,7 @@ async function fetchHealth(url: string): Promise<HealthResponseDto | null> {
       timeout = setTimeout(() => controller.abort(), 3000);
       signal = controller.signal;
     }
-    const res = await fetch(url, signal ? { signal } : undefined);
+    const res = await transport.fetch(url, signal ? { signal } : undefined);
     if (!res.ok) return null;
     const body = await res.json() as Partial<HealthResponseDto>;
     if (
@@ -782,7 +807,7 @@ async function fetchImportForm<T>(
   duplicatePolicy?: ImportDuplicatePolicy,
   remapping?: ImportRemappingInput
 ): Promise<T> {
-  const res = await fetch(`${DAEMON_URL}${path}`, {
+  const res = await transport.fetch(`${DAEMON_URL}${path}`, {
     method: "POST",
     body: importFormData(file, duplicatePolicy, remapping),
   });
@@ -823,6 +848,13 @@ export function subscribeToImportProgress(
   importId: string,
   onProgress: (state: ImportProgressEventDto) => void
 ): () => void {
+  if (isDemoMode) {
+    throw new ApiError(
+      501,
+      "Import is not available in the public demo",
+      "Install Grimoire to import a browser bookmark file into your private library."
+    );
+  }
   const es = new EventSource(`${DAEMON_URL}/import/${importId}/progress`);
   es.addEventListener("progress", (e) => {
     try {
@@ -895,6 +927,23 @@ export async function rejectSuggestion(id: string): Promise<{ data: SuggestionDt
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
+export interface ApiAiModel {
+  id: AiModelCatalogResponseDto["data"]["models"][number]["id"];
+  name: AiModelCatalogResponseDto["data"]["models"][number]["name"];
+  context_length: AiModelCatalogResponseDto["data"]["models"][number]["context_length"];
+  prompt_price: AiModelCatalogResponseDto["data"]["models"][number]["prompt_price"];
+  completion_price: AiModelCatalogResponseDto["data"]["models"][number]["completion_price"];
+}
+
+export interface ApiAiModelCatalog {
+  provider: AiModelCatalogResponseDto["data"]["provider"];
+  free: AiModelCatalogResponseDto["data"]["free"];
+  fetched_at: AiModelCatalogResponseDto["data"]["fetched_at"];
+  models: ApiAiModel[];
+}
+
+export type ApiAiModelCatalogResponse = Simplify<{ data: ApiAiModelCatalog }>;
+
 export async function getSettings(): Promise<{ data: ApiSettings }> {
   return apiFetch<{ data: ApiSettings }>("/settings");
 }
@@ -910,10 +959,72 @@ export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
   return apiFetch<{ data: ApiDiagnostics }>("/diagnostics");
 }
 
+/**
+ * Lists models from an AI provider catalog (currently OpenRouter).
+ * The daemon fetches the public catalog; `free` filters to zero-cost models.
+ * The custom header is required by the daemon so foreign web pages cannot
+ * blind-trigger outbound catalog fetches.
+ */
+export async function fetchAiModels(provider: "openrouter", free: boolean): Promise<ApiAiModel[]> {
+  const query = new URLSearchParams({ provider, free: String(free) });
+  const res = await apiFetch<ApiAiModelCatalogResponse>(`/settings/ai-models?${query.toString()}`, {
+    headers: { "X-LittleImp-Frontend": "1" },
+  });
+  return res.data.models;
+}
+
 // ─── Updates ──────────────────────────────────────────────────────────────────
 
-export async function checkForUpdates(): Promise<UpdateCheckResponseDto> {
-  return apiFetch<UpdateCheckResponseDto>("/updates/check");
+export async function checkForUpdates(): Promise<{ data: ApiUpdateCheckResult }> {
+  return apiFetch<{ data: ApiUpdateCheckResult }>("/updates/check");
+}
+
+export async function testAiConnection(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    return await apiFetch<{ ok: boolean; error?: string }>("/settings/test-ai", {
+      method: "POST",
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return {
+        ok: false,
+        error: `Server returned ${err.status}: ${err.detail ?? err.message}`,
+      };
+    }
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function downloadExport(
+  format: "json" | "csv",
+  filters: {
+    tag?: string;
+    domain?: string;
+    category_id?: string;
+    category?: string;
+    date_from?: string;
+    date_to?: string;
+    read_later?: boolean;
+  } & LibraryParityFilterParams = {}
+): Promise<{ blob: Blob; filename: string }> {
+  const params = new URLSearchParams({ format });
+  if (filters.tag) params.set("tag", filters.tag);
+  if (filters.domain) params.set("domain", filters.domain);
+  if (filters.category_id) params.set("category_id", filters.category_id);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.read_later != null) params.set("read_later", filters.read_later ? "true" : "false");
+  appendLibraryParityFilters(params, filters);
+
+  const res = await transport.fetch(`${DAEMON_URL}/export?${params.toString()}`);
+  if (!res.ok) {
+    throw new ApiError(res.status, `Export failed: ${res.status}`, await res.text().catch(() => undefined));
+  }
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? `bookmarks.${format}`;
+  return { blob: await res.blob(), filename };
 }
 
 // ─── Backup & Restore ─────────────────────────────────────────────────────────

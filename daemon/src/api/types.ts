@@ -55,6 +55,9 @@ export type SettingsDto = ApiDto<"Settings">;
 export type SettingsPatchDto = ApiDto<"SettingsPatch">;
 export type SettingsResponseDto = ApiDto<"SettingsResponse">;
 export type ConnectivityTestResponseDto = ApiDto<"ConnectivityTestResponse">;
+export type AiModelDto = ApiDto<"AiModel">;
+export type AiModelCatalogDto = ApiDto<"AiModelCatalog">;
+export type AiModelCatalogResponseDto = ApiDto<"AiModelCatalogResponse">;
 
 export type BackupScheduleDto = ApiDto<"BackupSchedule">;
 export type BackupSchedulePatchDto = ApiDto<"BackupSchedulePatch">;

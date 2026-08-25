@@ -7,21 +7,22 @@
 <br>
 
 [![Quality Gates](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml)
-![Release target](https://img.shields.io/badge/release-1.0.1-7c3aed)
+![Release target](https://img.shields.io/badge/release-1.1.0-7c3aed)
 ![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 Grimoire is a local-first bookmark manager for people who save technical resources and need to find them later. Save links, import browser bookmarks, extract readable content, search by keyword or meaning, and let optional AI providers summarize and organize your library — while your data stays on your machine.
 
 > [!NOTE]
-> **Grimoire 1.0** is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> If you are coming from v0.5.x: no direct migration tool exists yet, but it is a **high priority** on the [roadmap](./docs/roadmap.md#migration-from-legacy-grimoire-high-priority).
+> The current Grimoire application is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
+> Coming from v0.5.x? Use the **experimental** `littleimp migrate` tools with your v0.5 `data/` directory (`db.sqlite` + `user-uploads/`), or with a `.zip`/`.tar.gz` archive of that folder. See the [migration API reference](./API.md#migrate).
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
 
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
+- [Try the Public Demo](#try-the-public-demo)
 - [What Grimoire Does](#what-grimoire-does)
 - [How It Works](#how-it-works)
 - [Install And Upgrade Paths](#install-and-upgrade-paths)
@@ -34,17 +35,33 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 ## Screenshots
 
-The screenshots below use synthetic/demo data from the local UI audit set.
+The screenshots below use synthetic demo data.
 
 | Library | Search | Bookmark detail |
 | --- | --- | --- |
-| ![Grimoire library list with categories, domains, tags, and processing badges](./docs/presentations/ui-ux-audit-assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/presentations/ui-ux-audit-assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/presentations/ui-ux-audit-assets/bookmark-detail-standard.png) |
+| ![Grimoire library list with categories, domains, tags, and processing badges](./docs/assets/library-list-overview.png) | ![Search overlay with a design query against the bookmark library](./docs/assets/ai-command-palette-search-state.png) | ![Bookmark detail drawer showing notes, tags, category, actions, and related bookmarks](./docs/assets/bookmark-detail-standard.png) |
 
 | Settings and browser integration | Import flow | Mobile library |
 | --- | --- | --- |
-| ![Settings browser integration section with token and bookmarklet controls](./docs/task-reports/2026/06/2026-06-02-task-126-browser-bookmarklet-client/assets/02-settings-browser-integration.svg) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/presentations/ui-ux-audit-assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/presentations/ui-ux-audit-assets/mobile-library-stack.png) |
+| ![Grimoire settings screen with browser integration and local configuration controls](./docs/assets/settings-long-form.png) | ![Import dialog showing a successful browser bookmark import queued for processing](./docs/assets/import-bookmarks-success.png) | ![Mobile Grimoire library view with compact controls and bookmark cards](./docs/assets/mobile-library-stack.png) |
 
 ## Quick Start
+
+### Try the Public Demo
+
+The demo build is a static, client-only profile of the real Grimoire UI. It
+uses synthetic fixtures and an in-memory API in the browser; it does not start
+the daemon, create an account, or persist a hosted library.
+
+```sh
+npm install
+npm run build:demo
+npm run preview:demo
+```
+
+Open the preview at `http://127.0.0.1:4173`. The public hostname, launch
+indexing policy, and analytics policy remain deployment decisions; no public
+URL is implied by this local preview command.
 
 ### Source Checkout
 
@@ -164,8 +181,7 @@ cd daemon
 
 The repository includes a Homebrew formula, but public install, service
 lifecycle, and data-preservation checks have not passed against release assets.
-It is not a supported beta installation path yet. The release decision records
-the validation required before these commands are published for users.
+It is not a supported installation path yet.
 
 ## Data, Privacy, And Security
 
@@ -193,8 +209,11 @@ Grimoire is local-first and loopback-first:
 - Public-network exposure is not a supported mode; put an authenticated tunnel,
   VPN, or reverse proxy in front of it if you deliberately need remote access.
 
-See [SECURITY.md](./SECURITY.md) and
-[security-boundaries.md](./docs/security-boundaries.md).
+The static public demo is a separate client-only build: it ships synthetic
+fixtures, keeps session mutations in memory, makes no daemon or provider
+requests, and uses no cookies, third-party scripts, or fingerprinting.
+
+See [SECURITY.md](./SECURITY.md) for the supported network boundary.
 
 ## Configuration
 
@@ -242,8 +261,7 @@ LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
 ```
 
 Restores verify checksums, create a rollback directory, replace local data, and
-return a restart command plus `/health` URL. See
-[backup-design.md](./docs/backup-design.md).
+return a restart command plus `/health` URL.
 
 ## Local Integrations
 
@@ -276,7 +294,14 @@ Settings -> Browser Integration can create a token-backed bookmarklet. Drag it
 to your browser bookmarks bar, then click it on a page to capture the current
 URL, title, and selected text into Grimoire.
 
+The bookmarklet opens a short-lived local Grimoire capture window so restrictive
+page CSPs (including GitHub's) cannot block the request. Grimoire reports
+success only after the daemon confirms the capture. Allow popups for the page
+if your browser blocks the capture window.
+
 The bookmarklet embeds an integration token. Treat it like a password.
+Bookmarklets created before the current bridge flow must be replaced after an
+upgrade; create a new token because the old full secret cannot be recovered.
 
 ## Development
 
@@ -316,15 +341,23 @@ Then rerun the normal commands.
 
 ## Documentation
 
+Guides in this repo (also on the web at **[goniszewski.com/grimoire](https://goniszewski.com/grimoire/)**):
+
+- [Docs index](./docs/README.md)
+- [Introduction](./docs/01-intro.md)
+- [Quick start](./docs/02-quick-start.md)
+- [Using Grimoire](./docs/03-using-grimoire.md)
+- [Development](./docs/04-development.md)
+- [Install without Docker](./docs/05-install-without-docker.md)
+- [Remote access](./docs/06-remote-access.md)
 - [FAQ](./docs/faq.md)
+
+Reference and engineering:
+
 - [API Reference](./API.md)
 - [API Contract](./docs/api-contract.json)
-- [Project Overview](./docs/overview.md)
-- [Roadmap](./docs/roadmap.md)
-- [Backup Design](./docs/backup-design.md)
 - [Diagnostics](./docs/diagnostics.md)
 - [Docker Deployment](./docs/docker-deployment.md)
-- [Update System](./docs/update-system.md)
 - [Security Policy](./SECURITY.md)
 - [Contributing Guide](./CONTRIBUTING.md)
 

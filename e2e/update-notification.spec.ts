@@ -57,7 +57,7 @@ async function setupBaseMocks(page: Page) {
 function makeUpdateAvailableResponse(): { data: UpdateCheckResultDto } {
   return {
     data: {
-      current_version: "1.0.1",
+      current_version: "1.1.0",
       update_available: true,
       source: "https://github.com/goniszewski/grimoire/releases",
       channel: "stable",
@@ -76,7 +76,7 @@ function makeUpdateAvailableResponse(): { data: UpdateCheckResultDto } {
 function makeUpToDateResponse(): { data: UpdateCheckResultDto } {
   return {
     data: {
-      current_version: "1.0.1",
+      current_version: "1.1.0",
       update_available: false,
       source: "https://github.com/goniszewski/grimoire/releases",
       channel: "stable",

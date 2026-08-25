@@ -1,5 +1,6 @@
 import { version as APP_VERSION } from "../../package.json";
 import { isPrivateHost } from "../lib/network.js";
+import { fetchFollowingSafeRedirects } from "../lib/safe-fetch.js";
 
 export const DEFAULT_UPDATE_SOURCE = "https://api.github.com/repos/goniszewski/grimoire/releases";
 
@@ -69,6 +70,10 @@ export function resolveUpdateSource(
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new UpdateCheckError("source must be a valid http or https URL.", 422);
+  }
+
+  if (url.username || url.password) {
+    throw new UpdateCheckError("source must not include embedded credentials.", 422);
   }
 
   if (!options.allowPrivateHosts && isPrivateHost(url.hostname)) {
@@ -205,16 +210,27 @@ export function findLatestCompatibleRelease(
 export async function fetchUpdateReleases(
   fetchImpl: typeof fetch,
   source: string,
-  currentVersion = APP_VERSION
+  currentVersion = APP_VERSION,
+  options: { allowPrivateHosts?: boolean } = {}
 ): Promise<GitHubRelease[]> {
+  const headers = {
+    accept: "application/vnd.github+json",
+    "user-agent": `littleimp-update-check/${currentVersion}`,
+  };
+
   let res: Response;
   try {
-    res = await fetchImpl(source, {
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": `littleimp-update-check/${currentVersion}`,
-      },
-    });
+    // Default fetch uses manual redirect validation. Injected fetchImpl
+    // (tests / CLI mocks) is called as provided. Private update sources
+    // (CLI-local testing) keep the previous plain-fetch behavior so an
+    // explicitly allowed private host is not re-blocked by the SSRF guard.
+    if (fetchImpl === fetch) {
+      res = options.allowPrivateHosts
+        ? await fetch(source, { headers })
+        : await fetchFollowingSafeRedirects(source, { headers });
+    } else {
+      res = await fetchImpl(source, { headers });
+    }
   } catch (err) {
     throw new UpdateCheckError(
       `Could not check updates at ${displayUpdateSource(source)}: ${redactUpdateErrorMessage(err, source)}`
@@ -256,7 +272,9 @@ export async function checkForUpdates(options: {
   const currentVersion = options.currentVersion ?? APP_VERSION;
   const source = resolveUpdateSource(options.source, { allowPrivateHosts: options.allowPrivateHosts });
   const channel = options.channel ?? defaultUpdateChannel(currentVersion);
-  const releases = await fetchUpdateReleases(options.fetchImpl ?? fetch, source, currentVersion);
+  const releases = await fetchUpdateReleases(options.fetchImpl ?? fetch, source, currentVersion, {
+    allowPrivateHosts: options.allowPrivateHosts,
+  });
   const latest = findLatestCompatibleRelease(releases, channel);
 
   return {

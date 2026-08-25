@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { DAEMON_URL } from "@/lib/api";
+import { checkForUpdates } from "@/lib/api";
+import { isDemoMode } from "@/demo/enabled";
 
 const STORAGE_KEY_LAST_CHECK = "littleimp_update_last_check_ms";
 const STORAGE_KEY_DISMISSED_VERSION = "littleimp_update_dismissed_version";
@@ -34,7 +35,7 @@ interface UseUpdateCheckResult {
 
 export function useUpdateCheck(): UseUpdateCheckResult {
   const [result, setResult] = useState<UpdateCheckResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isDemoMode);
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(() => {
     try {
       return localStorage.getItem(STORAGE_KEY_DISMISSED_VERSION);
@@ -46,6 +47,12 @@ export function useUpdateCheck(): UseUpdateCheckResult {
 
   useEffect(() => {
     if (fetchedRef.current) return;
+
+    if (isDemoMode) {
+      setLoading(false);
+      fetchedRef.current = true;
+      return;
+    }
 
     // Check debounce: skip if we checked within the last 6 hours
     try {
@@ -63,11 +70,7 @@ export function useUpdateCheck(): UseUpdateCheckResult {
     }
 
     setLoading(true);
-    fetch(`${DAEMON_URL}/updates/check`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ data: UpdateCheckResult }>;
-      })
+    void checkForUpdates()
       .then((json) => {
         setResult(json.data ?? null);
         try {

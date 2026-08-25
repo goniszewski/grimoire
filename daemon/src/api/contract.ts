@@ -731,7 +731,7 @@ const schemas = {
   ImportPreviewRow: objectSchema(
     {
       classification: stringSchema("Import row classification", {
-        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url", "credential_url"],
       }),
       action: stringSchema("Action that the selected policy would apply", {
         enum: ["create", "skip", "merge", "restore_merge"],
@@ -816,7 +816,7 @@ const schemas = {
         enum: ["create", "skip", "merge", "restore_merge"],
       }),
       classification: stringSchema("Import row classification", {
-        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url"],
+        enum: ["new", "active_duplicate", "archived_duplicate", "trashed_duplicate", "invalid_url", "private_url", "credential_url"],
       }),
       url: nullable(stringSchema("Source bookmark URL")),
       title: stringSchema("Source bookmark title"),
@@ -905,6 +905,90 @@ const schemas = {
       "error",
       "result",
     ]
+  ),
+  LegacyMigrateOwner: objectSchema(
+    {
+      id: stringSchema("Legacy v0.5 user ID"),
+      username: stringSchema("Legacy username"),
+      email: stringSchema("Legacy email"),
+      name: stringSchema("Legacy display name"),
+      bookmarkCount: integerSchema("Bookmarks owned by this user", { minimum: 0 }),
+      categoryCount: integerSchema("Categories owned by this user", { minimum: 0 }),
+      tagCount: integerSchema("Tags owned by this user", { minimum: 0 }),
+      disabled: booleanSchema("Whether the legacy user was disabled"),
+    },
+    ["id", "username", "email", "name", "bookmarkCount", "categoryCount", "tagCount", "disabled"]
+  ),
+  LegacyMigrateInspect: objectSchema(
+    {
+      source: stringSchema("Recognized backup source", { enum: ["grimoire-v05-sqlite"] }),
+      dbPath: stringSchema("Resolved absolute path to v0.5 db.sqlite"),
+      uploadsDir: nullable(stringSchema("Resolved absolute path to user-uploads when present")),
+      users: arrayOf(ref("LegacyMigrateOwner"), "Legacy owners in the database"),
+      totals: objectSchema(
+        {
+          users: integerSchema("User count", { minimum: 0 }),
+          categories: integerSchema("Category count", { minimum: 0 }),
+          tags: integerSchema("Tag count", { minimum: 0 }),
+          bookmarks: integerSchema("Bookmark count", { minimum: 0 }),
+          mediaFilesReferenced: integerSchema("Media file references", { minimum: 0 }),
+        },
+        ["users", "categories", "tags", "bookmarks", "mediaFilesReferenced"]
+      ),
+      requiresOwnerSelection: booleanSchema("True when more than one legacy user is present"),
+    },
+    ["source", "dbPath", "uploadsDir", "users", "totals", "requiresOwnerSelection"]
+  ),
+  LegacyMigrateInspectResponse: envelope(ref("LegacyMigrateInspect")),
+  LegacyMigrateApplySummary: objectSchema(
+    {
+      owner: ref("LegacyMigrateOwner"),
+      dryRun: booleanSchema("True when this summary came from a dry-run (no writes)"),
+      categoriesCreated: integerSchema("Categories created", { minimum: 0 }),
+      categoriesReused: integerSchema("Existing categories reused", { minimum: 0 }),
+      tagsCreated: integerSchema("Tags created", { minimum: 0 }),
+      tagsReused: integerSchema("Existing tags reused", { minimum: 0 }),
+      bookmarksCreated: integerSchema("Bookmarks created", { minimum: 0 }),
+      bookmarksMerged: integerSchema("Bookmarks merged into existing URLs", { minimum: 0 }),
+      bookmarksSkipped: integerSchema("Bookmarks skipped", { minimum: 0 }),
+      bookmarksFailed: integerSchema("Bookmarks that failed during apply", { minimum: 0 }),
+      mediaImported: integerSchema("Local media files imported", { minimum: 0 }),
+      mediaSkipped: integerSchema("Media files skipped", { minimum: 0 }),
+      warnings: arrayOf(stringSchema("Warning detail"), "Non-fatal migration warnings"),
+    },
+    [
+      "owner",
+      "dryRun",
+      "categoriesCreated",
+      "categoriesReused",
+      "tagsCreated",
+      "tagsReused",
+      "bookmarksCreated",
+      "bookmarksMerged",
+      "bookmarksSkipped",
+      "bookmarksFailed",
+      "mediaImported",
+      "mediaSkipped",
+      "warnings",
+    ]
+  ),
+  LegacyMigrateApplyResponse: envelope(ref("LegacyMigrateApplySummary")),
+  LegacyMigrateRequest: objectSchema(
+    {
+      dataDir: stringSchema("Absolute path to a Grimoire v0.5 data/ directory (contains db.sqlite)"),
+      dbPath: stringSchema("Absolute path to v0.5 db.sqlite (alternative to dataDir)"),
+      uploadsDir: stringSchema("Optional absolute path to v0.5 user-uploads directory"),
+      archivePath: stringSchema(
+        "Absolute path to a compressed v0.5 data archive (.zip, .tar, .tar.gz/.tgz, .tar.bz2/.tbz2, .tar.xz/.txz)"
+      ),
+      owner: stringSchema("v0.5 username, email, or user id to import"),
+      password: stringSchema("Optional v0.5 user password for ownership verification"),
+      requirePassword: booleanSchema("When true, password verification is required"),
+      mergeDuplicates: booleanSchema("When true, merge into existing URLs instead of skipping"),
+      dryRun: booleanSchema("When true, compute the apply summary without writing"),
+    },
+    [],
+    "Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath."
   ),
   RuntimeLlmCapability: objectSchema(
     {
@@ -1152,6 +1236,26 @@ const schemas = {
     },
     ["ok"]
   ),
+  AiModel: objectSchema(
+    {
+      id: stringSchema("Provider model slug, e.g. openai/gpt-4o"),
+      name: stringSchema("Human-readable model name"),
+      context_length: nullable(integerSchema("Context window in tokens, when advertised")),
+      prompt_price: nullable(stringSchema('Prompt price per token as a decimal string; "0" means free')),
+      completion_price: nullable(stringSchema('Completion price per token as a decimal string; "0" means free')),
+    },
+    ["id", "name", "context_length", "prompt_price", "completion_price"]
+  ),
+  AiModelCatalog: objectSchema(
+    {
+      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter"] }),
+      free: booleanSchema("Whether only free models were requested"),
+      fetched_at: stringSchema("Catalog fetch timestamp", { format: "date-time" }),
+      models: arrayOf(ref("AiModel"), "Available models"),
+    },
+    ["provider", "free", "fetched_at", "models"]
+  ),
+  AiModelCatalogResponse: envelope(ref("AiModelCatalog"), "AI model catalog response"),
   BackupSchedule: objectSchema(
     {
       enabled: booleanSchema("Enable scheduled snapshots"),
@@ -1267,7 +1371,6 @@ const schemas = {
     key: stringSchema("Remote S3 snapshot.db key"),
     path: stringSchema("Absolute path to an encrypted backup package file accessible by the daemon"),
     password: stringSchema("Password used to decrypt the encrypted package"),
-    allow_unsafe_no_checksum: booleanSchema("Allow restoring a backup with no checksum file"),
   }),
   RestoreResult: objectSchema(
     {
@@ -2544,6 +2647,162 @@ export const apiContract = {
       },
     },
     {
+      method: "POST",
+      path: "/migrate/legacy/inspect",
+      tag: "Migrate",
+      summary: "Experimental: inspect a Grimoire v0.5 SQLite data directory, db.sqlite, or compressed archive.",
+      description:
+        "Experimental v0.5 migration tool. Accepts dataDir (v0.5 data folder), dbPath (+ optional uploadsDir), or archivePath (.zip/.tar.gz/.tar.bz2/.tar.xz containing db.sqlite). Returns owners and counts without writing. Password is not required for inspect. PocketBase backups are not supported.",
+      request: {
+        body: {
+          contentType: "application/json",
+          schema: ref("LegacyMigrateRequest"),
+        },
+      },
+      responses: {
+        "200": jsonResponse("Experimental legacy backup summary", ref("LegacyMigrateInspectResponse")),
+        "400": problemResponse("Invalid request body"),
+        "422": problemResponse("Path is missing or not a recognized v0.5 SQLite database"),
+        "500": problemResponse("Inspect failed unexpectedly"),
+      },
+      examples: [
+        {
+          title: "Inspect a local v0.5 data directory",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/inspect \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\"}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                source: "grimoire-v05-sqlite",
+                dbPath: "/path/to/grimoire/data/db.sqlite",
+                uploadsDir: "/path/to/grimoire/data/user-uploads",
+                users: [
+                  {
+                    id: "1",
+                    username: "alice",
+                    email: "alice@example.com",
+                    name: "Alice",
+                    bookmarkCount: 12,
+                    categoryCount: 3,
+                    tagCount: 5,
+                    disabled: false,
+                  },
+                ],
+                totals: {
+                  users: 1,
+                  categories: 3,
+                  tags: 5,
+                  bookmarks: 12,
+                  mediaFilesReferenced: 4,
+                },
+                requiresOwnerSelection: false,
+              },
+            },
+          },
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/migrate/legacy/apply",
+      tag: "Migrate",
+      summary: "Experimental: import one v0.5 owner's library into this local Grimoire 1.x instance.",
+      description:
+        "Experimental v0.5 migration tool. Imports bookmarks, categories, tags, parity fields, and local media for a selected v0.5 owner into this local single-user library. Set dryRun=true to compute the same summary without writing. Optional password verifies ownership against user.password_hash; it does not create Grimoire 1.x accounts. PocketBase backups are not supported. When some bookmarks fail mid-apply, the response is 207 Multi-Status with the same summary body (bookmarksFailed > 0).",
+      request: {
+        body: {
+          contentType: "application/json",
+          schema: ref("LegacyMigrateRequest"),
+        },
+      },
+      responses: {
+        "200": jsonResponse("Experimental migration apply summary", ref("LegacyMigrateApplyResponse")),
+        "207": jsonResponse(
+          "Partial experimental migration apply summary (bookmarksFailed > 0)",
+          ref("LegacyMigrateApplyResponse")
+        ),
+        "400": problemResponse("Invalid request body"),
+        "401": problemResponse("Owner password verification failed"),
+        "409": problemResponse("Legacy migration apply already in progress on this daemon"),
+        "422": problemResponse("Database is invalid or owner selection is required"),
+        "500": problemResponse("Apply failed unexpectedly"),
+      },
+      examples: [
+        {
+          title: "Apply a v0.5 library for one owner",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\",\"owner\":\"alice\",\"password\":\"secret\",\"requirePassword\":true}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                owner: {
+                  id: "1",
+                  username: "alice",
+                  email: "alice@example.com",
+                  name: "Alice",
+                  bookmarkCount: 12,
+                  categoryCount: 3,
+                  tagCount: 5,
+                  disabled: false,
+                },
+                dryRun: false,
+                categoriesCreated: 3,
+                categoriesReused: 0,
+                tagsCreated: 5,
+                tagsReused: 0,
+                bookmarksCreated: 11,
+                bookmarksMerged: 0,
+                bookmarksSkipped: 1,
+                bookmarksFailed: 0,
+                mediaImported: 3,
+                mediaSkipped: 1,
+                warnings: [],
+              },
+            },
+          },
+        },
+        {
+          title: "Dry-run apply without writing",
+          request:
+            "curl -X POST http://127.0.0.1:3210/migrate/legacy/apply \\\n  -H 'content-type: application/json' \\\n  -d '{\"dataDir\":\"/path/to/grimoire/data\",\"owner\":\"alice\",\"dryRun\":true}'",
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                owner: {
+                  id: "1",
+                  username: "alice",
+                  email: "alice@example.com",
+                  name: "Alice",
+                  bookmarkCount: 12,
+                  categoryCount: 3,
+                  tagCount: 5,
+                  disabled: false,
+                },
+                dryRun: true,
+                categoriesCreated: 3,
+                categoriesReused: 0,
+                tagsCreated: 5,
+                tagsReused: 0,
+                bookmarksCreated: 11,
+                bookmarksMerged: 0,
+                bookmarksSkipped: 1,
+                bookmarksFailed: 0,
+                mediaImported: 3,
+                mediaSkipped: 1,
+                warnings: ["Dry run — no changes were written to the local library."],
+              },
+            },
+          },
+        },
+      ],
+    },
+    {
       method: "GET",
       path: "/settings",
       tag: "Settings",
@@ -2569,6 +2828,61 @@ export const apiContract = {
       tag: "Settings",
       summary: "Test connectivity to the configured LLM provider.",
       responses: { "200": jsonResponse("Connectivity result", ref("ConnectivityTestResponse")) },
+    },
+    {
+      method: "GET",
+      path: "/settings/ai-models",
+      tag: "Settings",
+      summary: "List models available from an AI provider catalog (currently OpenRouter).",
+      description:
+        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+      request: {
+        query: objectSchema({
+          provider: stringSchema("Provider to list models for", { enum: ["openrouter"] }),
+          free: stringSchema("When true, only free models are returned", { enum: ["true", "false"] }),
+        }),
+      },
+      responses: {
+        "200": jsonResponse("AI model catalog", ref("AiModelCatalogResponse")),
+        "400": problemResponse("Unsupported provider"),
+        "403": problemResponse("Missing X-LittleImp-Frontend header"),
+        "422": problemResponse("Configured OpenRouter base URL is invalid"),
+        "502": problemResponse("Provider model catalog could not be fetched"),
+      },
+      examples: [
+        {
+          title: "List free OpenRouter models",
+          request:
+            'curl -H "X-LittleImp-Frontend: 1" "http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true"',
+          response: {
+            status: 200,
+            contentType: "application/json",
+            body: {
+              data: {
+                provider: "openrouter",
+                free: true,
+                fetched_at: exampleTimestamp,
+                models: [
+                  {
+                    id: "inclusionai/ling-3.0-flash:free",
+                    name: "Ling-3.0-flash (free)",
+                    context_length: 262144,
+                    prompt_price: "0",
+                    completion_price: "0",
+                  },
+                  {
+                    id: "meta-llama/llama-3.2-3b-instruct:free",
+                    name: "Meta: Llama 3.2 3B Instruct (free)",
+                    context_length: 131072,
+                    prompt_price: "0",
+                    completion_price: "0",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
     },
     {
       method: "POST",
@@ -2923,24 +3237,22 @@ export const apiContract = {
       method: "GET",
       path: "/capture/bookmarklet",
       tag: "Integrations",
-      summary: "Bookmarklet capture page (hidden iframe target, no auth header).",
+      summary: "Bookmarklet capture bridge page.",
       description:
-        "The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.",
-      request: {
-        query: objectSchema({
-          token: stringSchema("Integration bearer token (query-param auth)"),
-          url: stringSchema("The URL to capture"),
-          title: stringSchema("Page title"),
-          selection: stringSchema("User-selected text"),
-        }, ["token", "url"]),
-      },
+        "The browser bookmarklet opens this top-level HTML bridge to escape restrictive host-page frame CSP. The bridge is non-mutating, receives the capture payload and integration token only through a constrained postMessage handshake, and performs the authenticated same-origin POST /capture from the daemon origin. It is designed for the Settings → Browser Integration bookmarklet flow.",
       responses: {
-        "200": { description: "Bookmark already exists (not duplicated)" },
-        "201": { description: "Bookmark captured successfully" },
-        "400": problemResponse("Missing token or url"),
-        "401": problemResponse("Invalid or revoked token"),
-        "409": problemResponse("URL exists in trash or archive"),
-        "422": problemResponse("Invalid URL"),
+        "200": { description: "Bookmarklet bridge HTML page", contentType: "text/html" },
+      },
+    },
+    {
+      method: "GET",
+      path: "/capture/bookmarklet.js",
+      tag: "Integrations",
+      summary: "Bookmarklet capture bridge script.",
+      description:
+        "Same-origin JavaScript for the bookmarklet bridge page. It accepts one postMessage request from its opener, sends the authenticated POST /capture, returns the HTTP result through postMessage, and closes the bridge window.",
+      responses: {
+        "200": { description: "Bookmarklet bridge JavaScript", contentType: "application/javascript" },
       },
     },
     {
@@ -3031,7 +3343,7 @@ export const apiContract = {
         {
           title: "Call the MCP endpoint",
           request:
-            'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Authorization: Bearer limp_it_example" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0.1"}}}\'',
+            'curl -X POST http://127.0.0.1:3210/mcp \\\n  -H "Authorization: Bearer limp_it_example" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.1.0"}}}\'',
           response: {
             status: 200,
             contentType: "application/json",
@@ -3043,7 +3355,7 @@ export const apiContract = {
                 capabilities: {},
                 serverInfo: {
                   name: "grimoire",
-                  version: "1.0.1",
+                  version: "1.1.0",
                 },
               },
             },

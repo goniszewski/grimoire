@@ -4,7 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| `1.0.0` | Yes |
+| `1.1.0` | Yes |
+| `1.0.x` | No |
 | `0.1.0-beta` | No |
 
 ## Reporting A Vulnerability
@@ -29,7 +30,7 @@ Please include:
 
 ## Security Boundary Summary
 
-Grimoire is local-first, single-user, and loopback-first for `1.0.0`.
+Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
@@ -42,9 +43,13 @@ Grimoire is local-first, single-user, and loopback-first for `1.0.0`.
 - Public-network exposure is not a supported Grimoire mode. Any remote access
   must be protected before requests reach the daemon, for example with an
   authenticated tunnel, VPN, or reverse proxy.
+- The optional static public demo is not a daemon deployment mode. Its demo
+  build runs the real frontend against an in-browser fixture router, keeps
+  session state in memory, and contains no server database, secrets, cookies,
+  third-party scripts, or fingerprinting.
 
-The canonical threat model and release gates for any future non-loopback mode
-are documented in [docs/security-boundaries.md](./docs/security-boundaries.md).
+Any future non-loopback mode requires a separate security review and explicit
+authentication, origin, secrets, and network-exposure controls.
 
 ## Implemented Controls
 
@@ -122,7 +127,7 @@ claimed while unauthenticated release URLs return `404`.
 - Any local process that can reach `127.0.0.1:3210` can call unprotected REST
   routes. This is part of the local-first trust model.
 - Grimoire is not designed for multi-user hosts or shared public servers in
-  `1.0.0`.
+  `1.1.0`.
 - DNS rebinding is not fully mitigated and is accepted only because the daemon
   is loopback-only.
 - Content extraction fetches user-supplied public URLs. Protections reduce
@@ -130,6 +135,10 @@ claimed while unauthenticated release URLs return `404`.
 - External AI providers are optional. If configured, provider-bound content and
   API keys are subject to that provider's security model and the security of
   the local machine.
+- The static public demo intentionally omits live URL capture, AI and embedding
+  calls, imports, backups, diagnostics, integration tokens, update checks, and
+  subpath hosting. It must not be presented as a hosted Grimoire account or a
+  remotely exposed daemon.
 
 ## User Best Practices
 
@@ -159,7 +168,7 @@ When contributing:
 
 ## Future Security Work
 
-These are not shipped in `1.0.0`:
+These are not shipped in `1.1.0`:
 
 - Optional authentication for future public or multi-user modes.
 - Per-client rate limiting for authenticated non-local deployment modes.

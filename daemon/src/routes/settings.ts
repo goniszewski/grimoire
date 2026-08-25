@@ -3,12 +3,16 @@ import { settingsManager, redactSettings, validateSettingsPatch } from "../setti
 import { log } from "../logger.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
 import { testProviderConnection } from "../ai/llm-provider.js";
+import { listProviderModels } from "../ai/models-catalog.js";
+import { normalizeHttpsBaseUrl } from "../lib/base-url.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
 function problem(
   c: Context,
-  status: 400 | 422 | 500,
+  status: 400 | 403 | 422 | 500 | 502,
   title: string,
   detail?: string
 ) {
@@ -106,6 +110,53 @@ export function createSettingsRoute(): Hono {
     } catch (err) {
       log.warn("AI provider connectivity test failed", { provider, error: String(err) });
       return c.json({ ok: false, error: `Connection failed: ${String(err)}` });
+    }
+  });
+
+  /**
+   * GET /settings/ai-models?provider=openrouter&free=true
+   * Lists models available from the configured provider (currently OpenRouter).
+   * The OpenRouter catalog is public, so no API key is required.
+   *
+   * The endpoint triggers outbound requests on behalf of the browser, so it
+   * requires the X-LittleImp-Frontend header that the app always sends. Foreign
+   * web pages cannot set custom headers (preflights are rejected by
+   * enforceLocalOrigin), which prevents blind `<img>`/`fetch` triggers.
+   */
+  app.get("/settings/ai-models", async (c) => {
+    if (c.req.header("x-littleimp-frontend") !== "1") {
+      return problem(c, 403, "Forbidden", "This endpoint requires the X-LittleImp-Frontend header");
+    }
+    const provider = c.req.query("provider");
+    if (provider !== "openrouter") {
+      return problem(c, 400, "Unsupported Provider",
+        `Model catalog is not available for provider '${provider}'`);
+    }
+    const freeRaw = c.req.query("free") ?? "false";
+    if (freeRaw !== "true" && freeRaw !== "false") {
+      return problem(c, 400, "Invalid Query", "free must be 'true' or 'false'");
+    }
+    const free = freeRaw === "true";
+
+    try {
+      const settings = settingsManager.read();
+      let baseUrl: string;
+      try {
+        baseUrl = normalizeHttpsBaseUrl(settings.ai.openrouter.base_url, OPENROUTER_BASE_URL);
+      } catch (err) {
+        return problem(c, 422, "Invalid Base URL",
+          err instanceof Error ? err.message : "Configured OpenRouter base URL is invalid");
+      }
+      const result = await listProviderModels({
+        provider: "openrouter",
+        free,
+        baseUrl,
+      });
+      return ok(c, result);
+    } catch (err) {
+      log.warn("AI model catalog fetch failed", { provider, free, error: String(err) });
+      return problem(c, 502, "Upstream Model Catalog Error",
+        err instanceof Error ? err.message : "Failed to fetch model catalog");
     }
   });
 

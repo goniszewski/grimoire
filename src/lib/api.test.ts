@@ -4,6 +4,7 @@ import {
   checkHealthAfterRestore,
   createTag,
   deleteTag,
+  fetchAiModels,
   importBookmarksFile,
   listLibraryAggregates,
   listBookmarks,
@@ -24,6 +25,12 @@ describe("daemon URL resolution", () => {
   it("accepts a loopback override and removes trailing slashes", () => {
     expect(resolveDaemonUrl("http://127.0.0.1:3220///")).toBe("http://127.0.0.1:3220");
     expect(resolveDaemonUrl("http://localhost:3220/")).toBe("http://localhost:3220");
+  });
+
+  it("uses the current browser origin for explicitly remote production hosting", () => {
+    expect(resolveDaemonUrl(undefined, "https://roberts-mac-mini.tailae45c7.ts.net:8443")).toBe(
+      "https://roberts-mac-mini.tailae45c7.ts.net:8443"
+    );
   });
 
   it("rejects non-loopback daemon URL overrides", () => {
@@ -65,7 +72,7 @@ describe("daemon health API", () => {
     vi.spyOn(Date, "now").mockReturnValue(now);
     mockHealthResponse({
       status: "ok",
-      version: "1.0.1",
+      version: "1.1.0",
       uptime: 10_000,
       queueSize: 0,
     });
@@ -79,7 +86,7 @@ describe("daemon health API", () => {
     vi.spyOn(Date, "now").mockReturnValue(now);
     mockHealthResponse({
       status: "ok",
-      version: "1.0.1",
+      version: "1.1.0",
       uptime: 120_000,
       queueSize: 0,
     });
@@ -419,6 +426,44 @@ describe("tag management API", () => {
       })
     );
     expect(result.data.name).toBe("react-query");
+  });
+});
+
+describe("AI model catalog API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("fetches the catalog with provider/free query params and the frontend header", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            provider: "openrouter",
+            free: true,
+            fetched_at: "2026-08-03T00:00:00.000Z",
+            models: [
+              {
+                id: "inclusionai/ling-3.0-flash:free",
+                name: "Ling-3.0-flash (free)",
+                context_length: 262144,
+                prompt_price: "0",
+                completion_price: "0",
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const models = await fetchAiModels("openrouter", true);
+
+    expect(models).toHaveLength(1);
+    expect(models[0].id).toBe("inclusionai/ling-3.0-flash:free");
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://127.0.0.1:3210/settings/ai-models?provider=openrouter&free=true");
+    expect(new Headers(init.headers).get("X-LittleImp-Frontend")).toBe("1");
   });
 });
 

@@ -84,6 +84,7 @@ const IMPORT_ROW_CLASSIFICATIONS = [
   "trashed_duplicate",
   "invalid_url",
   "private_url",
+  "credential_url",
 ] as const;
 
 type ImportRowClassification = (typeof IMPORT_ROW_CLASSIFICATIONS)[number];
@@ -447,7 +448,9 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 function classifySkippedBookmark(skipped: ParsedSkippedBookmark): ImportRowClassification {
-  return skipped.reason === "private_url" ? "private_url" : "invalid_url";
+  if (skipped.reason === "private_url") return "private_url";
+  if (skipped.reason === "credential_url") return "credential_url";
+  return "invalid_url";
 }
 
 function folderKey(path: string[]): string {
@@ -866,7 +869,7 @@ function warningForImportResultRow(
   error: string | null
 ): string | null {
   if (error) return "Import failed for this row.";
-  if (row.classification === "invalid_url" || row.classification === "private_url") {
+  if (row.classification === "invalid_url" || row.classification === "private_url" || row.classification === "credential_url") {
     return row.skipReason;
   }
   if (row.classification === "active_duplicate") {
@@ -1211,6 +1214,8 @@ async function processImport(
             category_id: categoryId,
             notes: bm.notes,
             restore: row.action === "restore_merge",
+            // Browser import "restore_merge" returns archived rows to the active library.
+            unarchive: row.action === "restore_merge",
           });
           if (row.action === "merge") {
             state.merged++;
@@ -1231,6 +1236,7 @@ async function processImport(
               category_id: categoryId,
               notes: bm.notes,
               restore: true,
+              unarchive: true,
             });
             state.restored++;
             addImportResultRow(report, row, "restored", existingAtCommit.id);
@@ -1240,6 +1246,7 @@ async function processImport(
               category_id: categoryId,
               notes: bm.notes,
               restore: true,
+              unarchive: true,
             });
             state.restored++;
             addImportResultRow(report, row, "restored", existingAtCommit.id);
