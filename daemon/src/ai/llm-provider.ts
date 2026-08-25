@@ -1,4 +1,10 @@
-import { ChatMessage, LlmConfig, LlmError, chatCompletion } from "./llm-client.js";
+import {
+  ChatMessage,
+  LlmCompletionOptions,
+  LlmConfig,
+  LlmError,
+  chatCompletion,
+} from "./llm-client.js";
 import { log } from "../logger.js";
 
 export type OpenAiCompatibleLlmProvider =
@@ -40,7 +46,7 @@ function anthropicMessagesUrl(baseUrl: string): string {
 function anthropicRequestBody(
   config: AnthropicLlmConfig,
   messages: ChatMessage[],
-  opts: { maxTokens?: number }
+  opts: LlmCompletionOptions
 ): Record<string, unknown> {
   const system = messages
     .filter((message) => message.role === "system")
@@ -77,7 +83,7 @@ function anthropicText(json: unknown): string {
 async function anthropicMessages(
   config: AnthropicLlmConfig,
   messages: ChatMessage[],
-  opts: { maxTokens?: number } = {}
+  opts: LlmCompletionOptions = {}
 ): Promise<string> {
   const url = anthropicMessagesUrl(config.baseUrl);
   const body = anthropicRequestBody(config, messages, opts);
@@ -122,12 +128,22 @@ async function anthropicMessages(
       try {
         json = await res.json();
       } catch {
-        throw new LlmError("Failed to parse Anthropic response JSON", false);
+        throw new LlmError("Failed to parse Anthropic response JSON", true);
       }
 
       const content = anthropicText(json);
       if (!content) {
-        throw new LlmError("Anthropic returned empty content", false);
+        throw new LlmError("Anthropic returned empty content", true);
+      }
+
+      const validationError = opts.validateContent?.(content);
+      if (validationError) {
+        log.warn("Anthropic response failed validation (retryable)", {
+          attempt,
+          error: validationError,
+          model: config.model,
+        });
+        throw new LlmError(validationError, true);
       }
 
       return content;
@@ -154,10 +170,10 @@ async function anthropicMessages(
 export async function providerChatCompletion(
   config: ProviderLlmConfig | LlmConfig,
   messages: ChatMessage[],
-  opts: { jsonMode?: boolean; maxTokens?: number } = {}
+  opts: LlmCompletionOptions = {}
 ): Promise<string> {
   if ("kind" in config && config.kind === "anthropic") {
-    return anthropicMessages(config, messages, { maxTokens: opts.maxTokens });
+    return anthropicMessages(config, messages, opts);
   }
   return chatCompletion(config, messages, opts);
 }
