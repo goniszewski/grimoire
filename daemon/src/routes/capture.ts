@@ -4,7 +4,6 @@ import { JobQueue } from "../queue.js";
 import { BookmarkRepository, type BookmarkWithTags } from "../db/bookmark-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
 import { CaptureRepository, type CaptureMetadataInput, type BookmarkCaptureMetadataRow } from "../db/capture-repository.js";
-import { IntegrationTokenRepository } from "../db/integration-token-repository.js";
 import { requireIntegrationToken } from "../lib/integration-auth.js";
 import {
   parsePublicHttpUrl,
@@ -302,7 +301,7 @@ function doCapture(
   return { kind: "success", bookmark: bookmarkOut, capture: captureOut, created: true, job_id: jobIdOut };
 }
 
-// ─── HTML response helpers for bookmarklet ────────────────────────────────────
+// ─── Bookmarklet bridge responses ────────────────────────────────────────────
 
 function htmlPage(title: string, body: string): string {
   return `<!DOCTYPE html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><body style="font:14px/1.5 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center;padding:2em">${body}</div></body></html>`;
@@ -310,6 +309,112 @@ function htmlPage(title: string, body: string): string {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+const BOOKMARKLET_BRIDGE_SCRIPT = `(() => {
+  const nonce = new URLSearchParams(window.location.hash.slice(1)).get("nonce");
+  const openerWindow = window.opener;
+  const status = document.getElementById("grimoire-capture-status");
+
+  if (!nonce || !openerWindow) {
+    if (status) status.textContent = "This capture window is no longer connected.";
+    return;
+  }
+
+  let handled = false;
+  let replyOrigin = "*";
+
+  function postToOpener(message, targetOrigin = "*") {
+    try {
+      openerWindow.postMessage({ ...message, nonce }, targetOrigin);
+    } catch {
+      // The opener may have navigated away or closed while the capture ran.
+    }
+  }
+
+  window.addEventListener("message", (event) => {
+    if (handled || event.source !== openerWindow) return;
+
+    const request = event.data;
+    if (
+      !request ||
+      request.type !== "grimoire-bookmarklet-request" ||
+      request.nonce !== nonce ||
+      typeof request.token !== "string" ||
+      !request.payload ||
+      typeof request.payload.url !== "string"
+    ) {
+      return;
+    }
+
+    handled = true;
+    replyOrigin = event.origin && event.origin !== "null" ? event.origin : "*";
+    if (status) status.textContent = "Saving to Grimoire...";
+
+    void (async () => {
+      try {
+        const response = await fetch("/capture", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + request.token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(request.payload),
+          credentials: "same-origin",
+        });
+
+        let body = null;
+        try {
+          body = await response.json();
+        } catch {
+          // The result message still includes the HTTP status when the body is unavailable.
+        }
+
+        const bodyRecord = body && typeof body === "object" ? body : null;
+        const data =
+          bodyRecord && "data" in bodyRecord && bodyRecord.data && typeof bodyRecord.data === "object"
+            ? bodyRecord.data
+            : null;
+        const detail = bodyRecord && typeof bodyRecord.detail === "string" ? bodyRecord.detail : null;
+        const created = data && typeof data.created === "boolean" ? data.created : null;
+
+        postToOpener(
+          {
+            type: "grimoire-bookmarklet-result",
+            ok: response.ok,
+            status: response.status,
+            created,
+            detail,
+          },
+          replyOrigin
+        );
+        if (status) status.textContent = response.ok ? "Capture complete." : "Capture failed.";
+      } catch {
+        postToOpener(
+          {
+            type: "grimoire-bookmarklet-result",
+            ok: false,
+            status: 0,
+            created: null,
+            detail: "The Grimoire daemon could not be reached.",
+          },
+          replyOrigin
+        );
+        if (status) status.textContent = "The Grimoire daemon could not be reached.";
+      } finally {
+        window.setTimeout(() => window.close(), 60);
+      }
+    })();
+  });
+
+  postToOpener({ type: "grimoire-bookmarklet-ready" });
+})();\n`;
+
+function bookmarkletBridgePage(): string {
+  return htmlPage(
+    "Grimoire Capture",
+    '<p id="grimoire-capture-status">Waiting for the bookmarklet...</p><script src="/capture/bookmarklet.js" defer></script>'
+  );
 }
 
 // ─── Route factory ────────────────────────────────────────────────────────────
@@ -415,83 +520,18 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
     }
   });
 
-  // GET /capture/bookmarklet — bookmarklet iframe endpoint (token via query param)
-  router.get("/capture/bookmarklet", async (c) => {
-    const token = c.req.query("token");
-    if (!token) {
-      return c.html(htmlPage("Error", '<p style="color:#dc2626">Missing token</p>'), 400);
-    }
+  // GET /capture/bookmarklet.js — same-origin script used by the top-level bridge
+  router.get("/capture/bookmarklet.js", (c) => {
+    return c.body(BOOKMARKLET_BRIDGE_SCRIPT, 200, {
+      "Cache-Control": "no-store",
+      "Content-Type": "application/javascript; charset=utf-8",
+    });
+  });
 
-    const tokenRepo = new IntegrationTokenRepository(deps.db);
-    const record = tokenRepo.verify(token);
-    if (!record) {
-      return c.html(htmlPage("Error", '<p style="color:#dc2626">Invalid or revoked token</p>'), 401);
-    }
-
-    const url = c.req.query("url");
-    if (!url) {
-      return c.html(htmlPage("Error", '<p style="color:#dc2626">Missing url</p>'), 400);
-    }
-
-    let parsedUrl: string;
-    try {
-      parsedUrl = parsePublicUrl(url, "url");
-    } catch (err) {
-      const msg = err instanceof ValidationError ? err.message : "Invalid URL";
-      return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(msg)}</p>`), 422);
-    }
-
-    const title = c.req.query("title") || undefined;
-    const selection = c.req.query("selection") || undefined;
-
-    const source: CaptureMetadataInput = {
-      source_client: "bookmarklet",
-      selected_text: selection ? selection.slice(0, MAX_SELECTED_TEXT_LENGTH) : null,
-    };
-
-    const result = doCapture(
-      { url: parsedUrl, title, source },
-      { bookmarkRepo, categoryRepo, captureRepo },
-      deps
-    );
-
-    if (result.kind === "success") {
-      log.info("Bookmark captured via bookmarklet", {
-        bookmarkId: result.bookmark?.id,
-        url: parsedUrl,
-        jobId: result.job_id,
-      });
-
-      const label = result.created ? "Saved" : "Already saved";
-      return c.html(
-        htmlPage(
-          label,
-          `<p style="color:#16a34a;font-weight:600">${label}</p><p style="color:#666;font-size:13px">${escapeHtml(parsedUrl)}</p>`
-        ),
-        result.created ? 201 : 200
-      );
-    }
-
-    switch (result.kind) {
-      case "validation_error":
-        return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(result.message)}</p>`), 422);
-      case "conflict_trash":
-        return c.html(
-          htmlPage("Already saved", '<p>This URL is in your trash. Restore it before re-adding.</p>'),
-          409
-        );
-      case "conflict_archive":
-        return c.html(
-          htmlPage("Already saved", '<p>This URL is in your archive. Restore it before re-adding.</p>'),
-          409
-        );
-      case "internal_error":
-        return c.html(htmlPage("Error", `<p style="color:#dc2626">${escapeHtml(result.message)}</p>`), 500);
-      default: {
-        const _exhaustive: never = result;
-        return _exhaustive;
-      }
-    }
+  // GET /capture/bookmarklet — top-level bridge opened by the bookmarklet.
+  // It never mutates state and receives the token only through postMessage.
+  router.get("/capture/bookmarklet", (c) => {
+    return c.html(bookmarkletBridgePage(), 200, { "Cache-Control": "no-store" });
   });
 
   return router;

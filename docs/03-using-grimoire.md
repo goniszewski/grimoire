@@ -52,6 +52,15 @@ There is no Chrome/Firefox store extension in 1.x yet. Use the built-in bookmark
 
 Existing tokens only store a prefix. You cannot regenerate a bookmarklet for an old token — create a new one. The bookmarklet embeds the token; treat it like a password.
 
+Replace bookmarklets created by older Grimoire versions after upgrading. The
+old full token is not recoverable, so create a new integration token and copy a
+new bookmarklet URL.
+
+When clicked, the bookmarklet opens a short-lived local Grimoire capture window
+and reports success only after the daemon confirms the save. This avoids
+restrictive page CSPs such as GitHub's. Allow popups for the page if the browser
+blocks the capture window.
+
 You can also import a Netscape/HTML bookmark export from your browser, and export your library as JSON or CSV.
 
 ## Backups

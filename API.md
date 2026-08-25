@@ -2275,29 +2275,27 @@ Content-Type: application/json
 
 #### GET /capture/bookmarklet
 
-Bookmarklet capture page (hidden iframe target, no auth header).
+Bookmarklet capture bridge page.
 
-The browser bookmarklet uses a hidden iframe pointed at this endpoint to avoid CORS. Authentication is via a query-parameter token. The endpoint returns an HTML page (not JSON) that the iframe renders silently. Designed for the Settings → Browser Integration bookmarklet flow; not intended for direct use.
-
-Query parameters:
-
-| Field | Type | Required | Description |
-|---|---|---:|---|
-| `token` | string | yes | Integration bearer token (query-param auth) |
-| `url` | string | yes | The URL to capture |
-| `title` | string | no | Page title |
-| `selection` | string | no | User-selected text |
+The browser bookmarklet opens this top-level HTML bridge to escape restrictive host-page frame CSP. The bridge is non-mutating, receives the capture payload and integration token only through a constrained postMessage handshake, and performs the authenticated same-origin POST /capture from the daemon origin. It is designed for the Settings → Browser Integration bookmarklet flow.
 
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
-| `200` | - | - | Bookmark already exists (not duplicated) |
-| `201` | - | - | Bookmark captured successfully |
-| `400` | application/problem+json | `ProblemDetails` | Missing token or url |
-| `401` | application/problem+json | `ProblemDetails` | Invalid or revoked token |
-| `409` | application/problem+json | `ProblemDetails` | URL exists in trash or archive |
-| `422` | application/problem+json | `ProblemDetails` | Invalid URL |
+| `200` | text/html | - | Bookmarklet bridge HTML page |
+
+#### GET /capture/bookmarklet.js
+
+Bookmarklet capture bridge script.
+
+Same-origin JavaScript for the bookmarklet bridge page. It accepts one postMessage request from its opener, sends the authenticated POST /capture, returns the HTTP result through postMessage, and closes the bridge window.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/javascript | - | Bookmarklet bridge JavaScript |
 
 #### GET /integration-tokens
 
