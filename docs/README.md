@@ -11,6 +11,7 @@ folder. The product guides are also published at
 | [Introduction](./01-intro.md) | What Grimoire is and what it does |
 | [Quick start](./02-quick-start.md) | Run with Docker |
 | [Using Grimoire](./03-using-grimoire.md) | Library, search, capture, backup |
+| [Migration from v0.5](./migration.md) | Experimental v0.5 SQLite migration |
 | [Development](./04-development.md) | Local frontend + daemon |
 | [Install without Docker](./05-install-without-docker.md) | Native install on macOS/Linux |
 | [Remote access](./06-remote-access.md) | Loopback default and safe remote use |

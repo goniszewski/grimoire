@@ -15,7 +15,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > The current Grimoire application is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> Coming from v0.5.x? Use the **experimental** `littleimp migrate` tools with your v0.5 `data/` directory (`db.sqlite` + `user-uploads/`), or with a `.zip`/`.tar.gz` archive of that folder. See the [migration API reference](./API.md#migrate).
+> Coming from v0.5.x? Grimoire 1.1.0 includes an **experimental** `littleimp migrate` tool for v0.5 SQLite data. See the [migration guide](./docs/migration.md) before applying it.
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
 
 ## Contents
@@ -29,6 +29,7 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 - [Data, Privacy, And Security](#data-privacy-and-security)
 - [Configuration](#configuration)
 - [Backups And Restore](#backups-and-restore)
+- [Migration From v0.5](#migration-from-v05)
 - [Local Integrations](#local-integrations)
 - [Development](#development)
 - [Documentation](#documentation)
@@ -263,6 +264,22 @@ LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
 Restores verify checksums, create a rollback directory, replace local data, and
 return a restart command plus `/health` URL.
 
+## Migration From v0.5
+
+The experimental v0.5 migrator imports one owner's SQLite library, categories,
+tags, and available local media into Grimoire 1.x. Start with `inspect`, review
+an `apply --dry-run`, then apply with `--yes`:
+
+```sh
+littleimp migrate inspect --data-dir /path/to/grimoire/data
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
+littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
+```
+
+See the complete [migration guide](./docs/migration.md) for archive inputs,
+owner-password verification, duplicate handling, and unsupported PocketBase
+backups.
+
 ## Local Integrations
 
 ### REST API
@@ -347,6 +364,7 @@ Guides in this repo (also on the web at **[goniszewski.com/grimoire](https://gon
 - [Introduction](./docs/01-intro.md)
 - [Quick start](./docs/02-quick-start.md)
 - [Using Grimoire](./docs/03-using-grimoire.md)
+- [Migration from v0.5](./docs/migration.md)
 - [Development](./docs/04-development.md)
 - [Install without Docker](./docs/05-install-without-docker.md)
 - [Remote access](./docs/06-remote-access.md)
