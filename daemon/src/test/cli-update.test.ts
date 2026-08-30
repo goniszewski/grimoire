@@ -313,6 +313,19 @@ describe("littleimp update CLI", () => {
     });
   });
 
+  it("directs Homebrew-managed installations to brew for upgrades", async () => {
+    const harness = makeUpgradeHarness("1.2.0", undefined, {
+      LITTLEIMP_PACKAGE_MANAGER: "homebrew",
+    });
+
+    const code = await harness.run(["update", "install"]);
+
+    expect(code).toBe(2);
+    expect(harness.stderr.join("\n")).toContain("brew upgrade grimoire");
+    expect(harness.spawnCalls).toHaveLength(0);
+    expect(harness.fetchCalls).toHaveLength(0);
+  });
+
   it("rejects unexpected positional arguments with an update-specific error", async () => {
     const harness = makeUpdateHarness([]);
 

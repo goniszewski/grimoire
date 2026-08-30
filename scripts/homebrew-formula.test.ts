@@ -38,8 +38,8 @@ const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
     linux: "42cf4ea63bb31ea2380a0b3c8c4c65f7af943974ce1024dd9562a2484e343cff",
   },
   "1.1.0": {
-    macos: "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f",
-    linux: "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340",
+    macos: "98e96cc53bebf02265c86d2014bba0d9cf9978a7bc411d041cac86bef1ce8021",
+    linux: "793c416e22173c4c825f564487d5ae704db5d3bedb99553545f7f1dad83657d7",
   },
 };
 
@@ -110,15 +110,24 @@ describe("Homebrew formula packaging", () => {
       expect(sha256Match?.[1]).toBe(expectedChecksums[platform]);
     }
 
-    expect(formula).toContain('depends_on "oven-sh/bun/bun"');
+    expect(formula).toContain('depends_on "bun"');
+    expect(formula).not.toContain('depends_on "oven-sh/bun/bun"');
     expect(formula).toContain('libexec.install "daemon", "dist"');
-    expect(formula).toContain('"install", "--production", "--cwd", libexec/"daemon"');
+    expect(formula).toContain('"install", "--production", "--frozen-lockfile", "--cwd", libexec/"daemon"');
+    expect(formula).toContain('formula_opt_bin("bun")');
+    expect(formula).toContain('LITTLEIMP_PACKAGE_MANAGER="homebrew"');
+    expect(formula).toContain('(bin/"grimoire").write');
     expect(formula).toContain('(bin/"littleimp").write');
+    expect(formula).toContain('(bin/"grimoire").chmod 0555');
+    expect(formula).toContain('(bin/"littleimp").chmod 0555');
     expect(formula).toContain('(bin/"littleimpd").write');
+    expect(formula).toContain('(bin/"littleimpd").chmod 0555');
     expect(formula).toContain("service do");
     expect(formula).toContain("keep_alive true");
     expect(formula).toMatch(/HOST:\s+"127\.0\.0\.1"/);
     expect(formula).toMatch(/PORT:\s+"3210"/);
+    expect(formula).toContain("brew services start grimoire");
+    expect(formula).toContain("brew upgrade grimoire");
     expect(formula).not.toMatch(/git clone|npm run build|bun run build|system ".*daemon\/install\.sh/);
   });
 
@@ -126,7 +135,7 @@ describe("Homebrew formula packaging", () => {
     const readme = readProjectFile("README.md");
 
     expect(readme).toContain("### Homebrew (pending live validation)");
-    expect(readme).toContain("not a supported installation path yet");
+    expect(readme).toContain("Homebrew is not a supported");
     expect(readme).not.toContain("brew install little-imp");
     expect(readme).not.toContain("brew services start little-imp");
   });

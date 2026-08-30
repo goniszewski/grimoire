@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
+    "grimoire": "./src/cli.ts",
     "littleimp": "./src/cli.ts"
   },
   "scripts": {

@@ -112,10 +112,12 @@ other sites cannot frame the UI.
   before extraction.
 - Detached `.asc` signatures are verified when published or explicitly
   provided.
-- The packaged `littleimp update install` flow verifies checksums, verifies
+- The packaged `grimoire update install` flow verifies checksums, verifies
   optional detached signatures, rejects unsafe archive layouts, runs the native
   installer in upgrade mode, and confirms `/health` reports the upgraded
-  version.
+  version. The legacy `littleimp` alias has the same behavior for native
+  packaged installs; Homebrew-managed installs are upgraded with
+  `brew upgrade grimoire`.
 - The Homebrew formula uses the same release archives and verifies their
   published SHA-256 checksums.
 
