@@ -5,7 +5,12 @@ owner's library from the legacy Grimoire v0.5 SQLite application into a local
 Grimoire 1.x library.
 
 > This guide describes the v0.5 migrator in the 1.1.0 release line. Older
-> development builds may not include the `littleimp migrate` command.
+> development builds may not include the `grimoire migrate` command.
+
+The already-published v1.1.0 archive predates the CLI rename and exposes the
+same migrator as `littleimp migrate`. Current source installs and future
+repackaged releases use `grimoire migrate`; `littleimp` remains a compatibility
+alias.
 
 The migrator accepts a v0.5 SQLite data directory, a `db.sqlite` file, or an
 archive containing that data. It does not support PocketBase-era backups from
@@ -24,7 +29,7 @@ the older 0.3.x line.
    curl http://127.0.0.1:3210/health
    ```
 
-4. Run the `littleimp` CLI from the same Grimoire installation as the daemon.
+4. Run the `grimoire` CLI from the same Grimoire installation as the daemon.
 
 If you are working from a source checkout rather than a packaged install, run
 the CLI with `bun run cli --` from the `daemon/` directory.
@@ -47,17 +52,17 @@ raw PocketBase backup, or an unrelated SQLite database is rejected.
 Start by listing the source owners and record counts:
 
 ```sh
-littleimp migrate inspect --data-dir /path/to/grimoire/data
+grimoire migrate inspect --data-dir /path/to/grimoire/data
 ```
 
 For a database file or archive:
 
 ```sh
-littleimp migrate inspect \
+grimoire migrate inspect \
   --db /path/to/grimoire/data/db.sqlite \
   --uploads-dir /path/to/grimoire/data/user-uploads
 
-littleimp migrate inspect --archive /path/to/grimoire-data.tar.gz
+grimoire migrate inspect --archive /path/to/grimoire-data.tar.gz
 ```
 
 Inspect is read-only. It reports the number of users, bookmarks, categories,
@@ -72,7 +77,7 @@ or numeric v0.5 user ID. Only the selected owner's library is imported.
 Use the same source and owner for a no-write preview:
 
 ```sh
-littleimp migrate apply \
+grimoire migrate apply \
   --data-dir /path/to/grimoire/data \
   --owner YOUR_USERNAME \
   --dry-run
@@ -86,7 +91,7 @@ the planned counts and warnings before applying. It does not require `--yes`.
 When the preview is correct, apply it explicitly:
 
 ```sh
-littleimp migrate apply \
+grimoire migrate apply \
   --data-dir /path/to/grimoire/data \
   --owner YOUR_USERNAME \
   --yes
@@ -96,7 +101,7 @@ littleimp migrate apply \
 archive form is equivalent:
 
 ```sh
-littleimp migrate apply \
+grimoire migrate apply \
   --archive /path/to/grimoire-data.tar.gz \
   --owner YOUR_USERNAME \
   --yes
@@ -116,7 +121,7 @@ Prefer a password file or environment variable over putting a password in
 shell history:
 
 ```sh
-littleimp migrate apply \
+grimoire migrate apply \
   --data-dir /path/to/grimoire/data \
   --owner YOUR_USERNAME \
   --password-file /path/to/v05-password.txt \
@@ -125,7 +130,7 @@ littleimp migrate apply \
 
 ```sh
 LITTLEIMP_MIGRATE_PASSWORD='your-v05-password' \
-  littleimp migrate apply \
+  grimoire migrate apply \
     --data-dir /path/to/grimoire/data \
     --owner YOUR_USERNAME \
     --yes

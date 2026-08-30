@@ -197,9 +197,12 @@ describe("installed-app smoke suite", () => {
       "GET /settings",
       "POST /backup",
       "POST /restore",
-      "littleimp update check",
+      "with its native installer",
+      "grimoire CLI and littleimp compatibility alias",
+      "grimoire update check",
       "data survives upgrade",
       "uninstall without purge",
+      "Native uninstall",
       "daemon.log",
     ]) {
       expect(smokeRunner).toContain(expected);

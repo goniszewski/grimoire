@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — littleimpd installer
+# install.sh — Grimoire installer
 # Usage: ./install.sh [--uninstall] [--upgrade]
 set -euo pipefail
 
@@ -10,7 +10,8 @@ DATA_DIR="${HOME}/.local/share/littleimp"
 LOG_DIR="${DATA_DIR}/logs"
 FRONTEND_INSTALL_DIR="${DATA_DIR}/dist"
 CLI_BIN_DIR="${HOME}/.local/bin"
-CLI_BIN="${CLI_BIN_DIR}/littleimp"
+CLI_BIN="${CLI_BIN_DIR}/grimoire"
+LEGACY_CLI_BIN="${CLI_BIN_DIR}/littleimp"
 HEALTH_URL="http://127.0.0.1:3210/health"
 HEALTH_TIMEOUT=15
 BUN_MIN_MAJOR=1
@@ -95,7 +96,7 @@ install_daemon_files() {
     rm -f  "${INSTALL_DIR}/.env" 2>/dev/null || true
   fi
   info "Installing dependencies…"
-  (cd "${INSTALL_DIR}" && bun install --production)
+  (cd "${INSTALL_DIR}" && bun install --production --frozen-lockfile)
   info "Daemon files installed"
 }
 
@@ -137,20 +138,26 @@ install_frontend_files() {
   info "Frontend files installed"
 }
 
-install_cli() {
-  info "Installing CLI command to ${CLI_BIN}…"
-  mkdir -p "${CLI_BIN_DIR}"
+write_cli_wrapper() {
+  local cli_path="$1"
   {
     printf '#!/usr/bin/env bash\n'
     printf 'exec %q %q "$@"\n' "${BUN_PATH}" "${INSTALL_DIR}/src/cli.ts"
-  } > "${CLI_BIN}"
-  chmod +x "${CLI_BIN}"
+  } > "${cli_path}"
+  chmod +x "${cli_path}"
+}
+
+install_cli() {
+  info "Installing CLI commands to ${CLI_BIN} and ${LEGACY_CLI_BIN}…"
+  mkdir -p "${CLI_BIN_DIR}"
+  write_cli_wrapper "${CLI_BIN}"
+  write_cli_wrapper "${LEGACY_CLI_BIN}"
 
   case ":${PATH}:" in
     *":${CLI_BIN_DIR}:"*) ;;
-    *) warn "${CLI_BIN_DIR} is not on PATH. Add it to your shell profile to run 'littleimp' directly." ;;
+    *) warn "${CLI_BIN_DIR} is not on PATH. Add it to your shell profile to run 'grimoire' directly." ;;
   esac
-  info "CLI installed: ${CLI_BIN}"
+  info "CLI installed: ${CLI_BIN} (legacy alias: ${LEGACY_CLI_BIN})"
 }
 
 create_config_dir() {
@@ -253,7 +260,11 @@ wait_for_health() {
 
 print_success() {
   local mode="${1:-install}"
-  printf '\n\033[32m✓ littleimpd %sd and running!\033[0m\n' "${mode}"
+  local status_word="installed"
+  if [[ "${mode}" == "upgrade" ]]; then
+    status_word="upgraded"
+  fi
+  printf '\n\033[32m✓ Grimoire %s and running!\033[0m\n' "${status_word}"
   printf '  Health: %s\n' "${HEALTH_URL}"
   printf '  Data:   %s\n' "${DATA_DIR}"
   printf '  Logs:   %s\n' "${LOG_DIR}"
@@ -267,7 +278,7 @@ print_success() {
 # ---------- uninstall ----------
 uninstall() {
   local purge="${1:-}"
-  info "Uninstalling littleimpd…"
+  info "Uninstalling Grimoire (littleimpd)…"
   local os
   os="$(detect_os)"
   if [[ "${os}" == "macos" ]]; then
@@ -287,10 +298,13 @@ uninstall() {
     rm -rf "${INSTALL_DIR}"
     info "Daemon files removed from ${INSTALL_DIR}"
   fi
-  if [[ -f "${CLI_BIN}" ]] && grep -Fq "${INSTALL_DIR}/src/cli.ts" "${CLI_BIN}" 2>/dev/null; then
-    rm -f "${CLI_BIN}"
-    info "CLI command removed: ${CLI_BIN}"
-  fi
+  local cli_path
+  for cli_path in "${CLI_BIN}" "${LEGACY_CLI_BIN}"; do
+    if [[ -f "${cli_path}" ]] && grep -Fq "${INSTALL_DIR}/src/cli.ts" "${cli_path}" 2>/dev/null; then
+      rm -f "${cli_path}"
+      info "CLI command removed: ${cli_path}"
+    fi
+  done
   if [[ "${purge}" == "--purge" ]]; then
     if [[ -d "${DATA_DIR}" ]]; then
       rm -rf "${DATA_DIR}"
@@ -298,7 +312,8 @@ uninstall() {
     fi
   else
     info "Data preserved at: ${DATA_DIR}"
-    info "To also remove data, run: $0 --uninstall --purge"
+    info "To also remove data later, rerun the original source or release installer with:"
+    info "  ./install.sh --uninstall --purge"
   fi
 }
 
@@ -316,11 +331,11 @@ main() {
       ;;
     --help|-h)
       printf 'Usage: %s [--upgrade] [--uninstall [--purge]]\n' "$(basename "$0")"
-      printf '  (no flags)         Fresh install of littleimpd\n'
+      printf '  (no flags)         Fresh install of Grimoire (daemon: littleimpd)\n'
       printf '  --upgrade          Stop daemon, update files, restart\n'
       printf '  --uninstall        Stop and remove daemon and files (data preserved)\n'
       printf '  --uninstall --purge  Also delete all data at %s\n' "${DATA_DIR}"
-      printf '\nInstalls the CLI command at %s\n' "${CLI_BIN}"
+      printf '\nInstalls CLI commands at %s and %s\n' "${CLI_BIN}" "${LEGACY_CLI_BIN}"
       exit 0
       ;;
     "")

@@ -265,19 +265,20 @@ function copyDaemonRuntime(projectRoot: string, payloadRoot: string): void {
 
 function writeCliEntrypoint(payloadRoot: string): void {
   const binDir = join(payloadRoot, "bin");
-  const cliPath = join(binDir, "littleimp");
   mkdirSync(binDir, { recursive: true });
-  writeFileSync(
-    cliPath,
-    [
-      "#!/usr/bin/env bash",
-      "set -euo pipefail",
-      'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
-      'exec bun "${SCRIPT_DIR}/../daemon/src/cli.ts" "$@"',
-      "",
-    ].join("\n")
-  );
-  chmodSync(cliPath, 0o755);
+  const cliContents = [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
+    'exec bun "${SCRIPT_DIR}/../daemon/src/cli.ts" "$@"',
+    "",
+  ].join("\n");
+
+  for (const name of ["grimoire", "littleimp"]) {
+    const cliPath = join(binDir, name);
+    writeFileSync(cliPath, cliContents);
+    chmodSync(cliPath, 0o755);
+  }
 }
 
 function writeVersionMetadata(options: {
@@ -302,7 +303,7 @@ function writeVersionMetadata(options: {
           installer: "daemon/install.sh",
           daemon: "daemon",
           frontend: "dist",
-          cli: "bin/littleimp",
+          cli: "bin/grimoire",
           checksums: CHECKSUMS_FILE,
         },
       },
