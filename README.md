@@ -192,8 +192,12 @@ live install, service-lifecycle, and data-preservation checks are still
 pending. Once the `goniszewski/grimoire` tap is published, the intended user
 flow is:
 
+Current Homebrew releases require explicit trust for non-official taps, so
+trust only this formula:
+
 ```sh
 brew tap goniszewski/grimoire
+brew trust --formula goniszewski/grimoire/grimoire
 brew install grimoire
 brew services start grimoire
 ```
@@ -362,6 +366,16 @@ npm run test:daemon
 npm run test:e2e
 npm run build
 ```
+
+Homebrew-specific validation requires Homebrew and performs a disposable
+install through a local tap:
+
+```sh
+npm run test:homebrew
+```
+
+After the public tap is published, `npm run test:homebrew:published` exercises
+the one-argument `brew tap goniszewski/grimoire` path.
 
 Full local quality gate:
 

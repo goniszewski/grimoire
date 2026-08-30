@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 type PackageJson = {
   version: string;
+  scripts?: Record<string, string>;
 };
 
 const platforms = ["macos", "linux"] as const;
@@ -133,10 +134,19 @@ describe("Homebrew formula packaging", () => {
 
   it("documents Homebrew as a pending path until live validation passes", () => {
     const readme = readProjectFile("README.md");
+    const packageJson = JSON.parse(readProjectFile("package.json")) as PackageJson;
 
     expect(readme).toContain("### Homebrew (pending live validation)");
     expect(readme).toContain("Homebrew is not a supported");
+    expect(readme).toContain("brew trust --formula goniszewski/grimoire/grimoire");
     expect(readme).not.toContain("brew install little-imp");
     expect(readme).not.toContain("brew services start little-imp");
+
+    const installGuide = readProjectFile("docs/05-install-without-docker.md");
+    expect(installGuide).toContain("brew trust --formula goniszewski/grimoire/grimoire");
+    expect(packageJson.scripts?.["test:homebrew"]).toBe("bash scripts/homebrew-smoke.sh");
+    expect(packageJson.scripts?.["test:homebrew:published"]).toBe(
+      "bash scripts/homebrew-smoke.sh published"
+    );
   });
 });

@@ -63,10 +63,11 @@ cd daemon
 
 For day-to-day coding, prefer [Development](./04-development.md) (`npm run daemon:dev` + `npm run dev`) instead of reinstalling.
 
-The Homebrew formula is prepared in the repo, but live Homebrew install is not a supported user path until the public tap and published release assets are validated. The intended command after publication is:
+The Homebrew formula is prepared in the repo, but live Homebrew install is not a supported user path until the public tap and published release assets are validated. Current Homebrew releases require explicit trust for non-official taps, so trust only this formula. The intended command after publication is:
 
 ```sh
 brew tap goniszewski/grimoire
+brew trust --formula goniszewski/grimoire/grimoire
 brew install grimoire
 brew services start grimoire
 ```
