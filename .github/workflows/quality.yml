@@ -71,3 +71,17 @@ jobs:
           name: grimoire-demo-dist
           path: dist/
           if-no-files-found: error
+
+  homebrew:
+    name: Homebrew tap and install smoke test
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate local tap and install formula
+        run: bash scripts/homebrew-smoke.sh
