@@ -21,6 +21,13 @@ class Grimoire < Formula
     cli_wrapper = <<~EOS
       #!/bin/bash
       set -euo pipefail
+      # Published archives may predate the CLI's package-manager guard.
+      case "${1:-} ${2:-}" in
+        "update install"|"update upgrade")
+          echo 'Homebrew-managed installations are updated with `brew upgrade grimoire`.' >&2
+          exit 2
+          ;;
+      esac
       export LITTLEIMP_PACKAGE_MANAGER="homebrew"
       exec "#{bun}" "#{opt_libexec}/daemon/src/cli.ts" "$@"
     EOS
@@ -85,7 +92,12 @@ class Grimoire < Formula
   end
 
   test do
-    assert_match version, shell_output("#{bin}/grimoire --help")
-    assert_match version, shell_output("#{bin}/littleimp --help")
+    update_actions = %w[install upgrade]
+    %w[grimoire littleimp].each do |command|
+      assert_match version.to_s, shell_output("#{bin}/#{command} --help")
+      update_actions.each do |action|
+        assert_match "brew upgrade grimoire", shell_output("#{bin}/#{command} update #{action} 2>&1", 2)
+      end
+    end
   end
 end
