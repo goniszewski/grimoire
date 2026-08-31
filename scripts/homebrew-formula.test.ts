@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -95,6 +97,47 @@ function formulaSnippetAfter(formula: string, expectedLine: string): string {
 }
 
 describe("Homebrew formula packaging", () => {
+  it("blocks native upgrades before invoking an older runtime and forwards other commands unchanged", () => {
+    const root = mkdtempSync(join(tmpdir(), "grimoire-formula-"));
+    try {
+      const runtime = join(root, "old bun");
+      // Stand in for an older archive that ignores LITTLEIMP_PACKAGE_MANAGER.
+      writeFileSync(runtime, '#!/bin/bash\nprintf "%s\\n" "$LITTLEIMP_PACKAGE_MANAGER" "$@"\n', { mode: 0o755 });
+      const formula = readFileSync(formulaPath, "utf8");
+      const wrapper = formula.match(/cli_wrapper = <<~EOS\n([\s\S]*?)^\s*EOS/m)?.[1];
+      expect(wrapper).toBeDefined();
+      const cliPath = join(root, "old release", "daemon", "src", "cli.ts");
+      const contents = wrapper!
+        .replace(/^ {6}/gm, "")
+        .replaceAll("#{bun}", runtime)
+        .replaceAll("#{opt_libexec}", join(root, "old release"));
+
+      for (const command of ["grimoire", "littleimp"]) {
+        const executable = join(root, command);
+        writeFileSync(executable, contents, { mode: 0o755 });
+        for (const action of ["install", "upgrade"]) {
+          for (const options of [[], ["--archive", "missing.tar.gz", "--checksum", "missing.sha256", "--json"]]) {
+            const result = spawnSync(executable, ["update", action, ...options], { encoding: "utf8" });
+            expect(result.error).toBeUndefined();
+            expect(result.status).toBe(2);
+            expect(result.stderr).toContain("brew upgrade grimoire");
+            expect(result.stdout).toBe("");
+          }
+        }
+
+        for (const args of [[], ["--help"], ["update", "check", "--json"], ["backup", "verify", "--file", "path with spaces", ""]]) {
+          const result = spawnSync(executable, args, { encoding: "utf8" });
+          expect(result.error).toBeUndefined();
+          expect(result.status).toBe(0);
+          expect(result.stderr).toBe("");
+          expect(result.stdout).toBe(["homebrew", cliPath, ...args, ""].join("\n"));
+        }
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("installs the current release archives by pinned checksum instead of rebuilding from source", () => {
     const version = packageVersion();
     const expectedChecksums = expectedReleaseChecksums(version);
