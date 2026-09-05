@@ -27,7 +27,7 @@ FROM oven/bun:1-slim AS runtime
 RUN groupadd -r littleimp && useradd -r -g littleimp littleimp
 
 # Install necessary system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*

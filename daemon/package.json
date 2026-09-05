@@ -18,12 +18,19 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "hono": "^4.12.7",
+    "hono": "^4.12.25",
     "pdf-parse": "^2.4.5",
     "sqlite-vec": "^0.1.7-alpha.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bun": "^1.2"
+  },
+  "overrides": {
+    "fast-uri": "^3.1.3",
+    "fast-xml-builder": "^1.1.7",
+    "fast-xml-parser": "^5.5.6",
+    "ip-address": "^10.3.1",
+    "path-to-regexp": "^8.4.0"
   }
 }
