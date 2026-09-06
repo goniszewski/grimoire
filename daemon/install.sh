@@ -96,7 +96,8 @@ install_daemon_files() {
     rm -f  "${INSTALL_DIR}/.env" 2>/dev/null || true
   fi
   info "Installing dependencies…"
-  (cd "${INSTALL_DIR}" && bun install --production --frozen-lockfile)
+  # Never execute dependency lifecycle scripts from an installed archive.
+  (cd "${INSTALL_DIR}" && bun install --production --frozen-lockfile --ignore-scripts)
   info "Daemon files installed"
 }
 
@@ -145,6 +146,14 @@ write_cli_wrapper() {
     printf 'exec %q %q "$@"\n' "${BUN_PATH}" "${INSTALL_DIR}/src/cli.ts"
   } > "${cli_path}"
   chmod +x "${cli_path}"
+}
+
+is_installer_cli_wrapper() {
+  local cli_path="$1"
+  local escaped_cli_target
+  # write_cli_wrapper uses printf %q, so paths containing spaces are escaped.
+  escaped_cli_target="$(printf '%q' "${INSTALL_DIR}/src/cli.ts")"
+  grep -Fq -- "${escaped_cli_target}" "${cli_path}" 2>/dev/null
 }
 
 install_cli() {
@@ -300,7 +309,7 @@ uninstall() {
   fi
   local cli_path
   for cli_path in "${CLI_BIN}" "${LEGACY_CLI_BIN}"; do
-    if [[ -f "${cli_path}" ]] && grep -Fq "${INSTALL_DIR}/src/cli.ts" "${cli_path}" 2>/dev/null; then
+    if [[ -f "${cli_path}" ]] && is_installer_cli_wrapper "${cli_path}"; then
       rm -f "${cli_path}"
       info "CLI command removed: ${cli_path}"
     fi

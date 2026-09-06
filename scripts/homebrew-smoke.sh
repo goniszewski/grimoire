@@ -127,9 +127,9 @@ formula_installed=true
 brew install "${FORMULA_NAME}"
 
 formula_prefix="$(brew --prefix "${FORMULA_NAME}")"
-test -x "${formula_prefix}/bin/grimoire"
-test -x "${formula_prefix}/bin/littleimp"
-test -x "${formula_prefix}/bin/littleimpd"
+[[ -x "${formula_prefix}/bin/grimoire" ]]
+[[ -x "${formula_prefix}/bin/littleimp" ]]
+[[ -x "${formula_prefix}/bin/littleimpd" ]]
 
 printf '==> Running Homebrew formula test\n'
 brew test "${TAP_NAME}/${FORMULA_NAME}"
@@ -154,8 +154,8 @@ if [[ "${health_ok}" != true ]]; then
   exit 1
 fi
 
-test -f "${data_dir}/.env"
-test -d "${data_dir}/logs"
+[[ -f "${data_dir}/.env" ]]
+[[ -d "${data_dir}/logs" ]]
 
 printf '==> Stopping Homebrew service\n'
 brew services stop "${FORMULA_NAME}"

@@ -161,8 +161,14 @@ describe("Homebrew formula packaging", () => {
     expect(formula).toContain('depends_on "bun"');
     expect(formula).not.toContain('depends_on "oven-sh/bun/bun"');
     expect(formula).toContain('libexec.install "daemon", "dist"');
-    expect(formula).toContain('"install", "--production", "--frozen-lockfile", "--cwd", libexec/"daemon"');
+    expect(formula).toContain(
+      '"install", "--production", "--frozen-lockfile", "--ignore-scripts", "--cwd", libexec/"daemon"'
+    );
     expect(formula).toContain('formula_opt_bin("bun")');
+    expect(formula).toContain("post_install_steps do");
+    expect(formula).not.toContain("def post_install");
+    expect(formula).toContain('unless_path_exists "little-imp/.env", base: :var');
+    expect(formula).toContain('set_permissions "little-imp/.env", "0600", base: :var, recursive: false');
     expect(formula).toContain('LITTLEIMP_PACKAGE_MANAGER="homebrew"');
     expect(formula).toContain('(bin/"grimoire").write');
     expect(formula).toContain('(bin/"littleimp").write');

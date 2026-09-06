@@ -2,7 +2,6 @@
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import {
-  chmodSync,
   closeSync,
   existsSync,
   lstatSync,
@@ -20,6 +19,7 @@ import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { packageRelease } from "./release-packager";
 
 export type ReleasePlatform = "macos" | "linux";
 type SmokeArtifactSource = "local" | "published";
@@ -279,7 +279,6 @@ function smokeEnv(dirs: SmokeDirs, port: number): NodeJS.ProcessEnv {
   return {
     ...process.env,
     HOME: dirs.homeDir,
-    PATH: `${dirs.binDir}:${process.env.PATH ?? ""}`,
     HOST: "127.0.0.1",
     PORT: String(port),
     DATA_DIR: dirs.dataDir,
@@ -525,35 +524,27 @@ function defaultSignatureRunner(
   return spawnSync(command, args, options);
 }
 
-function writeExecutable(path: string, contents: string): void {
-  writeFileSync(path, contents);
-  chmodSync(path, 0o755);
-}
+function createInstallerBashEnv(dirs: SmokeDirs, platform: ReleasePlatform): string {
+  const bashEnvPath = join(dirs.rootDir, "installer.bashenv");
+  const serviceShim =
+    platform === "macos"
+      ? "launchctl() { return 0; }"
+      : [
+          "systemctl() {",
+          '  if [[ "${1:-}" == "--user" && "${2:-}" == "is-active" ]]; then return 1; fi',
+          "  return 0",
+          "}",
+        ].join("\n");
 
-function createInstallerCommandShims(dirs: SmokeDirs, platform: ReleasePlatform): string {
-  const shimDir = join(dirs.rootDir, "installer-shims");
-  mkdirSync(shimDir, { recursive: true });
-
-  writeExecutable(
-    join(shimDir, "curl"),
-    ["#!/usr/bin/env bash", "printf '{\"status\":\"ok\"}\\n'", ""].join("\n")
+  writeFileSync(
+    bashEnvPath,
+    [
+      "curl() { printf '{\"status\":\"ok\"}\\n'; }",
+      serviceShim,
+      "",
+    ].join("\n")
   );
-
-  if (platform === "macos") {
-    writeExecutable(join(shimDir, "launchctl"), ["#!/usr/bin/env bash", "exit 0", ""].join("\n"));
-  } else {
-    writeExecutable(
-      join(shimDir, "systemctl"),
-      [
-        "#!/usr/bin/env bash",
-        'if [[ "${1:-}" == "--user" && "${2:-}" == "is-active" ]]; then exit 1; fi',
-        "exit 0",
-        "",
-      ].join("\n")
-    );
-  }
-
-  return shimDir;
+  return bashEnvPath;
 }
 
 function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: number): void {
@@ -576,11 +567,12 @@ function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: n
   );
 
   const installEnv = smokeEnv(dirs, port);
+  const platform = detectReleasePlatform();
   const installer = spawnSync("bash", [join(releaseRoot, "daemon", "install.sh")], {
     cwd: join(releaseRoot, "daemon"),
     env: {
       ...installEnv,
-      PATH: `${createInstallerCommandShims(dirs, detectReleasePlatform())}:${installEnv.PATH ?? ""}`,
+      BASH_ENV: createInstallerBashEnv(dirs, platform),
     },
     stdio: "inherit",
   });
@@ -830,7 +822,7 @@ export async function runCommandCapture(
 async function runCliHelpChecks(dirs: SmokeDirs, port: number, version: string): Promise<void> {
   logStep("grimoire CLI and littleimp compatibility alias");
   for (const command of ["grimoire", "littleimp"]) {
-    const result = await runCommandCapture(command, ["--help"], {
+    const result = await runCommandCapture(join(dirs.binDir, command), ["--help"], {
       cwd: dirs.daemonDir,
       env: smokeEnv(dirs, port),
     });
@@ -849,7 +841,7 @@ async function runCliHelpChecks(dirs: SmokeDirs, port: number, version: string):
 async function runCliUpdateCheck(dirs: SmokeDirs, port: number, updateSourceUrl: string): Promise<void> {
   logStep("grimoire update check");
   const result = await runCommandCapture(
-    "grimoire",
+    join(dirs.binDir, "grimoire"),
     ["update", "check", "--json", "--source", updateSourceUrl],
     {
       cwd: dirs.daemonDir,
@@ -902,7 +894,19 @@ async function runInstalledAppSmoke(options: {
               requireSignature: options.requireSignature,
             })
           ).archivePath
-        : resolve(options.archivePath ?? join(options.projectRoot, "release", releaseArchiveName(version, platform)));
+        : options.archivePath
+          ? resolve(options.archivePath)
+          : (() => {
+              const packaged = packageRelease({
+                projectRoot: options.projectRoot,
+                outputDir: join(dirs.rootDir, "release"),
+                platforms: [platform],
+                version,
+              });
+              const artifact = packaged.manifest.artifacts.find((entry) => entry.platform === platform);
+              assert(artifact, `Packager did not produce a ${platform} release archive`);
+              return join(packaged.outputDir, artifact.archive);
+            })();
 
     const releaseRoot = extractReleaseArchive(archivePath, dirs, platform);
     installRuntimeFromRelease(releaseRoot, dirs, port);
@@ -940,7 +944,7 @@ async function runInstalledAppSmoke(options: {
       cwd: dirs.daemonDir,
       env: {
         ...uninstallEnv,
-        PATH: `${createInstallerCommandShims(dirs, detectReleasePlatform())}:${uninstallEnv.PATH ?? ""}`,
+        BASH_ENV: createInstallerBashEnv(dirs, platform),
       },
       stdio: "inherit",
     });

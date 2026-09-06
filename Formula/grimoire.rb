@@ -16,7 +16,7 @@ class Grimoire < Formula
   def install
     libexec.install "daemon", "dist", "bin", "README.md", "VERSION", "RELEASE.json", "CHECKSUMS.sha256", "SIGNING.md"
     bun = formula_opt_bin("bun")/"bun"
-    system bun, "install", "--production", "--frozen-lockfile", "--cwd", libexec/"daemon"
+    system bun, "install", "--production", "--frozen-lockfile", "--ignore-scripts", "--cwd", libexec/"daemon"
 
     cli_wrapper = <<~EOS
       #!/bin/bash
@@ -51,20 +51,18 @@ class Grimoire < Formula
     (bin/"littleimpd").chmod 0555
   end
 
-  def post_install
-    (var/"little-imp/logs").mkpath
-
-    env_path = var/"little-imp/.env"
-    return if env_path.exist?
-
-    env_path.write <<~EOS
-      HOST=127.0.0.1
-      PORT=3210
-      DATA_DIR=#{var}/little-imp
-      NODE_ENV=production
-      LOG_FORMAT=json
-    EOS
-    chmod 0600, env_path
+  post_install_steps do
+    mkdir_p "little-imp/logs", base: :var
+    unless_path_exists "little-imp/.env", base: :var do
+      write_file "little-imp/.env", <<~EOS, base: :var
+        HOST=127.0.0.1
+        PORT=3210
+        DATA_DIR={{var}}/little-imp
+        NODE_ENV=production
+        LOG_FORMAT=json
+      EOS
+      set_permissions "little-imp/.env", "0600", base: :var, recursive: false
+    end
   end
 
   def caveats
