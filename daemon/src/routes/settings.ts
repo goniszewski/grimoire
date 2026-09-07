@@ -1,4 +1,4 @@
-import { Hono, Context } from "hono";
+import { Hono, Context, type Next } from "hono";
 import { settingsManager, redactSettings, validateSettingsPatch } from "../settings.js";
 import { log } from "../logger.js";
 import { resolveRuntimeSettings } from "../runtime-settings.js";
@@ -41,7 +41,11 @@ export function createSettingsRoute(): Hono {
    * GET /settings
    * Returns current settings. API keys are redacted (shown as "***" if set).
    */
-  app.get("/settings", (c) => {
+  app.get("/settings", async (c, next: Next) => {
+    if (c.req.header("Accept")?.includes("text/html")) {
+      await next();
+      return;
+    }
     const settings = settingsManager.read();
     return ok(c, {
       ...redactSettings(settings),

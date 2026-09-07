@@ -55,6 +55,10 @@ describe("browser extension integration", () => {
           capture: "/capture",
           taxonomy: "/integrations/browser/v1/taxonomy",
         },
+        capture_fields: {
+          is_pinned: true,
+          read_later: true,
+        },
       },
     });
   });

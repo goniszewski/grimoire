@@ -26,6 +26,10 @@ export function createBrowserIntegrationRoute(deps: BrowserIntegrationDeps): Hon
           capture: "/capture",
           taxonomy: "/integrations/browser/v1/taxonomy",
         },
+        capture_fields: {
+          is_pinned: true,
+          read_later: true,
+        },
         limits: {
           request_bytes: 256 * 1024,
           title_characters: 2_000,

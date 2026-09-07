@@ -2401,6 +2401,8 @@ Request body:
 | `category_id` | string \| null | no | Existing category ID to assign |
 | `category` | string | no | Root category name to resolve or create when category_id is omitted |
 | `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `is_pinned` | boolean | no | Whether the new bookmark should be pinned |
+| `read_later` | boolean | no | Whether the new bookmark should be added to Read Later |
 | `source` | CaptureSource | no |  |
 | `source.client` | string \| null | no | Optional local integration client label |
 | `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
@@ -3175,6 +3177,8 @@ Protected one-click capture request for explicit local integrations
 | `category_id` | string \| null | no | Existing category ID to assign |
 | `category` | string | no | Root category name to resolve or create when category_id is omitted |
 | `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `is_pinned` | boolean | no | Whether the new bookmark should be pinned |
+| `read_later` | boolean | no | Whether the new bookmark should be added to Read Later |
 | `source` | CaptureSource | no |  |
 | `source.client` | string \| null | no | Optional local integration client label |
 | `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
@@ -4567,6 +4571,9 @@ Authenticated capabilities advertised to packaged browser extensions
 | `endpoints` | object | yes |  |
 | `endpoints.capture` | string | yes | Authenticated bookmark capture path |
 | `endpoints.taxonomy` | string | yes | Authenticated category and tag discovery path |
+| `capture_fields` | object | no | Optional capture fields supported by this daemon |
+| `capture_fields.is_pinned` | boolean | yes | Capture accepts an initial pinned state |
+| `capture_fields.read_later` | boolean | yes | Capture accepts an initial Read Later state |
 | `limits` | object | yes |  |
 | `limits.request_bytes` | integer | yes | Maximum capture request bytes |
 | `limits.title_characters` | integer | yes | Maximum title characters |
@@ -4587,6 +4594,9 @@ Browser integration capability response
 | `data.endpoints` | object | yes |  |
 | `data.endpoints.capture` | string | yes | Authenticated bookmark capture path |
 | `data.endpoints.taxonomy` | string | yes | Authenticated category and tag discovery path |
+| `data.capture_fields` | object | no | Optional capture fields supported by this daemon |
+| `data.capture_fields.is_pinned` | boolean | yes | Capture accepts an initial pinned state |
+| `data.capture_fields.read_later` | boolean | yes | Capture accepts an initial Read Later state |
 | `data.limits` | object | yes |  |
 | `data.limits.request_bytes` | integer | yes | Maximum capture request bytes |
 | `data.limits.title_characters` | integer | yes | Maximum title characters |

@@ -385,6 +385,8 @@ const schemas = {
       category_id: nullable(stringSchema("Existing category ID to assign")),
       category: stringSchema("Root category name to resolve or create when category_id is omitted", { maxLength: 100 }),
       notes: nullable(stringSchema("Personal notes, or null to leave empty", { maxLength: 100000 })),
+      is_pinned: booleanSchema("Whether the new bookmark should be pinned"),
+      read_later: booleanSchema("Whether the new bookmark should be added to Read Later"),
       source: ref("CaptureSource"),
     },
     ["url"],
@@ -1472,6 +1474,14 @@ const schemas = {
           taxonomy: stringSchema("Authenticated category and tag discovery path"),
         },
         ["capture", "taxonomy"]
+      ),
+      capture_fields: objectSchema(
+        {
+          is_pinned: booleanSchema("Capture accepts an initial pinned state"),
+          read_later: booleanSchema("Capture accepts an initial Read Later state"),
+        },
+        ["is_pinned", "read_later"],
+        "Optional capture fields supported by this daemon"
       ),
       limits: objectSchema(
         {

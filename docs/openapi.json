@@ -5210,6 +5210,14 @@
             "maxLength": 100000,
             "nullable": true
           },
+          "is_pinned": {
+            "type": "boolean",
+            "description": "Whether the new bookmark should be pinned"
+          },
+          "read_later": {
+            "type": "boolean",
+            "description": "Whether the new bookmark should be added to Read Later"
+          },
           "source": {
             "$ref": "#/components/schemas/CaptureSource"
           }
@@ -9196,6 +9204,25 @@
             "required": [
               "capture",
               "taxonomy"
+            ],
+            "additionalProperties": false
+          },
+          "capture_fields": {
+            "type": "object",
+            "description": "Optional capture fields supported by this daemon",
+            "properties": {
+              "is_pinned": {
+                "type": "boolean",
+                "description": "Capture accepts an initial pinned state"
+              },
+              "read_later": {
+                "type": "boolean",
+                "description": "Capture accepts an initial Read Later state"
+              }
+            },
+            "required": [
+              "is_pinned",
+              "read_later"
             ],
             "additionalProperties": false
           },
