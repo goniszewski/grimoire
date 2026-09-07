@@ -28,6 +28,7 @@ import { createMediaRoute } from "./routes/media.js";
 import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
 import { createCaptureRoute } from "./routes/capture.js";
 import { createDemoRoute } from "./routes/demo.js";
+import { createBrowserIntegrationRoute } from "./routes/browser-integration.js";
 import { validatePresentedIntegrationToken } from "./lib/integration-auth.js";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -108,6 +109,43 @@ function isAllowedLocalOrigin(origin: string | undefined): boolean {
   return !!normalized && allowedBrowserOrigins().has(normalized);
 }
 
+function isBrowserExtensionOrigin(origin: string | undefined): boolean {
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== "chrome-extension:" && parsed.protocol !== "moz-extension:") return false;
+    if (!parsed.hostname || parsed.username || parsed.password || parsed.search || parsed.hash) return false;
+    return parsed.pathname === "" || parsed.pathname === "/";
+  } catch {
+    return false;
+  }
+}
+
+function hasBrowserExtensionScheme(origin: string | undefined): boolean {
+  if (!origin) return false;
+  try {
+    const protocol = new URL(origin).protocol;
+    return protocol === "chrome-extension:" || protocol === "moz-extension:";
+  } catch {
+    return false;
+  }
+}
+
+const BROWSER_EXTENSION_INTEGRATION_PATHS = new Set([
+  "/capture",
+  "/integrations/browser/v1/capabilities",
+  "/integrations/browser/v1/taxonomy",
+]);
+
+function isBrowserExtensionIntegrationPath(path: string): boolean {
+  return BROWSER_EXTENSION_INTEGRATION_PATHS.has(path);
+}
+
+function isAllowedRequestOrigin(origin: string | undefined, path: string): boolean {
+  return isAllowedLocalOrigin(origin) ||
+    (isBrowserExtensionIntegrationPath(path) && isBrowserExtensionOrigin(origin));
+}
+
 function isValidCspSourceOrigin(origin: string): boolean {
   try {
     const parsed = new URL(origin);
@@ -175,15 +213,33 @@ async function enforceLocalOrigin(c: Context, next: Next): Promise<Response | vo
   const origin = c.req.header("origin");
   const method = c.req.method;
   const isPreflight = method === "OPTIONS" && !!c.req.header("access-control-request-method");
-  if (isPreflight && origin && !isAllowedLocalOrigin(origin)) {
+  if (isPreflight && origin && !isAllowedRequestOrigin(origin, c.req.path)) {
+    return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
+  }
+
+  if (hasBrowserExtensionScheme(origin) && !isAllowedRequestOrigin(origin, c.req.path)) {
     return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
   }
 
   const unsafeBrowserRequest = !!origin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
-  if (unsafeBrowserRequest && !isAllowedLocalOrigin(origin)) {
+  if (unsafeBrowserRequest && !isAllowedRequestOrigin(origin, c.req.path)) {
     return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
   }
   await next();
+}
+
+async function applyBrowserExtensionCors(c: Context, next: Next): Promise<void> {
+  const origin = c.req.header("origin");
+  if (!isBrowserExtensionOrigin(origin) || !isBrowserExtensionIntegrationPath(c.req.path)) {
+    await next();
+    return;
+  }
+
+  await next();
+  c.header("Access-Control-Allow-Origin", origin);
+  c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  c.header("Vary", "Origin", { append: true });
 }
 
 async function enforceRequestBodyLimits(c: Context, next: Next): Promise<Response | void> {
@@ -227,6 +283,7 @@ export function createApp(deps: AppDeps): Hono {
 
   // Middleware
   app.use("*", applySecurityHeaders);
+  app.use("*", applyBrowserExtensionCors);
   app.use("*", enforceLocalOrigin);
   app.use("*", enforceRequestBodyLimits);
   app.use(
@@ -237,7 +294,18 @@ export function createApp(deps: AppDeps): Hono {
       allowHeaders: ["Content-Type", "Authorization", "X-LittleImp-Frontend"],
     })
   );
-  app.use("*", validatePresentedIntegrationToken(deps.db, new Set(["/mcp", "/capture"])));
+  app.use(
+    "*",
+    validatePresentedIntegrationToken(
+      deps.db,
+      new Set([
+        "/mcp",
+        "/capture",
+        "/integrations/browser/v1/capabilities",
+        "/integrations/browser/v1/taxonomy",
+      ])
+    )
+  );
 
   // JSON error handler — never leak internal details in production
   app.onError((err, c) => {
@@ -258,6 +326,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createDiagnosticsRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createCaptureRoute({ db: deps.db, queue: deps.queue }));
+  app.route("/", createBrowserIntegrationRoute({ db: deps.db, version: deps.version }));
   app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));
   app.route("/", createImportRoute({ db: deps.db, queue: deps.queue }));

@@ -4911,6 +4911,144 @@
       ],
       "additionalProperties": false
     },
+    "BrowserIntegrationCapabilities": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "type": "string",
+          "description": "Stable browser integration protocol identifier",
+          "enum": [
+            "grimoire-browser-capture"
+          ]
+        },
+        "protocol_version": {
+          "type": "integer",
+          "description": "Browser integration protocol version",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "grimoire_version": {
+          "type": "string",
+          "description": "Daemon package version"
+        },
+        "endpoints": {
+          "type": "object",
+          "properties": {
+            "capture": {
+              "type": "string",
+              "description": "Authenticated bookmark capture path"
+            },
+            "taxonomy": {
+              "type": "string",
+              "description": "Authenticated category and tag discovery path"
+            }
+          },
+          "required": [
+            "capture",
+            "taxonomy"
+          ],
+          "additionalProperties": false
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "request_bytes": {
+              "type": "integer",
+              "description": "Maximum capture request bytes",
+              "minimum": 1
+            },
+            "title_characters": {
+              "type": "integer",
+              "description": "Maximum title characters",
+              "minimum": 1
+            },
+            "notes_characters": {
+              "type": "integer",
+              "description": "Maximum notes characters",
+              "minimum": 1
+            },
+            "selected_text_characters": {
+              "type": "integer",
+              "description": "Maximum selected text characters",
+              "minimum": 1
+            },
+            "tag_characters": {
+              "type": "integer",
+              "description": "Maximum characters per tag",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "request_bytes",
+            "title_characters",
+            "notes_characters",
+            "selected_text_characters",
+            "tag_characters"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "protocol_version",
+        "grimoire_version",
+        "endpoints",
+        "limits"
+      ],
+      "additionalProperties": false,
+      "description": "Authenticated capabilities advertised to packaged browser extensions"
+    },
+    "BrowserIntegrationCapabilitiesResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BrowserIntegrationCapabilities"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Browser integration capability response"
+    },
+    "BrowserIntegrationTaxonomy": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "description": "Category tree",
+          "items": {
+            "ref": "CategoryNode"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags",
+          "items": {
+            "ref": "TagWithCount"
+          }
+        }
+      },
+      "required": [
+        "categories",
+        "tags"
+      ],
+      "additionalProperties": false,
+      "description": "Authenticated taxonomy subset used by the browser extension"
+    },
+    "BrowserIntegrationTaxonomyResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "ref": "BrowserIntegrationTaxonomy"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Browser integration taxonomy response"
+    },
     "Diagnostics": {
       "type": "object",
       "properties": {
@@ -9253,6 +9391,58 @@
           }
         }
       ]
+    },
+    {
+      "method": "GET",
+      "path": "/integrations/browser/v1/capabilities",
+      "tag": "Integrations",
+      "summary": "Negotiate the packaged browser extension capture protocol.",
+      "description": "Requires a managed integration bearer token. Packaged Chrome and Firefox clients use this endpoint to distinguish current Grimoire from the legacy account API before sending capture data. The response describes stable paths and enforced field limits; clients must not infer compatibility from the daemon marketing version alone.",
+      "responses": {
+        "200": {
+          "description": "Supported browser integration capabilities",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BrowserIntegrationCapabilitiesResponse"
+          }
+        },
+        "401": {
+          "description": "Missing, invalid, rotated, or revoked integration token",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      },
+      "examples": [
+        {
+          "title": "Negotiate browser capture support",
+          "request": "curl http://127.0.0.1:3210/integrations/browser/v1/capabilities \\\n  -H \"Authorization: Bearer limp_it_example\""
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/integrations/browser/v1/taxonomy",
+      "tag": "Integrations",
+      "summary": "List the categories and tags available to the packaged browser extension.",
+      "description": "Requires a managed integration bearer token. This route keeps extension-origin reads inside the versioned browser integration surface instead of exposing unrelated local-library GET routes.",
+      "responses": {
+        "200": {
+          "description": "Browser capture categories and tags",
+          "contentType": "application/json",
+          "schema": {
+            "ref": "BrowserIntegrationTaxonomyResponse"
+          }
+        },
+        "401": {
+          "description": "Missing, invalid, rotated, or revoked integration token",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
+        }
+      }
     },
     {
       "method": "GET",

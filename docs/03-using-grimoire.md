@@ -43,7 +43,8 @@ Related bookmarks use embeddings when available.
 
 ## Capture from the browser
 
-There is no Chrome/Firefox store extension in 1.x yet. Use the built-in bookmarklet:
+The rewritten Chrome/Firefox extension is still being prepared for publication.
+Until it is available in the existing store listings, use the built-in bookmarklet:
 
 1. Open **Settings → Browser Integration**
 2. Create an integration token (the full secret is shown once — copy it if you need it elsewhere)
@@ -72,6 +73,9 @@ From Settings or the `littleimp` CLI you can create, list, verify, and restore l
 - **REST** — see [API.md](../API.md); health at `GET /health`
 - **MCP** — Streamable HTTP at `http://127.0.0.1:3210/mcp` with an integration bearer token
 - **Capture API** — token-protected `POST /capture` for same-machine clients
+- **Browser Companion protocol** — authenticated capability negotiation at
+  `GET /integrations/browser/v1/capabilities`, with authenticated taxonomy at
+  `GET /integrations/browser/v1/taxonomy`, before extension capture
 
 ## Privacy defaults
 
