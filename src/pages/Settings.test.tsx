@@ -57,6 +57,7 @@ const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterResto
 const mockedGetDiagnostics = (api as unknown as { getDiagnostics: ReturnType<typeof vi.fn> }).getDiagnostics;
 const mockedReprocessBookmarks = (api as unknown as { reprocessBookmarks: ReturnType<typeof vi.fn> }).reprocessBookmarks;
 const mockedGetReprocessStatus = (api as unknown as { getReprocessStatus: ReturnType<typeof vi.fn> }).getReprocessStatus;
+const mockedListIntegrationTokens = (api as unknown as { listIntegrationTokens: ReturnType<typeof vi.fn> }).listIntegrationTokens;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
 const mockedUseCreateBackup = backupHooks.useCreateBackup as unknown as ReturnType<typeof vi.fn>;
 const mockedUseRestoreBackup = backupHooks.useRestoreBackup as unknown as ReturnType<typeof vi.fn>;
@@ -230,6 +231,7 @@ beforeEach(() => {
       failed: 0,
     },
   });
+  mockedListIntegrationTokens.mockResolvedValue({ data: [] });
   mockedUseBackupList.mockReturnValue({
     data: [
       {
@@ -261,6 +263,20 @@ beforeEach(() => {
   mockedUseCreateEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseVerifyEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseRestoreEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
+});
+
+describe("Browser Integration guidance", () => {
+  it("explains that integration tokens authenticate every supported local client", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByText("Browser Integration")).toBeInTheDocument();
+    expect(screen.getByText(/official browser extension, bookmarklets, MCP clients/)).toBeInTheDocument();
+    expect(screen.getByText(/Create one for the official browser extension, a bookmarklet, an MCP client/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Setup guide" }));
+    expect(screen.getByText("Using integration tokens")).toBeInTheDocument();
+    expect(screen.getByText(/paste the token into its connection screen/)).toBeInTheDocument();
+  });
 });
 
 describe("Settings update checks", () => {
