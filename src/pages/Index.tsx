@@ -5,6 +5,7 @@ import { LockScreen } from "@/components/LockScreen";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SearchBar } from "@/components/SearchBar";
+import { OpenSelectedBookmarks } from "@/components/OpenSelectedBookmarks";
 import { BookmarkCard } from "@/components/BookmarkCard";
 import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
@@ -40,7 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, SlidersHorizontal, ListFilter, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { loadDemoData } from "@/lib/api";
@@ -83,13 +84,6 @@ const Index = () => {
     lastPageSelectionKey.current = store.pageSelectionKey;
     exitSelectionMode();
   }, [store.pageSelectionKey, exitSelectionMode]);
-
-  // Dark mode by default (only if no prior preference)
-  useEffect(() => {
-    if (!document.documentElement.classList.contains("light")) {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
 
   useEffect(() => {
     const nextRouteTag = requestedTag?.trim() || null;
@@ -450,8 +444,8 @@ const Index = () => {
                 <Plus className="h-3.5 w-3.5" />
                 {showButtonLabels && <span className="ml-1.5 hidden sm:inline">Add</span>}
               </Button>
-              <Button variant="ghost" size="icon" className="hidden h-8 w-8 sm:inline-flex" onClick={() => setPrefsOpen(true)}>
-                <Settings className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Preferences" title="Preferences: appearance and library" onClick={() => setPrefsOpen(true)}>
+                <SlidersHorizontal className="h-4 w-4" />
               </Button>
             </div>
           </header>
@@ -492,8 +486,9 @@ const Index = () => {
                 {selectionMode ? (
                   <>
                     <Button variant="outline" size="sm" onClick={selectAll} className="text-xs h-7">
-                      Select all
+                      Select page
                     </Button>
+                    <OpenSelectedBookmarks bookmarks={store.filteredBookmarks.filter((bookmark) => selectedIds.has(bookmark.id))} />
                     <Button
                       variant="outline"
                       size="sm"
@@ -556,7 +551,7 @@ const Index = () => {
                       aria-expanded={refineOpen}
                       aria-controls="library-refinements"
                     >
-                      <Settings className="h-3.5 w-3.5" />
+                      <ListFilter className="h-3.5 w-3.5" />
                       <span>Refine library</span>
                     </Button>
                     <Button

@@ -102,17 +102,17 @@ export function BookmarkDetail({
   };
 
   const headerContent = (
-    <div className="flex flex-col gap-1.5 text-left">
+    <div className="min-w-0 flex flex-col gap-1.5 text-left">
       <div className="flex items-center gap-2">
         <img
           src={bookmarkWithDetail.favicon}
           alt=""
-          className="h-5 w-5 rounded-sm"
+          className="h-5 w-5 shrink-0 rounded-sm"
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
         />
-        <span className="text-xs text-muted-foreground font-mono">{bookmarkWithDetail.domain}</span>
+        <span className="min-w-0 text-xs text-muted-foreground font-mono [overflow-wrap:anywhere]">{bookmarkWithDetail.domain}</span>
         <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
       </div>
     </div>
@@ -135,8 +135,8 @@ export function BookmarkDetail({
       </Button>
     </div>
   ) : (
-    <div className="flex items-center gap-1.5 group/title">
-      <span className="text-lg font-semibold leading-snug">{bookmark.title}</span>
+    <div className="min-w-0 flex items-start gap-1.5 group/title pr-6">
+      <span className="min-w-0 text-lg font-semibold leading-snug [overflow-wrap:anywhere]">{bookmark.title}</span>
       <Button
         variant="ghost"
         size="icon"
@@ -170,14 +170,16 @@ export function BookmarkDetail({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setEditingTitle(false); }}>
-        <DrawerContent className="max-h-[85vh]">
+        <DrawerContent className="max-h-[85dvh]">
+          <div className="min-h-0 min-w-0 overflow-y-auto" data-testid="bookmark-detail-scroll">
           <DrawerHeader className="text-left pb-2">
             {headerContent}
             <DrawerTitle className="sr-only">{bookmark.title}</DrawerTitle>
             {editableTitle}
           </DrawerHeader>
-          <div className="overflow-y-auto px-4 pb-6">
+          <div className="min-w-0 px-4 pb-6">
             {content}
+          </div>
           </div>
         </DrawerContent>
       </Drawer>
@@ -186,7 +188,7 @@ export function BookmarkDetail({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setEditingTitle(false); }}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="min-w-0 w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85dvh] overflow-y-auto" data-testid="bookmark-detail-scroll">
         <DialogHeader>
           {headerContent}
           <DialogTitle className="sr-only">{bookmark.title}</DialogTitle>

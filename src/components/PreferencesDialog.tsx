@@ -1,5 +1,6 @@
+import { useBrowserPreferences, type BookmarkClick, type Appearance } from "@/hooks/use-browser-preferences";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -34,6 +35,7 @@ export function PreferencesDialog({
   open, onOpenChange, showButtonLabels, viewMode, onUpdate,
   hasPassword, autoLockMinutes, onSetPassword, onChangePassword, onRemovePassword, onSetAutoLockMinutes, onLockNow,
 }: PreferencesDialogProps) {
+  const { bookmarkClick, appearance, update } = useBrowserPreferences();
   const [securityMode, setSecurityMode] = useState<SecurityMode>("idle");
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -74,11 +76,24 @@ export function PreferencesDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) resetSecurity(); }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Preferences</DialogTitle>
+          <DialogDescription>Customize this browser’s appearance, library, and lock screen. AI providers, backups, and integrations are in Settings in the sidebar.</DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="appearance">Appearance</Label>
+            <Select value={appearance} onValueChange={(value) => update({ appearance: value as Appearance })}>
+              <SelectTrigger id="appearance"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Button labels */}
           <div className="flex items-center justify-between">
             <Label htmlFor="btn-labels" className="text-sm">Show button labels</Label>
@@ -87,6 +102,18 @@ export function PreferencesDialog({
               checked={showButtonLabels}
               onCheckedChange={(checked) => onUpdate({ showButtonLabels: checked })}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bookmark-click">Clicking a bookmark</Label>
+            <Select value={bookmarkClick} onValueChange={(value) => update({ bookmarkClick: value as BookmarkClick })}>
+              <SelectTrigger id="bookmark-click"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="details">Show bookmark details</SelectItem>
+                <SelectItem value="external">Open website in a new tab</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Use the title with Ctrl/Cmd-click or middle-click to open the website. Details stay available in the actions menu.</p>
           </div>
 
           {/* View mode */}

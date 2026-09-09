@@ -16,7 +16,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { openBookmarkExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
+import { useBrowserPreferences } from "@/hooks/use-browser-preferences";
+import { isSafeExternalBookmarkUrl } from "@/lib/safe-url";
+import { recordBookmarkOpenExternal, openBookmarkExternal, type RecordedOpenMetrics } from "@/lib/bookmark-open";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
@@ -53,12 +55,14 @@ interface BookmarkCardProps {
 }
 
 export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onReadLater, onClearReadLater, onArchive, onMarkRead, onMarkUnread, selectionMode, selected, onToggleSelect, searchQuery = "", compact }: BookmarkCardProps) {
+  const { bookmarkClick } = useBrowserPreferences();
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [openMetrics, setOpenMetrics] = useState({
     opened_count: bookmark.opened_count,
     last_opened_at: bookmark.last_opened_at,
   });
+  const suppressTouchClick = useRef(false);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontalSwipe = useRef<boolean | null>(null);
@@ -72,6 +76,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
   }, [bookmark.id, bookmark.opened_count, bookmark.last_opened_at]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    suppressTouchClick.current = false;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     isHorizontalSwipe.current = null;
@@ -82,6 +87,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
     if (!swiping) return;
     const dx = e.touches[0].clientX - touchStartX.current;
     const dy = e.touches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) suppressTouchClick.current = true;
 
     if (isHorizontalSwipe.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       isHorizontalSwipe.current = Math.abs(dx) > Math.abs(dy);
@@ -195,6 +201,28 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
   const editRevealed = swipeX >= threshold;
   const openedText = openMetrics.opened_count > 0 ? `opened ${openMetrics.opened_count}x` : null;
 
+  const title = (
+    <a
+      href={isSafeExternalBookmarkUrl(bookmark.url) ? bookmark.url : undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${compact ? "truncate" : "[overflow-wrap:anywhere]"}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (selectionMode) { event.preventDefault(); onToggleSelect?.(bookmark.id); return; }
+        if (!isSafeExternalBookmarkUrl(bookmark.url)) { event.preventDefault(); onClick(bookmark); return; }
+        if (bookmarkClick === "details" && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+          event.preventDefault(); onClick(bookmark);
+        } else recordBookmarkOpenExternal(bookmark, handleRecordedOpen);
+      }}
+      onAuxClick={(event) => {
+        event.stopPropagation();
+        if (selectionMode) event.preventDefault();
+        else if (event.button === 1 && isSafeExternalBookmarkUrl(bookmark.url)) recordBookmarkOpenExternal(bookmark, handleRecordedOpen);
+      }}
+    ><HighlightText text={bookmark.title} query={searchQuery} /></a>
+  );
+
   const renderSecondaryActions = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -209,6 +237,9 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuItem onClick={(event) => { event.stopPropagation(); onClick(bookmark); }}>
+          <Pencil className="mr-2 h-3.5 w-3.5" />Bookmark details
+        </DropdownMenuItem>
         {onArchive && (
           <DropdownMenuItem onClick={handleArchive}>
             <Archive className="mr-2 h-3.5 w-3.5" />
@@ -289,16 +320,31 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
 
       {/* Card */}
       <div
+        onPointerDown={(event) => {
+          if (event.pointerType === "mouse") suppressTouchClick.current = false;
+        }}
+        onKeyDown={() => { suppressTouchClick.current = false; }}
+        onClickCapture={(event) => {
+          // A touch gesture can be followed by a compatibility click on its title link.
+          if (suppressTouchClick.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            suppressTouchClick.current = false;
+          }
+        }}
         onClick={() => {
           if (selectionMode) {
             onToggleSelect?.(bookmark.id);
             return;
           }
-          if (!swiping && swipeX === 0) onClick(bookmark);
+          if (!swiping && swipeX === 0) {
+            if (bookmarkClick !== "external" || !openBookmarkExternal(bookmark, handleRecordedOpen)) onClick(bookmark);
+          }
         }}
-        onTouchStart={selectionMode ? undefined : handleTouchStart}
+        onTouchStart={selectionMode ? () => { suppressTouchClick.current = false; } : handleTouchStart}
         onTouchMove={selectionMode ? undefined : handleTouchMove}
         onTouchEnd={selectionMode ? undefined : handleTouchEnd}
+        onTouchCancel={selectionMode ? undefined : () => { setSwiping(false); setSwipeX(0); suppressTouchClick.current = true; }}
         className={`group relative ${compact ? 'flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5' : 'flex flex-col gap-3 rounded-lg border bg-card p-4 h-full'} cursor-pointer transition-[border-color,box-shadow] duration-150 ease-out hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 ${selected ? 'ring-2 ring-primary border-primary/50' : ''}`}
         style={{
           transform: `translateX(${swipeX}px)`,
@@ -319,19 +365,19 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
             <span className="text-sm font-medium truncate min-w-0 flex-1">
-              <HighlightText text={bookmark.title} query={searchQuery} />
+              {title}
             </span>
-            <span className="text-xs text-muted-foreground font-mono shrink-0 hidden sm:inline">{bookmark.domain}</span>
+            <span className="max-w-24 truncate text-xs text-muted-foreground font-mono shrink-0 hidden lg:inline">{bookmark.domain}</span>
             <PipelineBadge bookmarkId={bookmark.id} initialStatus={bookmark.status} />
             {bookmark.tags.slice(0, 2).map((tag) => (
               <Link
                 key={tag}
                 to={tagHref(tag)}
-                className="hidden md:inline-flex"
+                className="hidden xl:inline-flex min-w-0 max-w-24"
                 aria-label={`Open #${tag} tag`}
                 onClick={(event) => event.stopPropagation()}
               >
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
+                <Badge variant="secondary" className="max-w-full truncate text-[10px] px-1.5 py-0 h-5 font-mono">
                   {tag}
                 </Badge>
               </Link>
@@ -387,7 +433,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
 
             <div className="space-y-1.5">
               <h3 className="font-semibold text-sm leading-snug text-card-foreground line-clamp-2">
-                <HighlightText text={bookmark.title} query={searchQuery} />
+                {title}
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                 <HighlightText text={bookmark.summary} query={searchQuery} />
@@ -420,7 +466,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                   </Link>
                 ))}
                 {bookmark.tags.length > 4 && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
+                  <Badge variant="secondary" className="max-w-full truncate text-[10px] px-1.5 py-0 h-5 font-mono">
                     +{bookmark.tags.length - 4}
                   </Badge>
                 )}

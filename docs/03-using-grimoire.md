@@ -26,7 +26,7 @@ After save, Grimoire pulls readable content when it can:
 - **Categories** — create, rename, nest (max three levels), drag to reorder or reparent
 - **Tags** — create, rename, attach; browse from Tags pages
 - **Per bookmark** — title, notes, pin, read/unread, read later, archive, trash, restore, permanent delete
-- **Bulk** — select bookmarks to delete, move, or toggle read later
+- **Bulk** — select bookmarks to delete, move, toggle read later, or open selected websites. Opening is limited to ten tabs per batch, with a confirmation and retry for blocked popups. Allow popups for the Grimoire address if prompted; retry opens only the blocked remainder, and unsafe URLs are skipped. **Select page** selects only the current page.
 - **Filters** — category, tag, domain, date, and related library filters
 
 Optional AI can suggest summary, tags, and a broad category during ingest. When an **embedding** provider is configured, an organization agent may propose duplicates or similar categories; review them in **Review Queue**.
@@ -82,3 +82,13 @@ From Settings or the `littleimp` CLI you can create, list, verify, and restore l
 Data stays under your local data directory (Docker volume, or `~/.local/share/littleimp/` for native installs). The daemon binds to loopback by default. External AI is opt-in; without it, nothing leaves your machine for enrichment or embeddings.
 
 More answers: [FAQ](./faq.md).
+
+## Appearance and bookmark opening
+
+**Preferences** uses a sliders icon in the library header for appearance, library behavior, and the browser lock screen. The sidebar **Settings** gear opens AI providers, backups, and integrations. **Refine library** uses a filter icon.
+
+Choose **System**, **Light**, or **Dark** in Preferences or the desktop appearance menu. System follows your device setting, including changes while Grimoire is open. These preferences are saved for this Grimoire address in the current browser profile; they do not sync between browsers. When browser storage is unavailable, changes last only for the current session.
+
+In **Preferences → Clicking a bookmark**, choose between opening details (the default) and opening the website in a new tab. Ctrl/Cmd-click or middle-click a bookmark title to use normal browser link behavior. **More bookmark actions → Bookmark details** remains available in either mode. In selection mode, a normal title click selects the bookmark; modifier-clicks also select, and middle-click does not open it. Bookmarks with invalid or unsafe URLs open details instead of navigating.
+
+Stored images and screenshots in bookmark details show their full proportions. Select an image to enlarge it; use Escape or Close to return to the detail view.

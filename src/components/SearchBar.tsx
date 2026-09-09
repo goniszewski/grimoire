@@ -1,4 +1,5 @@
 import { Search, Command } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { useEffect, useRef } from "react";
 import { SearchMode } from "@/hooks/use-bookmarks";
@@ -17,6 +18,7 @@ const MODES: { value: SearchMode; label: string }[] = [
 ];
 
 export function SearchBar({ value, onChange, searchMode, onSearchModeChange }: SearchBarProps) {
+  const isMobile = useIsMobile();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,13 +45,14 @@ export function SearchBar({ value, onChange, searchMode, onSearchModeChange }: S
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+      <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
       <Input
         ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search bookmarks..."
-        className="h-12 pl-12 pr-28 text-base bg-card border-border rounded-lg focus-visible:ring-primary/50 font-sans"
+        aria-label="Search bookmarks"
+        placeholder={isMobile ? "Search…" : "Search bookmarks..."}
+        className="h-12 pl-10 pr-3 sm:pl-12 sm:pr-28 text-base bg-card border-border rounded-lg focus-visible:ring-primary/50 font-sans"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
         <button

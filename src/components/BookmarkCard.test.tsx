@@ -393,3 +393,58 @@ describe("BookmarkCard — overflow tags", () => {
     expect(screen.getByText("+2")).toBeInTheDocument();
   });
 });
+
+describe("bookmark opening preference", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => { localStorage.clear(); vi.restoreAllMocks(); });
+  it("keeps a native external title link while plain clicks open details by default", () => {
+    const details = vi.fn();
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onClick={details} onDelete={noop} />);
+    const title = screen.getByRole("link", { name: "Test Article" });
+    expect(title).toHaveAttribute("href", "https://example.com/article");
+    expect(title).toHaveAttribute("rel", "noopener noreferrer");
+    fireEvent.click(title);
+    expect(details).toHaveBeenCalledOnce();
+  });
+  it("opens the website from card space when configured", () => {
+    localStorage.setItem("grimoire-browser-preferences", '{"bookmarkClick":"external"}');
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const details = vi.fn();
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onClick={details} onDelete={noop} />);
+    fireEvent.click(screen.getByText("A short summary of the article"));
+    expect(open).toHaveBeenCalledWith("https://example.com/article", "_blank", "noopener,noreferrer");
+    expect(details).not.toHaveBeenCalled();
+  });
+  it("selects rather than navigating when selection mode is active", () => {
+    localStorage.setItem("grimoire-browser-preferences", '{"bookmarkClick":"external"}');
+    const select = vi.fn();
+    const details = vi.fn();
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onClick={details} onDelete={noop} selectionMode onToggleSelect={select} />);
+    fireEvent.click(screen.getByRole("link", {name: "Test Article"}));
+    expect(select).toHaveBeenCalledWith("bm-1");
+    expect(details).not.toHaveBeenCalled();
+  });
+});
+
+describe("opening safety regressions", () => {
+  beforeEach(() => localStorage.setItem("grimoire-browser-preferences", '{"bookmarkClick":"external"}'));
+  afterEach(() => { localStorage.clear(); vi.restoreAllMocks(); });
+  it("falls back to details when card-space opening rejects an unsafe URL", () => {
+    const details = vi.fn();
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    renderCard(<BookmarkCard bookmark={makeBookmark({ url: "javascript:alert(1)" })} onClick={details} onDelete={noop} />);
+    fireEvent.click(screen.getByText("A short summary of the article"));
+    expect(details).toHaveBeenCalledOnce();
+    expect(open).not.toHaveBeenCalled();
+  });
+  it("does not navigate a title after a swipe-to-delete gesture", () => {
+    const remove = vi.fn();
+    renderCard(<BookmarkCard bookmark={makeBookmark()} onClick={noop} onDelete={remove} />);
+    const title = screen.getByRole("link", { name: "Test Article" });
+    fireEvent.touchStart(title, { touches: [{ clientX: 200, clientY: 50 }] });
+    fireEvent.touchMove(title, { touches: [{ clientX: 50, clientY: 50 }] });
+    fireEvent.touchEnd(title);
+    expect(remove).toHaveBeenCalledOnce();
+    expect(fireEvent.click(title)).toBe(false);
+  });
+});

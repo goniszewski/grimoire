@@ -1,10 +1,10 @@
-import { useTheme } from "next-themes";
+import { useBrowserPreferences } from "@/hooks/use-browser-preferences";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { appearance: theme } = useBrowserPreferences();
 
   return (
     <Sonner

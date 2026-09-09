@@ -1,3 +1,4 @@
+import { BookmarkImagePreview } from "./BookmarkImagePreview";
 import { useEffect, useState } from "react";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineRecoveryPanel } from "./PipelineRecoveryPanel";
@@ -146,7 +147,7 @@ export function BookmarkDetailContent({
   };
 
   return (
-      <div className="space-y-5 mt-2">
+      <div className="min-w-0 space-y-5 mt-2 [overflow-wrap:anywhere]">
 
       <div className="flex items-center gap-2">
         {!!bookmark.read_later && (
@@ -167,7 +168,7 @@ export function BookmarkDetailContent({
             <Images className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Media</span>
           </div>
-          <div className={faviconMedia ? "grid grid-cols-[auto,1fr] gap-2" : "grid grid-cols-1 gap-2"}>
+          <div className={faviconMedia ? "grid min-w-0 grid-cols-[auto,minmax(0,1fr)] gap-2" : "grid grid-cols-1 gap-2"}>
             {faviconMedia && (
               <div className="flex h-12 w-12 items-center justify-center rounded-md border bg-muted/20">
                 <img
@@ -181,15 +182,12 @@ export function BookmarkDetailContent({
             {mediaImages.length > 0 && (
               <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                 {mediaImages.map((item) => (
-                  <div key={item.id} className="min-w-0 overflow-hidden rounded-md border bg-muted/20">
-                    <img
-                      src={item.url}
-                      alt={item.alt || (item.kind === "screenshot" ? `${bookmark.title} preview` : "Extracted image")}
-                      className="aspect-video w-full object-cover"
-                      loading="lazy"
-                      onError={() => setHiddenMediaIds((ids) => new Set(ids).add(item.id))}
-                    />
-                  </div>
+                  <BookmarkImagePreview
+                    key={item.id}
+                    url={item.url}
+                    alt={item.alt || (item.kind === "screenshot" ? `${bookmark.title} preview` : "Extracted image")}
+                    onError={() => setHiddenMediaIds((ids) => new Set(ids).add(item.id))}
+                  />
                 ))}
               </div>
             )}
@@ -249,7 +247,7 @@ export function BookmarkDetailContent({
             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Extracted Content</span>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none max-h-[28rem] overflow-y-auto rounded-md border bg-muted/20 px-3 py-2 text-sm">
+          <div className="prose prose-sm dark:prose-invert min-w-0 max-w-none [&_pre]:whitespace-pre-wrap [&_pre]:break-all max-h-[28rem] overflow-y-auto rounded-md border bg-muted/20 px-3 py-2 text-sm">
             <ReactMarkdown components={extractedMarkdownComponents}>{extractedMarkdown}</ReactMarkdown>
           </div>
         </div>
@@ -294,7 +292,7 @@ export function BookmarkDetailContent({
           </div>
         ) : bookmark.notes ? (
           <div
-            className="prose prose-sm dark:prose-invert max-w-none text-sm cursor-pointer hover:bg-muted/40 rounded-md p-1 -mx-1 transition-colors"
+            className="prose prose-sm dark:prose-invert min-w-0 max-w-none [&_pre]:whitespace-pre-wrap [&_pre]:break-all text-sm cursor-pointer hover:bg-muted/40 rounded-md p-1 -mx-1 transition-colors"
             onClick={() => { setNotesInput(bookmark.notes ?? ""); setEditingNotes(true); }}
           >
             <ReactMarkdown components={extractedMarkdownComponents}>{bookmark.notes}</ReactMarkdown>
@@ -320,7 +318,7 @@ export function BookmarkDetailContent({
             <Badge
               key={tag}
               variant="secondary"
-              className="text-xs font-mono cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors"
+              className="max-w-full whitespace-normal break-all text-xs font-mono cursor-pointer hover:bg-destructive/20 hover:text-destructive transition-colors"
               onClick={() => handleRemoveTag(tag)}
             >
               {tag} ×
@@ -354,7 +352,7 @@ export function BookmarkDetailContent({
         ) : (
           <Badge
             variant="outline"
-            className="cursor-pointer text-xs"
+            className="max-w-full whitespace-normal break-all cursor-pointer text-xs"
             onClick={() => {
               setCategoryInput(bookmark.category);
               setEditingCategory(true);
@@ -531,7 +529,7 @@ export function BookmarkDetailContent({
               <div
                 key={rb.id}
                 onClick={() => onSelectRelated(rb)}
-                className="flex items-center gap-2 rounded-md p-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="min-w-0 flex flex-wrap items-center gap-2 rounded-md p-2 cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <img
                   src={rb.favicon}
@@ -541,8 +539,8 @@ export function BookmarkDetailContent({
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <span className="text-sm truncate">{rb.title}</span>
-                <span className="text-[10px] text-muted-foreground font-mono ml-auto shrink-0">
+                <span className="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">{rb.title}</span>
+                <span className="max-w-full text-[10px] text-muted-foreground font-mono ml-auto [overflow-wrap:anywhere]">
                   {rb.domain}
                 </span>
                 {rb.opened_count > 0 && (

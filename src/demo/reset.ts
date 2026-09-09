@@ -1,5 +1,6 @@
 const DEMO_STORAGE_KEYS = [
   "little-imp-library-view-preferences",
+  "grimoire-browser-preferences",
   "littleimp_guided_tour_dismissed",
   "little-imp-lock-hash",
   "little-imp-lock-timeout",
