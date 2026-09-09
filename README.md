@@ -187,16 +187,16 @@ cd daemon
 
 ### Homebrew (pending live validation)
 
-The Homebrew formula is prepared in the repository, but the public tap and
-live install, service-lifecycle, and data-preservation checks are still
-pending. Once the `goniszewski/grimoire` tap is published, the intended user
-flow is:
+The Homebrew formula is prepared for v1.2.0. The main Grimoire repository
+serves as the tap; the explicit URL avoids requiring a separate
+`homebrew-grimoire` repository. After the release and formula are published
+and the public lifecycle is validated, the installation flow is:
 
 Current Homebrew releases require explicit trust for non-official taps, so
 trust only this formula:
 
 ```sh
-brew tap goniszewski/grimoire
+brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew trust --formula goniszewski/grimoire/grimoire
 brew install grimoire
 brew services start grimoire

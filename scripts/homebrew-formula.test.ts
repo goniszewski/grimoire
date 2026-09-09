@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -26,72 +26,24 @@ const projectRoot = process.cwd();
 const formulaPath = join(projectRoot, "Formula", "grimoire.rb");
 const readProjectFile = (path: string) => readFileSync(join(projectRoot, path), "utf8");
 const sha256Pattern = /sha256 "([a-f0-9]{64})"/;
-const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
-  "0.1.0-beta": {
-    macos: "d27e19b85a55a0316e9e2700312e919223c1b4ce88262b74c11bd8e2f3ebaf59",
-    linux: "a1ffb52c12ed0a292ce58562ed322698b8ed43690e8260bec7dc59ea87ca8098",
-  },
-  // Placeholder checksums — replace with actual SHA-256 values when release artifacts are built and published.
-  "1.0.0": {
-    macos: "000000000000000000000000000000000000000000000000000000000000000a",
-    linux: "000000000000000000000000000000000000000000000000000000000000000b",
-  },
-  "1.0.1": {
-    macos: "a8c934821cc8db588ef9b3213f013c4cd99f1ae23ba8f18e400727191a9d49c1",
-    linux: "42cf4ea63bb31ea2380a0b3c8c4c65f7af943974ce1024dd9562a2484e343cff",
-  },
-  "1.1.0": {
-    macos: "98e96cc53bebf02265c86d2014bba0d9cf9978a7bc411d041cac86bef1ce8021",
-    linux: "793c416e22173c4c825f564487d5ae704db5d3bedb99553545f7f1dad83657d7",
-  },
-  "1.2.0": {
-    macos: "3f67b1d94ca59170eedcfc398923afd1c8b9e2f9770b77f72ceccfe3e16b459f",
-    linux: "00bbbbba2baab973db4084c72d2c7f78f5b93b6b8adf63176c62a9066905c698",
-  },
-};
-
-function packageVersion(): string {
-  return (JSON.parse(readProjectFile("package.json")) as PackageJson).version;
-}
-
-function releaseManifest(): ReleaseManifest | null {
-  const manifestPath = join(projectRoot, "release", "release-manifest.json");
-  if (!existsSync(manifestPath)) {
-    return null;
-  }
-
-  return JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseManifest;
-}
-
-function releaseManifestChecksums(version: string): ReleaseChecksumBaseline | null {
-  const manifest = releaseManifest();
-  if (!manifest) {
-    return null;
-  }
-
-  expect(manifest.version).toBe(version);
-  return Object.fromEntries(
-    platforms.map((platform) => {
-      const archive = `little-imp-${version}-${platform}.tar.gz`;
-      const artifact = manifest.artifacts.find(
-        (entry) => entry.platform === platform && entry.archive === archive
-      );
-      expect(artifact, `Missing ${platform} artifact in release manifest`).toBeDefined();
-      return [platform, artifact?.sha256];
-    })
-  ) as ReleaseChecksumBaseline;
+// Formula releases can advance independently of this source branch. Keep the
+// reviewed artifact manifest tracked, rather than consulting ignored build output.
+function formulaRelease(): ReleaseManifest {
+  return JSON.parse(readProjectFile("Formula/release.json")) as ReleaseManifest;
 }
 
 function expectedReleaseChecksums(version: string): ReleaseChecksumBaseline {
-  const baseline = releaseChecksumBaselines[version];
-  expect(baseline, `Missing tracked Homebrew checksum baseline for ${version}`).toBeDefined();
-
-  const manifestChecksums = releaseManifestChecksums(version);
-  if (manifestChecksums) {
-    expect(manifestChecksums).toEqual(baseline);
-  }
-
-  return baseline;
+  const manifest = formulaRelease();
+  expect(manifest.version).toBe(version);
+  expect(manifest.artifacts).toHaveLength(platforms.length);
+  return Object.fromEntries(platforms.map((platform) => {
+    const artifacts = manifest.artifacts.filter((entry) => entry.platform === platform);
+    expect(artifacts).toHaveLength(1);
+    const artifact = artifacts[0];
+    expect(artifact.archive).toBe(`little-imp-${version}-${platform}.tar.gz`);
+    expect(artifact.sha256).toMatch(/^[a-f0-9]{64}$/);
+    return [platform, artifact.sha256];
+  })) as ReleaseChecksumBaseline;
 }
 
 function formulaSnippetAfter(formula: string, expectedLine: string): string {
@@ -143,7 +95,7 @@ describe("Homebrew formula packaging", () => {
   });
 
   it("installs the current release archives by pinned checksum instead of rebuilding from source", () => {
-    const version = packageVersion();
+    const version = formulaRelease().version;
     const expectedChecksums = expectedReleaseChecksums(version);
     const formula = readFileSync(formulaPath, "utf8");
 

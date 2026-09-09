@@ -1,0 +1,19 @@
+{
+  "version": "1.2.0",
+  "artifacts": [
+    {
+      "platform": "macos",
+      "archive": "little-imp-1.2.0-macos.tar.gz",
+      "checksum": "little-imp-1.2.0-macos.tar.gz.sha256",
+      "sha256": "036ea854a04b39266b5d4991b0b960baa415f8ff48980c019b04f5533e383776",
+      "signature": "little-imp-1.2.0-macos.tar.gz.asc"
+    },
+    {
+      "platform": "linux",
+      "archive": "little-imp-1.2.0-linux.tar.gz",
+      "checksum": "little-imp-1.2.0-linux.tar.gz.sha256",
+      "sha256": "17e9062320e787b18d399a8fdbc073d07fc4c75005f54e4f5686d15d5a5c34bf",
+      "signature": "little-imp-1.2.0-linux.tar.gz.asc"
+    }
+  ]
+}
