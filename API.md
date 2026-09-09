@@ -2401,6 +2401,8 @@ Request body:
 | `category_id` | string \| null | no | Existing category ID to assign |
 | `category` | string | no | Root category name to resolve or create when category_id is omitted |
 | `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `is_pinned` | boolean | no | Whether the new bookmark should be pinned |
+| `read_later` | boolean | no | Whether the new bookmark should be added to Read Later |
 | `source` | CaptureSource | no |  |
 | `source.client` | string \| null | no | Optional local integration client label |
 | `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
@@ -2480,6 +2482,43 @@ Content-Type: application/json
   }
 }
 ```
+
+#### GET /integrations/browser/v1/capabilities
+
+Negotiate the packaged browser extension capture protocol.
+
+Requires a managed integration bearer token. Packaged Chrome and Firefox clients use this endpoint to distinguish current Grimoire from the legacy account API before sending capture data. The response describes stable paths and enforced field limits; clients must not infer compatibility from the daemon marketing version alone.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BrowserIntegrationCapabilitiesResponse` | Supported browser integration capabilities |
+| `401` | application/problem+json | `ProblemDetails` | Missing, invalid, rotated, or revoked integration token |
+
+Examples:
+
+**Negotiate browser capture support**
+
+Request:
+
+```bash
+curl http://127.0.0.1:3210/integrations/browser/v1/capabilities \
+  -H "Authorization: Bearer limp_it_example"
+```
+
+#### GET /integrations/browser/v1/taxonomy
+
+List the categories and tags available to the packaged browser extension.
+
+Requires a managed integration bearer token. This route keeps extension-origin reads inside the versioned browser integration surface instead of exposing unrelated local-library GET routes.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `BrowserIntegrationTaxonomyResponse` | Browser capture categories and tags |
+| `401` | application/problem+json | `ProblemDetails` | Missing, invalid, rotated, or revoked integration token |
 
 #### GET /capture/bookmarklet
 
@@ -3138,6 +3177,8 @@ Protected one-click capture request for explicit local integrations
 | `category_id` | string \| null | no | Existing category ID to assign |
 | `category` | string | no | Root category name to resolve or create when category_id is omitted |
 | `notes` | string \| null | no | Personal notes, or null to leave empty |
+| `is_pinned` | boolean | no | Whether the new bookmark should be pinned |
+| `read_later` | boolean | no | Whether the new bookmark should be added to Read Later |
 | `source` | CaptureSource | no |  |
 | `source.client` | string \| null | no | Optional local integration client label |
 | `source.source_url` | string \| null | no | Optional public HTTP or HTTPS page/context URL |
@@ -4517,6 +4558,70 @@ Response data
 | `version` | string | yes | Daemon package version |
 | `uptime` | integer | yes | Process uptime in milliseconds |
 | `queueSize` | integer | yes | Queued background jobs |
+
+### BrowserIntegrationCapabilities
+
+Authenticated capabilities advertised to packaged browser extensions
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `protocol` | "grimoire-browser-capture" | yes | Stable browser integration protocol identifier |
+| `protocol_version` | integer | yes | Browser integration protocol version |
+| `grimoire_version` | string | yes | Daemon package version |
+| `endpoints` | object | yes |  |
+| `endpoints.capture` | string | yes | Authenticated bookmark capture path |
+| `endpoints.taxonomy` | string | yes | Authenticated category and tag discovery path |
+| `capture_fields` | object | no | Optional capture fields supported by this daemon |
+| `capture_fields.is_pinned` | boolean | yes | Capture accepts an initial pinned state |
+| `capture_fields.read_later` | boolean | yes | Capture accepts an initial Read Later state |
+| `limits` | object | yes |  |
+| `limits.request_bytes` | integer | yes | Maximum capture request bytes |
+| `limits.title_characters` | integer | yes | Maximum title characters |
+| `limits.notes_characters` | integer | yes | Maximum notes characters |
+| `limits.selected_text_characters` | integer | yes | Maximum selected text characters |
+| `limits.tag_characters` | integer | yes | Maximum characters per tag |
+
+### BrowserIntegrationCapabilitiesResponse
+
+Browser integration capability response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BrowserIntegrationCapabilities | yes |  |
+| `data.protocol` | "grimoire-browser-capture" | yes | Stable browser integration protocol identifier |
+| `data.protocol_version` | integer | yes | Browser integration protocol version |
+| `data.grimoire_version` | string | yes | Daemon package version |
+| `data.endpoints` | object | yes |  |
+| `data.endpoints.capture` | string | yes | Authenticated bookmark capture path |
+| `data.endpoints.taxonomy` | string | yes | Authenticated category and tag discovery path |
+| `data.capture_fields` | object | no | Optional capture fields supported by this daemon |
+| `data.capture_fields.is_pinned` | boolean | yes | Capture accepts an initial pinned state |
+| `data.capture_fields.read_later` | boolean | yes | Capture accepts an initial Read Later state |
+| `data.limits` | object | yes |  |
+| `data.limits.request_bytes` | integer | yes | Maximum capture request bytes |
+| `data.limits.title_characters` | integer | yes | Maximum title characters |
+| `data.limits.notes_characters` | integer | yes | Maximum notes characters |
+| `data.limits.selected_text_characters` | integer | yes | Maximum selected text characters |
+| `data.limits.tag_characters` | integer | yes | Maximum characters per tag |
+
+### BrowserIntegrationTaxonomy
+
+Authenticated taxonomy subset used by the browser extension
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `categories` | array<CategoryNode> | yes | Category tree |
+| `tags` | array<TagWithCount> | yes | Tags |
+
+### BrowserIntegrationTaxonomyResponse
+
+Browser integration taxonomy response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | BrowserIntegrationTaxonomy | yes |  |
+| `data.categories` | array<CategoryNode> | yes | Category tree |
+| `data.tags` | array<TagWithCount> | yes | Tags |
 
 ### Diagnostics
 

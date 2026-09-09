@@ -41,6 +41,10 @@ const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
     macos: "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f",
     linux: "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340",
   },
+  "1.2.0": {
+    macos: "3f67b1d94ca59170eedcfc398923afd1c8b9e2f9770b77f72ceccfe3e16b459f",
+    linux: "00bbbbba2baab973db4084c72d2c7f78f5b93b6b8adf63176c62a9066905c698",
+  },
 };
 
 function packageVersion(): string {

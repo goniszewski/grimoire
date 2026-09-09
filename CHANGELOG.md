@@ -4,6 +4,25 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-09-07
+
+### Added
+- Versioned Companion protocol discovery and capability negotiation for official
+  browser extensions.
+- Authenticated single-page and bulk-tab capture with editable titles, notes,
+  categories, tags, selected text, pinning, and Read Later state.
+- Managed integration tokens for Companion, bookmarklets, MCP clients, and
+  other supported local integrations.
+
+### Changed
+- Browser Integration settings now explain how named integration tokens are
+  shared across supported clients and recommend separate tokens for independent
+  revocation.
+
+### Fixed
+- Opening Browser Integration settings from an extension now loads the SPA
+  instead of returning the JSON settings endpoint.
+
 ## [1.1.0] - 2026-08-12
 
 ### Added

@@ -18,7 +18,17 @@ interface CaptureDeps {
 
 type ProblemStatus = 400 | 404 | 409 | 422 | 500;
 
-const captureFields = new Set(["url", "title", "tags", "category_id", "category", "notes", "source"]);
+const captureFields = new Set([
+  "url",
+  "title",
+  "tags",
+  "category_id",
+  "category",
+  "notes",
+  "is_pinned",
+  "read_later",
+  "source",
+]);
 const sourceFields = new Set(["client", "source_url", "referrer_url", "selected_text"]);
 const tagPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_TITLE_LENGTH = 2000;
@@ -126,6 +136,14 @@ function parseTags(body: Record<string, unknown>): string[] | undefined {
   return tags;
 }
 
+function parseOptionalBoolean(body: Record<string, unknown>, field: string): boolean | undefined {
+  if (!(field in body)) return undefined;
+  if (typeof body[field] !== "boolean") {
+    throw new ValidationError(`\`${field}\` must be a boolean`);
+  }
+  return body[field];
+}
+
 function parseSource(body: Record<string, unknown>): CaptureMetadataInput {
   if (!("source" in body) || body.source === null || body.source === undefined) return {};
   if (!isRecord(body.source)) {
@@ -222,6 +240,8 @@ type DoCaptureInput = {
   resolveCategory?: () => string | null;
   tags?: string[];
   notes?: string | null;
+  isPinned?: boolean;
+  readLater?: boolean;
   source?: CaptureMetadataInput;
 };
 
@@ -271,10 +291,17 @@ function doCapture(
     if (!fetched) throw new Error("Captured bookmark could not be fetched");
 
     // Apply tags and notes after creation if provided
-    if (input.tags !== undefined || input.notes !== undefined) {
+    if (
+      input.tags !== undefined ||
+      input.notes !== undefined ||
+      input.isPinned !== undefined ||
+      input.readLater !== undefined
+    ) {
       const updated = bookmarkRepo.update(fetched.id, {
         ...(input.tags !== undefined ? { tags: input.tags } : {}),
         ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        ...(input.isPinned !== undefined ? { is_pinned: input.isPinned ? 1 : 0 } : {}),
+        ...(input.readLater !== undefined ? { read_later: input.readLater ? 1 : 0 } : {}),
       });
       if (!updated) throw new Error("Captured bookmark could not be updated");
       fetched = updated;
@@ -453,6 +480,8 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
     let tags: string[] | undefined;
     let categorySelection: CategorySelection;
     let notes: string | null | undefined;
+    let isPinned: boolean | undefined;
+    let readLater: boolean | undefined;
     let source: CaptureMetadataInput;
     try {
       url = parsePublicUrl(body.url, "url");
@@ -461,6 +490,8 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
       categorySelection = parseCategorySelection(body);
       validateCategorySelection(categorySelection, categoryRepo);
       notes = parseOptionalText(body, "notes", MAX_NOTES_LENGTH, { emptyAsNull: true, nullable: true });
+      isPinned = parseOptionalBoolean(body, "is_pinned");
+      readLater = parseOptionalBoolean(body, "read_later");
       source = parseSource(body);
     } catch (err) {
       if (err instanceof ValidationError) {
@@ -475,6 +506,8 @@ export function createCaptureRoute(deps: CaptureDeps): Hono {
         title,
         tags,
         notes,
+        isPinned,
+        readLater,
         resolveCategory: () => resolveCategoryId(categorySelection, categoryRepo),
         source,
       },
