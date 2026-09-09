@@ -109,11 +109,17 @@ function isAllowedLocalOrigin(origin: string | undefined): boolean {
   return !!normalized && allowedBrowserOrigins().has(normalized);
 }
 
+const BROWSER_EXTENSION_PROTOCOLS = new Set([
+  "chrome-extension:",
+  "moz-extension:",
+  "safari-web-extension:",
+]);
+
 function isBrowserExtensionOrigin(origin: string | undefined): boolean {
   if (!origin) return false;
   try {
     const parsed = new URL(origin);
-    if (parsed.protocol !== "chrome-extension:" && parsed.protocol !== "moz-extension:") return false;
+    if (!BROWSER_EXTENSION_PROTOCOLS.has(parsed.protocol)) return false;
     if (!parsed.hostname || parsed.username || parsed.password || parsed.search || parsed.hash) return false;
     return parsed.pathname === "" || parsed.pathname === "/";
   } catch {
@@ -124,8 +130,7 @@ function isBrowserExtensionOrigin(origin: string | undefined): boolean {
 function hasBrowserExtensionScheme(origin: string | undefined): boolean {
   if (!origin) return false;
   try {
-    const protocol = new URL(origin).protocol;
-    return protocol === "chrome-extension:" || protocol === "moz-extension:";
+    return BROWSER_EXTENSION_PROTOCOLS.has(new URL(origin).protocol);
   } catch {
     return false;
   }

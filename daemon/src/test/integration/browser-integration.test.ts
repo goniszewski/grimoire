@@ -63,11 +63,12 @@ describe("browser extension integration", () => {
     });
   });
 
-  it("accepts authenticated capture from Chrome and Firefox extension origins", async () => {
+  it("accepts authenticated capture from Chrome, Firefox, and Safari extension origins", async () => {
     const bearer = await token();
     for (const origin of [
       "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
       "moz-extension://8f2d3a0b-31dc-47f4-b783-36f8c9746ee8",
+      "safari-web-extension://com.goniszewski.Grimoire-Companion",
     ]) {
       const response = await app.request("/capture", {
         method: "POST",
@@ -84,16 +85,22 @@ describe("browser extension integration", () => {
   });
 
   it("does not extend extension-origin access to other browser writes", async () => {
-    const response = await app.request("/tags", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${await token()}`,
-        "Content-Type": "application/json",
-        Origin: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
-      },
-      body: JSON.stringify({ name: "blocked" }),
-    });
-    expect(response.status).toBe(403);
+    const bearer = await token();
+    for (const origin of [
+      "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+      "safari-web-extension://com.goniszewski.Grimoire-Companion",
+    ]) {
+      const response = await app.request("/tags", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${bearer}`,
+          "Content-Type": "application/json",
+          Origin: origin,
+        },
+        body: JSON.stringify({ name: "blocked" }),
+      });
+      expect(response.status).toBe(403);
+    }
   });
 
   it("keeps extension-origin taxonomy reads authenticated and blocks unrelated reads", async () => {
@@ -119,17 +126,20 @@ describe("browser extension integration", () => {
   });
 
   it("allows capture preflight without treating extension origins as first-party", async () => {
-    const response = await app.request("/capture", {
-      method: "OPTIONS",
-      headers: {
-        Origin: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
-        "Access-Control-Request-Method": "POST",
-        "Access-Control-Request-Headers": "authorization,content-type",
-      },
-    });
-    expect(response.status).toBe(204);
-    expect(response.headers.get("access-control-allow-origin")).toBe(
-      "chrome-extension://abcdefghijklmnopabcdefghijklmnop"
-    );
+    for (const origin of [
+      "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+      "safari-web-extension://com.goniszewski.Grimoire-Companion",
+    ]) {
+      const response = await app.request("/capture", {
+        method: "OPTIONS",
+        headers: {
+          Origin: origin,
+          "Access-Control-Request-Method": "POST",
+          "Access-Control-Request-Headers": "authorization,content-type",
+        },
+      });
+      expect(response.status).toBe(204);
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    }
   });
 });
