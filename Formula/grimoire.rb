@@ -3,25 +3,38 @@ class Grimoire < Formula
   homepage "https://github.com/goniszewski/grimoire"
   license "MIT"
 
-  depends_on "oven-sh/bun/bun"
+  depends_on "bun"
 
   if OS.mac?
     url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-macos.tar.gz"
-    sha256 "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f"
+    sha256 "98e96cc53bebf02265c86d2014bba0d9cf9978a7bc411d041cac86bef1ce8021"
   elsif OS.linux?
     url "https://github.com/goniszewski/grimoire/releases/download/v1.1.0/little-imp-1.1.0-linux.tar.gz"
-    sha256 "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340"
+    sha256 "793c416e22173c4c825f564487d5ae704db5d3bedb99553545f7f1dad83657d7"
   end
 
   def install
     libexec.install "daemon", "dist", "bin", "README.md", "VERSION", "RELEASE.json", "CHECKSUMS.sha256", "SIGNING.md"
-    system Formula["oven-sh/bun/bun"].opt_bin/"bun", "install", "--production", "--cwd", libexec/"daemon"
+    bun = formula_opt_bin("bun")/"bun"
+    system bun, "install", "--production", "--frozen-lockfile", "--cwd", libexec/"daemon"
 
-    (bin/"littleimp").write <<~EOS
+    cli_wrapper = <<~EOS
       #!/bin/bash
       set -euo pipefail
-      exec "#{Formula["oven-sh/bun/bun"].opt_bin}/bun" "#{opt_libexec}/daemon/src/cli.ts" "$@"
+      # Published archives may predate the CLI's package-manager guard.
+      case "${1:-} ${2:-}" in
+        "update install"|"update upgrade")
+          echo 'Homebrew-managed installations are updated with `brew upgrade grimoire`.' >&2
+          exit 2
+          ;;
+      esac
+      export LITTLEIMP_PACKAGE_MANAGER="homebrew"
+      exec "#{bun}" "#{opt_libexec}/daemon/src/cli.ts" "$@"
     EOS
+    (bin/"grimoire").write cli_wrapper
+    (bin/"littleimp").write cli_wrapper
+    (bin/"grimoire").chmod 0555
+    (bin/"littleimp").chmod 0555
 
     (bin/"littleimpd").write <<~EOS
       #!/bin/bash
@@ -33,8 +46,9 @@ class Grimoire < Formula
       export LOG_FORMAT="${LOG_FORMAT:-json}"
       mkdir -p "${DATA_DIR}/logs"
       cd "#{opt_libexec}/daemon"
-      exec "#{Formula["oven-sh/bun/bun"].opt_bin}/bun" run "#{opt_libexec}/daemon/src/index.ts"
+      exec "#{bun}" run "#{opt_libexec}/daemon/src/index.ts"
     EOS
+    (bin/"littleimpd").chmod 0555
   end
 
   def post_install
@@ -53,6 +67,17 @@ class Grimoire < Formula
     chmod 0600, env_path
   end
 
+  def caveats
+    <<~EOS
+      Start the Grimoire daemon with:
+        brew services start grimoire
+
+      Use `brew upgrade grimoire` to update this Homebrew installation.
+      Homebrew-managed data is stored under:
+        #{var}/little-imp
+    EOS
+  end
+
   service do
     run [opt_bin/"littleimpd"]
     working_dir opt_libexec/"daemon"
@@ -67,6 +92,12 @@ class Grimoire < Formula
   end
 
   test do
-    assert_match "littleimp #{version}", shell_output("#{bin}/littleimp --help")
+    update_actions = %w[install upgrade]
+    %w[grimoire littleimp].each do |command|
+      assert_match version.to_s, shell_output("#{bin}/#{command} --help")
+      update_actions.each do |action|
+        assert_match "brew upgrade grimoire", shell_output("#{bin}/#{command} update #{action} 2>&1", 2)
+      end
+    end
   end
 end

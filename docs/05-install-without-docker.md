@@ -8,7 +8,11 @@ Native install on macOS or Linux. There is no native Windows installer; use Dock
 - A git clone of this repository (or an unpacked release that includes the frontend build sources)
 - macOS or Linux
 
-The installer installs production dependencies, builds the frontend when possible, and registers a user service. You do not need to run `npm install` first.
+The installer installs production dependencies, builds the frontend when possible, and registers a user service. It installs the `grimoire` CLI under `~/.local/bin` and keeps `littleimp` as a compatibility alias. You do not need to run `npm install` first.
+
+The published v1.1.0 archive predates this CLI rename and exposes `littleimp`
+when used directly. The `grimoire` name is available from the current source
+installer and future repackaged releases.
 
 ## Install
 
@@ -59,4 +63,14 @@ cd daemon
 
 For day-to-day coding, prefer [Development](./04-development.md) (`npm run daemon:dev` + `npm run dev`) instead of reinstalling.
 
-Homebrew formula files may exist in the repo, but live Homebrew install is not a supported user path until it is validated against published release assets.
+The Homebrew formula is prepared in the repo, but live Homebrew install is not a supported user path until the public tap and published release assets are validated. Current Homebrew releases require explicit trust for non-official taps, so trust only this formula. The intended command after publication is:
+
+```sh
+brew tap goniszewski/grimoire
+brew trust --formula goniszewski/grimoire/grimoire
+brew install grimoire
+brew services start grimoire
+```
+
+Use `brew upgrade grimoire` for Homebrew upgrades. Homebrew stores its data
+under `$(brew --prefix)/var/little-imp`, separately from native-install data.

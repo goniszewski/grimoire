@@ -65,7 +65,11 @@ You can also import a Netscape/HTML bookmark export from your browser, and expor
 
 ## Backups
 
-From Settings or the `littleimp` CLI you can create, list, verify, and restore local snapshots. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+From Settings or the `grimoire` CLI you can create, list, verify, and restore local snapshots. The legacy `littleimp` command remains available as a compatibility alias. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+
+The already-published v1.1.0 archive predates the CLI rename and uses
+`littleimp` when invoked directly; current source installs and future
+repackaged releases use `grimoire`.
 
 ## Local integrations
 

@@ -189,6 +189,22 @@ describe("install.sh static frontend install", () => {
     }
   });
 
+  it("installs the primary and legacy CLI wrappers", async () => {
+    const result = await runInstallerFixture({ frontend: "prebuilt" });
+
+    try {
+      const cliDir = join(result.homeDir, ".local", "bin");
+      expect(result.stdout).toContain("Grimoire installed and running!");
+      for (const command of ["grimoire", "littleimp"]) {
+        const cliPath = join(cliDir, command);
+        expect(existsSync(cliPath)).toBe(true);
+        await expect(readFile(cliPath, "utf8")).resolves.toContain("daemon/src/cli.ts");
+      }
+    } finally {
+      await rm(result.tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("installs a prebuilt frontend bundle without rebuilding it", async () => {
     const result = await runInstallerFixture({ frontend: "prebuilt" });
 

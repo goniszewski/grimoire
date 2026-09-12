@@ -1,9 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 type PackageJson = {
   version: string;
+  scripts?: Record<string, string>;
 };
 
 const platforms = ["macos", "linux"] as const;
@@ -38,8 +41,8 @@ const releaseChecksumBaselines: Record<string, ReleaseChecksumBaseline> = {
     linux: "42cf4ea63bb31ea2380a0b3c8c4c65f7af943974ce1024dd9562a2484e343cff",
   },
   "1.1.0": {
-    macos: "c68bc963602a79631c76df223b9cc4a3709a0d382c0b117288f27c72da96c88f",
-    linux: "50429c64e2befeca1daca6d44a95d74f755f7be4a16ed869d68a80007809d340",
+    macos: "98e96cc53bebf02265c86d2014bba0d9cf9978a7bc411d041cac86bef1ce8021",
+    linux: "793c416e22173c4c825f564487d5ae704db5d3bedb99553545f7f1dad83657d7",
   },
 };
 
@@ -94,6 +97,47 @@ function formulaSnippetAfter(formula: string, expectedLine: string): string {
 }
 
 describe("Homebrew formula packaging", () => {
+  it("blocks native upgrades before invoking an older runtime and forwards other commands unchanged", () => {
+    const root = mkdtempSync(join(tmpdir(), "grimoire-formula-"));
+    try {
+      const runtime = join(root, "old bun");
+      // Stand in for an older archive that ignores LITTLEIMP_PACKAGE_MANAGER.
+      writeFileSync(runtime, '#!/bin/bash\nprintf "%s\\n" "$LITTLEIMP_PACKAGE_MANAGER" "$@"\n', { mode: 0o755 });
+      const formula = readFileSync(formulaPath, "utf8");
+      const wrapper = formula.match(/cli_wrapper = <<~EOS\n([\s\S]*?)^\s*EOS/m)?.[1];
+      expect(wrapper).toBeDefined();
+      const cliPath = join(root, "old release", "daemon", "src", "cli.ts");
+      const contents = wrapper!
+        .replace(/^ {6}/gm, "")
+        .replaceAll("#{bun}", runtime)
+        .replaceAll("#{opt_libexec}", join(root, "old release"));
+
+      for (const command of ["grimoire", "littleimp"]) {
+        const executable = join(root, command);
+        writeFileSync(executable, contents, { mode: 0o755 });
+        for (const action of ["install", "upgrade"]) {
+          for (const options of [[], ["--archive", "missing.tar.gz", "--checksum", "missing.sha256", "--json"]]) {
+            const result = spawnSync(executable, ["update", action, ...options], { encoding: "utf8" });
+            expect(result.error).toBeUndefined();
+            expect(result.status).toBe(2);
+            expect(result.stderr).toContain("brew upgrade grimoire");
+            expect(result.stdout).toBe("");
+          }
+        }
+
+        for (const args of [[], ["--help"], ["update", "check", "--json"], ["backup", "verify", "--file", "path with spaces", ""]]) {
+          const result = spawnSync(executable, args, { encoding: "utf8" });
+          expect(result.error).toBeUndefined();
+          expect(result.status).toBe(0);
+          expect(result.stderr).toBe("");
+          expect(result.stdout).toBe(["homebrew", cliPath, ...args, ""].join("\n"));
+        }
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("installs the current release archives by pinned checksum instead of rebuilding from source", () => {
     const version = packageVersion();
     const expectedChecksums = expectedReleaseChecksums(version);
@@ -110,24 +154,42 @@ describe("Homebrew formula packaging", () => {
       expect(sha256Match?.[1]).toBe(expectedChecksums[platform]);
     }
 
-    expect(formula).toContain('depends_on "oven-sh/bun/bun"');
+    expect(formula).toContain('depends_on "bun"');
+    expect(formula).not.toContain('depends_on "oven-sh/bun/bun"');
     expect(formula).toContain('libexec.install "daemon", "dist"');
-    expect(formula).toContain('"install", "--production", "--cwd", libexec/"daemon"');
+    expect(formula).toContain('"install", "--production", "--frozen-lockfile", "--cwd", libexec/"daemon"');
+    expect(formula).toContain('formula_opt_bin("bun")');
+    expect(formula).toContain('LITTLEIMP_PACKAGE_MANAGER="homebrew"');
+    expect(formula).toContain('(bin/"grimoire").write');
     expect(formula).toContain('(bin/"littleimp").write');
+    expect(formula).toContain('(bin/"grimoire").chmod 0555');
+    expect(formula).toContain('(bin/"littleimp").chmod 0555');
     expect(formula).toContain('(bin/"littleimpd").write');
+    expect(formula).toContain('(bin/"littleimpd").chmod 0555');
     expect(formula).toContain("service do");
     expect(formula).toContain("keep_alive true");
     expect(formula).toMatch(/HOST:\s+"127\.0\.0\.1"/);
     expect(formula).toMatch(/PORT:\s+"3210"/);
+    expect(formula).toContain("brew services start grimoire");
+    expect(formula).toContain("brew upgrade grimoire");
     expect(formula).not.toMatch(/git clone|npm run build|bun run build|system ".*daemon\/install\.sh/);
   });
 
   it("documents Homebrew as a pending path until live validation passes", () => {
     const readme = readProjectFile("README.md");
+    const packageJson = JSON.parse(readProjectFile("package.json")) as PackageJson;
 
     expect(readme).toContain("### Homebrew (pending live validation)");
-    expect(readme).toContain("not a supported installation path yet");
+    expect(readme).toContain("Homebrew is not a supported");
+    expect(readme).toContain("brew trust --formula goniszewski/grimoire/grimoire");
     expect(readme).not.toContain("brew install little-imp");
     expect(readme).not.toContain("brew services start little-imp");
+
+    const installGuide = readProjectFile("docs/05-install-without-docker.md");
+    expect(installGuide).toContain("brew trust --formula goniszewski/grimoire/grimoire");
+    expect(packageJson.scripts?.["test:homebrew"]).toBe("bash scripts/homebrew-smoke.sh");
+    expect(packageJson.scripts?.["test:homebrew:published"]).toBe(
+      "bash scripts/homebrew-smoke.sh published"
+    );
   });
 });

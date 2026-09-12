@@ -60,10 +60,13 @@ describe("release packager", () => {
     expect(readFileSync(join(result.payloadRoot, "daemon/src/db/migrations/0001_initial.sql"), "utf8")).toContain(
       "SELECT 1"
     );
+    expect(readFileSync(join(result.payloadRoot, "bin/grimoire"), "utf8")).toContain("../daemon/src/cli.ts");
     expect(readFileSync(join(result.payloadRoot, "bin/littleimp"), "utf8")).toContain("../daemon/src/cli.ts");
     expect(readFileSync(join(result.payloadRoot, "RELEASE.json"), "utf8")).toContain("\"platform\": \"linux\"");
+    expect(readFileSync(join(result.payloadRoot, "RELEASE.json"), "utf8")).toContain("\"cli\": \"bin/grimoire\"");
     expect(readFileSync(join(result.payloadRoot, "SIGNING.md"), "utf8")).toContain("detach-sign");
 
+    expect(statSync(join(result.payloadRoot, "bin/grimoire")).mode & 0o111).toBeGreaterThan(0);
     expect(statSync(join(result.payloadRoot, "bin/littleimp")).mode & 0o111).toBeGreaterThan(0);
     expect(statSync(join(result.payloadRoot, "daemon/install.sh")).mode & 0o111).toBeGreaterThan(0);
 

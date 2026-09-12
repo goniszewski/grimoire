@@ -15,8 +15,12 @@ Grimoire is a local-first bookmark manager for people who save technical resourc
 
 > [!NOTE]
 > The current Grimoire application is a complete rewrite — a fresh start for the project. The legacy Grimoire (v0.5.x, SvelteKit-based) is preserved on the [`legacy/v0.x`](https://github.com/goniszewski/grimoire/tree/legacy/v0.x) branch.
-> Coming from v0.5.x? Grimoire 1.1.0 includes an **experimental** `littleimp migrate` tool for v0.5 SQLite data. See the [migration guide](./docs/migration.md) before applying it.
+> Coming from v0.5.x? Grimoire 1.1.0 includes an **experimental** `grimoire migrate` tool for v0.5 SQLite data. See the [migration guide](./docs/migration.md) before applying it.
 > Everything remains **local-first**, **private**, and **100% open source** under the MIT license.
+
+The current source and repackaged builds use `grimoire` as the primary CLI
+name; `littleimp` remains a compatibility alias. The already-published v1.1.0
+archive predates this rename and exposes `littleimp` when used directly.
 
 ## Contents
 
@@ -152,7 +156,8 @@ bookmark usable and expose retry/reprocess controls.
 
 The source installer copies daemon files, installs production dependencies,
 builds the frontend, writes a default config, registers the user service, and
-starts the daemon.
+starts the daemon. It installs `grimoire` under `~/.local/bin` and keeps
+`littleimp` there as a compatibility alias.
 
 ```sh
 cd daemon
@@ -182,9 +187,27 @@ cd daemon
 
 ### Homebrew (pending live validation)
 
-The repository includes a Homebrew formula, but public install, service
-lifecycle, and data-preservation checks have not passed against release assets.
-It is not a supported installation path yet.
+The Homebrew formula is prepared in the repository, but the public tap and
+live install, service-lifecycle, and data-preservation checks are still
+pending. Once the `goniszewski/grimoire` tap is published, the intended user
+flow is:
+
+Current Homebrew releases require explicit trust for non-official taps, so
+trust only this formula:
+
+```sh
+brew tap goniszewski/grimoire
+brew trust --formula goniszewski/grimoire/grimoire
+brew install grimoire
+brew services start grimoire
+```
+
+Use `brew upgrade grimoire` for Homebrew upgrades. Homebrew-managed data is
+kept under `$(brew --prefix)/var/little-imp`; it is separate from the native
+`~/.local/share/littleimp` directory and is not migrated automatically.
+
+Until those publication-gated checks pass, Homebrew is not a supported
+installation path.
 
 ## Data, Privacy, And Security
 
@@ -236,8 +259,9 @@ diagnostics, and portable settings backups.
 
 ## Backups And Restore
 
-Settings and the packaged `littleimp` CLI can create, verify, encrypt, and
-restore local backup snapshots. Each normal snapshot contains:
+Settings and the packaged `grimoire` CLI can create, verify, encrypt, and
+restore local backup snapshots. The legacy `littleimp` command remains
+available as a compatibility alias. Each normal snapshot contains:
 
 - `snapshot.db`
 - `manifest.json`
@@ -247,20 +271,20 @@ restore local backup snapshots. Each normal snapshot contains:
 CLI examples:
 
 ```sh
-littleimp backup create
-littleimp backup list
-littleimp backup verify --file ~/.local/share/littleimp/backups/BACKUP_NAME
-littleimp backup restore BACKUP_NAME --yes
+grimoire backup create
+grimoire backup list
+grimoire backup verify --file ~/.local/share/littleimp/backups/BACKUP_NAME
+grimoire backup restore BACKUP_NAME --yes
 ```
 
 Encrypted package examples:
 
 ```sh
 LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
-  littleimp backup create --encrypt --output ~/Desktop/little-imp-backup.enc
+  grimoire backup create --encrypt --output ~/Desktop/little-imp-backup.enc
 
 LITTLEIMP_BACKUP_PASSWORD='use-a-long-unique-password' \
-  littleimp backup verify --encrypted --file ~/Desktop/little-imp-backup.enc
+  grimoire backup verify --encrypted --file ~/Desktop/little-imp-backup.enc
 ```
 
 Restores verify checksums, create a rollback directory, replace local data, and
@@ -273,9 +297,9 @@ tags, and available local media into Grimoire 1.x. Start with `inspect`, review
 an `apply --dry-run`, then apply with `--yes`:
 
 ```sh
-littleimp migrate inspect --data-dir /path/to/grimoire/data
-littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
-littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
+grimoire migrate inspect --data-dir /path/to/grimoire/data
+grimoire migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
+grimoire migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
 ```
 
 See the complete [migration guide](./docs/migration.md) for archive inputs,
@@ -342,6 +366,16 @@ npm run test:daemon
 npm run test:e2e
 npm run build
 ```
+
+Homebrew-specific validation requires Homebrew and performs a disposable
+install through a local tap:
+
+```sh
+npm run test:homebrew
+```
+
+After the public tap is published, `npm run test:homebrew:published` exercises
+the one-argument `brew tap goniszewski/grimoire` path.
 
 Full local quality gate:
 

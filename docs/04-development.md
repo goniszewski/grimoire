@@ -50,6 +50,16 @@ npm run build
 npm run check
 ```
 
+Homebrew-specific validation requires Homebrew and performs a disposable
+install through a local tap:
+
+```sh
+npm run test:homebrew
+```
+
+After the public tap is published, `npm run test:homebrew:published` exercises
+the one-argument `brew tap goniszewski/grimoire` path.
+
 If tooling is missing in a constrained environment:
 
 ```sh
