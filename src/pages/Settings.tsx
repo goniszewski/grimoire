@@ -708,35 +708,35 @@ const LocalSettings = () => {
     [openRouterModelsQuery.data]
   );
 
-  const saveMutation = useMutation({
-    mutationFn: () => {
-      // Build the patch. For API keys that are still showing the redacted
-      // sentinel (user didn't touch them), omit the field entirely so the
-      // daemon's deepMerge leaves the real stored key unchanged.
-      const openaiPatch: { api_key?: string; model: string } = { model: ai.openai.model };
-      if (!isKeyRedacted(ai.openai.api_key)) {
-        openaiPatch.api_key = ai.openai.api_key;
-      }
+  const buildAiSettingsPatch = () => {
+    // Build the patch. For API keys that are still showing the redacted
+    // sentinel (user didn't touch them), omit the field entirely so the
+    // daemon's deepMerge leaves the real stored key unchanged.
+    const openaiPatch: { api_key?: string; model: string } = { model: ai.openai.model };
+    if (!isKeyRedacted(ai.openai.api_key)) {
+      openaiPatch.api_key = ai.openai.api_key;
+    }
 
-      const patch = {
-        ai: {
-          provider: ai.provider,
-          openai: openaiPatch,
-          ollama: { base_url: ai.ollama.base_url, model: ai.ollama.model },
-          anthropic: secretProviderPatch(ai.anthropic),
-          openrouter: secretProviderPatch(ai.openrouter),
-          openai_compatible: secretProviderPatch(ai.openai_compatible),
-          deepseek: secretProviderPatch(ai.deepseek),
-          embeddings: {
-            provider: embeddings.provider,
-            model: embeddings.model,
-            openai_compatible: secretProviderPatch(embeddings.openai_compatible),
-          },
+    return {
+      ai: {
+        provider: ai.provider,
+        openai: openaiPatch,
+        ollama: { base_url: ai.ollama.base_url, model: ai.ollama.model },
+        anthropic: secretProviderPatch(ai.anthropic),
+        openrouter: secretProviderPatch(ai.openrouter),
+        openai_compatible: secretProviderPatch(ai.openai_compatible),
+        deepseek: secretProviderPatch(ai.deepseek),
+        embeddings: {
+          provider: embeddings.provider,
+          model: embeddings.model,
+          openai_compatible: secretProviderPatch(embeddings.openai_compatible),
         },
-      };
+      },
+    };
+  };
 
-      return updateSettings(patch);
-    },
+  const saveMutation = useMutation({
+    mutationFn: () => updateSettings(buildAiSettingsPatch()),
     onSuccess: () => {
       setDirty(false);
       setTestResult(null);
@@ -751,12 +751,15 @@ const LocalSettings = () => {
     },
   });
 
-  // Test connection uses the currently persisted settings on the daemon.
-  // The button is disabled while dirty to prevent misleading results.
+  // Test connection uses persisted daemon settings, so save any edited form
+  // values first to ensure the selected provider and model are the ones tested.
   const handleTestConnection = async () => {
     setTesting(true);
     setTestResult(null);
     try {
+      if (dirty) {
+        await saveMutation.mutateAsync();
+      }
       const json = await testAiConnection();
       setTestResult(json);
     } catch (err) {
@@ -775,11 +778,13 @@ const LocalSettings = () => {
 
   function updateAiOpenai(patch: Partial<AiFormState["openai"]>) {
     setAi((prev) => ({ ...prev, openai: { ...prev.openai, ...patch } }));
+    setTestResult(null);
     setDirty(true);
   }
 
   function updateAiOllama(patch: Partial<AiFormState["ollama"]>) {
     setAi((prev) => ({ ...prev, ollama: { ...prev.ollama, ...patch } }));
+    setTestResult(null);
     setDirty(true);
   }
 
@@ -788,6 +793,7 @@ const LocalSettings = () => {
       ...prev,
       [provider]: { ...prev[provider], ...patch },
     }));
+    setTestResult(null);
     setDirty(true);
   }
 
@@ -810,7 +816,7 @@ const LocalSettings = () => {
   }
 
   const canSave = dirty && !isLoading && !isError && !saveMutation.isPending;
-  const canTest = ai.provider !== "none" && !dirty && !testing;
+  const canTest = ai.provider !== "none" && !testing && !saveMutation.isPending;
 
   function handleVerifyBackup(name: string) {
     setVerifyingBackupName(name);
@@ -1148,7 +1154,7 @@ const LocalSettings = () => {
                       size="sm"
                       onClick={handleTestConnection}
                       disabled={!canTest}
-                      title={dirty ? "Save your changes first to test the current configuration" : undefined}
+                      title={dirty ? "Save changes and test the current configuration" : undefined}
                     >
                       {testing && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                       Test connection

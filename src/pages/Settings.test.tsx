@@ -17,6 +17,7 @@ vi.mock("@/lib/api", () => ({
   getReprocessStatus: vi.fn(),
   getDiagnostics: vi.fn(),
   getSettings: vi.fn(),
+  testAiConnection: vi.fn(),
   reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
   checkHealthAfterRestore: vi.fn(),
@@ -51,6 +52,7 @@ import * as api from "@/lib/api";
 import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
+const mockedTestAiConnection = api.testAiConnection as unknown as ReturnType<typeof vi.fn>;
 const mockedFetchAiModels = (api as unknown as { fetchAiModels: ReturnType<typeof vi.fn> }).fetchAiModels;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
 const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterRestore: ReturnType<typeof vi.fn> }).checkHealthAfterRestore;
@@ -168,6 +170,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   mockedGetSettings.mockResolvedValue(settingsResponse());
+  mockedTestAiConnection.mockResolvedValue({ ok: true });
   mockedFetchAiModels.mockResolvedValue([]);
   mockedGetDiagnostics.mockResolvedValue({
     data: {
@@ -611,6 +614,58 @@ describe("Settings diagnostics", () => {
 });
 
 describe("Settings AI providers", () => {
+  it("enables retry with a newly selected model after a failed connection test", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+    mockedFetchAiModels.mockResolvedValue([
+      { id: "openai/gpt-latest", name: "OpenAI: GPT (latest)" },
+      { id: "openai/gpt-5.2", name: "OpenAI: GPT-5.2" },
+    ]);
+    mockedTestAiConnection
+      .mockResolvedValueOnce({ ok: false, error: "Connection failed" })
+      .mockResolvedValueOnce({ ok: true });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const modelCombobox = await screen.findByRole("combobox", { name: "Model" });
+    const initialTestButton = screen
+      .getAllByRole("button", { name: "Test connection" })
+      .find((button) => !button.hasAttribute("disabled"));
+    expect(initialTestButton).toBeDefined();
+    fireEvent.click(initialTestButton!);
+    expect(await screen.findByText("Connection failed")).toBeInTheDocument();
+
+    fireEvent.click(modelCombobox);
+    fireEvent.click(screen.getByRole("option", { name: /OpenAI: GPT-5\.2/ }));
+
+    const testButton = screen.getByTitle("Save changes and test the current configuration");
+    expect(testButton).toBeEnabled();
+    expect(screen.queryByText("Connection failed")).not.toBeInTheDocument();
+    fireEvent.click(testButton);
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            openrouter: expect.objectContaining({ model: "openai/gpt-5.2" }),
+          }),
+        })
+      );
+      expect(mockedTestAiConnection).toHaveBeenCalledTimes(2);
+    });
+    expect(updateSettings.mock.invocationCallOrder[0]).toBeLessThan(
+      mockedTestAiConnection.mock.invocationCallOrder[1]
+    );
+  });
+
   it("renders provider-specific Anthropic fields from settings", async () => {
     mockedGetSettings.mockResolvedValue(settingsResponse({
       provider: "anthropic" as const,
