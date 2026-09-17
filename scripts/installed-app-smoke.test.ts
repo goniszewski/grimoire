@@ -38,7 +38,7 @@ function fetchFromReleaseDir(releaseDir: string): typeof fetch {
 describe("installed-app smoke suite", () => {
   it("exposes a repeatable installed-artifact smoke command", () => {
     expect(packageJson.scripts?.["test:e2e:installed"]).toBe(
-      "npm run package:release && bun run scripts/installed-app-smoke.ts"
+      "bun run scripts/installed-app-smoke.ts"
     );
     expect(packageJson.scripts?.["test:e2e:installed:published"]).toBe(
       "bun run scripts/installed-app-smoke.ts --source published --require-signature"
@@ -197,9 +197,13 @@ describe("installed-app smoke suite", () => {
       "GET /settings",
       "POST /backup",
       "POST /restore",
-      "littleimp update check",
+      "with its native installer",
+      'outputDir: join(dirs.rootDir, "release")',
+      "grimoire CLI and littleimp compatibility alias",
+      "grimoire update check",
       "data survives upgrade",
       "uninstall without purge",
+      "Native uninstall",
       "daemon.log",
     ]) {
       expect(smokeRunner).toContain(expected);

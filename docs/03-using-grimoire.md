@@ -66,7 +66,11 @@ You can also import a Netscape/HTML bookmark export from your browser, and expor
 
 ## Backups
 
-From Settings or the `littleimp` CLI you can create, list, verify, and restore local snapshots. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+From Settings or the `grimoire` CLI you can create, list, verify, and restore local snapshots. The legacy `littleimp` command remains available as a compatibility alias. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+
+The already-published v1.1.0 archive predates the CLI rename and uses
+`littleimp` when invoked directly; current source installs and future
+repackaged releases use `grimoire`.
 
 ## Local integrations
 
@@ -82,3 +86,8 @@ From Settings or the `littleimp` CLI you can create, list, verify, and restore l
 Data stays under your local data directory (Docker volume, or `~/.local/share/littleimp/` for native installs). The daemon binds to loopback by default. External AI is opt-in; without it, nothing leaves your machine for enrichment or embeddings.
 
 More answers: [FAQ](./faq.md).
+
+Search results default to **Relevance**. You can choose a different sort while
+searching; clearing the query restores your saved library sort. AI and mixed
+search rank indexed bookmarks by similarity, so their result count can include
+the full indexed library even when keyword search would return no matches.

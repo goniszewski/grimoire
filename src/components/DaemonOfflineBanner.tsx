@@ -11,8 +11,7 @@ export function DaemonOfflineBanner({ online, loading }: DaemonOfflineBannerProp
     <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 text-destructive text-xs px-4 py-2 rounded-md mx-4 mt-3">
       <WifiOff className="h-3.5 w-3.5 shrink-0" />
       <span>
-        Daemon offline — changes won't be saved.{" "}
-        <span className="font-mono">little-imp daemon start</span> to reconnect.
+        Daemon offline — changes won't be saved. Start the Grimoire daemon with your platform service manager to reconnect.
       </span>
     </div>
   );
