@@ -83,5 +83,30 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build candidate archive
+        run: |
+          npm ci --ignore-scripts
+          npm run package:release -- --platform macos
+          python3 - <<'PYTHON'
+          import json, pathlib, re
+          artifact = json.loads(pathlib.Path("release/release-manifest.json").read_text())["artifacts"][0]
+          formula = pathlib.Path("Formula/grimoire.rb")
+          text, count = re.subn(r'(sha256 ")[a-f0-9]{64}(")', lambda match: match[1] + artifact["sha256"] + match[2], formula.read_text(), count=1)
+          assert count == 1
+          formula.write_text(text)
+          PYTHON
+
       - name: Validate local tap and install formula
+        env:
+          HOMEBREW_TEST_ARCHIVE_DIR: ${{ github.workspace }}/release
+          HOMEBREW_TEST_EXPECTED_VERSION: 1.2.0
         run: bash scripts/homebrew-smoke.sh

@@ -72,6 +72,9 @@ describe("Homebrew smoke lifecycle", () => {
     const result = smoke("", "published");
     expect(result.status).toBe(0);
     expect(result.calls).toContain("tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git");
+    expect(result.calls.indexOf("trust --formula goniszewski/grimoire/grimoire")).toBeLessThan(
+      result.calls.indexOf("tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git")
+    );
     expect(result.calls).toContain("audit --formula --strict --online");
     expect(result.calls).toContain("fetch --force --build-from-source goniszewski/grimoire/grimoire");
   });

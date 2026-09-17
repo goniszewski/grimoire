@@ -66,8 +66,8 @@ For day-to-day coding, prefer [Development](./04-development.md) (`npm run daemo
 The v1.2.0 Homebrew formula is prepared in the repo, but live Homebrew install is not a supported user path until the formula and release assets are published and validated. The explicit repository URL uses Grimoire itself as the tap; no separate tap repository is required. Current Homebrew releases require explicit trust for non-official taps, so trust only this formula. The intended command after publication is:
 
 ```sh
-brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew trust --formula goniszewski/grimoire/grimoire
+brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew install grimoire
 brew services start grimoire
 ```

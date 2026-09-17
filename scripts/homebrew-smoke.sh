@@ -128,6 +128,13 @@ if [[ "${MODE}" == "local" && "${tap_was_present}" == true ]]; then
   exit 1
 fi
 
+if brew trust --help >/dev/null 2>&1; then
+  printf '==> Trusting only %s\n' "${TAP_NAME}/${FORMULA_NAME}"
+  brew trust --formula "${TAP_NAME}/${FORMULA_NAME}"
+else
+  printf '==> Homebrew has no tap-trust command; continuing without explicit trust\n'
+fi
+
 if [[ "${tap_was_present}" == false ]]; then
   tap_added=true
   if [[ "${MODE}" == "local" ]]; then
@@ -147,12 +154,6 @@ else
   printf '==> Using existing tap %s\n' "${TAP_NAME}"
 fi
 
-if brew trust --help >/dev/null 2>&1; then
-  printf '==> Trusting only %s\n' "${TAP_NAME}/${FORMULA_NAME}"
-  brew trust --formula "${TAP_NAME}/${FORMULA_NAME}"
-else
-  printf '==> Homebrew has no tap-trust command; continuing without explicit trust\n'
-fi
 
 tap_formula="$(brew --repository "${TAP_NAME}")/Formula/grimoire.rb"
 if [[ -n "${UPGRADE_FROM}" ]]; then

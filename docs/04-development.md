@@ -60,8 +60,8 @@ npm run test:homebrew
 The public tap uses this same repository:
 
 ```sh
-brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew trust --formula goniszewski/grimoire/grimoire
+brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 ```
 
 `npm run test:homebrew:published` checks that public path, including an online

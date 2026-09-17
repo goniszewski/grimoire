@@ -196,8 +196,8 @@ Current Homebrew releases require explicit trust for non-official taps, so
 trust only this formula:
 
 ```sh
-brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew trust --formula goniszewski/grimoire/grimoire
+brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
 brew install grimoire
 brew services start grimoire
 ```
