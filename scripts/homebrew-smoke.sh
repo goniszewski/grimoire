@@ -14,6 +14,8 @@ if [[ ! "${TEST_PORT}" =~ ^[1-9][0-9]{0,4}$ ]] || (( TEST_PORT > 65535 )); then
   exit 2
 fi
 
+# Keep disposable uninstall from traversing or removing unrelated dependencies.
+export HOMEBREW_NO_AUTOREMOVE=1
 export HOMEBREW_NO_AUTO_UPDATE="${HOMEBREW_NO_AUTO_UPDATE:-1}"
 export HOMEBREW_NO_ENV_HINTS="${HOMEBREW_NO_ENV_HINTS:-1}"
 export HOMEBREW_NO_INSTALL_CLEANUP="${HOMEBREW_NO_INSTALL_CLEANUP:-1}"
