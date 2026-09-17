@@ -86,3 +86,8 @@ repackaged releases use `grimoire`.
 Data stays under your local data directory (Docker volume, or `~/.local/share/littleimp/` for native installs). The daemon binds to loopback by default. External AI is opt-in; without it, nothing leaves your machine for enrichment or embeddings.
 
 More answers: [FAQ](./faq.md).
+
+Search results default to **Relevance**. You can choose a different sort while
+searching; clearing the query restores your saved library sort. AI and mixed
+search rank indexed bookmarks by similarity, so their result count can include
+the full indexed library even when keyword search would return no matches.

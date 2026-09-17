@@ -4,9 +4,11 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.2.0] - 2026-09-07
+## [1.2.0] - 2026-09-17
 
 ### Added
+- Homebrew installation and managed service support, with `grimoire` as the
+  primary CLI and `littleimp` retained as a compatibility alias.
 - Versioned Companion protocol discovery and capability negotiation for official
   browser extensions.
 - Authenticated single-page and bulk-tab capture with editable titles, notes,
@@ -20,6 +22,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   revocation.
 
 ### Fixed
+- Search defaults to relevance instead of inheriting the library date sort,
+  restoring meaningful ordering for AI and mixed search. Explicit search sorts
+  remain available without changing the saved library order.
+- Model connection tests can be retried after a failed attempt in Settings.
+- Native self-updates are blocked for Homebrew-managed installations; use
+  `brew upgrade grimoire` instead.
 - Opening Browser Integration settings from an extension now loads the SPA
   instead of returning the JSON settings endpoint.
 

@@ -581,6 +581,7 @@ const Index = () => {
                         {showButtonLabels && <SelectValue />}
                       </SelectTrigger>
                       <SelectContent>
+                        {store.searchQuery.trim() && <SelectItem value="relevance" className="text-xs">Relevance</SelectItem>}
                         <SelectItem value="newest" className="text-xs">Newest first</SelectItem>
                         <SelectItem value="oldest" className="text-xs">Oldest first</SelectItem>
                         <SelectItem value="updated-newest" className="text-xs">Updated newest</SelectItem>

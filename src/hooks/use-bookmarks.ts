@@ -28,6 +28,7 @@ import {
 export type SearchMode = "keyword" | "semantic" | "hybrid";
 
 export type SortOption =
+  | "relevance"
   | "newest"
   | "oldest"
   | "updated-newest"
@@ -365,8 +366,10 @@ function toUICategories(categories: ApiCategory[], depth = 0, counts?: Map<strin
   ]);
 }
 
-function toLibrarySortParams(sortBy: SortOption): Required<LibrarySortParams> {
+function toLibrarySortParams(sortBy: SortOption): LibrarySortParams {
   switch (sortBy) {
+    case "relevance":
+      return {};
     case "oldest":
       return { sort: "created_at", direction: "asc" };
     case "updated-newest":
@@ -420,6 +423,7 @@ export function useBookmarks() {
   const [selectedTagOverride, setSelectedTagOverride] = useState<string | null | undefined>(undefined);
   const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchSortBy, setSearchSortBy] = useState<SortOption>("relevance");
   const [pageOffset, setPageOffset] = useState(0);
   const {
     searchMode,
@@ -433,9 +437,10 @@ export function useBookmarks() {
     openActivityFilter,
     lastOpenedRange,
     dateRange,
-    sortBy,
+    sortBy: librarySortBy,
     pageSize,
   } = libraryPreferences;
+  const sortBy = searchQuery.trim() ? searchSortBy : librarySortBy;
   const selectedTag = selectedTagOverride !== undefined ? selectedTagOverride : persistedSelectedTag;
 
   const dateFrom = dateRange.from?.toISOString().slice(0, 10);
@@ -460,6 +465,7 @@ export function useBookmarks() {
 
   const setSearchQuery = useCallback((query: string) => {
     setSearchQueryState(query);
+    if (!query.trim()) setSearchSortBy("relevance");
     resetPage();
   }, [resetPage]);
 
@@ -517,9 +523,13 @@ export function useBookmarks() {
   }, [resetPage, updateLibraryPreferences]);
 
   const setSortBy = useCallback((sort: SortOption) => {
-    updateLibraryPreferences((current) => ({ ...current, sortBy: sort }));
+    if (searchQuery.trim()) {
+      setSearchSortBy(sort);
+    } else if (sort !== "relevance") {
+      updateLibraryPreferences((current) => ({ ...current, sortBy: sort }));
+    }
     resetPage();
-  }, [resetPage, updateLibraryPreferences]);
+  }, [searchQuery, resetPage, updateLibraryPreferences]);
 
   const setPageSize = useCallback((nextPageSize: number) => {
     const safePageSize = LIBRARY_PAGE_SIZE_OPTIONS.includes(
@@ -617,8 +627,8 @@ export function useBookmarks() {
     date_to: dateTo,
     read_later: readLaterOnly ? true : undefined,
     ...parityFilterParams,
-    ...toLibrarySortParams(sortBy),
-  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, sortBy]);
+    ...toLibrarySortParams(librarySortBy),
+  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, librarySortBy]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -642,8 +652,8 @@ export function useBookmarks() {
     ...parityFilterParams,
     limit: pageSize,
     offset: pageOffset,
-    ...toLibrarySortParams(sortBy),
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, sortBy]);
+    ...toLibrarySortParams(searchSortBy),
+  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, searchSortBy]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -973,6 +983,7 @@ export function useBookmarks() {
   }, [updateBookmarkMutation]);
 
   const resetLibraryPreferences = useCallback(() => {
+    setSearchSortBy("relevance");
     clearLibraryViewPreferences();
     setLibraryPreferences(DEFAULT_LIBRARY_VIEW_PREFERENCES);
     resetPage();
