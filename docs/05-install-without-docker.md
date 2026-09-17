@@ -63,7 +63,7 @@ cd daemon
 
 For day-to-day coding, prefer [Development](./04-development.md) (`npm run daemon:dev` + `npm run dev`) instead of reinstalling.
 
-The v1.2.0 Homebrew formula is prepared in the repo, but live Homebrew install is not a supported user path until the formula and release assets are published and validated. The explicit repository URL uses Grimoire itself as the tap; no separate tap repository is required. Current Homebrew releases require explicit trust for non-official taps, so trust only this formula. The intended command after publication is:
+The published v1.2.0 Homebrew path is validated on macOS, including service startup, reinstall, v1.1 to v1.2 upgrade, and data preservation after uninstall. Linux Homebrew remains unverified; use the native Linux installer above. The explicit repository URL uses Grimoire itself as the tap; no separate tap repository is required. Trust only this formula before tapping:
 
 ```sh
 brew trust --formula goniszewski/grimoire/grimoire
