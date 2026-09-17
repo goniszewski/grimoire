@@ -568,7 +568,7 @@ function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: n
 
   const installEnv = smokeEnv(dirs, port);
   const platform = detectReleasePlatform();
-  const installer = spawnSync("bash", [join(releaseRoot, "daemon", "install.sh")], {
+  const installer = spawnSync("/bin/bash", [join(releaseRoot, "daemon", "install.sh")], {
     cwd: join(releaseRoot, "daemon"),
     env: {
       ...installEnv,
@@ -940,7 +940,7 @@ async function runInstalledAppSmoke(options: {
     await stopDaemon(daemon);
     daemon = null;
     const uninstallEnv = smokeEnv(dirs, port);
-    const uninstall = spawnSync("bash", [join(dirs.daemonDir, "install.sh"), "--uninstall"], {
+    const uninstall = spawnSync("/bin/bash", [join(dirs.daemonDir, "install.sh"), "--uninstall"], {
       cwd: dirs.daemonDir,
       env: {
         ...uninstallEnv,
