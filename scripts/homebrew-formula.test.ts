@@ -137,12 +137,12 @@ describe("Homebrew formula packaging", () => {
     expect(formula).not.toMatch(/git clone|npm run build|bun run build|system ".*daemon\/install\.sh/);
   });
 
-  it("documents Homebrew as a pending path until live validation passes", () => {
+  it("documents the published macOS path and keeps unverified platforms explicit", () => {
     const readme = readProjectFile("README.md");
     const packageJson = JSON.parse(readProjectFile("package.json")) as PackageJson;
 
-    expect(readme).toContain("### Homebrew (pending live validation)");
-    expect(readme).toContain("Homebrew is not a supported");
+    expect(readme).toContain("### Homebrew");
+    expect(readme).toContain("Linux Homebrew remains unverified");
     expect(readme).toContain("brew trust --formula goniszewski/grimoire/grimoire");
     expect(readme).not.toContain("brew install little-imp");
     expect(readme).not.toContain("brew services start little-imp");

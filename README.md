@@ -185,12 +185,11 @@ cd daemon
 ./install.sh --uninstall --purge
 ```
 
-### Homebrew (pending live validation)
+### Homebrew
 
-The Homebrew formula is prepared for v1.2.0. The main Grimoire repository
+Grimoire v1.2.0 is available through Homebrew. The main Grimoire repository
 serves as the tap; the explicit URL avoids requiring a separate
-`homebrew-grimoire` repository. After the release and formula are published
-and the public lifecycle is validated, the installation flow is:
+`homebrew-grimoire` repository. Install it with:
 
 Current Homebrew releases require explicit trust for non-official taps, so
 trust only this formula:
@@ -206,8 +205,10 @@ Use `brew upgrade grimoire` for Homebrew upgrades. Homebrew-managed data is
 kept under `$(brew --prefix)/var/little-imp`; it is separate from the native
 `~/.local/share/littleimp` directory and is not migrated automatically.
 
-Until those publication-gated checks pass, Homebrew is not a supported
-installation path.
+The public macOS Homebrew path has passed install, service startup, reinstall,
+and uninstall checks with data preservation. Upgrading from v1.1 to v1.2 was
+also validated. Linux Homebrew remains unverified; use the native Linux archive
+or Docker Compose there.
 
 ## Data, Privacy, And Security
 
@@ -374,7 +375,7 @@ install through a local tap:
 npm run test:homebrew
 ```
 
-After the public tap is published, `npm run test:homebrew:published` exercises
+`npm run test:homebrew:published` exercises
 the one-argument `brew tap goniszewski/grimoire` path.
 
 Full local quality gate:
