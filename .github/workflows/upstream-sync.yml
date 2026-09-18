@@ -48,11 +48,13 @@ jobs:
         if: steps.diff.outputs.ahead != '0'
         env:
           GH_TOKEN: ${{ github.token }}
+          AHEAD: ${{ steps.diff.outputs.ahead }}
+          UPSTREAM_SHA: ${{ steps.diff.outputs.upstream_sha }}
         run: |
           git branch -f sync/upstream-main upstream/main
           git push origin sync/upstream-main --force
 
-          BODY="upstream/main (goniszewski/grimoire) is ${{ steps.diff.outputs.ahead }} commit(s) ahead of main, at \`${{ steps.diff.outputs.upstream_sha }}\`.
+          BODY="upstream/main (goniszewski/grimoire) is ${AHEAD} commit(s) ahead of main, at \`${UPSTREAM_SHA}\`.
 
           Do not merge this PR directly: it is a notification branch, not a reconciled one. Follow \`CATCHUP-v1.2.md\` to merge upstream/main and re-apply the local Trivy CVE patch branch (Dockerfile \`apt-get upgrade\`, dependency overrides) on top, then re-scan with Trivy before redeploying."
 
@@ -62,7 +64,7 @@ jobs:
             gh pr create \
               --base main \
               --head sync/upstream-main \
-              --title "sync: upstream is ${{ steps.diff.outputs.ahead }} commit(s) ahead" \
+              --title "sync: upstream is ${AHEAD} commit(s) ahead" \
               --body "$BODY"
           fi
 
