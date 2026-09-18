@@ -63,4 +63,19 @@ describe("Static frontend serving", () => {
     expect(res.status).toBe(200);
     await expect(res.text()).resolves.toContain("<title>Little Imp</title>");
   });
+
+  it("serves the frontend for a browser navigation to the settings API path", async () => {
+    const res = await app.request("/settings", {
+      headers: { Accept: "text/html" },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    await expect(res.text()).resolves.toContain("<title>Little Imp</title>");
+
+    const apiRes = await app.request("/settings");
+    expect(apiRes.status).toBe(200);
+    expect(apiRes.headers.get("content-type")).toContain("application/json");
+    expect((await apiRes.json())?.data).toBeDefined();
+  });
 });

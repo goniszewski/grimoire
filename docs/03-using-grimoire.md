@@ -43,7 +43,8 @@ Related bookmarks use embeddings when available.
 
 ## Capture from the browser
 
-There is no Chrome/Firefox store extension in 1.x yet. Use the built-in bookmarklet:
+The rewritten Chrome/Firefox extension is still being prepared for publication.
+Until it is available in the existing store listings, use the built-in bookmarklet:
 
 1. Open **Settings → Browser Integration**
 2. Create an integration token (the full secret is shown once — copy it if you need it elsewhere)
@@ -65,16 +66,28 @@ You can also import a Netscape/HTML bookmark export from your browser, and expor
 
 ## Backups
 
-From Settings or the `littleimp` CLI you can create, list, verify, and restore local snapshots. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+From Settings or the `grimoire` CLI you can create, list, verify, and restore local snapshots. The legacy `littleimp` command remains available as a compatibility alias. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
+
+The already-published v1.1.0 archive predates the CLI rename and uses
+`littleimp` when invoked directly; current source installs and future
+repackaged releases use `grimoire`.
 
 ## Local integrations
 
 - **REST** — see [API.md](../API.md); health at `GET /health`
 - **MCP** — Streamable HTTP at `http://127.0.0.1:3210/mcp` with an integration bearer token
 - **Capture API** — token-protected `POST /capture` for same-machine clients
+- **Browser Companion protocol** — authenticated capability negotiation at
+  `GET /integrations/browser/v1/capabilities`, with authenticated taxonomy at
+  `GET /integrations/browser/v1/taxonomy`, before extension capture
 
 ## Privacy defaults
 
 Data stays under your local data directory (Docker volume, or `~/.local/share/littleimp/` for native installs). The daemon binds to loopback by default. External AI is opt-in; without it, nothing leaves your machine for enrichment or embeddings.
 
 More answers: [FAQ](./faq.md).
+
+Search results default to **Relevance**. You can choose a different sort while
+searching; clearing the query restores your saved library sort. AI and mixed
+search rank indexed bookmarks by similarity, so their result count can include
+the full indexed library even when keyword search would return no matches.

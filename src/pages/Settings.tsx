@@ -708,35 +708,35 @@ const LocalSettings = () => {
     [openRouterModelsQuery.data]
   );
 
-  const saveMutation = useMutation({
-    mutationFn: () => {
-      // Build the patch. For API keys that are still showing the redacted
-      // sentinel (user didn't touch them), omit the field entirely so the
-      // daemon's deepMerge leaves the real stored key unchanged.
-      const openaiPatch: { api_key?: string; model: string } = { model: ai.openai.model };
-      if (!isKeyRedacted(ai.openai.api_key)) {
-        openaiPatch.api_key = ai.openai.api_key;
-      }
+  const buildAiSettingsPatch = () => {
+    // Build the patch. For API keys that are still showing the redacted
+    // sentinel (user didn't touch them), omit the field entirely so the
+    // daemon's deepMerge leaves the real stored key unchanged.
+    const openaiPatch: { api_key?: string; model: string } = { model: ai.openai.model };
+    if (!isKeyRedacted(ai.openai.api_key)) {
+      openaiPatch.api_key = ai.openai.api_key;
+    }
 
-      const patch = {
-        ai: {
-          provider: ai.provider,
-          openai: openaiPatch,
-          ollama: { base_url: ai.ollama.base_url, model: ai.ollama.model },
-          anthropic: secretProviderPatch(ai.anthropic),
-          openrouter: secretProviderPatch(ai.openrouter),
-          openai_compatible: secretProviderPatch(ai.openai_compatible),
-          deepseek: secretProviderPatch(ai.deepseek),
-          embeddings: {
-            provider: embeddings.provider,
-            model: embeddings.model,
-            openai_compatible: secretProviderPatch(embeddings.openai_compatible),
-          },
+    return {
+      ai: {
+        provider: ai.provider,
+        openai: openaiPatch,
+        ollama: { base_url: ai.ollama.base_url, model: ai.ollama.model },
+        anthropic: secretProviderPatch(ai.anthropic),
+        openrouter: secretProviderPatch(ai.openrouter),
+        openai_compatible: secretProviderPatch(ai.openai_compatible),
+        deepseek: secretProviderPatch(ai.deepseek),
+        embeddings: {
+          provider: embeddings.provider,
+          model: embeddings.model,
+          openai_compatible: secretProviderPatch(embeddings.openai_compatible),
         },
-      };
+      },
+    };
+  };
 
-      return updateSettings(patch);
-    },
+  const saveMutation = useMutation({
+    mutationFn: () => updateSettings(buildAiSettingsPatch()),
     onSuccess: () => {
       setDirty(false);
       setTestResult(null);
@@ -751,12 +751,15 @@ const LocalSettings = () => {
     },
   });
 
-  // Test connection uses the currently persisted settings on the daemon.
-  // The button is disabled while dirty to prevent misleading results.
+  // Test connection uses persisted daemon settings, so save any edited form
+  // values first to ensure the selected provider and model are the ones tested.
   const handleTestConnection = async () => {
     setTesting(true);
     setTestResult(null);
     try {
+      if (dirty) {
+        await saveMutation.mutateAsync();
+      }
       const json = await testAiConnection();
       setTestResult(json);
     } catch (err) {
@@ -775,11 +778,13 @@ const LocalSettings = () => {
 
   function updateAiOpenai(patch: Partial<AiFormState["openai"]>) {
     setAi((prev) => ({ ...prev, openai: { ...prev.openai, ...patch } }));
+    setTestResult(null);
     setDirty(true);
   }
 
   function updateAiOllama(patch: Partial<AiFormState["ollama"]>) {
     setAi((prev) => ({ ...prev, ollama: { ...prev.ollama, ...patch } }));
+    setTestResult(null);
     setDirty(true);
   }
 
@@ -788,6 +793,7 @@ const LocalSettings = () => {
       ...prev,
       [provider]: { ...prev[provider], ...patch },
     }));
+    setTestResult(null);
     setDirty(true);
   }
 
@@ -810,7 +816,7 @@ const LocalSettings = () => {
   }
 
   const canSave = dirty && !isLoading && !isError && !saveMutation.isPending;
-  const canTest = ai.provider !== "none" && !dirty && !testing;
+  const canTest = ai.provider !== "none" && !testing && !saveMutation.isPending;
 
   function handleVerifyBackup(name: string) {
     setVerifyingBackupName(name);
@@ -1148,7 +1154,7 @@ const LocalSettings = () => {
                       size="sm"
                       onClick={handleTestConnection}
                       disabled={!canTest}
-                      title={dirty ? "Save your changes first to test the current configuration" : undefined}
+                      title={dirty ? "Save changes and test the current configuration" : undefined}
                     >
                       {testing && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                       Test connection
@@ -2284,7 +2290,8 @@ function BrowserIntegration() {
         <div>
           <h2 className="text-sm font-semibold">Browser Integration</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Create an integration token and install the bookmarklet to save pages from any browser.
+            Integration tokens authenticate the official browser extension, bookmarklets, MCP clients,
+            and other supported local integrations. Create a separate token for each client so you can revoke access independently.
           </p>
         </div>
         <Button
@@ -2301,24 +2308,25 @@ function BrowserIntegration() {
       {/* Setup instructions */}
       {showInstructions && (
         <div className="rounded border px-4 py-3 text-xs bg-muted/30 space-y-2">
-          <p className="font-medium text-sm">Installing the bookmarklet</p>
+          <p className="font-medium text-sm">Using integration tokens</p>
           <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-            <li>Create a new integration token below. Existing token rows only expose a prefix and cannot generate a bookmarklet.</li>
+            <li>Create a new token below and name it after the browser, extension, or integration that will use it.</li>
             <li>Copy the full token shown after creation — it is only displayed once.</li>
-            <li>While the new token is still available, click its "Bookmarklet" button or use the copy link in the token-created message.</li>
+            <li>For the official Grimoire browser extension, paste the token into its connection screen.</li>
+            <li>For a bookmarklet, click the new token's "Bookmarklet" button or use the copy link in the token-created message.</li>
             <li>Paste the bookmarklet code into a browser bookmark's URL field, or drag the link to your bookmarks bar.</li>
             <li>When clicked, the bookmarklet opens a short-lived Grimoire capture window. Allow popups for the page if your browser blocks it.</li>
             <li>Replace bookmarklets created by older Grimoire versions — create a new token because the old full secret cannot be recovered.</li>
           </ol>
-          <p className="font-medium text-sm mt-3">Browser notes</p>
+          <p className="font-medium text-sm mt-3">Bookmarklet browser notes</p>
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">
             <li><strong>Chrome / Edge:</strong> Show the bookmarks bar (Ctrl+Shift+B / Cmd+Shift+B), then drag the bookmarklet link onto it.</li>
             <li><strong>Firefox:</strong> Right-click the bookmarks bar and choose "Add Bookmark". Paste the bookmarklet code as the URL.</li>
             <li><strong>Safari:</strong> Show the Favorites bar (View → Show Favorites Bar), then drag the bookmarklet link onto it.</li>
           </ul>
           <div className="rounded bg-warning/10 border border-warning/30 px-3 py-2 text-warning">
-            <strong>Security note:</strong> The bookmarklet embeds your integration token. Anyone with access to
-            your browser bookmarks can capture pages to your Grimoire library. Treat it like a password.
+            <strong>Security note:</strong> Treat every integration token like a password. Anyone who obtains one can
+            use the local integration surfaces it authenticates. A bookmarklet embeds its token in your browser bookmarks.
           </div>
         </div>
       )}
@@ -2350,7 +2358,7 @@ function BrowserIntegration() {
               </Button>
             </div>
             <p className="text-xs mt-1">
-              Then{" "}
+              Paste the token into the official browser extension or another supported integration. For a bookmarklet, {" "}
               <button
                 className="text-primary underline"
                 onClick={() => {
@@ -2418,7 +2426,7 @@ function BrowserIntegration() {
           </div>
         ) : tokens.length === 0 && !showCreate ? (
           <div className="text-xs text-muted-foreground">
-            No integration tokens yet. Create one to use the bookmarklet.
+            No integration tokens yet. Create one for the official browser extension, a bookmarklet, an MCP client, or another supported integration.
           </div>
         ) : (
           tokens.map((token) => (
@@ -2511,7 +2519,7 @@ function BrowserIntegration() {
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke integration token?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bookmarks saved with this token in browser bookmarklets will stop working.
+              Any browser extension, bookmarklet, MCP client, or other integration using this token will stop working.
               This cannot be undone. Create a new token to replace it.
             </AlertDialogDescription>
           </AlertDialogHeader>

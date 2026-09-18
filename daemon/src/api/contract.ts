@@ -385,6 +385,8 @@ const schemas = {
       category_id: nullable(stringSchema("Existing category ID to assign")),
       category: stringSchema("Root category name to resolve or create when category_id is omitted", { maxLength: 100 }),
       notes: nullable(stringSchema("Personal notes, or null to leave empty", { maxLength: 100000 })),
+      is_pinned: booleanSchema("Whether the new bookmark should be pinned"),
+      read_later: booleanSchema("Whether the new bookmark should be added to Read Later"),
       source: ref("CaptureSource"),
     },
     ["url"],
@@ -1455,6 +1457,67 @@ const schemas = {
       queueSize: integerSchema("Queued background jobs", { minimum: 0 }),
     },
     ["status", "version", "uptime", "queueSize"]
+  ),
+  BrowserIntegrationCapabilities: objectSchema(
+    {
+      protocol: stringSchema("Stable browser integration protocol identifier", {
+        enum: ["grimoire-browser-capture"],
+      }),
+      protocol_version: integerSchema("Browser integration protocol version", {
+        minimum: 1,
+        maximum: 1,
+      }),
+      grimoire_version: stringSchema("Daemon package version"),
+      endpoints: objectSchema(
+        {
+          capture: stringSchema("Authenticated bookmark capture path"),
+          taxonomy: stringSchema("Authenticated category and tag discovery path"),
+        },
+        ["capture", "taxonomy"]
+      ),
+      capture_fields: objectSchema(
+        {
+          is_pinned: booleanSchema("Capture accepts an initial pinned state"),
+          read_later: booleanSchema("Capture accepts an initial Read Later state"),
+        },
+        ["is_pinned", "read_later"],
+        "Optional capture fields supported by this daemon"
+      ),
+      limits: objectSchema(
+        {
+          request_bytes: integerSchema("Maximum capture request bytes", { minimum: 1 }),
+          title_characters: integerSchema("Maximum title characters", { minimum: 1 }),
+          notes_characters: integerSchema("Maximum notes characters", { minimum: 1 }),
+          selected_text_characters: integerSchema("Maximum selected text characters", { minimum: 1 }),
+          tag_characters: integerSchema("Maximum characters per tag", { minimum: 1 }),
+        },
+        [
+          "request_bytes",
+          "title_characters",
+          "notes_characters",
+          "selected_text_characters",
+          "tag_characters",
+        ]
+      ),
+    },
+    ["protocol", "protocol_version", "grimoire_version", "endpoints", "limits"],
+    "Authenticated capabilities advertised to packaged browser extensions"
+  ),
+  BrowserIntegrationCapabilitiesResponse: envelope(
+    ref("BrowserIntegrationCapabilities"),
+    "Browser integration capability response"
+  ),
+  BrowserIntegrationTaxonomy: objectSchema(
+    {
+      categories: arrayOf(ref("CategoryNode"), "Category tree"),
+      tags: arrayOf(ref("TagWithCount"), "Tags"),
+    },
+    ["categories", "tags"],
+    "Authenticated taxonomy subset used by the browser extension"
+  ),
+  BrowserIntegrationTaxonomyResponse: envelope(
+    ref("BrowserIntegrationTaxonomy"),
+    "Browser integration taxonomy response"
   ),
   Diagnostics: objectSchema(
     {
@@ -3232,6 +3295,43 @@ export const apiContract = {
           },
         },
       ],
+    },
+    {
+      method: "GET",
+      path: "/integrations/browser/v1/capabilities",
+      tag: "Integrations",
+      summary: "Negotiate the packaged browser extension capture protocol.",
+      description:
+        "Requires a managed integration bearer token. Packaged Chrome and Firefox clients use this endpoint to distinguish current Grimoire from the legacy account API before sending capture data. The response describes stable paths and enforced field limits; clients must not infer compatibility from the daemon marketing version alone.",
+      responses: {
+        "200": jsonResponse(
+          "Supported browser integration capabilities",
+          ref("BrowserIntegrationCapabilitiesResponse")
+        ),
+        "401": problemResponse("Missing, invalid, rotated, or revoked integration token"),
+      },
+      examples: [
+        {
+          title: "Negotiate browser capture support",
+          request:
+            "curl http://127.0.0.1:3210/integrations/browser/v1/capabilities \\\n  -H \"Authorization: Bearer limp_it_example\"",
+        },
+      ],
+    },
+    {
+      method: "GET",
+      path: "/integrations/browser/v1/taxonomy",
+      tag: "Integrations",
+      summary: "List the categories and tags available to the packaged browser extension.",
+      description:
+        "Requires a managed integration bearer token. This route keeps extension-origin reads inside the versioned browser integration surface instead of exposing unrelated local-library GET routes.",
+      responses: {
+        "200": jsonResponse(
+          "Browser capture categories and tags",
+          ref("BrowserIntegrationTaxonomyResponse")
+        ),
+        "401": problemResponse("Missing, invalid, rotated, or revoked integration token"),
+      },
     },
     {
       method: "GET",

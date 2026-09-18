@@ -17,6 +17,7 @@ vi.mock("@/lib/api", () => ({
   getReprocessStatus: vi.fn(),
   getDiagnostics: vi.fn(),
   getSettings: vi.fn(),
+  testAiConnection: vi.fn(),
   reprocessBookmarks: vi.fn(),
   updateSettings: vi.fn(),
   checkHealthAfterRestore: vi.fn(),
@@ -51,12 +52,14 @@ import * as api from "@/lib/api";
 import * as backupHooks from "@/hooks/use-backup";
 
 const mockedGetSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
+const mockedTestAiConnection = api.testAiConnection as unknown as ReturnType<typeof vi.fn>;
 const mockedFetchAiModels = (api as unknown as { fetchAiModels: ReturnType<typeof vi.fn> }).fetchAiModels;
 const mockedCheckForUpdates = (api as unknown as { checkForUpdates: ReturnType<typeof vi.fn> }).checkForUpdates;
 const mockedCheckHealthAfterRestore = (api as unknown as { checkHealthAfterRestore: ReturnType<typeof vi.fn> }).checkHealthAfterRestore;
 const mockedGetDiagnostics = (api as unknown as { getDiagnostics: ReturnType<typeof vi.fn> }).getDiagnostics;
 const mockedReprocessBookmarks = (api as unknown as { reprocessBookmarks: ReturnType<typeof vi.fn> }).reprocessBookmarks;
 const mockedGetReprocessStatus = (api as unknown as { getReprocessStatus: ReturnType<typeof vi.fn> }).getReprocessStatus;
+const mockedListIntegrationTokens = (api as unknown as { listIntegrationTokens: ReturnType<typeof vi.fn> }).listIntegrationTokens;
 const mockedUseBackupList = backupHooks.useBackupList as unknown as ReturnType<typeof vi.fn>;
 const mockedUseCreateBackup = backupHooks.useCreateBackup as unknown as ReturnType<typeof vi.fn>;
 const mockedUseRestoreBackup = backupHooks.useRestoreBackup as unknown as ReturnType<typeof vi.fn>;
@@ -168,6 +171,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   mockedGetSettings.mockResolvedValue(settingsResponse());
+  mockedTestAiConnection.mockResolvedValue({ ok: true });
   mockedFetchAiModels.mockResolvedValue([]);
   mockedGetDiagnostics.mockResolvedValue({
     data: {
@@ -230,6 +234,7 @@ beforeEach(() => {
       failed: 0,
     },
   });
+  mockedListIntegrationTokens.mockResolvedValue({ data: [] });
   mockedUseBackupList.mockReturnValue({
     data: [
       {
@@ -261,6 +266,20 @@ beforeEach(() => {
   mockedUseCreateEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseVerifyEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
   mockedUseRestoreEncryptedBackupPackage.mockReturnValue({ mutate: vi.fn(), isPending: false });
+});
+
+describe("Browser Integration guidance", () => {
+  it("explains that integration tokens authenticate every supported local client", async () => {
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    expect(await screen.findByText("Browser Integration")).toBeInTheDocument();
+    expect(screen.getByText(/official browser extension, bookmarklets, MCP clients/)).toBeInTheDocument();
+    expect(screen.getByText(/Create one for the official browser extension, a bookmarklet, an MCP client/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Setup guide" }));
+    expect(screen.getByText("Using integration tokens")).toBeInTheDocument();
+    expect(screen.getByText(/paste the token into its connection screen/)).toBeInTheDocument();
+  });
 });
 
 describe("Settings update checks", () => {
@@ -611,6 +630,58 @@ describe("Settings diagnostics", () => {
 });
 
 describe("Settings AI providers", () => {
+  it("enables retry with a newly selected model after a failed connection test", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "openrouter" as const,
+      openrouter: {
+        api_key: "***",
+        base_url: "https://openrouter.ai/api/v1",
+        model: "openai/gpt-latest",
+      },
+    }));
+    mockedFetchAiModels.mockResolvedValue([
+      { id: "openai/gpt-latest", name: "OpenAI: GPT (latest)" },
+      { id: "openai/gpt-5.2", name: "OpenAI: GPT-5.2" },
+    ]);
+    mockedTestAiConnection
+      .mockResolvedValueOnce({ ok: false, error: "Connection failed" })
+      .mockResolvedValueOnce({ ok: true });
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    const modelCombobox = await screen.findByRole("combobox", { name: "Model" });
+    const initialTestButton = screen
+      .getAllByRole("button", { name: "Test connection" })
+      .find((button) => !button.hasAttribute("disabled"));
+    expect(initialTestButton).toBeDefined();
+    fireEvent.click(initialTestButton!);
+    expect(await screen.findByText("Connection failed")).toBeInTheDocument();
+
+    fireEvent.click(modelCombobox);
+    fireEvent.click(screen.getByRole("option", { name: /OpenAI: GPT-5\.2/ }));
+
+    const testButton = screen.getByTitle("Save changes and test the current configuration");
+    expect(testButton).toBeEnabled();
+    expect(screen.queryByText("Connection failed")).not.toBeInTheDocument();
+    fireEvent.click(testButton);
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            openrouter: expect.objectContaining({ model: "openai/gpt-5.2" }),
+          }),
+        })
+      );
+      expect(mockedTestAiConnection).toHaveBeenCalledTimes(2);
+    });
+    expect(updateSettings.mock.invocationCallOrder[0]).toBeLessThan(
+      mockedTestAiConnection.mock.invocationCallOrder[1]
+    );
+  });
+
   it("renders provider-specific Anthropic fields from settings", async () => {
     mockedGetSettings.mockResolvedValue(settingsResponse({
       provider: "anthropic" as const,

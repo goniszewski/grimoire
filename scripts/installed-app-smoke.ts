@@ -2,9 +2,7 @@
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import {
-  chmodSync,
   closeSync,
-  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -18,9 +16,10 @@ import {
 } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { packageRelease } from "./release-packager";
 
 export type ReleasePlatform = "macos" | "linux";
 type SmokeArtifactSource = "local" | "published";
@@ -55,7 +54,6 @@ interface SmokeDirs {
   homeDir: string;
   dataDir: string;
   daemonDir: string;
-  frontendDir: string;
   binDir: string;
   logDir: string;
   daemonLogPath: string;
@@ -209,7 +207,7 @@ function usage(): string {
   return [
     "Usage: bun run scripts/installed-app-smoke.ts [options]",
     "",
-    "Validates a packaged Little Imp release archive as an installed app in an isolated temp home.",
+    "Validates a packaged Grimoire release archive as an installed app in an isolated temp home.",
     "",
     "Options:",
     "  --source local|published",
@@ -246,7 +244,6 @@ function createSmokeDirs(): SmokeDirs {
   const homeDir = join(rootDir, "home");
   const dataDir = join(homeDir, ".local", "share", "littleimp");
   const daemonDir = join(dataDir, "daemon");
-  const frontendDir = join(dataDir, "dist");
   const binDir = join(homeDir, ".local", "bin");
   const logDir = join(dataDir, "logs");
   const unpackDir = join(rootDir, "unpacked");
@@ -262,7 +259,6 @@ function createSmokeDirs(): SmokeDirs {
     homeDir,
     dataDir,
     daemonDir,
-    frontendDir,
     binDir,
     logDir,
     daemonLogPath: join(logDir, "daemon.log"),
@@ -283,7 +279,6 @@ function smokeEnv(dirs: SmokeDirs, port: number): NodeJS.ProcessEnv {
   return {
     ...process.env,
     HOME: dirs.homeDir,
-    PATH: `${dirs.binDir}:${process.env.PATH ?? ""}`,
     HOST: "127.0.0.1",
     PORT: String(port),
     DATA_DIR: dirs.dataDir,
@@ -529,26 +524,35 @@ function defaultSignatureRunner(
   return spawnSync(command, args, options);
 }
 
-function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: number): void {
-  logStep("Installing runtime from release archive into isolated temp home");
-  rmSync(dirs.daemonDir, { recursive: true, force: true });
-  rmSync(dirs.frontendDir, { recursive: true, force: true });
-  mkdirSync(dirname(dirs.daemonDir), { recursive: true });
-  mkdirSync(dirname(dirs.frontendDir), { recursive: true });
-  cpSync(join(releaseRoot, "daemon"), dirs.daemonDir, { recursive: true });
-  cpSync(join(releaseRoot, "dist"), dirs.frontendDir, { recursive: true });
+function createInstallerBashEnv(dirs: SmokeDirs, platform: ReleasePlatform): string {
+  const bashEnvPath = join(dirs.rootDir, "installer.bashenv");
+  const serviceShim =
+    platform === "macos"
+      ? "launchctl() { return 0; }"
+      : [
+          "systemctl() {",
+          '  if [[ "${1:-}" == "--user" && "${2:-}" == "is-active" ]]; then return 1; fi',
+          "  return 0",
+          "}",
+        ].join("\n");
 
-  const cliPath = join(dirs.binDir, "littleimp");
   writeFileSync(
-    cliPath,
+    bashEnvPath,
     [
-      "#!/usr/bin/env bash",
-      "set -euo pipefail",
-      `exec bun ${JSON.stringify(join(dirs.daemonDir, "src", "cli.ts"))} "$@"`,
+      "curl() { printf '{\"status\":\"ok\"}\\n'; }",
+      serviceShim,
       "",
     ].join("\n")
   );
-  chmodSync(cliPath, 0o755);
+  return bashEnvPath;
+}
+
+function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: number): void {
+  logStep("Installing runtime from release archive with its native installer");
+  assert(existsSync(join(releaseRoot, "bin")), "Release archive is missing its CLI entrypoint directory");
+  for (const command of ["grimoire", "littleimp"]) {
+    assert(existsSync(join(releaseRoot, "bin", command)), `Release archive is missing its ${command} CLI entrypoint`);
+  }
 
   writeFileSync(
     join(dirs.dataDir, ".env"),
@@ -562,14 +566,18 @@ function installRuntimeFromRelease(releaseRoot: string, dirs: SmokeDirs, port: n
     ].join("\n")
   );
 
-  logStep("Installing daemon production dependencies");
-  const install = spawnSync("bun", ["install", "--production"], {
-    cwd: dirs.daemonDir,
-    env: smokeEnv(dirs, port),
+  const installEnv = smokeEnv(dirs, port);
+  const platform = detectReleasePlatform();
+  const installer = spawnSync("/bin/bash", [join(releaseRoot, "daemon", "install.sh")], {
+    cwd: join(releaseRoot, "daemon"),
+    env: {
+      ...installEnv,
+      BASH_ENV: createInstallerBashEnv(dirs, platform),
+    },
     stdio: "inherit",
   });
-  if (install.status !== 0) {
-    throw new Error(`bun install --production failed with exit code ${install.status ?? "unknown"}`);
+  if (installer.status !== 0) {
+    throw new Error(`Release archive installer failed with exit code ${installer.status ?? "unknown"}`);
   }
 }
 
@@ -811,10 +819,29 @@ export async function runCommandCapture(
   });
 }
 
+async function runCliHelpChecks(dirs: SmokeDirs, port: number, version: string): Promise<void> {
+  logStep("grimoire CLI and littleimp compatibility alias");
+  for (const command of ["grimoire", "littleimp"]) {
+    const result = await runCommandCapture(join(dirs.binDir, command), ["--help"], {
+      cwd: dirs.daemonDir,
+      env: smokeEnv(dirs, port),
+    });
+
+    if (result.timedOut) {
+      throw new Error(`${command} --help timed out after ${COMMAND_TIMEOUT_MS}ms`);
+    }
+    if (result.status !== 0) {
+      throw new Error(`${command} --help failed:\n${result.stderr}`);
+    }
+    assert(result.stdout.includes(version), `${command} --help did not report ${version}`);
+    assert(result.stdout.includes("Usage:\n  grimoire "), `${command} --help did not use the grimoire command name`);
+  }
+}
+
 async function runCliUpdateCheck(dirs: SmokeDirs, port: number, updateSourceUrl: string): Promise<void> {
-  logStep("littleimp update check");
+  logStep("grimoire update check");
   const result = await runCommandCapture(
-    "littleimp",
+    join(dirs.binDir, "grimoire"),
     ["update", "check", "--json", "--source", updateSourceUrl],
     {
       cwd: dirs.daemonDir,
@@ -826,10 +853,10 @@ async function runCliUpdateCheck(dirs: SmokeDirs, port: number, updateSourceUrl:
   );
 
   if (result.timedOut) {
-    throw new Error(`littleimp update check timed out after ${COMMAND_TIMEOUT_MS}ms`);
+    throw new Error(`grimoire update check timed out after ${COMMAND_TIMEOUT_MS}ms`);
   }
   if (result.status !== 0) {
-    throw new Error(`littleimp update check failed:\n${result.stderr}`);
+    throw new Error(`grimoire update check failed:\n${result.stderr}`);
   }
 
   const payload = JSON.parse(result.stdout) as { current_version?: string; latest?: { version?: string } | null };
@@ -867,10 +894,23 @@ async function runInstalledAppSmoke(options: {
               requireSignature: options.requireSignature,
             })
           ).archivePath
-        : resolve(options.archivePath ?? join(options.projectRoot, "release", releaseArchiveName(version, platform)));
+        : options.archivePath
+          ? resolve(options.archivePath)
+          : (() => {
+              const packaged = packageRelease({
+                projectRoot: options.projectRoot,
+                outputDir: join(dirs.rootDir, "release"),
+                platforms: [platform],
+                version,
+              });
+              const artifact = packaged.manifest.artifacts.find((entry) => entry.platform === platform);
+              assert(artifact, `Packager did not produce a ${platform} release archive`);
+              return join(packaged.outputDir, artifact.archive);
+            })();
 
     const releaseRoot = extractReleaseArchive(archivePath, dirs, platform);
     installRuntimeFromRelease(releaseRoot, dirs, port);
+    await runCliHelpChecks(dirs, port, version);
 
     daemon = startDaemon(dirs, port);
     await waitForHealth(baseUrl);
@@ -899,9 +939,22 @@ async function runInstalledAppSmoke(options: {
     logStep("uninstall without purge");
     await stopDaemon(daemon);
     daemon = null;
-    rmSync(dirs.daemonDir, { recursive: true, force: true });
-    rmSync(dirs.frontendDir, { recursive: true, force: true });
-    rmSync(join(dirs.binDir, "littleimp"), { force: true });
+    const uninstallEnv = smokeEnv(dirs, port);
+    const uninstall = spawnSync("/bin/bash", [join(dirs.daemonDir, "install.sh"), "--uninstall"], {
+      cwd: dirs.daemonDir,
+      env: {
+        ...uninstallEnv,
+        BASH_ENV: createInstallerBashEnv(dirs, platform),
+      },
+      stdio: "inherit",
+    });
+    if (uninstall.status !== 0) {
+      throw new Error(`Native uninstall failed with exit code ${uninstall.status ?? "unknown"}`);
+    }
+    assert(!existsSync(dirs.daemonDir), "Uninstall without purge left daemon files behind");
+    for (const command of ["grimoire", "littleimp"]) {
+      assert(!existsSync(join(dirs.binDir, command)), `Uninstall without purge left ${command} behind`);
+    }
     assert(existsSync(join(dirs.dataDir, "littleimp.db")), "Uninstall without purge removed user data");
 
     success = true;
