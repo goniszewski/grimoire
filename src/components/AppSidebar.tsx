@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, type CSSProperties } from "react";
+import { useEffect, useState, useRef, useMemo, type CSSProperties } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listSuggestions, createCategory, updateCategory, deleteCategory, listCategories, type ApiCategory } from "@/lib/api";
 import { suggestionKeys } from "@/hooks/use-suggestions";
@@ -65,15 +65,78 @@ import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 const DOMAINS_COLLAPSED_COUNT = 5;
 const DOMAINS_PAGE_THRESHOLD = 20;
 const TAGS_COLLAPSED_COUNT = 8;
+const COLLAPSED_CATEGORIES_STORAGE_KEY = "grimoire-sidebar-collapsed-categories-v1";
+
+function loadCollapsedCategoryIds(): Set<string> {
+  try {
+    const stored = globalThis.localStorage?.getItem(COLLAPSED_CATEGORIES_STORAGE_KEY);
+    if (!stored) return new Set();
+    const ids: unknown = JSON.parse(stored);
+    return Array.isArray(ids)
+      ? new Set(ids.filter((id): id is string => typeof id === "string"))
+      : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function persistCollapsedCategoryIds(ids: Set<string>): void {
+  try {
+    if (ids.size === 0) {
+      globalThis.localStorage?.removeItem(COLLAPSED_CATEGORIES_STORAGE_KEY);
+      return;
+    }
+    globalThis.localStorage?.setItem(COLLAPSED_CATEGORIES_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    // Folder disclosure remains usable when storage is unavailable.
+  }
+}
+
+function getVisibleCategories(categories: UICategory[], collapsedIds: Set<string>): UICategory[] {
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const visibilityById = new Map<string, boolean>();
+
+  function isVisible(category: UICategory, visiting = new Set<string>()): boolean {
+    const cached = visibilityById.get(category.id);
+    if (cached !== undefined) return cached;
+
+    if (visiting.has(category.id)) {
+      visibilityById.set(category.id, true);
+      return true;
+    }
+
+    let visible = true;
+    if (category.parentId) {
+      if (collapsedIds.has(category.parentId)) {
+        visible = false;
+      } else {
+        const parent = categoriesById.get(category.parentId);
+        if (parent) {
+          visiting.add(category.id);
+          visible = isVisible(parent, visiting);
+          visiting.delete(category.id);
+        }
+      }
+    }
+
+    visibilityById.set(category.id, visible);
+    return visible;
+  }
+
+  return categories.filter((category) => isVisible(category));
+}
 
 // ── Drag-and-drop sub-components ──────────────────────────────────────────────
 
 interface DraggableCategoryProps {
   cat: UICategory;
   collapsed: boolean;
+  hasChildren: boolean;
+  isExpanded: boolean;
   selectedCategory: string | null;
   selectedCategoryId?: string | null;
   onSelectCategory: (category: string | null, categoryId?: string | null) => void;
+  onToggleExpanded: (categoryId: string) => void;
   onOpenCategory: (categoryId: string) => void;
   onStartRename: (cat: UICategory) => void;
   onStartMove: (cat: UICategory) => void;
@@ -100,9 +163,12 @@ function isCategorySelected(
 function DraggableCategory({
   cat,
   collapsed,
+  hasChildren,
+  isExpanded,
   selectedCategory,
   selectedCategoryId,
   onSelectCategory,
+  onToggleExpanded,
   onOpenCategory,
   onStartRename,
   onStartMove,
@@ -137,11 +203,28 @@ function DraggableCategory({
             isDropTarget && "ring-2 ring-primary/60 bg-primary/10"
           )}
         >
+          {!collapsed && hasChildren && (
+            <button
+              type="button"
+              className="flex h-8 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-40"
+              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${cat.name} folder`}
+              aria-expanded={isExpanded}
+              title={`${isExpanded ? "Collapse" : "Expand"} ${cat.name}`}
+              disabled={isDraggingAny}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleExpanded(cat.id);
+              }}
+            >
+              {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          {!collapsed && !hasChildren && <span aria-hidden="true" className="h-8 w-6 shrink-0" />}
           {!collapsed && !isDemoMode && isDraggingAny && (
             <span
               {...attributes}
               {...listeners}
-              className="absolute left-0 flex items-center justify-center h-full w-5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing z-10"
+              className="flex h-8 w-4 shrink-0 items-center justify-center text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing"
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical className="h-3 w-3" />
@@ -151,17 +234,18 @@ function DraggableCategory({
             <span
               {...attributes}
               {...listeners}
-              className="absolute left-0 flex items-center justify-center h-full w-5 text-muted-foreground/0 group-hover:text-muted-foreground/40 cursor-grab active:cursor-grabbing z-10 transition-colors"
+              className="flex h-8 w-4 shrink-0 items-center justify-center text-muted-foreground/0 group-hover:text-muted-foreground/40 cursor-grab active:cursor-grabbing transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <GripVertical className="h-3 w-3" />
             </span>
           )}
+          {!collapsed && isDemoMode && <span aria-hidden="true" className="h-8 w-4 shrink-0" />}
           <SidebarMenuButton
             onClick={() => onSelectCategory(selected ? null : cat.name, selected ? null : cat.id)}
             className={cn(
               selected && "bg-accent text-accent-foreground",
-              !collapsed && "pl-6 pr-8"
+              !collapsed && "min-w-0 flex-1 px-1.5 pr-8"
             )}
             tooltip={collapsed ? `${cat.name} (${cat.count})` : undefined}
           >
@@ -274,6 +358,7 @@ export function AppSidebar({
   const navigate = useNavigate();
   const [domainsExpanded, setDomainsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState(loadCollapsedCategoryIds);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
@@ -294,6 +379,10 @@ export function AppSidebar({
   // Drag-and-drop state
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  useEffect(() => {
+    persistCollapsedCategoryIds(collapsedCategoryIds);
+  }, [collapsedCategoryIds]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -525,6 +614,24 @@ export function AppSidebar({
   const visibleTags = tagsExpanded ? tags : tags.slice(0, TAGS_COLLAPSED_COUNT);
   const hasMoreTags = tags.length > TAGS_COLLAPSED_COUNT;
 
+  const categoryIdsWithChildren = useMemo(
+    () => new Set(categories.flatMap((category) => category.parentId ? [category.parentId] : [])),
+    [categories]
+  );
+  const visibleCategories = useMemo(
+    () => getVisibleCategories(categories, collapsedCategoryIds),
+    [categories, collapsedCategoryIds]
+  );
+
+  function toggleCategoryExpanded(categoryId: string) {
+    setCollapsedCategoryIds((current) => {
+      const next = new Set(current);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      return next;
+    });
+  }
+
   // Categories valid as move targets (excludes the category itself and its descendants)
   function getMoveTargets(movingId: string): ApiCategory[] {
     const excluded = new Set<string>();
@@ -623,7 +730,7 @@ export function AppSidebar({
                     <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories yet</div>
                   </SidebarMenuItem>
                 )}
-                {!categoriesLoading && !categoriesError && categories.map((cat) => {
+                {!categoriesLoading && !categoriesError && visibleCategories.map((cat) => {
                   const selected = isCategorySelected(cat, selectedCategory, selectedCategoryId);
 
                   return (
@@ -665,9 +772,12 @@ export function AppSidebar({
                         <DraggableCategory
                           cat={cat}
                           collapsed={collapsed}
+                          hasChildren={categoryIdsWithChildren.has(cat.id)}
+                          isExpanded={!collapsedCategoryIds.has(cat.id)}
                           selectedCategory={selectedCategory}
                           selectedCategoryId={selectedCategoryId}
                           onSelectCategory={onSelectCategory}
+                          onToggleExpanded={toggleCategoryExpanded}
                           onOpenCategory={openCategoryDetail}
                           onStartRename={startRename}
                           onStartMove={startMove}
