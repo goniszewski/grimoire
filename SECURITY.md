@@ -34,10 +34,12 @@ Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
-- The first-party browser UI is trusted only from the daemon origin or
-  configured loopback development origins.
-- General REST routes remain loopback-only and tokenless for first-party local
-  use.
+- The first-party browser UI is trusted from the daemon origin, configured
+  loopback development origins, or exact origins explicitly allowlisted for an
+  authenticated reverse proxy or VPN.
+- General REST routes remain tokenless and are intended only for first-party
+  loopback use or access through an authenticated proxy or VPN with an exact
+  configured browser origin.
 - MCP and protected local capture endpoints require managed local integration
   bearer tokens.
 - Public-network exposure is not a supported Grimoire mode. Any remote access
@@ -48,8 +50,8 @@ Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
   an in-browser fixture router, keeps session state in memory, and contains no
   server database, secrets, cookies, third-party scripts, or fingerprinting.
 
-Any future non-loopback mode requires a separate security review and explicit
-authentication, origin, secrets, and network-exposure controls.
+Any broader public or multi-user mode requires a separate security review and
+explicit authentication, origin, secrets, and network-exposure controls.
 
 ## Implemented Controls
 
@@ -57,8 +59,11 @@ authentication, origin, secrets, and network-exposure controls.
 
 - Localhost-only native binding.
 - Loopback-only Docker port publishing.
-- Unsafe browser requests are accepted only from configured loopback origins.
-- Non-loopback `CORS_ORIGINS` entries are ignored by the daemon.
+- Unsafe browser requests are accepted only from default loopback origins or
+  exact origins explicitly configured with `CORS_ORIGINS`.
+- Explicit non-loopback origins are intended only for authenticated reverse
+  proxies or VPNs. Wildcard origins are not accepted, and the origin allowlist
+  is not a substitute for authentication.
 - Private, loopback, link-local, and unspecified hosts are blocked for bookmark
   fetching and update-source handling where route behavior requires public
   targets.

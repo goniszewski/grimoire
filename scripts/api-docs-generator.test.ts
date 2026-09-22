@@ -299,7 +299,9 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("CORS_ORIGINS");
     expect(markdown).toContain("http://localhost:5173");
     expect(markdown).toContain("http://127.0.0.1:3210");
-    expect(markdown).toContain("Non-loopback origins are ignored");
+    expect(markdown).toContain("https://grimoire.example.com");
+    expect(markdown).toContain("Explicit non-loopback origins are intended for authenticated reverse proxies or VPNs");
+    expect(markdown).toContain("paths, credentials, and wildcards are rejected");
     expect(markdown).not.toMatch(/browser extension/i);
     // The bookmarklet endpoint appears in the route table but not in the CORS setup prose
     expect(markdown).toContain("/capture/bookmarklet");
