@@ -28,6 +28,7 @@ import { createMediaRoute } from "./routes/media.js";
 import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
 import { createCaptureRoute } from "./routes/capture.js";
 import { createDemoRoute } from "./routes/demo.js";
+import { createRevisitRoute } from "./routes/revisit.js";
 import { validatePresentedIntegrationToken } from "./lib/integration-auth.js";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -257,6 +258,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createHealthRoute(deps));
   app.route("/", createDiagnosticsRoute(deps));
   app.route("/", createBookmarksRoute({ db: deps.db, queue: deps.queue, dataDir: deps.dataDir ?? Config.DATA_DIR }));
+  app.route("/", createRevisitRoute(deps.db));
   app.route("/", createCaptureRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createMediaRoute({ db: deps.db, dataDir: deps.dataDir ?? Config.DATA_DIR }));
   app.route("/", createSearchRoute({ db: deps.db }));

@@ -125,11 +125,11 @@ describe("BookmarkCard — rendering", () => {
     expect(screen.getByRole("menuitem", { name: "Mark read" })).toBeInTheDocument();
   });
 
-  it("shows a Read Later badge when read_later is set", () => {
+  it("shows a Later badge when read_later is set", () => {
     renderCard(
       <BookmarkCard bookmark={makeBookmark({ read_later: 1 })} onDelete={noop} onClick={noop} />
     );
-    expect(screen.getByText("Read Later")).toBeInTheDocument();
+    expect(screen.getByText("Later")).toBeInTheDocument();
   });
 });
 
@@ -284,7 +284,7 @@ describe("BookmarkCard — actions", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
-    await user.click(screen.getByRole("menuitem", { name: "Mark read later" }));
+    await user.click(screen.getByRole("menuitem", { name: "Add to Later" }));
     expect(onReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
@@ -301,7 +301,7 @@ describe("BookmarkCard — actions", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: "More bookmark actions" }));
-    await user.click(screen.getByRole("menuitem", { name: "Clear read later" }));
+    await user.click(screen.getByRole("menuitem", { name: "Remove from Later" }));
     expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 

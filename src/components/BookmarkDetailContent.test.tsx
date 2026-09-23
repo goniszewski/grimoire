@@ -154,9 +154,9 @@ describe("BookmarkDetailContent — rendering", () => {
     expect(screen.getByText("Related Article")).toBeInTheDocument();
   });
 
-  it("renders a Read Later badge when read_later is set", () => {
+  it("renders a Later badge when read_later is set", () => {
     render(<BookmarkDetailContent {...defaultProps(makeBookmark({ read_later: 1 }))} />);
-    expect(screen.getByText("Read Later")).toBeInTheDocument();
+    expect(screen.getByText("Later")).toBeInTheDocument();
   });
 
   it("renders extracted content and available source metadata", () => {
@@ -517,25 +517,25 @@ describe("BookmarkDetailContent — actions", () => {
     expect(onMarkUnread).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onReadLater when Read later button is clicked on an unmarked bookmark", () => {
+  it("calls onReadLater when Add to Later is clicked on an unmarked bookmark", () => {
     const onReadLater = vi.fn();
     render(
       <BookmarkDetailContent
         {...defaultProps(makeBookmark({ read_later: 0 }), { onReadLater, onClearReadLater: noopStatus })}
       />
     );
-    fireEvent.click(screen.getByText("Read later"));
+    fireEvent.click(screen.getByText("Add to Later"));
     expect(onReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 
-  it("calls onClearReadLater when Clear read later button is clicked on a marked bookmark", () => {
+  it("calls onClearReadLater when Remove from Later is clicked on a marked bookmark", () => {
     const onClearReadLater = vi.fn();
     render(
       <BookmarkDetailContent
         {...defaultProps(makeBookmark({ read_later: 1 }), { onReadLater: noopStatus, onClearReadLater })}
       />
     );
-    fireEvent.click(screen.getByText("Clear read later"));
+    fireEvent.click(screen.getByText("Remove from Later"));
     expect(onClearReadLater).toHaveBeenCalledWith("bm-1", expect.any(Object));
   });
 

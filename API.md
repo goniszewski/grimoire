@@ -127,6 +127,8 @@ Request body:
 |---|---|---:|---|
 | `url` | string | yes | HTTP or HTTPS URL to save |
 | `title` | string | no | Optional title override |
+| `read_later` | 0 \| 1 | no | Add the saved or existing active bookmark to Later |
+| `notes` | string | no | Optional personal note for a new bookmark |
 
 Responses:
 
@@ -206,6 +208,72 @@ Content-Type: application/problem+json
   "detail": "Invalid URL - must be http or https"
 }
 ```
+
+#### GET /revisit
+
+Get Later availability and the persisted Revisit round.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RevisitStateResponse` | Revisit state |
+
+#### POST /revisit/round
+
+Start a finite, shuffled round or resume the active round.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `RevisitRoundRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `size` | 5 \| 10 \| 20 | no | Round size |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RevisitStateResponse` | Revisit state |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `422` | application/problem+json | `ProblemDetails` | Invalid round size |
+
+#### POST /revisit/action
+
+Apply one decision to the current card; the read action marks it read.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `RevisitActionRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmark_id` | string | yes | Current bookmark ID |
+| `action` | "read" \| "done" \| "skipped" \| "postponed" \| "trashed" | yes | Decision |
+| `delay` | "day" \| "week" \| "month" | no | Postponement |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RevisitStateResponse` | Revisit state |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `409` | application/problem+json | `ProblemDetails` | Round changed |
+| `422` | application/problem+json | `ProblemDetails` | Invalid action |
+
+#### POST /revisit/undo
+
+Undo the last Revisit decision and return to that card.
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/json | `RevisitStateResponse` | Revisit state |
+| `409` | application/problem+json | `ProblemDetails` | Nothing to undo |
 
 #### GET /bookmarks
 
@@ -3100,6 +3168,115 @@ Bookmark aggregate counts response
 |---|---|---:|---|
 | `url` | string | yes | HTTP or HTTPS URL to save |
 | `title` | string | no | Optional title override |
+| `read_later` | 0 \| 1 | no | Add the saved or existing active bookmark to Later |
+| `notes` | string | no | Optional personal note for a new bookmark |
+
+### RevisitBookmark
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Bookmark ID |
+| `url` | string | yes | Saved URL |
+| `title` | string \| null | yes | Title |
+| `domain` | string | yes | Domain |
+| `description` | string \| null | yes | Description |
+| `summary` | string \| null | yes | Extracted summary |
+| `notes` | string \| null | yes | Personal note |
+| `screenshot_url` | string \| null | yes | Preview image URL |
+| `created_at` | string | yes | Saved timestamp |
+| `read_at` | string \| null | yes | Read timestamp |
+
+### RevisitRound
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `id` | string | yes | Round ID |
+| `size` | integer | yes | Number of cards |
+| `position` | integer | yes | Zero-based current position |
+| `completed` | boolean | yes | All cards have decisions |
+| `decisions` | array<"read" \| "done" \| "skipped" \| "postponed" \| "trashed"> | yes | Decisions made |
+| `can_undo` | boolean | yes | Last decision can be undone |
+| `current` | RevisitBookmark \| null | yes |  |
+| `current.id` | string | yes | Bookmark ID |
+| `current.url` | string | yes | Saved URL |
+| `current.title` | string \| null | yes | Title |
+| `current.domain` | string | yes | Domain |
+| `current.description` | string \| null | yes | Description |
+| `current.summary` | string \| null | yes | Extracted summary |
+| `current.notes` | string \| null | yes | Personal note |
+| `current.screenshot_url` | string \| null | yes | Preview image URL |
+| `current.created_at` | string | yes | Saved timestamp |
+| `current.read_at` | string \| null | yes | Read timestamp |
+| `upcoming` | array<RevisitBookmark> | yes | Next two cards in the stack |
+
+### RevisitState
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `total` | integer | yes | Active Later bookmarks |
+| `eligible` | integer | yes | Active Later bookmarks available now |
+| `round` | RevisitRound \| null | yes |  |
+| `round.id` | string | yes | Round ID |
+| `round.size` | integer | yes | Number of cards |
+| `round.position` | integer | yes | Zero-based current position |
+| `round.completed` | boolean | yes | All cards have decisions |
+| `round.decisions` | array<"read" \| "done" \| "skipped" \| "postponed" \| "trashed"> | yes | Decisions made |
+| `round.can_undo` | boolean | yes | Last decision can be undone |
+| `round.current` | RevisitBookmark \| null | yes |  |
+| `round.current.id` | string | yes | Bookmark ID |
+| `round.current.url` | string | yes | Saved URL |
+| `round.current.title` | string \| null | yes | Title |
+| `round.current.domain` | string | yes | Domain |
+| `round.current.description` | string \| null | yes | Description |
+| `round.current.summary` | string \| null | yes | Extracted summary |
+| `round.current.notes` | string \| null | yes | Personal note |
+| `round.current.screenshot_url` | string \| null | yes | Preview image URL |
+| `round.current.created_at` | string | yes | Saved timestamp |
+| `round.current.read_at` | string \| null | yes | Read timestamp |
+| `round.upcoming` | array<RevisitBookmark> | yes | Next two cards in the stack |
+
+### RevisitStateResponse
+
+Revisit state response
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `data` | RevisitState | yes |  |
+| `data.total` | integer | yes | Active Later bookmarks |
+| `data.eligible` | integer | yes | Active Later bookmarks available now |
+| `data.round` | RevisitRound \| null | yes |  |
+| `data.round.id` | string | yes | Round ID |
+| `data.round.size` | integer | yes | Number of cards |
+| `data.round.position` | integer | yes | Zero-based current position |
+| `data.round.completed` | boolean | yes | All cards have decisions |
+| `data.round.decisions` | array<"read" \| "done" \| "skipped" \| "postponed" \| "trashed"> | yes | Decisions made |
+| `data.round.can_undo` | boolean | yes | Last decision can be undone |
+| `data.round.current` | RevisitBookmark \| null | yes |  |
+| `data.round.current.id` | string | yes | Bookmark ID |
+| `data.round.current.url` | string | yes | Saved URL |
+| `data.round.current.title` | string \| null | yes | Title |
+| `data.round.current.domain` | string | yes | Domain |
+| `data.round.current.description` | string \| null | yes | Description |
+| `data.round.current.summary` | string \| null | yes | Extracted summary |
+| `data.round.current.notes` | string \| null | yes | Personal note |
+| `data.round.current.screenshot_url` | string \| null | yes | Preview image URL |
+| `data.round.current.created_at` | string | yes | Saved timestamp |
+| `data.round.current.read_at` | string \| null | yes | Read timestamp |
+| `data.round.upcoming` | array<RevisitBookmark> | yes | Next two cards in the stack |
+
+### RevisitRoundRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `size` | 5 \| 10 \| 20 | no | Round size |
+
+### RevisitActionRequest
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `bookmark_id` | string | yes | Current bookmark ID |
+| `action` | "read" \| "done" \| "skipped" \| "postponed" \| "trashed" | yes | Decision |
+| `delay` | "day" \| "week" \| "month" | no | Postponement |
 
 ### CaptureSource
 
