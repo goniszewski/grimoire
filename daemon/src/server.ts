@@ -78,6 +78,8 @@ function isFrontendNavigation(c: Context): boolean {
 }
 
 function normalizeOrigin(origin: string): string | null {
+  // Reject raw path syntax before URL parsing can normalize dot segments away.
+  if (!/^https?:\/\/[^/?#\\]+\/?$/i.test(origin)) return null;
   try {
     const parsed = new URL(origin);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;

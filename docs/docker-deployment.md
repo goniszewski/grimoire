@@ -164,6 +164,8 @@ services:
 ```
 
 Then open `http://127.0.0.1:3211`.
+The built frontend sends API requests to that same browser origin, including
+the host-side port.
 
 Because the browser origin includes the host-side port, also trust that exact
 origin when recreating the container:

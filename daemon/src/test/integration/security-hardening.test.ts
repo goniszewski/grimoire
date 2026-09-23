@@ -152,6 +152,8 @@ describe("Security hardening", () => {
       "*",
       "https://*.example.com",
       "https://path.example/admin",
+      "https://normalized-path.example/admin/..",
+      "https://encoded-path.example/%2e",
       "https://user:password@credential.example",
     ];
 
@@ -192,7 +194,13 @@ describe("Security hardening", () => {
         "https://roberts-mac-mini.tailae45c7.ts.net:8443"
       );
 
-      for (const origin of ["https://*.example.com", "https://path.example", "https://credential.example"]) {
+      for (const origin of [
+        "https://*.example.com",
+        "https://path.example",
+        "https://normalized-path.example",
+        "https://encoded-path.example",
+        "https://credential.example",
+      ]) {
         const invalid = await app.request("/bookmarks", {
           method: "POST",
           headers: {
