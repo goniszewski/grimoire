@@ -80,6 +80,7 @@ describe("Security hardening", () => {
     expect(res.status).toBe(403);
     const json = (await res.json()) as { error: string };
     expect(json.error).toContain("Origin is not allowed");
+    expect(json.error).toContain("CORS_ORIGINS");
   });
 
   it("allows same-daemon local browser writes", async () => {
@@ -145,7 +146,16 @@ describe("Security hardening", () => {
 
   it("allows explicitly configured remote origins while rejecting unconfigured origins", async () => {
     const originalOrigins = Config.CORS_ORIGINS;
-    (Config as MutableConfig).CORS_ORIGINS = ["https://roberts-mac-mini.tailae45c7.ts.net:8443", "http://localhost:4567"];
+    (Config as MutableConfig).CORS_ORIGINS = [
+      "https://roberts-mac-mini.tailae45c7.ts.net:8443",
+      "http://localhost:4567",
+      "*",
+      "https://*.example.com",
+      "https://path.example/admin",
+      "https://normalized-path.example/admin/..",
+      "https://encoded-path.example/%2e",
+      "https://user:password@credential.example",
+    ];
 
     try {
       const app = createApp({ db, queue, startTime: new Date(), version: "0.0.0-test", staticDir: false });
@@ -170,6 +180,38 @@ describe("Security hardening", () => {
       });
       expect(remote.status).toBe(201);
       expect(remote.headers.get("access-control-allow-origin")).toBe("https://roberts-mac-mini.tailae45c7.ts.net:8443");
+
+      const remotePreflight = await app.request("/import", {
+        method: "OPTIONS",
+        headers: {
+          Origin: "https://roberts-mac-mini.tailae45c7.ts.net:8443",
+          "Access-Control-Request-Method": "POST",
+          "Access-Control-Request-Headers": "Content-Type",
+        },
+      });
+      expect(remotePreflight.status).toBe(204);
+      expect(remotePreflight.headers.get("access-control-allow-origin")).toBe(
+        "https://roberts-mac-mini.tailae45c7.ts.net:8443"
+      );
+
+      for (const origin of [
+        "https://*.example.com",
+        "https://path.example",
+        "https://normalized-path.example",
+        "https://encoded-path.example",
+        "https://credential.example",
+      ]) {
+        const invalid = await app.request("/bookmarks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: origin,
+          },
+          body: JSON.stringify({ url: "https://example.com/invalid-configured-origin" }),
+        });
+        expect(invalid.status).toBe(403);
+        expect(invalid.headers.get("access-control-allow-origin")).toBeNull();
+      }
 
       const allowed = await app.request("/bookmarks", {
         method: "POST",

@@ -47,6 +47,8 @@ const LOCAL_JSON_BODY_MAX_BYTES = 64 * 1024;
 const CAPTURE_JSON_BODY_MAX_BYTES = 256 * 1024;
 /** Default cap for mutating routes that are not on the allowlist below. */
 const DEFAULT_JSON_BODY_MAX_BYTES = 256 * 1024;
+const ORIGIN_REJECTED_MESSAGE =
+  "Origin is not allowed for this local daemon. Add the exact trusted browser origin to CORS_ORIGINS.";
 
 const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/backup",
@@ -77,9 +79,14 @@ function isFrontendNavigation(c: Context): boolean {
 }
 
 function normalizeOrigin(origin: string): string | null {
+  // Reject raw path syntax before URL parsing can normalize dot segments away.
+  if (!/^https?:\/\/[^/?#\\]+\/?$/i.test(origin)) return null;
   try {
     const parsed = new URL(origin);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (parsed.username || parsed.password) return null;
+    if (parsed.pathname !== "/" || parsed.search || parsed.hash) return null;
+    if (parsed.hostname.includes("*")) return null;
     return parsed.origin;
   } catch {
     return null;
@@ -177,12 +184,12 @@ async function enforceLocalOrigin(c: Context, next: Next): Promise<Response | vo
   const method = c.req.method;
   const isPreflight = method === "OPTIONS" && !!c.req.header("access-control-request-method");
   if (isPreflight && origin && !isAllowedLocalOrigin(origin)) {
-    return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
+    return c.json({ error: ORIGIN_REJECTED_MESSAGE }, 403);
   }
 
   const unsafeBrowserRequest = !!origin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
   if (unsafeBrowserRequest && !isAllowedLocalOrigin(origin)) {
-    return c.json({ error: "Origin is not allowed for this local daemon" }, 403);
+    return c.json({ error: ORIGIN_REJECTED_MESSAGE }, 403);
   }
   await next();
 }

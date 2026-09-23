@@ -227,6 +227,7 @@ The daemon reads install-time defaults from `~/.local/share/littleimp/.env`.
 | `HOST` | `127.0.0.1` | Bind address. Keep localhost for security. |
 | `PORT` | `3210` | Daemon HTTP port. |
 | `DATA_DIR` | `~/.local/share/littleimp` | Database, backups, and logs. |
+| `CORS_ORIGINS` | local development origins | Comma-separated exact browser origins trusted for writes. Required for an authenticated reverse proxy or a non-default browser-facing port, for example `https://grimoire.example.com`. Paths, credentials, and wildcards are not accepted. |
 | `NODE_ENV` | `production` | Use `development` for local development logging. |
 | `LOG_FORMAT` | `json` | `json` or `pretty`. |
 

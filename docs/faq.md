@@ -74,6 +74,7 @@ static, client-only showcase with synthetic session data; it has no hosted
 library. For a private library, you can run Grimoire through Docker, but
 Grimoire itself is not a public-server product in `1.1.0`. Keep the daemon
 loopback-bound or put an authenticated tunnel, VPN, or reverse proxy in front
-of it before traffic reaches Grimoire. See
+of it before traffic reaches Grimoire. Reverse-proxy browser access also
+requires the exact public origin in `CORS_ORIGINS`. See
 [remote access](./06-remote-access.md), [SECURITY.md](../SECURITY.md), and
 [docker-deployment.md](./docker-deployment.md).

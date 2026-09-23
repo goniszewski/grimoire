@@ -33,6 +33,15 @@ describe("daemon URL resolution", () => {
     );
   });
 
+  it("uses the current loopback origin for a packaged frontend on an alternate port", () => {
+    expect(resolveDaemonUrl(undefined, "http://127.0.0.1:3211", false)).toBe("http://127.0.0.1:3211");
+    expect(resolveDaemonUrl(undefined, "http://localhost:3211", false)).toBe("http://localhost:3211");
+  });
+
+  it("keeps the Vite development frontend pointed at the daemon port", () => {
+    expect(resolveDaemonUrl(undefined, "http://127.0.0.1:8080", true)).toBe("http://127.0.0.1:3210");
+  });
+
   it("rejects non-loopback daemon URL overrides", () => {
     expect(() => resolveDaemonUrl("https://example.com:3220")).toThrow(
       "VITE_DAEMON_URL must point to localhost, 127.0.0.1, or ::1"

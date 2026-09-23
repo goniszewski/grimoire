@@ -17,6 +17,9 @@ services:
       - NODE_ENV=production
       - LOG_FORMAT=json
       - LITTLEIMP_IN_CONTAINER=1
+      # Exact browser origin(s) allowed to write through an authenticated
+      # reverse proxy. Leave unset for built-in defaults; comma-separate more.
+      - CORS_ORIGINS
       # Optional: seed OpenAI defaults for first start or unattended deployments.
       # Runtime settings saved through the UI/API remain the source of truth.
       # - LLM_API_KEY=your-api-key
