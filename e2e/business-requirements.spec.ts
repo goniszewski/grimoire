@@ -101,7 +101,7 @@ test.describe("Documented business requirements smoke", () => {
     await expect(page.getByText("Immediate Reference")).toBeVisible();
 
     await page.getByRole("button", { name: "Refine library" }).click();
-    await page.getByRole("button", { name: /^Read Later$/ }).click();
+    await page.getByLabel("Library refinements").getByRole("button", { name: /^Later$/ }).click();
 
     await expect(page.getByText("Saved For Later")).toBeVisible();
     await expect(page.getByText("Immediate Reference")).toBeHidden();

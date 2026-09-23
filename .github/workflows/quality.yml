@@ -26,6 +26,9 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
 
+      - name: Verify frontend Bun lockfile
+        run: bun install --frozen-lockfile --lockfile-only --ignore-scripts
+
       - name: Install frontend dependencies
         run: npm ci --ignore-scripts
 
@@ -97,16 +100,20 @@ jobs:
           npm ci --ignore-scripts
           npm run package:release -- --platform macos
           python3 - <<'PYTHON'
-          import json, pathlib, re
+          import json, os, pathlib, re
           artifact = json.loads(pathlib.Path("release/release-manifest.json").read_text())["artifacts"][0]
+          version = json.loads(pathlib.Path("package.json").read_text())["version"]
           formula = pathlib.Path("Formula/grimoire.rb")
-          text, count = re.subn(r'(sha256 ")[a-f0-9]{64}(")', lambda match: match[1] + artifact["sha256"] + match[2], formula.read_text(), count=1)
+          text, count = re.subn(r'(url "https://github.com/goniszewski/grimoire/releases/download/)v[^/]+/little-imp-[^"]+-macos.tar.gz', lambda match: match[1] + f'v{version}/little-imp-{version}-macos.tar.gz', formula.read_text(), count=1)
+          assert count == 1
+          text, count = re.subn(r'(sha256 ")[a-f0-9]{64}(")', lambda match: match[1] + artifact["sha256"] + match[2], text, count=1)
           assert count == 1
           formula.write_text(text)
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write(f"HOMEBREW_TEST_EXPECTED_VERSION={version}\n")
           PYTHON
 
       - name: Validate local tap and install formula
         env:
           HOMEBREW_TEST_ARCHIVE_DIR: ${{ github.workspace }}/release
-          HOMEBREW_TEST_EXPECTED_VERSION: 1.2.0
         run: bash scripts/homebrew-smoke.sh

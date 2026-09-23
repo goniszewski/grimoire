@@ -115,7 +115,15 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       return problem(c, 422, "Unprocessable Entity", "`url` field (string) is required");
     }
 
-    const { url, title } = body as { url: string; title?: unknown };
+    const { url, title, read_later, notes } = body as {
+      url: string; title?: unknown; read_later?: unknown; notes?: unknown;
+    };
+    if (read_later !== undefined && read_later !== 0 && read_later !== 1) {
+      return problem(c, 422, "Unprocessable Entity", "`read_later` must be 0 or 1");
+    }
+    if (notes !== undefined && (typeof notes !== "string" || notes.length > 100_000)) {
+      return problem(c, 422, "Unprocessable Entity", "`notes` must be a string up to 100 000 characters");
+    }
 
     const parsedUrl = parsePublicHttpUrl(url);
     if (!parsedUrl.ok) {
@@ -136,6 +144,17 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
           "This URL is already in your archive. Restore it from the archive before re-adding.");
       }
       // Active bookmark — return it idempotently
+      if (read_later === 1 && existing.read_later === 0) {
+        deps.db.transaction(() => {
+          repo.update(existing.id, { read_later: 1 });
+          deps.db.query("DELETE FROM revisit_pass WHERE bookmark_id = ?").run(existing.id);
+          deps.db.query(
+            `INSERT INTO revisit_bookmarks (bookmark_id, later_added_at, available_after)
+             VALUES (?, ?, NULL)
+             ON CONFLICT(bookmark_id) DO UPDATE SET later_added_at = excluded.later_added_at, available_after = NULL`
+          ).run(existing.id, new Date().toISOString());
+        })();
+      }
       const bm = repo.findById(existing.id)!;
       return ok(c, bm, 200);
     }
@@ -143,7 +162,19 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const titleStr = typeof title === "string" && title.trim() ? title.trim() : undefined;
     let bookmark;
     try {
-      bookmark = repo.create(url, titleStr);
+      bookmark = deps.db.transaction(() => {
+        const created = repo.create(url, titleStr);
+        if (read_later === 1 || notes !== undefined) {
+          repo.update(created.id, {
+            ...(read_later === 1 ? { read_later: 1 as const } : {}),
+            ...(notes !== undefined ? { notes } : {}),
+          });
+        }
+        if (read_later === 1) {
+          deps.db.query("INSERT INTO revisit_bookmarks (bookmark_id) VALUES (?)").run(created.id);
+        }
+        return created;
+      })();
     } catch (err) {
       // Concurrent create race: another request inserted the same URL first.
       const raced = repo.findByUrl(url);
@@ -247,7 +278,8 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
   // PUT /bookmarks/:id — update title, tags, category
   router.put("/bookmarks/:id", async (c) => {
     const id = c.req.param("id");
-    if (!repo.findById(id)) {
+    const original = repo.findById(id);
+    if (!original) {
       return problem(c, 404, "Not Found", "Bookmark not found");
     }
 
@@ -345,7 +377,20 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
       allowed.notes = patch.notes as string | null;
     }
 
-    const updated = repo.update(id, allowed as Parameters<BookmarkRepository["update"]>[1]);
+    const updated = deps.db.transaction(() => {
+      const result = repo.update(id, allowed as Parameters<BookmarkRepository["update"]>[1]);
+      if (result && "read_later" in allowed && original.read_later !== allowed.read_later) {
+        deps.db.query("DELETE FROM revisit_pass WHERE bookmark_id = ?").run(id);
+        if (allowed.read_later === 1) {
+          deps.db.query(
+            `INSERT INTO revisit_bookmarks (bookmark_id, later_added_at, available_after)
+             VALUES (?, ?, NULL)
+             ON CONFLICT(bookmark_id) DO UPDATE SET later_added_at = excluded.later_added_at, available_after = NULL`
+          ).run(id, new Date().toISOString());
+        }
+      }
+      return result;
+    })();
     if (!updated) return problem(c, 404, "Not Found", "Bookmark not found");
     return ok(c, updated);
   });

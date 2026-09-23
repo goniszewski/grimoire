@@ -616,11 +616,60 @@ export async function getBookmark(id: string): Promise<BookmarkDetailResponseDto
   return apiFetch<BookmarkDetailResponseDto>(`/bookmarks/${id}`);
 }
 
-export async function createBookmark(url: string, title?: string): Promise<BookmarkResponseDto> {
+export async function createBookmark(
+  url: string,
+  title?: string,
+  options?: { read_later?: 0 | 1; notes?: string }
+): Promise<BookmarkResponseDto> {
   return apiFetch<BookmarkResponseDto>("/bookmarks", {
     method: "POST",
-    body: JSON.stringify({ url, title } satisfies BookmarkCreateRequestDto),
+    body: JSON.stringify({ url, title, ...options } satisfies BookmarkCreateRequestDto),
   });
+}
+
+export type RevisitDecision = "read" | "done" | "skipped" | "postponed" | "trashed";
+export interface RevisitBookmark {
+  id: string;
+  url: string;
+  title: string | null;
+  domain: string;
+  description: string | null;
+  summary: string | null;
+  notes: string | null;
+  screenshot_url: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+export interface RevisitState {
+  total: number;
+  eligible: number;
+  round: null | {
+    id: string;
+    size: number;
+    position: number;
+    completed: boolean;
+    decisions: RevisitDecision[];
+    can_undo: boolean;
+    current: RevisitBookmark | null;
+    upcoming: RevisitBookmark[];
+  };
+}
+
+export async function getRevisitState(): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit");
+}
+export async function startRevisitRound(size: 5 | 10 | 20 = 5): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/round", { method: "POST", body: JSON.stringify({ size }) });
+}
+export async function actOnRevisit(
+  bookmark_id: string,
+  action: RevisitDecision,
+  delay: "day" | "week" | "month" = "day"
+): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/action", { method: "POST", body: JSON.stringify({ bookmark_id, action, delay }) });
+}
+export async function undoRevisit(): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/undo", { method: "POST" });
 }
 
 export async function updateBookmark(

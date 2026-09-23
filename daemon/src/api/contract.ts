@@ -351,9 +351,47 @@ const schemas = {
     {
       url: stringSchema("HTTP or HTTPS URL to save", { format: "uri" }),
       title: stringSchema("Optional title override"),
+      read_later: integerSchema("Add the saved or existing active bookmark to Later", { enum: [0, 1] }),
+      notes: stringSchema("Optional personal note for a new bookmark", { maxLength: 100000 }),
     },
     ["url"]
   ),
+  RevisitBookmark: objectSchema({
+    id: stringSchema("Bookmark ID"),
+    url: stringSchema("Saved URL", { format: "uri" }),
+    title: nullable(stringSchema("Title")),
+    domain: stringSchema("Domain"),
+    description: nullable(stringSchema("Description")),
+    summary: nullable(stringSchema("Extracted summary")),
+    notes: nullable(stringSchema("Personal note")),
+    screenshot_url: nullable(stringSchema("Preview image URL")),
+    created_at: stringSchema("Saved timestamp", { format: "date-time" }),
+    read_at: nullable(stringSchema("Read timestamp", { format: "date-time" })),
+  }, ["id", "url", "title", "domain", "description", "summary", "notes", "screenshot_url", "created_at", "read_at"]),
+  RevisitRound: objectSchema({
+    id: stringSchema("Round ID"),
+    size: integerSchema("Number of cards"),
+    position: integerSchema("Zero-based current position"),
+    completed: booleanSchema("All cards have decisions"),
+    decisions: arrayOf(stringSchema("Read, removed from Later, skipped, postponed, or trashed", { enum: ["read", "done", "skipped", "postponed", "trashed"] }), "Decisions made"),
+    can_undo: booleanSchema("Last decision can be undone"),
+    current: nullable(ref("RevisitBookmark")),
+    upcoming: arrayOf(ref("RevisitBookmark"), "Next two cards in the stack"),
+  }, ["id", "size", "position", "completed", "decisions", "can_undo", "current", "upcoming"]),
+  RevisitState: objectSchema({
+    total: integerSchema("Active Later bookmarks"),
+    eligible: integerSchema("Active Later bookmarks available now"),
+    round: nullable(ref("RevisitRound")),
+  }, ["total", "eligible", "round"]),
+  RevisitStateResponse: envelope(ref("RevisitState"), "Revisit state response"),
+  RevisitRoundRequest: objectSchema({
+    size: integerSchema("Round size", { enum: [5, 10, 20] }),
+  }, []),
+  RevisitActionRequest: objectSchema({
+    bookmark_id: stringSchema("Current bookmark ID"),
+    action: stringSchema("Decision", { enum: ["read", "done", "skipped", "postponed", "trashed"] }),
+    delay: stringSchema("Postponement", { enum: ["day", "week", "month"] }),
+  }, ["bookmark_id", "action"]),
   CaptureSource: objectSchema(
     {
       client: nullable(stringSchema("Optional local integration client label", { maxLength: 80 })),
@@ -2014,6 +2052,28 @@ export const apiContract = {
           },
         },
       ],
+    },
+    {
+      method: "GET", path: "/revisit", tag: "Bookmarks",
+      summary: "Get Later availability and the persisted Revisit round.",
+      responses: { "200": jsonResponse("Revisit state", ref("RevisitStateResponse")) },
+    },
+    {
+      method: "POST", path: "/revisit/round", tag: "Bookmarks",
+      summary: "Start a finite, shuffled round or resume the active round.",
+      request: { body: { contentType: "application/json", schema: ref("RevisitRoundRequest") } },
+      responses: { "200": jsonResponse("Revisit state", ref("RevisitStateResponse")), "400": problemResponse("Malformed JSON"), "422": problemResponse("Invalid round size") },
+    },
+    {
+      method: "POST", path: "/revisit/action", tag: "Bookmarks",
+      summary: "Apply one decision to the current card; the read action marks it read.",
+      request: { body: { contentType: "application/json", schema: ref("RevisitActionRequest") } },
+      responses: { "200": jsonResponse("Revisit state", ref("RevisitStateResponse")), "400": problemResponse("Malformed JSON"), "409": problemResponse("Round changed"), "422": problemResponse("Invalid action") },
+    },
+    {
+      method: "POST", path: "/revisit/undo", tag: "Bookmarks",
+      summary: "Undo the last Revisit decision and return to that card.",
+      responses: { "200": jsonResponse("Revisit state", ref("RevisitStateResponse")), "409": problemResponse("Nothing to undo") },
     },
     {
       method: "GET",
