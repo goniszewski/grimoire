@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAppLock } from "@/hooks/use-app-lock";
 import { LockScreen } from "@/components/LockScreen";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -42,8 +42,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { loadDemoData } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRevisitState, loadDemoData } from "@/lib/api";
 import { isDemoMode } from "@/demo/enabled";
 import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
 import { generatedFavicon } from "@/lib/media-url";
@@ -51,7 +51,7 @@ import { generatedFavicon } from "@/lib/media-url";
 const Index = () => {
   const store = useBookmarks();
   const qc = useQueryClient();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { online, isChecking: daemonChecking } = useDaemonStatus();
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -63,6 +63,7 @@ const Index = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [laterInviteDismissed, setLaterInviteDismissed] = useState(false);
   const [refineOpen, setRefineOpen] = useState(false);
   const lastPageSelectionKey = useRef(store.pageSelectionKey);
   const routeTagFilterActive = useRef(false);
@@ -71,12 +72,31 @@ const Index = () => {
   const { aiEnabled, isLoading: settingsLoading } = useSettings();
   const { showBanner: updateAvailable, dismiss: dismissUpdateBanner, result: updateCheckResult } = useUpdateCheck();
   const requestedTag = searchParams.get("tag");
-  const { addBookmark, setSelectedTag } = store;
+  const requestedLater = searchParams.get("later") === "1";
+  const { data: revisitState } = useQuery({
+    queryKey: ["revisit"], queryFn: getRevisitState, enabled: !isDemoMode && !appLock.locked,
+  });
+  const { addBookmark, setSelectedTag, setReadLaterOnly, readLaterOnly } = store;
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
     setSelectedIds(new Set());
   }, []);
+
+  const setLaterFilter = (enabled: boolean) => {
+    setReadLaterOnly(enabled);
+    if (!enabled && requestedLater) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete("later");
+        return next;
+      }, { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    if (requestedLater) setReadLaterOnly(true);
+  }, [requestedLater, setReadLaterOnly]);
 
   useEffect(() => {
     if (lastPageSelectionKey.current === store.pageSelectionKey) return;
@@ -262,14 +282,14 @@ const Index = () => {
       .then(() => {
         toast({
           title: readLater
-            ? `Marked ${ids.length} bookmark${ids.length !== 1 ? "s" : ""} read later`
-            : `Cleared read later from ${ids.length} bookmark${ids.length !== 1 ? "s" : ""}`,
+            ? `Added ${ids.length} bookmark${ids.length !== 1 ? "s" : ""} to Later`
+            : `Removed ${ids.length} bookmark${ids.length !== 1 ? "s" : ""} from Later`,
         });
         exitSelectionMode();
       })
       .catch(() => {
         toast({
-          title: "Could not update read later",
+          title: "Could not update Later",
           variant: "destructive",
         });
       });
@@ -324,7 +344,7 @@ const Index = () => {
     store.selectedCategory && { label: store.selectedCategory, clear: () => store.setSelectedCategory(null) },
     store.selectedDomain && { label: store.selectedDomain, clear: () => store.setSelectedDomain(null) },
     store.selectedTag && { label: `#${store.selectedTag}`, clear: () => store.setSelectedTag(null) },
-    store.readLaterOnly && { label: "Read Later", clear: () => store.setReadLaterOnly(false) },
+    store.readLaterOnly && { label: "Later", clear: () => setLaterFilter(false) },
     store.readStateFilter !== "all" && {
       label: store.readStateFilter === "read" ? "Read" : "Unread",
       clear: () => store.setReadStateFilter("all"),
@@ -458,6 +478,16 @@ const Index = () => {
 
           {/* Main content */}
           <main className="flex-1 p-4 sm:p-6">
+            {!isDemoMode && !laterInviteDismissed && !!revisitState?.data.total && !store.searchQuery && (
+              <section className="relative mb-5 flex flex-col gap-3 rounded-lg border bg-card p-4 pr-10 sm:flex-row sm:items-center sm:justify-between" aria-label="Later">
+                <div>
+                  <p className="text-sm font-semibold">{revisitState.data.round && !revisitState.data.round.completed ? "Continue your round" : "Something you saved for later"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{revisitState.data.total} in Later · {revisitState.data.eligible} available now</p>
+                </div>
+                <Button asChild size="sm"><Link to="/later">{revisitState.data.round && !revisitState.data.round.completed ? "Continue Revisit" : "Revisit 5 bookmarks"}</Link></Button>
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-8 w-8" aria-label="Dismiss Later invitation" onClick={() => setLaterInviteDismissed(true)}><X className="h-4 w-4" /></Button>
+              </section>
+            )}
             {/* Active filters */}
             {activeFilters.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -502,7 +532,7 @@ const Index = () => {
                       onClick={() => handleBulkReadLater(true)}
                     >
                       <BookmarkCheck className="h-3 w-3 mr-1.5" />
-                      Read Later
+                      Add to Later
                     </Button>
                     <Button
                       variant="outline"
@@ -512,7 +542,7 @@ const Index = () => {
                       onClick={() => handleBulkReadLater(false)}
                     >
                       <BookmarkX className="h-3 w-3 mr-1.5" />
-                      Clear
+                      Remove from Later
                     </Button>
                     <Button
                       variant="destructive"
@@ -671,12 +701,12 @@ const Index = () => {
                 <Button
                   variant={store.readLaterOnly ? "secondary" : "outline"}
                   size="sm"
-                  onClick={() => store.setReadLaterOnly(!store.readLaterOnly)}
+                  onClick={() => setLaterFilter(!store.readLaterOnly)}
                   className="h-9 justify-start text-xs"
                   aria-pressed={store.readLaterOnly}
                 >
                   <BookmarkCheck className="h-3 w-3" />
-                  <span>Read Later</span>
+                  <span>Later</span>
                 </Button>
               </section>
             )}

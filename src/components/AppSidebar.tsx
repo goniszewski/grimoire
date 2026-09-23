@@ -53,7 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TagCount, DomainCount } from "@/types/bookmark";
-import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput, Settings, GripVertical } from "lucide-react";
+import { FolderOpen, Tag, Clock, Flame, Hash, Globe, ChevronDown, ChevronRight, ExternalLink, History, Bot, Plus, X, Archive, Check, Pencil, Trash2, FolderInput, Settings, GripVertical, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -945,6 +945,12 @@ export function AppSidebar({
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
+                {!isDemoMode && <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate("/later")} tooltip={collapsed ? "Later" : undefined}>
+                    <BookmarkCheck className="h-3.5 w-3.5 shrink-0" />
+                    {!collapsed && <span className="text-xs">Later</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => navigate("/timeline")}

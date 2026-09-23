@@ -784,8 +784,10 @@ export function useBookmarks() {
   // ─── Mutations ────────────────────────────────────────────────────────────
 
   const addBookmarkMutation = useMutation({
-    mutationFn: (url: string) => createBookmark(url),
+    mutationFn: ({ url, readLater, notes }: { url: string; readLater?: boolean; notes?: string }) =>
+      createBookmark(url, undefined, { read_later: readLater ? 1 : 0, ...(notes ? { notes } : {}) }),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["revisit"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       qc.invalidateQueries({ queryKey: ["search"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.trash });
@@ -869,6 +871,7 @@ export function useBookmarks() {
       }
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["revisit"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
       qc.invalidateQueries({ queryKey: ["search"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.archive });
@@ -880,8 +883,8 @@ export function useBookmarks() {
 
   // ─── Public API matching use-bookmark-store interface ─────────────────────
 
-  const addBookmark = useCallback(async (url: string) => {
-    await addBookmarkMutation.mutateAsync(url);
+  const addBookmark = useCallback(async (url: string, options?: { readLater?: boolean; notes?: string }) => {
+    await addBookmarkMutation.mutateAsync({ url, ...options });
   }, [addBookmarkMutation]);
 
   const deleteBookmarkFn = useCallback(async (id: string) => {
