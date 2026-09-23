@@ -170,7 +170,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
       });
     } else {
       onReadLater?.(bookmark.id, {
-        onSuccess: () => toast({ title: "Marked read later" }),
+        onSuccess: () => toast({ title: "Added to Later" }),
         onError: () => toast({ title: "Failed to update", variant: "destructive" }),
       });
     }
@@ -224,7 +224,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
         {(onReadLater || onClearReadLater) && (
           <DropdownMenuItem onClick={handleToggleReadLater}>
             {bookmark.read_later ? <BookmarkX className="mr-2 h-3.5 w-3.5" /> : <BookmarkCheck className="mr-2 h-3.5 w-3.5" />}
-            {bookmark.read_later ? "Clear read later" : "Mark read later"}
+            {bookmark.read_later ? "Remove from Later" : "Add to Later"}
           </DropdownMenuItem>
         )}
         {(onArchive || onMarkRead || onMarkUnread || onReadLater || onClearReadLater) && <DropdownMenuSeparator />}
@@ -337,7 +337,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
               </Link>
             ))}
             {!!bookmark.read_later && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning hidden md:inline-flex">Read Later</Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning hidden md:inline-flex">Later</Badge>
             )}
             <span className="text-[10px] text-muted-foreground shrink-0 hidden lg:inline">
               {openedText ?? formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}
@@ -401,7 +401,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                     variant="outline"
                     className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning"
                   >
-                    Read Later
+                    Later
                   </Badge>
                 )}
                 {bookmark.tags.slice(0, 4).map((tag) => (
@@ -432,7 +432,7 @@ export function BookmarkCard({ bookmark, onDelete, onClick, onPin, onUnpin, onRe
                   variant="outline"
                   className="text-[10px] px-1.5 py-0 h-5 font-mono border-warning/30 text-warning"
                 >
-                  Read Later
+                  Later
                 </Badge>
               </div>
             )}

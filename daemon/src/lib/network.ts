@@ -3,41 +3,45 @@
  */
 
 /**
- * If `host` is an IPv4-mapped or IPv4-compatible IPv6 literal, return the
- * embedded dotted-quad IPv4 string; otherwise null.
+ * Returns true if the hostname resolves to a private, loopback, link-local,
+ * or otherwise non-routable address.
  *
- * WHATWG URL normalizes mapped forms to e.g. `[::ffff:c0a8:101]`.
+ * Used in SSRF mitigations across the codebase.
+ * NOTE: This is a best-effort syntactic check. DNS rebinding (a public hostname
+ * that resolves to a private IP at fetch time) is not mitigated here and is
+ * considered an accepted risk for a local-only daemon.
  */
-function embeddedIpv4FromIpv6(host: string): string | null {
-  const h = host.toLowerCase();
+export function isPrivateHost(hostname: string): boolean {
+  // Strip brackets, trailing FQDN dots (localhost. / localhost..), and case-fold.
+  const host = hostname
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.+$/g, "")
+    .toLowerCase();
 
-  // ::ffff:a.b.c.d (or …:ffff:a.b.c.d before normalization)
-  const mappedDotted = /(?:^|:)ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(h);
-  if (mappedDotted) return mappedDotted[1];
+  if (isPrivateIpv4(host)) return true;
 
-  // ::ffff:hhhh:hhhh
-  const mappedHex = /(?:^|:)ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(h);
-  if (mappedHex) {
-    const hi = Number.parseInt(mappedHex[1]!, 16);
-    const lo = Number.parseInt(mappedHex[2]!, 16);
-    return `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
-  }
+  // IPv4-mapped and IPv4-compatible IPv6 literals can address the same
+  // private services as their dotted-quad forms. Classify the embedded address
+  // before applying the IPv6-only checks below.
+  const embeddedIpv4 = embeddedIpv4Address(host);
+  if (embeddedIpv4 && isPrivateIpv4(embeddedIpv4)) return true;
 
-  // Deprecated IPv4-compatible ::a.b.c.d
-  const compatDotted = /^::(\d{1,3}(?:\.\d{1,3}){3})$/.exec(h);
-  if (compatDotted) return compatDotted[1];
+  // Loopback
+  if (host === "localhost" || host === "::1") return true;
 
-  // Deprecated IPv4-compatible ::hhhh:hhhh (e.g. ::7f00:1 → 127.0.0.1).
-  // Exclude ::ffff:… (handled above) and bare ::1 (IPv6 loopback).
-  if (h === "::1") return null;
-  const compatHex = /^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(h);
-  if (compatHex && compatHex[1] !== "ffff") {
-    const hi = Number.parseInt(compatHex[1]!, 16);
-    const lo = Number.parseInt(compatHex[2]!, 16);
-    return `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
-  }
+  // Link-local IPv6
+  if (/^fe80:/i.test(host)) return true;
 
-  return null;
+  // IPv6 ULA (Unique Local Address, RFC 4193) — fc00::/7 covers fc** and fd**
+  if (/^f[cd][0-9a-f]{2}:/i.test(host)) return true;
+
+  // IPv6 site-local (deprecated but still routable internally)
+  if (/^fec[0-9a-f]:/i.test(host)) return true;
+
+  // Unspecified IPv6
+  if (host === "::") return true;
+
+  return false;
 }
 
 function isPrivateIpv4(host: string): boolean {
@@ -56,47 +60,53 @@ function isPrivateIpv4(host: string): boolean {
   if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return true;
 
   // Unspecified / broadcast
-  if (host === "0.0.0.0") return true;
-
-  return false;
+  return host === "0.0.0.0";
 }
 
-/**
- * Returns true if the hostname resolves to a private, loopback, link-local,
- * or otherwise non-routable address.
- *
- * Used in SSRF mitigations across the codebase.
- * NOTE: This is a best-effort syntactic check. DNS rebinding (a public hostname
- * that resolves to a private IP at fetch time) is not mitigated here and is
- * considered an accepted risk for a local-only daemon.
- */
-export function isPrivateHost(hostname: string): boolean {
-  // Strip brackets, trailing FQDN dots (localhost. / localhost..), and case-fold.
-  const host = hostname
-    .replace(/^\[|\]$/g, "")
-    .replace(/\.+$/g, "")
-    .toLowerCase();
+function embeddedIpv4Address(host: string): string | null {
+  if (!host.includes(":")) return null;
+  const words = parseIpv6Words(host);
+  if (!words || words.length !== 8) return null;
 
-  // Loopback
-  if (host === "localhost" || host === "::1") return true;
+  // The first 80 bits are zero for IPv4-compatible and IPv4-mapped
+  // addresses. The sixth word is 0 for compatible or ffff for mapped.
+  if (!words.slice(0, 5).every((word) => word === 0) || (words[5] !== 0 && words[5] !== 0xffff)) {
+    return null;
+  }
 
-  const embedded = embeddedIpv4FromIpv6(host);
-  if (embedded && isPrivateIpv4(embedded)) return true;
+  return [words[6] >> 8, words[6] & 0xff, words[7] >> 8, words[7] & 0xff].join(".");
+}
 
-  // Native IPv4 / IPv6 checks (and public IPv4-mapped that embeds a public IPv4)
-  if (isPrivateIpv4(host)) return true;
+function parseIpv6Words(host: string): number[] | null {
+  const sections = host.split("::");
+  if (sections.length > 2) return null;
 
-  // Link-local IPv6
-  if (/^fe80:/.test(host)) return true;
+  const parseSection = (section: string): number[] | null => {
+    if (!section) return [];
+    const groups = section.split(":");
+    const words: number[] = [];
+    for (const [index, group] of groups.entries()) {
+      if (group.includes(".")) {
+        if (index !== groups.length - 1) return null;
+        const octets = group.split(".");
+        if (octets.length !== 4 || octets.some((octet) => !/^\d{1,3}$/.test(octet) || Number(octet) > 255)) {
+          return null;
+        }
+        words.push((Number(octets[0]) << 8) | Number(octets[1]), (Number(octets[2]) << 8) | Number(octets[3]));
+        continue;
+      }
+      if (!/^[0-9a-f]{1,4}$/.test(group)) return null;
+      words.push(Number.parseInt(group, 16));
+    }
+    return words;
+  };
 
-  // IPv6 ULA (Unique Local Address, RFC 4193) — fc00::/7 covers fc** and fd**
-  if (/^f[cd][0-9a-f]{2}:/.test(host)) return true;
+  const left = parseSection(sections[0]);
+  const right = sections.length === 2 ? parseSection(sections[1]) : [];
+  if (!left || !right) return null;
 
-  // IPv6 site-local (deprecated but still routable internally)
-  if (/^fec[0-9a-f]:/.test(host)) return true;
-
-  // Unspecified IPv6
-  if (host === "::") return true;
-
-  return false;
+  if (sections.length === 1) return left.length === 8 ? left : null;
+  const missing = 8 - left.length - right.length;
+  if (missing < 1) return null;
+  return [...left, ...Array.from({ length: missing }, () => 0), ...right];
 }
