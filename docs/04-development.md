@@ -81,8 +81,7 @@ For pre-publication testing, download and verify the signed release archives
 first, then provide their directory in local mode. Homebrew verifies the
 formula SHA-256 against the supplied archive; this does not prove public
 asset availability. Set the working-tree formula URLs and checksums to those
-exact candidate archives before running this command; the tracked formula
-still points to the published v1.2.0 assets:
+exact candidate archives before running this command:
 
 ```sh
 HOMEBREW_TEST_ARCHIVE_DIR=/absolute/path/to/verified-archives \
@@ -99,7 +98,7 @@ It requires the version to change and verifies preservation and service health
 at the requested target version. Supply both archives when using local cache
 mode. Without the older formula, the test exercises a same-version reinstall.
 
-For the v1.3 release candidate, after merging an approved PR into `main`:
+For the v1.3 release, after merging an approved PR into `main`:
 
 1. Require a clean `main` at the exact remote commit and a `v1.3.0` tag at
    that commit. Build both archives from that checkout with

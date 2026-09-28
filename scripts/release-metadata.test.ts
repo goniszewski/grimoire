@@ -24,8 +24,9 @@ describe("release metadata", () => {
     const root = fixtureRoot();
     try {
       expect(checkReleaseMetadata(root)).toEqual([]);
+      const publishedVersion = JSON.parse(readFileSync(join(root, "Formula/release.json"), "utf8")).version as string;
       const installerPath = join(root, "install.sh");
-      writeFileSync(installerPath, readFileSync(installerPath, "utf8").replace("LITTLEIMP_VERSION:-1.2.0", "LITTLEIMP_VERSION:-1.1.0"));
+      writeFileSync(installerPath, readFileSync(installerPath, "utf8").replace(`LITTLEIMP_VERSION:-${publishedVersion}`, "LITTLEIMP_VERSION:-0.0.0"));
       expect(checkReleaseMetadata(root)).toContain("One-command installer default differs from published release");
       const daemonPath = join(root, "daemon/package.json");
       writeFileSync(daemonPath, readFileSync(daemonPath, "utf8").replace('"version": "1.3.0"', '"version": "1.2.0"'));

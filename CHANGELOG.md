@@ -4,7 +4,7 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.3.0] - Unreleased
+## [1.3.0] - 2026-09-28
 
 ### Added
 - Later / Revisit rounds present a small shuffled stack of saved bookmarks,
