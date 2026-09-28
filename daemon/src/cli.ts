@@ -376,30 +376,30 @@ function formatRollbackGuidance(lines: string[]): string {
 
 function usage(): string {
   return [
-    `littleimp ${APP_VERSION}`,
+    `grimoire ${APP_VERSION}`,
     "",
     "Usage:",
-    "  littleimp update check [--channel stable|beta] [--source URL] [--json]",
-    "  littleimp update install [--version VERSION] [--release-base-url URL] [--channel stable|beta] [--source URL] [--json] [--allow-unsigned]",
-    "  littleimp update install --archive FILE --checksum FILE [--signature FILE] [--json] [--allow-unsigned]",
-    "  littleimp backup create [--json] [--daemon-url URL]",
-    "  littleimp backup create --encrypt --output FILE [--json] [--daemon-url URL] [--password-file FILE]",
-    "  littleimp backup list [--include-remote] [--json] [--daemon-url URL]",
-    "  littleimp backup restore <name> --yes [--json] [--daemon-url URL]",
-    "  littleimp backup restore --remote-key <key> --yes [--json] [--daemon-url URL]",
-    "  littleimp backup restore --encrypted-file FILE --yes [--json] [--daemon-url URL] [--password-file FILE]",
-    "  littleimp backup verify --file <snapshot-directory> [--json]",
-    "  littleimp backup verify --encrypted --file FILE [--json] [--password-file FILE]",
-    "  littleimp diagnostics [--json] [--daemon-url URL]",
+    "  grimoire update check [--channel stable|beta] [--source URL] [--json]",
+    "  grimoire update install [--version VERSION] [--release-base-url URL] [--channel stable|beta] [--source URL] [--json] [--allow-unsigned]",
+    "  grimoire update install --archive FILE --checksum FILE [--signature FILE] [--json] [--allow-unsigned]",
+    "  grimoire backup create [--json] [--daemon-url URL]",
+    "  grimoire backup create --encrypt --output FILE [--json] [--daemon-url URL] [--password-file FILE]",
+    "  grimoire backup list [--include-remote] [--json] [--daemon-url URL]",
+    "  grimoire backup restore <name> --yes [--json] [--daemon-url URL]",
+    "  grimoire backup restore --remote-key <key> --yes [--json] [--daemon-url URL]",
+    "  grimoire backup restore --encrypted-file FILE --yes [--json] [--daemon-url URL] [--password-file FILE]",
+    "  grimoire backup verify --file <snapshot-directory> [--json]",
+    "  grimoire backup verify --encrypted --file FILE [--json] [--password-file FILE]",
+    "  grimoire diagnostics [--json] [--daemon-url URL]",
     "",
     "Migration commands (experimental; v0.5 SQLite only):",
-    "  littleimp migrate inspect --data-dir <v0.5-data-dir> [--json] [--daemon-url URL]",
-    "  littleimp migrate inspect --db <db.sqlite> [--uploads-dir DIR] [--json] [--daemon-url URL]",
-    "  littleimp migrate inspect --archive <data.zip|tar.gz|…> [--json] [--daemon-url URL]",
-    "  littleimp migrate apply --data-dir <v0.5-data-dir> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
-    "  littleimp migrate apply --db <db.sqlite> --yes [--uploads-dir DIR] [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
-    "  littleimp migrate apply --archive <data.zip|tar.gz|…> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
-    "  littleimp migrate apply --data-dir <v0.5-data-dir> --dry-run [--owner USER] [--merge] [--json] [--daemon-url URL]",
+    "  grimoire migrate inspect --data-dir <v0.5-data-dir> [--json] [--daemon-url URL]",
+    "  grimoire migrate inspect --db <db.sqlite> [--uploads-dir DIR] [--json] [--daemon-url URL]",
+    "  grimoire migrate inspect --archive <data.zip|tar.gz|…> [--json] [--daemon-url URL]",
+    "  grimoire migrate apply --data-dir <v0.5-data-dir> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  grimoire migrate apply --db <db.sqlite> --yes [--uploads-dir DIR] [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  grimoire migrate apply --archive <data.zip|tar.gz|…> --yes [--owner USER] [--password|--password-file FILE] [--merge] [--json] [--daemon-url URL]",
+    "  grimoire migrate apply --data-dir <v0.5-data-dir> --dry-run [--owner USER] [--merge] [--json] [--daemon-url URL]",
     "",
     "Environment:",
     "  LITTLEIMP_DAEMON_URL  Defaults to http://127.0.0.1:3210",
@@ -670,6 +670,13 @@ async function handleUpdateInstallCommand(
     ],
   });
   assertNoPositionals(parsed, command, "update");
+
+  if (io.env.LITTLEIMP_PACKAGE_MANAGER === "homebrew") {
+    throw new CliError(
+      "Homebrew-managed installations are updated with `brew upgrade grimoire`; do not use the CLI self-update command.",
+      2
+    );
+  }
 
   const archive = parsed.values.get("--archive");
   const checksum = parsed.values.get("--checksum");

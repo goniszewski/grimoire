@@ -12,6 +12,7 @@ import {
 import { createHash } from "node:crypto";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 export type ReleasePlatform = "macos" | "linux";
 
@@ -53,6 +54,8 @@ export interface ReleaseManifest {
   name: "little-imp";
   version: string;
   generatedAt: string;
+  sourceCommit?: string;
+  sourceDirty?: boolean;
   signing: {
     detachedSignatureExtension: ".asc";
     requiredBeforePublication: true;
@@ -65,6 +68,8 @@ export interface CreateReleaseManifestOptions {
   version: string;
   generatedAt: string;
   artifacts: ManifestArtifactInput[];
+  sourceCommit?: string;
+  sourceDirty?: boolean;
 }
 
 export interface PackageReleaseOptions {
@@ -95,7 +100,8 @@ export function releaseRootDirectoryName(version: string, platform: ReleasePlatf
 }
 
 export function releaseArchiveName(version: string, platform: ReleasePlatform): string {
-  return `${releaseRootDirectoryName(version, platform)}.tar.gz`;
+  assertSafeReleaseVersion(version);
+  return releaseArchiveFileName(version, platform);
 }
 
 export function readPackageVersion(projectRoot: string): string {
@@ -132,6 +138,8 @@ export function createReleaseManifest(options: CreateReleaseManifestOptions): Re
     name: "little-imp",
     version: options.version,
     generatedAt: options.generatedAt,
+    ...(options.sourceCommit ? { sourceCommit: options.sourceCommit } : {}),
+    ...(options.sourceDirty !== undefined ? { sourceDirty: options.sourceDirty } : {}),
     signing: {
       detachedSignatureExtension: SIGNATURE_EXTENSION,
       requiredBeforePublication: true,
@@ -234,7 +242,15 @@ export function packageRelease(options: PackageReleaseOptions): PackageReleaseRe
     rmSync(stagingRoot, { recursive: true, force: true });
   }
 
-  const manifest = createReleaseManifest({ version, generatedAt, artifacts });
+  const gitCommit = spawnSync("/usr/bin/git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" });
+  const gitStatus = spawnSync("/usr/bin/git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: projectRoot, encoding: "utf8" });
+  const manifest = createReleaseManifest({
+    version,
+    generatedAt,
+    artifacts,
+    ...(gitCommit.status === 0 ? { sourceCommit: gitCommit.stdout.trim() } : {}),
+    sourceDirty: gitStatus.status !== 0 || gitStatus.stdout.trim().length > 0,
+  });
   const manifestPath = join(outputDir, "release-manifest.json");
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -265,19 +281,20 @@ function copyDaemonRuntime(projectRoot: string, payloadRoot: string): void {
 
 function writeCliEntrypoint(payloadRoot: string): void {
   const binDir = join(payloadRoot, "bin");
-  const cliPath = join(binDir, "littleimp");
   mkdirSync(binDir, { recursive: true });
-  writeFileSync(
-    cliPath,
-    [
-      "#!/usr/bin/env bash",
-      "set -euo pipefail",
-      'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
-      'exec bun "${SCRIPT_DIR}/../daemon/src/cli.ts" "$@"',
-      "",
-    ].join("\n")
-  );
-  chmodSync(cliPath, 0o755);
+  const cliContents = [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    'SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
+    'exec bun "${SCRIPT_DIR}/../daemon/src/cli.ts" "$@"',
+    "",
+  ].join("\n");
+
+  for (const name of ["grimoire", "littleimp"]) {
+    const cliPath = join(binDir, name);
+    writeFileSync(cliPath, cliContents);
+    chmodSync(cliPath, 0o755);
+  }
 }
 
 function writeVersionMetadata(options: {
@@ -302,7 +319,7 @@ function writeVersionMetadata(options: {
           installer: "daemon/install.sh",
           daemon: "daemon",
           frontend: "dist",
-          cli: "bin/littleimp",
+          cli: "bin/grimoire",
           checksums: CHECKSUMS_FILE,
         },
       },

@@ -39,7 +39,10 @@ describe("Revisit rounds", () => {
       notes: `Reason ${index}`,
     }));
     expect(response.status).toBe(201);
-    return (await response.json() as { data: { id: string } }).data.id;
+    const bookmark = (await response.json() as { data: { id: string; read_later: number; notes: string } }).data;
+    expect(bookmark.read_later).toBe(later ? 1 : 0);
+    expect(bookmark.notes).toBe(`Reason ${index}`);
+    return bookmark.id;
   }
 
   it("keeps ordinary read and organization state when Done clears Later", async () => {

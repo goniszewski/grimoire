@@ -18,6 +18,8 @@ type CaptureResponse = {
       title: string | null;
       category_id: string | null;
       notes: string | null;
+      is_pinned: 0 | 1;
+      read_later: 0 | 1;
       tags: string[];
     };
     capture: {
@@ -96,6 +98,8 @@ describe("capture endpoint", () => {
         tags: ["TypeScript", "rag", "typescript"],
         category_id: category.id,
         notes: "Read after the SQLite notes.",
+        is_pinned: true,
+        read_later: true,
         source: {
           client: "bookmarklet",
           source_url: "https://example.com/article-list",
@@ -114,6 +118,8 @@ describe("capture endpoint", () => {
       title: "Captured resource",
       category_id: category.id,
       notes: "Read after the SQLite notes.",
+      is_pinned: 1,
+      read_later: 1,
       tags: ["rag", "typescript"],
     });
     expect(json.data.capture).toMatchObject({
@@ -132,6 +138,23 @@ describe("capture endpoint", () => {
       bookmarkId: json.data.bookmark.id,
       url: "https://example.com/capture",
     });
+  });
+
+  it("rejects non-boolean capture state fields", async () => {
+    const res = await app.request("/capture", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...bearer(await createToken()),
+      },
+      body: JSON.stringify({
+        url: "https://example.com/invalid-capture-state",
+        is_pinned: 1,
+      }),
+    });
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ detail: "`is_pinned` must be a boolean" });
   });
 
   it("resolves a root category name when category_id is not supplied", async () => {

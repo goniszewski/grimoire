@@ -2,8 +2,9 @@
 #
 # sign-release-artifacts.sh — sign Grimoire release archives, verify, validate.
 #
-# Signs every release/*.tar.gz with a detached gpg signature, verifies the
-# signatures, runs the strict release validator (--require-signatures), and
+# Signs the archives listed in release/release-manifest.json with detached
+# GPG signatures, verifies them, runs the strict release validator
+# (--require-signatures), and
 # exports the public key + fingerprint for the release notes.
 #
 # Usage:
@@ -55,14 +56,33 @@ if [[ -z "$KEY_ID" ]]; then
 fi
 echo "Signing key: $KEY_ID ($(gpg --list-keys --with-colons "$KEY_ID" 2>/dev/null | awk -F: '$1=="uid"{print $10; exit}'))"
 
-# ─── Sign every release archive ─────────────────────────────────────────────
-shopt -s nullglob
-ARCHIVES=("$RELEASE_DIR"/*.tar.gz)
-shopt -u nullglob
-if [[ ${#ARCHIVES[@]} -eq 0 ]]; then
-  echo "error: no release archives found in $RELEASE_DIR" >&2
-  exit 1
-fi
+# ─── Sign only the current manifest's release archives ─────────────────────
+artifact_names="$(node -e '
+  const fs = require("fs");
+  const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  const pkg = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+  if (manifest.version !== pkg.version) throw new Error("Release manifest version differs from package.json");
+  for (const platform of ["macos", "linux"]) {
+    const artifacts = manifest.artifacts.filter((entry) => entry.platform === platform);
+    if (artifacts.length !== 1) throw new Error(`Expected one ${platform} archive`);
+    const archive = artifacts[0].archive;
+    if (!/^(?:little-imp|grimoire)-[0-9A-Za-z][0-9A-Za-z._+-]*-(?:macos|linux)\.tar\.gz$/.test(archive) ||
+        !archive.endsWith(`-${platform}.tar.gz`)) {
+      throw new Error(`Invalid release archive name: ${archive}`);
+    }
+    console.log(archive);
+  }
+' "$RELEASE_DIR/release-manifest.json" "$REPO_ROOT/package.json")"
+ARCHIVES=()
+while IFS= read -r archive_name; do
+  ARCHIVES+=("$RELEASE_DIR/$archive_name")
+done <<< "$artifact_names"
+for archive in "${ARCHIVES[@]}"; do
+  if [[ ! -f "$archive" ]]; then
+    echo "error: release archive is missing: $archive" >&2
+    exit 1
+  fi
+done
 
 for archive in "${ARCHIVES[@]}"; do
   asc="$archive.asc"

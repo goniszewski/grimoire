@@ -4,6 +4,48 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-09-28
+
+### Added
+- Later / Revisit rounds present a small shuffled stack of saved bookmarks,
+  remember progress locally, and support Skip, Mark as read, Postpone, Undo,
+  Remove from Later, and recoverable Trash.
+- Paste multiple links into the save dialog, optionally add them to Later, and
+  see per-link failures; a single link can include a note.
+- Sidebar folders can expand and collapse.
+
+### Fixed
+- Bookmarklet capture works on pages whose content security policy blocks the
+  old embedded frame, and failed AI enrichment responses can be retried.
+- Docker builds use aligned frontend lockfiles.
+
+## [1.2.0] - 2026-09-17
+
+### Added
+- Homebrew installation and managed service support, with `grimoire` as the
+  primary CLI and `littleimp` retained as a compatibility alias.
+- Versioned Companion protocol discovery and capability negotiation for official
+  browser extensions.
+- Authenticated single-page and bulk-tab capture with editable titles, notes,
+  categories, tags, selected text, pinning, and Read Later state.
+- Managed integration tokens for Companion, bookmarklets, MCP clients, and
+  other supported local integrations.
+
+### Changed
+- Browser Integration settings now explain how named integration tokens are
+  shared across supported clients and recommend separate tokens for independent
+  revocation.
+
+### Fixed
+- Search defaults to relevance instead of inheriting the library date sort,
+  restoring meaningful ordering for AI and mixed search. Explicit search sorts
+  remain available without changing the saved library order.
+- Model connection tests can be retried after a failed attempt in Settings.
+- Native self-updates are blocked for Homebrew-managed installations; use
+  `brew upgrade grimoire` instead.
+- Opening Browser Integration settings from an extension now loads the SPA
+  instead of returning the JSON settings endpoint.
+
 ## [1.1.0] - 2026-08-12
 
 ### Added

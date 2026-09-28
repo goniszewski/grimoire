@@ -15,6 +15,7 @@ type FixtureRepoOptions = {
   frontend: "source" | "prebuilt" | "missing";
   disableRsync?: boolean;
   os?: "linux" | "macos";
+  homeName?: string;
   prepareHome?: (homeDir: string) => Promise<void>;
 };
 
@@ -68,6 +69,10 @@ case "\${1:-}" in
     printf '1.2.3\\n'
     ;;
   install)
+    if [[ " $* " == *" --production "* && " $* " != *" --ignore-scripts "* ]]; then
+      printf 'production install must disable lifecycle scripts: %s\\n' "$*" >&2
+      exit 2
+    fi
     ;;
   run)
     if [[ "\${2:-}" == "build" ]]; then
@@ -114,6 +119,7 @@ exit 0
 }
 
 async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
+  fakePath: string;
   homeDir: string;
   launchctlLogPath: string;
   stdout: string;
@@ -124,7 +130,7 @@ async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
 
   try {
     const fixtureRepo = await createFixtureRepo(tempRoot, options);
-    const homeDir = join(tempRoot, "home");
+    const homeDir = join(tempRoot, options.homeName ?? "home");
     await mkdir(homeDir, { recursive: true });
     await options.prepareHome?.(homeDir);
     const fakePath = await createFakePath(tempRoot, options.os ?? "linux");
@@ -166,7 +172,7 @@ async function runInstallerFixture(options: FixtureRepoOptions): Promise<{
 
     expect(exitCode, `${stdout}\n${stderr}`).toBe(0);
 
-    return { homeDir, launchctlLogPath, stdout, stderr, tempRoot };
+    return { fakePath, homeDir, launchctlLogPath, stdout, stderr, tempRoot };
   } catch (error) {
     await rm(tempRoot, { recursive: true, force: true });
     throw error;
@@ -184,6 +190,59 @@ describe("install.sh static frontend install", () => {
       await expect(readFile(join(installedDist, "index.html"), "utf8")).resolves.toContain(
         "<title>Little Imp</title>"
       );
+    } finally {
+      await rm(result.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("installs the primary and legacy CLI wrappers", async () => {
+    const result = await runInstallerFixture({ frontend: "prebuilt" });
+
+    try {
+      const cliDir = join(result.homeDir, ".local", "bin");
+      expect(result.stdout).toContain("Grimoire installed and running!");
+      for (const command of ["grimoire", "littleimp"]) {
+        const cliPath = join(cliDir, command);
+        expect(existsSync(cliPath)).toBe(true);
+        await expect(readFile(cliPath, "utf8")).resolves.toContain("daemon/src/cli.ts");
+      }
+    } finally {
+      await rm(result.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("removes both CLI wrappers when the install path contains spaces", async () => {
+    const result = await runInstallerFixture({
+      frontend: "prebuilt",
+      os: "macos",
+      homeName: "home with spaces",
+    });
+
+    try {
+      const fixtureRepo = join(result.tempRoot, "repo");
+      const proc = Bun.spawn({
+        cmd: ["bash", join(fixtureRepo, "daemon", "install.sh"), "--uninstall"],
+        cwd: join(fixtureRepo, "daemon"),
+        env: {
+          ...process.env,
+          HOME: result.homeDir,
+          PATH: `${result.fakePath}:${process.env.PATH ?? ""}`,
+          LITTLEIMP_TEST_LAUNCHCTL_LOG: result.launchctlLogPath,
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const [exitCode, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+
+      expect(exitCode, `${stdout}\n${stderr}`).toBe(0);
+      const cliDir = join(result.homeDir, ".local", "bin");
+      expect(existsSync(join(cliDir, "grimoire"))).toBe(false);
+      expect(existsSync(join(cliDir, "littleimp"))).toBe(false);
     } finally {
       await rm(result.tempRoot, { recursive: true, force: true });
     }

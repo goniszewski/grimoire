@@ -51,6 +51,9 @@ import type {
   ImportTagRemappingInputDto,
   PaginationDto,
   RelatedBookmarksResponseDto,
+  RevisitBookmarkDto,
+  RevisitDecisionDto,
+  RevisitStateDto,
   ReprocessBatchResponseDto,
   ReprocessBatchStatusResponseDto,
   ReprocessRequestDto,
@@ -427,6 +430,20 @@ export class ApiError extends Error {
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
+async function responseError(res: Response): Promise<ApiError> {
+  let title = `HTTP ${res.status}`;
+  let detail: string | undefined;
+  try {
+    const body = await res.json() as { title?: string; detail?: string; error?: string };
+    if (body.title) title = body.title;
+    if (body.detail) detail = body.detail;
+    else if (body.error) detail = body.error;
+  } catch {
+    // Keep the HTTP status fallback when the error body is not JSON.
+  }
+  return new ApiError(res.status, title, detail);
+}
+
 async function apiFetch<T>(
   path: string,
   options?: RequestInit
@@ -440,17 +457,7 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    let title = `HTTP ${res.status}`;
-    let detail: string | undefined;
-    try {
-      const body = await res.json() as { title?: string; detail?: string; error?: string };
-      if (body.title) title = body.title;
-      if (body.detail) detail = body.detail;
-      else if (body.error) detail = body.error;
-    } catch {
-      // Keep the HTTP status fallback when the error body is not JSON.
-    }
-    throw new ApiError(res.status, title, detail);
+    throw await responseError(res);
   }
 
   if (res.status === 204) return undefined as unknown as T;
@@ -628,33 +635,9 @@ export async function createBookmark(
   });
 }
 
-export type RevisitDecision = "read" | "done" | "skipped" | "postponed" | "trashed";
-export interface RevisitBookmark {
-  id: string;
-  url: string;
-  title: string | null;
-  domain: string;
-  description: string | null;
-  summary: string | null;
-  notes: string | null;
-  screenshot_url: string | null;
-  created_at: string;
-  read_at: string | null;
-}
-export interface RevisitState {
-  total: number;
-  eligible: number;
-  round: null | {
-    id: string;
-    size: number;
-    position: number;
-    completed: boolean;
-    decisions: RevisitDecision[];
-    can_undo: boolean;
-    current: RevisitBookmark | null;
-    upcoming: RevisitBookmark[];
-  };
-}
+export type RevisitDecision = RevisitDecisionDto;
+export type RevisitBookmark = RevisitBookmarkDto;
+export type RevisitState = RevisitStateDto;
 
 export async function getRevisitState(): Promise<{ data: RevisitState }> {
   return apiFetch("/revisit");
@@ -862,17 +845,7 @@ async function fetchImportForm<T>(
     body: importFormData(file, duplicatePolicy, remapping),
   });
   if (!res.ok) {
-    let title = `HTTP ${res.status}`;
-    let detail: string | undefined;
-    try {
-      const body = await res.json() as { title?: string; detail?: string; error?: string };
-      if (body.title) title = body.title;
-      if (body.detail) detail = body.detail;
-      else if (body.error) detail = body.error;
-    } catch {
-      // Keep the HTTP status fallback when the error body is not JSON.
-    }
-    throw new ApiError(res.status, title, detail);
+    throw await responseError(res);
   }
   return res.json() as Promise<T>;
 }

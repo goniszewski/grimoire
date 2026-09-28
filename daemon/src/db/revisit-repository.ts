@@ -1,7 +1,8 @@
 import { Database } from "bun:sqlite";
 import { randomUUID } from "crypto";
+import type { RevisitBookmarkDto, RevisitDecisionDto, RevisitStateDto } from "../api/types.js";
 
-export type RevisitDecision = "read" | "done" | "skipped" | "postponed" | "trashed";
+export type RevisitDecision = RevisitDecisionDto;
 export type RevisitAction = RevisitDecision;
 
 interface RoundRow {
@@ -25,33 +26,8 @@ interface PreviousState {
   last_presented_at: string | null;
 }
 
-export interface RevisitBookmark {
-  id: string;
-  url: string;
-  title: string | null;
-  domain: string;
-  description: string | null;
-  summary: string | null;
-  notes: string | null;
-  screenshot_url: string | null;
-  created_at: string;
-  read_at: string | null;
-}
-
-export interface RevisitState {
-  total: number;
-  eligible: number;
-  round: null | {
-    id: string;
-    size: number;
-    position: number;
-    completed: boolean;
-    decisions: RevisitDecision[];
-    can_undo: boolean;
-    current: RevisitBookmark | null;
-    upcoming: RevisitBookmark[];
-  };
-}
+type RevisitBookmark = RevisitBookmarkDto;
+type RevisitState = RevisitStateDto;
 
 const ACTIVE = "b.read_later = 1 AND b.is_archived = 0 AND b.is_trashed = 0";
 const ELIGIBLE = `${ACTIVE} AND (s.available_after IS NULL OR s.available_after <= ?)`;

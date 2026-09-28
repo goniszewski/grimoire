@@ -10,6 +10,7 @@ import { createHash } from "crypto";
 import { tmpdir } from "os";
 import { basename, join, resolve } from "path";
 import { spawnSync } from "child_process";
+import { releaseArchiveFileName } from "./release-names.js";
 
 export type ReleasePlatform = "macos" | "linux";
 
@@ -56,7 +57,7 @@ export function detectReleasePlatform(platform = process.platform): ReleasePlatf
 
 export function releaseArchiveName(version: string, platform = detectReleasePlatform()): string {
   assertSafeReleaseVersion(version);
-  return `little-imp-${version}-${platform}.tar.gz`;
+  return releaseArchiveFileName(version, platform);
 }
 
 export function defaultReleaseBaseUrl(version: string): string {

@@ -48,7 +48,83 @@ npm run test:daemon
 npm run test:e2e
 npm run build
 npm run check
+npm run release:metadata:check
 ```
+
+Homebrew-specific validation requires Homebrew and performs a disposable
+install through a local tap:
+
+```sh
+npm run test:homebrew
+```
+
+The public tap uses this same repository:
+
+```sh
+brew trust --formula goniszewski/grimoire/grimoire
+brew tap goniszewski/grimoire https://github.com/goniszewski/grimoire.git
+```
+
+`npm run test:homebrew:published` checks that public path, including an online
+formula audit. Run on a disposable host with no existing Grimoire Homebrew
+installation or data. The smoke verifies CLI aliases, exact service version,
+reinstall preservation of the database/configuration, restart, and explicit
+uninstall preservation. It removes test-created data afterward.
+
+The script isolates runtime settings and Homebrew trust using a temporary
+configuration directory. `HOMEBREW_TEST_PORT=13210` selects another loopback
+port using [Homebrew service environment overrides](https://docs.brew.sh/Manpage#services-subcommand), so an existing native
+daemon can keep running. This requires a Homebrew version supporting service
+environment files; the default port remains 3210.
+
+For pre-publication testing, download and verify the signed release archives
+first, then provide their directory in local mode. Homebrew verifies the
+formula SHA-256 against the supplied archive; this does not prove public
+asset availability. Set the working-tree formula URLs and checksums to those
+exact candidate archives before running this command:
+
+Archives after v1.3.0 use `grimoire-<version>-<platform>.tar.gz`, with matching
+`.sha256` and `.asc` files. Published v1.3.0 and older downloads keep their
+`little-imp-` names. The directory inside each archive remains `little-imp-`
+for installer compatibility.
+
+```sh
+HOMEBREW_TEST_ARCHIVE_DIR=/absolute/path/to/verified-archives \
+HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 \
+HOMEBREW_TEST_PORT=13210 npm run test:homebrew
+```
+
+For an actual upgrade, also set
+`HOMEBREW_TEST_UPGRADE_FROM_FORMULA=/absolute/path/to/v1.2.0/grimoire.rb`.
+The script installs that older formula, starts and stops the service, then
+copies the working-tree formula into the test tap and runs `brew upgrade`.
+A saved bookmark and edited `.env` are checked after restart and uninstall.
+It requires the version to change and verifies preservation and service health
+at the requested target version. Supply both archives when using local cache
+mode. Without the older formula, the test exercises a same-version reinstall.
+
+For the v1.3 release, after merging an approved PR into `main`:
+
+1. Require a clean `main` at the exact remote commit and a `v1.3.0` tag at
+   that commit. Build both archives from that checkout with
+   `npm run package:release`, then sign them with
+   `scripts/sign-release-artifacts.sh`. Run
+   `npm run release:final:check` to verify the tag, source provenance,
+   checksums, and detached signatures.
+2. Publish the signed archives, checksums, manifest, and public signing key
+   from that exact build. Only then run
+   `npm run release:formula:prepare -- release/release-manifest.json` and
+   update the one-command installer default and published-version docs.
+   Commit the reviewed public formula and metadata changes to `main`.
+   If any archive changes, rebuild, sign, and verify it again before updating
+   pins. No separate tap repository is needed.
+3. Run `HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 npm run test:homebrew:published`
+   on clean macOS and Linux Homebrew hosts. Record the public URL/download,
+   service health, and data-preservation results before declaring support.
+
+Local mode copies the current working-tree formula into its disposable tap,
+so uncommitted formula edits are included. Archive URLs determine the release
+installed; it does not build the current source checkout.
 
 If tooling is missing in a constrained environment:
 

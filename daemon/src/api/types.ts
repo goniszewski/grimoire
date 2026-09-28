@@ -18,6 +18,33 @@ export type BookmarkUpdateRequestDto = ApiDto<"BookmarkUpdateRequest">;
 export type BookmarkListResponseDto = ApiDto<"BookmarkListResponse">;
 export type BookmarkArrayResponseDto = ApiDto<"BookmarkArrayResponse">;
 export type BookmarkResponseDto = ApiDto<"BookmarkResponse">;
+export type RevisitDecisionDto = "read" | "done" | "skipped" | "postponed" | "trashed";
+export interface RevisitBookmarkDto {
+  id: string;
+  url: string;
+  title: string | null;
+  domain: string;
+  description: string | null;
+  summary: string | null;
+  notes: string | null;
+  screenshot_url: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+export interface RevisitStateDto {
+  total: number;
+  eligible: number;
+  round: null | {
+    id: string;
+    size: number;
+    position: number;
+    completed: boolean;
+    decisions: RevisitDecisionDto[];
+    can_undo: boolean;
+    current: RevisitBookmarkDto | null;
+    upcoming: RevisitBookmarkDto[];
+  };
+}
 export type BookmarkDetailResponseDto = ApiDto<"BookmarkDetailResponse">;
 export type BookmarkPipelineStatusResponseDto = ApiDto<"BookmarkPipelineStatusResponse">;
 export type RelatedBookmarksResponseDto = ApiDto<"RelatedBookmarksResponse">;

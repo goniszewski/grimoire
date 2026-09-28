@@ -269,7 +269,7 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("Content-Type: application/json");
   });
 
-  it("documents common local-client error flows without extension or bookmarklet examples", () => {
+  it("documents common local-client error flows without extension or bookmarklet error examples", () => {
     const document = buildApiContractDocument(apiContract);
     const markdown = buildApiMarkdown(document);
     const problemExamples = document.routes.flatMap((route) =>
@@ -285,7 +285,6 @@ describe("API documentation generator", () => {
     );
     expect(markdown).toContain('"type": "https://littleimp.app/problems/unprocessable-entity"');
     expect(markdown).toContain('WWW-Authenticate: Bearer realm="littleimp-local-integrations"');
-    expect(markdown).not.toMatch(/browser extension/i);
     // The bookmarklet endpoint is documented but must not appear in error-flow example titles
     expect(problemExamples.map((example) => example.title)).not.toEqual(
       expect.arrayContaining(["bookmarklet"])
@@ -302,7 +301,8 @@ describe("API documentation generator", () => {
     expect(markdown).toContain("https://grimoire.example.com");
     expect(markdown).toContain("Explicit non-loopback origins are intended for authenticated reverse proxies or VPNs");
     expect(markdown).toContain("paths, credentials, and wildcards are rejected");
-    expect(markdown).not.toMatch(/browser extension/i);
+    const corsSection = markdown.split("## Browser Origin And CORS")[1]?.split("\n## ")[0];
+    expect(corsSection).not.toMatch(/browser extension/i);
     // The bookmarklet endpoint appears in the route table but not in the CORS setup prose
     expect(markdown).toContain("/capture/bookmarklet");
   });

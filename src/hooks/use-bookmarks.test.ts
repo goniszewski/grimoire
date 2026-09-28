@@ -539,12 +539,31 @@ describe("useBookmarks — sorting", () => {
     );
   });
 
+  it.each(["keyword", "semantic", "hybrid"] as const)("defaults %s search to relevance without changing library sorting", async (mode) => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    act(() => result.current.setSortBy("oldest"));
+    act(() => result.current.setSearchMode(mode));
+    act(() => result.current.setSearchQuery("react"));
+    await waitFor(() => expect(mockedSearchBookmarks).toHaveBeenCalled(), { timeout: 2000 });
+    const params = mockedSearchBookmarks.mock.calls.at(-1)![0];
+    expect(params).toMatchObject({ q: "react", mode });
+    expect(params).not.toHaveProperty("sort");
+    expect(params).not.toHaveProperty("direction");
+    expect(result.current.sortBy).toBe("relevance");
+    act(() => result.current.setSortBy("title-az"));
+    await waitFor(() => expect(mockedSearchBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "title" })));
+    act(() => result.current.setSearchQuery(""));
+    expect(result.current.sortBy).toBe("oldest");
+    act(() => result.current.setSearchQuery("typescript"));
+    expect(result.current.sortBy).toBe("relevance");
+  });
+
   it("passes sort params to search requests", async () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
 
-    act(() => result.current.setSortBy("last-opened-newest"));
     act(() => result.current.setSearchQuery("react"));
+    act(() => result.current.setSortBy("last-opened-newest"));
 
     await waitFor(() =>
       expect(mockedSearchBookmarks).toHaveBeenCalledWith(expect.objectContaining({

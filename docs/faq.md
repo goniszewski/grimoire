@@ -4,7 +4,7 @@ Also published at [goniszewski.com/grimoire/faq](https://goniszewski.com/grimoir
 
 ## Can I sync my bookmarks across devices?
 
-Not yet. Grimoire is local-first and single-user for `1.1.0`. Backups are snapshot-based, so you can move or restore a saved backup, but there is no continuous multi-device sync service.
+Not yet. Grimoire is local-first and single-user for `1.3.0`. Backups are snapshot-based, so you can move or restore a saved backup, but there is no continuous multi-device sync service.
 
 ## Is my data private?
 
@@ -42,11 +42,11 @@ Migration is **non-destructive** for your v0.5 data and **additive** for Grimoir
 Run the [migration guide](./migration.md) for the complete workflow:
 
 ```sh
-littleimp migrate inspect --data-dir /path/to/grimoire/data
-littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
-littleimp migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
+grimoire migrate inspect --data-dir /path/to/grimoire/data
+grimoire migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --dry-run
+grimoire migrate apply --data-dir /path/to/grimoire/data --owner YOUR_USERNAME --yes
 # Or pack the data folder first:
-littleimp migrate apply --archive /path/to/grimoire-data.tar.gz --owner YOUR_USERNAME --yes
+grimoire migrate apply --archive /path/to/grimoire-data.tar.gz --owner YOUR_USERNAME --yes
 ```
 
 
@@ -60,19 +60,22 @@ era backups are not supported. See the [migration API reference](https://github.
 ## How do I upgrade?
 
 For source or unpacked release installs, run `daemon/install.sh --upgrade`.
-Packaged installs can use `littleimp update install` once a reachable release
-source is configured. Settings can also check for update availability.
+Native packaged installs can use `grimoire update install` once a reachable
+release source is configured; `littleimp` remains a compatibility alias.
+Homebrew installations should use `brew upgrade grimoire`. Settings can also
+check for update availability. The already-published v1.1.0 archive predates
+the rename and uses `littleimp` as its direct archive command.
 
 ## Does it work on Windows?
 
-There is no native Windows installer in `1.1.0`. Docker on Windows with WSL2 is the supported path. Keep Docker port publishing bound to loopback, for example `127.0.0.1:3210:3210`.
+There is no native Windows installer in `1.3.0`. Docker on Windows with WSL2 is the supported path. Keep Docker port publishing bound to loopback, for example `127.0.0.1:3210:3210`.
 
 ## Can I run it on a server?
 
 The [hosted public demo](https://goniszewski.com/grimoire/demo/) is only a
 static, client-only showcase with synthetic session data; it has no hosted
 library. For a private library, you can run Grimoire through Docker, but
-Grimoire itself is not a public-server product in `1.1.0`. Keep the daemon
+Grimoire itself is not a public-server product in `1.3.0`. Keep the daemon
 loopback-bound or put an authenticated tunnel, VPN, or reverse proxy in front
 of it before traffic reaches Grimoire. Reverse-proxy browser access also
 requires the exact public origin in `CORS_ORIGINS`. See

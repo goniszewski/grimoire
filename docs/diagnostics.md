@@ -3,6 +3,9 @@
 Grimoire diagnostics are generated locally and are only shared when the user
 chooses to copy, export, or send them. They are not telemetry.
 
+Current source installs and future repackaged releases use the `grimoire` CLI;
+the already-published v1.1.0 archive uses `littleimp` when invoked directly.
+
 ## Generate diagnostics
 
 From Settings:
@@ -13,9 +16,9 @@ From Settings:
 From the packaged CLI:
 
 ```sh
-littleimp diagnostics
-littleimp diagnostics --json
-littleimp diagnostics --daemon-url http://127.0.0.1:3210 --json
+grimoire diagnostics
+grimoire diagnostics --json
+grimoire diagnostics --daemon-url http://127.0.0.1:3210 --json
 ```
 
 From the daemon API:
