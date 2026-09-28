@@ -53,6 +53,8 @@ export interface ReleaseManifest {
   name: "little-imp";
   version: string;
   generatedAt: string;
+  sourceCommit?: string;
+  sourceDirty?: boolean;
   signing: {
     detachedSignatureExtension: ".asc";
     requiredBeforePublication: true;
@@ -65,6 +67,8 @@ export interface CreateReleaseManifestOptions {
   version: string;
   generatedAt: string;
   artifacts: ManifestArtifactInput[];
+  sourceCommit?: string;
+  sourceDirty?: boolean;
 }
 
 export interface PackageReleaseOptions {
@@ -132,6 +136,8 @@ export function createReleaseManifest(options: CreateReleaseManifestOptions): Re
     name: "little-imp",
     version: options.version,
     generatedAt: options.generatedAt,
+    ...(options.sourceCommit ? { sourceCommit: options.sourceCommit } : {}),
+    ...(options.sourceDirty !== undefined ? { sourceDirty: options.sourceDirty } : {}),
     signing: {
       detachedSignatureExtension: SIGNATURE_EXTENSION,
       requiredBeforePublication: true,
@@ -234,7 +240,15 @@ export function packageRelease(options: PackageReleaseOptions): PackageReleaseRe
     rmSync(stagingRoot, { recursive: true, force: true });
   }
 
-  const manifest = createReleaseManifest({ version, generatedAt, artifacts });
+  const gitCommit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" });
+  const gitStatus = spawnSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: projectRoot, encoding: "utf8" });
+  const manifest = createReleaseManifest({
+    version,
+    generatedAt,
+    artifacts,
+    ...(gitCommit.status === 0 ? { sourceCommit: gitCommit.stdout.trim() } : {}),
+    sourceDirty: gitStatus.status !== 0 || gitStatus.stdout.trim().length > 0,
+  });
   const manifestPath = join(outputDir, "release-manifest.json");
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 

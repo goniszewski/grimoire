@@ -5,7 +5,7 @@ set -euo pipefail
 
 APP_NAME="Grimoire"
 REPO="goniszewski/grimoire"
-VERSION="${LITTLEIMP_VERSION:-1.1.0}"
+VERSION="${LITTLEIMP_VERSION:-1.2.0}"
 RELEASE_BASE_URL="${LITTLEIMP_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/v${VERSION}}"
 
 MODE_ARGS=()
