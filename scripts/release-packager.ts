@@ -240,8 +240,8 @@ export function packageRelease(options: PackageReleaseOptions): PackageReleaseRe
     rmSync(stagingRoot, { recursive: true, force: true });
   }
 
-  const gitCommit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" });
-  const gitStatus = spawnSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: projectRoot, encoding: "utf8" });
+  const gitCommit = spawnSync("/usr/bin/git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" });
+  const gitStatus = spawnSync("/usr/bin/git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: projectRoot, encoding: "utf8" });
   const manifest = createReleaseManifest({
     version,
     generatedAt,
