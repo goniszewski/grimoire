@@ -187,7 +187,7 @@ cd daemon
 
 ### Homebrew
 
-Grimoire v1.2.0 is available through Homebrew. The main Grimoire repository
+Grimoire v1.3.0 is available through Homebrew. The main Grimoire repository
 serves as the tap; the explicit URL avoids requiring a separate
 `homebrew-grimoire` repository. Install it with:
 

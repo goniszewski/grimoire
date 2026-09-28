@@ -4,6 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
+| `1.3.0` | Yes |
+| `1.2.0` | Yes |
 | `1.1.0` | Yes |
 | `1.0.x` | No |
 | `0.1.0-beta` | No |
@@ -16,9 +18,9 @@ for the repository, that is also an appropriate channel.
 
 Do not report security vulnerabilities through public GitHub issues.
 
-No project-specific PGP key is currently published. If you need encrypted
-coordination, ask the maintainer for a preferred secure channel before sharing
-sensitive exploit details.
+The PGP key attached to GitHub releases verifies release artifacts; it is not
+an encrypted-reporting channel. Ask the maintainer for a preferred secure
+channel before sharing sensitive exploit details.
 
 Please include:
 
@@ -30,7 +32,7 @@ Please include:
 
 ## Security Boundary Summary
 
-Grimoire is local-first, single-user, and loopback-first for `1.1.0`.
+Grimoire is local-first, single-user, and loopback-first for `1.3.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
