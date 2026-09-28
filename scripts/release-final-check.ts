@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validateReleaseArtifacts } from "./release-artifacts-validator";
 import type { ReleaseManifest } from "./release-packager";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 function command(name: string, args: string[]): string {
   const result = spawnSync(name, args, { encoding: "utf8" });
@@ -30,8 +31,8 @@ export function checkFinalRelease(root: string): void {
   }
   const result = validateReleaseArtifacts({ releaseDir, requireSignatures: true });
   if (!result.ok) throw new Error(result.errors.join("\n"));
-  for (const platform of ["macos", "linux"]) {
-    const archive = `little-imp-${version}-${platform}.tar.gz`;
+  for (const platform of ["macos", "linux"] as const) {
+    const archive = releaseArchiveFileName(version, platform);
     if (!result.checkedArtifacts.includes(archive)) throw new Error(`Missing ${platform} release archive`);
     command("gpg", ["--verify", join(releaseDir, `${archive}.asc`), join(releaseDir, archive)]);
   }

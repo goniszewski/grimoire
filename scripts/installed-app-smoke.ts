@@ -20,6 +20,7 @@ import { basename, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { packageRelease } from "./release-packager";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 export type ReleasePlatform = "macos" | "linux";
 type SmokeArtifactSource = "local" | "published";
@@ -113,7 +114,7 @@ export function detectReleasePlatform(nodePlatform = process.platform): ReleaseP
 
 export function releaseArchiveName(version: string, platform: ReleasePlatform): string {
   assertSafeReleaseVersion(version);
-  return `little-imp-${version}-${platform}.tar.gz`;
+  return releaseArchiveFileName(version, platform);
 }
 
 export function defaultPublishedReleaseBaseUrl(version: string): string {
@@ -212,7 +213,7 @@ function usage(): string {
     "Options:",
     "  --source local|published",
     "                  Artifact source (default: local)",
-    "  --archive FILE  Release archive to validate (default: release/little-imp-<version>-<platform>.tar.gz)",
+    "  --archive FILE  Release archive to validate (default: release/<release-name>-<version>-<platform>.tar.gz)",
     "  --release-base-url URL",
     "                  Published source base URL (default: GitHub release URL for --version)",
     "  --version VERSION",

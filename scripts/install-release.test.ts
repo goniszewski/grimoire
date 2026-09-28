@@ -104,13 +104,13 @@ function createFakeBin(
   return binDir;
 }
 
-function createReleaseFixture(options: { signature?: boolean } = {}) {
+function createReleaseFixture(options: { signature?: boolean; version?: string } = {}) {
   const releaseDir = mkdtempSync(join(tmpdir(), "little-imp-install-release-"));
   const payloadStage = join(releaseDir, "payload");
-  const version = "1.2.3-beta";
+  const version = options.version ?? "1.2.3-beta";
   const platform = platformName();
   const archiveRoot = `little-imp-${version}-${platform}`;
-  const archiveName = `${archiveRoot}.tar.gz`;
+  const archiveName = `${version === "1.3.1" ? "grimoire" : "little-imp"}-${version}-${platform}.tar.gz`;
   const archivePath = join(releaseDir, archiveName);
   const markerPath = join(releaseDir, "installer-called.txt");
   const payloadRoot = join(payloadStage, archiveRoot);
@@ -241,6 +241,15 @@ function runInstaller(fixture: ReturnType<typeof createReleaseFixture>, args: st
 }
 
 describe("one-command release installer", () => {
+  it("downloads future releases with Grimoire archive filenames", () => {
+    const fixture = createReleaseFixture({ version: "1.3.1" });
+    const result = runInstaller(fixture, ["--upgrade"]);
+    expect(result.status).toBe(0);
+    expect(fixture.archiveName).toMatch(/^grimoire-1\.3\.1-/);
+    expect(result.stdout).toContain(`Checksum verified: ${fixture.archiveName}`);
+    expect(readFileSync(fixture.markerPath, "utf8").trim()).toBe("--upgrade");
+  });
+
   it("downloads the platform archive, verifies its checksum, and runs the native installer", () => {
     const fixture = createReleaseFixture();
 

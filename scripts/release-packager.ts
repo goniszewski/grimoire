@@ -12,6 +12,7 @@ import {
 import { createHash } from "node:crypto";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 export type ReleasePlatform = "macos" | "linux";
 
@@ -99,7 +100,8 @@ export function releaseRootDirectoryName(version: string, platform: ReleasePlatf
 }
 
 export function releaseArchiveName(version: string, platform: ReleasePlatform): string {
-  return `${releaseRootDirectoryName(version, platform)}.tar.gz`;
+  assertSafeReleaseVersion(version);
+  return releaseArchiveFileName(version, platform);
 }
 
 export function readPackageVersion(projectRoot: string): string {

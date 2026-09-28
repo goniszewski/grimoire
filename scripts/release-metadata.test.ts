@@ -51,4 +51,22 @@ describe("release metadata", () => {
     expect(() => prepareHomebrewFormula(formula, { ...manifest, artifacts: manifest.artifacts.slice(0, 1) }))
       .toThrow("Expected one linux release artifact");
   });
+
+  it("prepares both formula pins for future Grimoire-named archives", () => {
+    const formula = readFileSync(join(projectRoot, "Formula/grimoire.rb"), "utf8");
+    const manifest = {
+      version: "1.3.1",
+      artifacts: [
+        { platform: "macos" as const, archive: "grimoire-1.3.1-macos.tar.gz", sha256: "a".repeat(64) },
+        { platform: "linux" as const, archive: "grimoire-1.3.1-linux.tar.gz", sha256: "b".repeat(64) },
+      ],
+    };
+    const prepared = prepareHomebrewFormula(formula, manifest);
+    expect(prepared).toContain("v1.3.1/grimoire-1.3.1-macos.tar.gz");
+    expect(prepared).toContain("v1.3.1/grimoire-1.3.1-linux.tar.gz");
+    expect(() => prepareHomebrewFormula(formula, {
+      ...manifest,
+      artifacts: [{ ...manifest.artifacts[0], archive: "little-imp-1.3.1-macos.tar.gz" }, manifest.artifacts[1]],
+    })).toThrow("Wrong macos archive name");
+  });
 });
