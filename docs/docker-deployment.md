@@ -5,9 +5,9 @@ container that serves both the React frontend and the daemon API on port 3210.
 
 Grimoire has scoped bearer-token authentication for local integration
 surfaces such as MCP, but the first-party browser app and general REST API
-still rely on the loopback trust boundary. Do not publish the daemon on a
-public interface unless you put it behind authentication, a VPN, or another
-trusted access control layer.
+still rely on the deployment's network and browser-origin boundary. Do not
+publish the daemon on a public interface unless you put it behind
+authentication, a VPN, or another trusted access control layer.
 
 ## Prerequisites
 
@@ -55,6 +55,7 @@ The Docker image sets these runtime defaults:
 | `DATA_DIR` | `/data` | SQLite database, backups, and runtime data. |
 | `XDG_CONFIG_HOME` | `/data/config` | Persisted settings directory inside the data volume. |
 | `HOME` | `/data` | Writable home directory for the non-root container user. |
+| `CORS_ORIGINS` | built-in loopback development origins | Comma-separated exact browser origins trusted for writes through an authenticated reverse proxy or non-default browser-facing port. |
 | `NODE_ENV` | `production` | Production error responses and logging defaults. |
 | `LOG_FORMAT` | `json` | Structured container logs. |
 
@@ -163,15 +164,35 @@ services:
 ```
 
 Then open `http://127.0.0.1:3211`.
+The built frontend sends API requests to that same browser origin, including
+the host-side port.
+
+Because the browser origin includes the host-side port, also trust that exact
+origin when recreating the container:
+
+```sh
+CORS_ORIGINS=http://127.0.0.1:3211 docker compose up -d --force-recreate
+```
 
 ## Remote Access
 
 Grimoire is designed for local-first, single-user use. Integration token auth
 does not turn the daemon into a public server because most first-party REST
-routes remain loopback-trusted. Public reverse proxy examples are intentionally
-omitted. If you need remote access, put the service behind an authenticated
-tunnel, VPN, or reverse proxy that enforces authentication before traffic
-reaches Grimoire.
+routes remain tokenless. Public reverse proxy configurations are intentionally
+omitted because authentication varies by deployment. If you need remote access,
+put the service behind an authenticated tunnel, VPN, or reverse proxy that
+enforces authentication before traffic reaches Grimoire. Set `CORS_ORIGINS` to
+the exact browser-facing origin so the first-party UI can make writes through
+that proxy:
+
+```sh
+CORS_ORIGINS=https://grimoire.example.com docker compose up -d --force-recreate
+```
+
+The value must include the scheme and any non-default port, and may contain
+comma-separated origins. Paths, credentials, and wildcards are rejected.
+Changing this variable requires recreating the container. This allowlist is not
+authentication; the proxy or VPN must still enforce access control.
 
 Do not use these unsafe port mappings:
 

@@ -19,15 +19,15 @@ Local integration surfaces such as `/mcp` and `/capture` require a managed beare
 
 ## Browser Origin And CORS
 
-Grimoire keeps browser access loopback-only. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, and configured loopback development origins. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.
+Grimoire defaults browser access to loopback origins. The daemon trusts the first-party app from `http://127.0.0.1:3210`, `http://localhost:3210`, configured loopback development origins, and any exact origins explicitly listed in `CORS_ORIGINS`. Requests without an `Origin` header are treated as non-browser local client traffic and do not receive CORS headers.
 
-Configure additional local browser clients with `CORS_ORIGINS` as a comma-separated list of loopback origins:
+Configure additional trusted browser clients with `CORS_ORIGINS` as a comma-separated list of exact origins:
 
 ```sh
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4321 littleimpd
+CORS_ORIGINS=http://localhost:5173,https://grimoire.example.com littleimpd
 ```
 
-Only full `http` or `https` origins are accepted, including scheme, host, and any port used by the client. Non-loopback origins are ignored even when configured, unsafe browser writes from rejected origins return `403`, and rejected preflight requests return `403` without reflecting `Access-Control-Allow-Origin`. Protected local capture clients must use loopback origins and a managed integration bearer token.
+Only exact `http` or `https` origins are accepted, including scheme, host, and any port used by the client. Explicit non-loopback origins are intended for authenticated reverse proxies or VPNs; paths, credentials, and wildcards are rejected, and the allowlist is not authentication. Unsafe browser writes from rejected origins return `403` with configuration guidance, and rejected preflight requests return `403` without reflecting `Access-Control-Allow-Origin`. Protected capture clients still require a managed integration bearer token.
 
 ## Response Conventions
 
