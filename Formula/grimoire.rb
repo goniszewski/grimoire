@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# Install the Grimoire bookmark manager and local daemon.
 class Grimoire < Formula
   desc "Local-first bookmark manager and search daemon"
   homepage "https://github.com/goniszewski/grimoire"
