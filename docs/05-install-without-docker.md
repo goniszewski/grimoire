@@ -63,7 +63,7 @@ cd daemon
 
 For day-to-day coding, prefer [Development](./04-development.md) (`npm run daemon:dev` + `npm run dev`) instead of reinstalling.
 
-The published v1.3.0 Homebrew formula targets the signed macOS and Linux archives. The macOS path has passed local install and service checks; public v1.2 to v1.3 upgrade validation follows publication. Linux Homebrew remains unverified; use the native Linux installer above. The explicit repository URL uses Grimoire itself as the tap; no separate tap repository is required. Trust only this formula before tapping:
+The published v1.3.0 Homebrew formula targets the signed macOS and Linux archives. The macOS path passed public download, install, service, reinstall, and uninstall checks, plus a v1.2 to v1.3 upgrade with bookmark and configuration preservation. Linux Homebrew remains unverified; use the native Linux installer above. The explicit repository URL uses Grimoire itself as the tap; no separate tap repository is required. Trust only this formula before tapping:
 
 ```sh
 brew trust --formula goniszewski/grimoire/grimoire
