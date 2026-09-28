@@ -321,6 +321,24 @@ describe("Quiet Library hierarchy", () => {
 });
 
 describe("Index parity filters", () => {
+  it("lets the user clear a Later filter opened from the Revisit link", async () => {
+    const setReadLaterOnly = vi.fn();
+    mockStore = makeStore({ setReadLaterOnly });
+    const view = renderIndex("/?later=1");
+    await waitFor(() => expect(setReadLaterOnly).toHaveBeenCalledWith(true));
+
+    mockStore = { ...mockStore, readLaterOnly: true };
+    view.rerender();
+    const laterChip = screen.getByText("Filtering by:").parentElement?.querySelector<HTMLElement>(".cursor-pointer");
+    expect(laterChip).not.toBeNull();
+    fireEvent.click(laterChip!);
+    expect(setReadLaterOnly).toHaveBeenLastCalledWith(false);
+
+    mockStore = { ...mockStore, readLaterOnly: false };
+    view.rerender();
+    expect(setReadLaterOnly).toHaveBeenCalledTimes(2);
+  });
+
   it("renders dense filter controls and clears active filter badges", () => {
     mockStore = makeStore({
       readStateFilter: "unread",

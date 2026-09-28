@@ -490,6 +490,172 @@
         "x-grimoire-source-method": "GET"
       }
     },
+    "/revisit": {
+      "get": {
+        "tags": [
+          "Bookmarks"
+        ],
+        "summary": "Get Later availability and the persisted Revisit round.",
+        "operationId": "getRevisit",
+        "responses": {
+          "200": {
+            "description": "Revisit state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisitStateResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "GET"
+      }
+    },
+    "/revisit/round": {
+      "post": {
+        "tags": [
+          "Bookmarks"
+        ],
+        "summary": "Start a finite, shuffled round or resume the active round.",
+        "operationId": "postRevisitRound",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisitRoundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Revisit state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisitStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid round size",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "POST"
+      }
+    },
+    "/revisit/action": {
+      "post": {
+        "tags": [
+          "Bookmarks"
+        ],
+        "summary": "Apply one decision to the current card; the read action marks it read.",
+        "operationId": "postRevisitAction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisitActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Revisit state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisitStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Round changed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid action",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "POST"
+      }
+    },
+    "/revisit/undo": {
+      "post": {
+        "tags": [
+          "Bookmarks"
+        ],
+        "summary": "Undo the last Revisit decision and return to that card.",
+        "operationId": "postRevisitUndo",
+        "responses": {
+          "200": {
+            "description": "Revisit state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisitStateResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nothing to undo",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "POST"
+      }
+    },
     "/bookmarks/aggregates": {
       "get": {
         "tags": [
@@ -5078,10 +5244,245 @@
           "title": {
             "type": "string",
             "description": "Optional title override"
+          },
+          "read_later": {
+            "type": "integer",
+            "description": "Add the saved or existing active bookmark to Later",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional personal note for a new bookmark",
+            "maxLength": 100000
           }
         },
         "required": [
           "url"
+        ],
+        "additionalProperties": false
+      },
+      "RevisitBookmark": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Bookmark ID"
+          },
+          "url": {
+            "type": "string",
+            "description": "Saved URL",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title",
+            "nullable": true
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description",
+            "nullable": true
+          },
+          "summary": {
+            "type": "string",
+            "description": "Extracted summary",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "description": "Personal note",
+            "nullable": true
+          },
+          "screenshot_url": {
+            "type": "string",
+            "description": "Preview image URL",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "description": "Saved timestamp",
+            "format": "date-time"
+          },
+          "read_at": {
+            "type": "string",
+            "description": "Read timestamp",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "domain",
+          "description",
+          "summary",
+          "notes",
+          "screenshot_url",
+          "created_at",
+          "read_at"
+        ],
+        "additionalProperties": false
+      },
+      "RevisitRound": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Round ID"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Number of cards"
+          },
+          "position": {
+            "type": "integer",
+            "description": "Zero-based current position"
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "All cards have decisions"
+          },
+          "decisions": {
+            "type": "array",
+            "description": "Decisions made",
+            "items": {
+              "type": "string",
+              "description": "Read, removed from Later, skipped, postponed, or trashed",
+              "enum": [
+                "read",
+                "done",
+                "skipped",
+                "postponed",
+                "trashed"
+              ]
+            }
+          },
+          "can_undo": {
+            "type": "boolean",
+            "description": "Last decision can be undone"
+          },
+          "current": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RevisitBookmark"
+              }
+            ],
+            "nullable": true
+          },
+          "upcoming": {
+            "type": "array",
+            "description": "Next two cards in the stack",
+            "items": {
+              "$ref": "#/components/schemas/RevisitBookmark"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "size",
+          "position",
+          "completed",
+          "decisions",
+          "can_undo",
+          "current",
+          "upcoming"
+        ],
+        "additionalProperties": false
+      },
+      "RevisitState": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Active Later bookmarks"
+          },
+          "eligible": {
+            "type": "integer",
+            "description": "Active Later bookmarks available now"
+          },
+          "round": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RevisitRound"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "total",
+          "eligible",
+          "round"
+        ],
+        "additionalProperties": false
+      },
+      "RevisitStateResponse": {
+        "type": "object",
+        "description": "Revisit state response",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RevisitState"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "RevisitRoundRequest": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "integer",
+            "description": "Round size",
+            "enum": [
+              5,
+              10,
+              20
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "RevisitActionRequest": {
+        "type": "object",
+        "properties": {
+          "bookmark_id": {
+            "type": "string",
+            "description": "Current bookmark ID"
+          },
+          "action": {
+            "type": "string",
+            "description": "Decision",
+            "enum": [
+              "read",
+              "done",
+              "skipped",
+              "postponed",
+              "trashed"
+            ]
+          },
+          "delay": {
+            "type": "string",
+            "description": "Postponement",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        },
+        "required": [
+          "bookmark_id",
+          "action"
         ],
         "additionalProperties": false
       },

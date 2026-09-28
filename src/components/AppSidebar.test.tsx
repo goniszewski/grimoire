@@ -156,6 +156,7 @@ const defaultProps = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.removeItem("grimoire-sidebar-collapsed-categories-v1");
   mockResolved(api.listCategories, { data: [] });
   mockResolved(api.listSuggestions, { data: [], meta: { pending: 0, total: 0 } });
 });
@@ -187,6 +188,41 @@ describe("AppSidebar — renders category tree", () => {
     expect(screen.getByText("AI Papers")).toBeInTheDocument();
     expect(screen.getAllByText("0")).toHaveLength(2);
     expect(screen.getByText("AI Papers").closest("[data-category-id]")).toHaveAttribute("data-depth", "1");
+  });
+
+  it("collapses and expands descendants from a parent folder", () => {
+    const categoryTree = [
+      { id: "cat-research", name: "Research", count: 2, parentId: null, depth: 0 },
+      { id: "cat-ai", name: "AI Papers", count: 1, parentId: "cat-research", depth: 1 },
+      { id: "cat-llm", name: "LLMs", count: 1, parentId: "cat-ai", depth: 2 },
+      { id: "cat-tools", name: "Tools", count: 3, parentId: null, depth: 0 },
+    ] as UICategory[];
+
+    render(<AppSidebar {...defaultProps} categories={categoryTree} />, { wrapper: makeWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse Research folder" }));
+    expect(screen.queryByText("AI Papers")).not.toBeInTheDocument();
+    expect(screen.queryByText("LLMs")).not.toBeInTheDocument();
+    expect(screen.getByText("Tools")).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("grimoire-sidebar-collapsed-categories-v1")!)).toEqual(["cat-research"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand Research folder" }));
+    expect(screen.getByText("AI Papers")).toBeInTheDocument();
+    expect(screen.getByText("LLMs")).toBeInTheDocument();
+    expect(localStorage.getItem("grimoire-sidebar-collapsed-categories-v1")).toBeNull();
+  });
+
+  it("restores collapsed folders from local storage", () => {
+    localStorage.setItem("grimoire-sidebar-collapsed-categories-v1", JSON.stringify(["cat-research"]));
+    const categoryTree = [
+      { id: "cat-research", name: "Research", count: 1, parentId: null, depth: 0 },
+      { id: "cat-ai", name: "AI Papers", count: 1, parentId: "cat-research", depth: 1 },
+    ] as UICategory[];
+
+    render(<AppSidebar {...defaultProps} categories={categoryTree} />, { wrapper: makeWrapper() });
+
+    expect(screen.getByRole("button", { name: "Expand Research folder" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("AI Papers")).not.toBeInTheDocument();
   });
 
   it("renders category loading, empty, and error states", () => {

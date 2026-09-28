@@ -48,6 +48,7 @@ npm run test:daemon
 npm run test:e2e
 npm run build
 npm run check
+npm run release:metadata:check
 ```
 
 Homebrew-specific validation requires Homebrew and performs a disposable
@@ -79,16 +80,18 @@ environment files; the default port remains 3210.
 For pre-publication testing, download and verify the signed release archives
 first, then provide their directory in local mode. Homebrew verifies the
 formula SHA-256 against the supplied archive; this does not prove public
-asset availability:
+asset availability. Set the working-tree formula URLs and checksums to those
+exact candidate archives before running this command; the tracked formula
+still points to the published v1.2.0 assets:
 
 ```sh
 HOMEBREW_TEST_ARCHIVE_DIR=/absolute/path/to/verified-archives \
-HOMEBREW_TEST_EXPECTED_VERSION=1.2.0 \
+HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 \
 HOMEBREW_TEST_PORT=13210 npm run test:homebrew
 ```
 
 For an actual upgrade, also set
-`HOMEBREW_TEST_UPGRADE_FROM_FORMULA=/absolute/path/to/v1.1.0/grimoire.rb`.
+`HOMEBREW_TEST_UPGRADE_FROM_FORMULA=/absolute/path/to/v1.2.0/grimoire.rb`.
 The script installs that older formula, starts and stops the service, then
 copies the working-tree formula into the test tap and runs `brew upgrade`.
 A saved bookmark and edited `.env` are checked after restart and uninstall.
@@ -96,17 +99,22 @@ It requires the version to change and verifies preservation and service health
 at the requested target version. Supply both archives when using local cache
 mode. Without the older formula, the test exercises a same-version reinstall.
 
-For the v1.2 release:
+For the v1.3 release candidate, after merging an approved PR into `main`:
 
-1. Keep `Formula/grimoire.rb` and the tracked `Formula/release.json` aligned
-   with the final signed artifacts. The prepared pins identify the verified
-   v1.2.0 candidate; if any archive changes, repeat verification and update
-   both files. Formula version checks are independent of the source branch's
-   package version and ignored local build output.
-2. Publish the reviewed formula to the public repository's default branch
-   and publish the matching release assets. No separate tap repository is
-   needed. These are release actions, separate from local preparation.
-3. Run `HOMEBREW_TEST_EXPECTED_VERSION=1.2.0 npm run test:homebrew:published`
+1. Require a clean `main` at the exact remote commit and a `v1.3.0` tag at
+   that commit. Build both archives from that checkout with
+   `npm run package:release`, then sign them with
+   `scripts/sign-release-artifacts.sh`. Run
+   `npm run release:final:check` to verify the tag, source provenance,
+   checksums, and detached signatures.
+2. Publish the signed archives, checksums, manifest, and public signing key
+   from that exact build. Only then run
+   `npm run release:formula:prepare -- release/release-manifest.json` and
+   update the one-command installer default and published-version docs.
+   Commit the reviewed public formula and metadata changes to `main`.
+   If any archive changes, rebuild, sign, and verify it again before updating
+   pins. No separate tap repository is needed.
+3. Run `HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 npm run test:homebrew:published`
    on clean macOS and Linux Homebrew hosts. Record the public URL/download,
    service health, and data-preservation results before declaring support.
 

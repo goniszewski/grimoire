@@ -154,7 +154,7 @@ export function BookmarkDetailContent({
             variant="outline"
             className="text-xs font-mono border-warning/30 text-warning"
           >
-            Read Later
+            Later
           </Badge>
         )}
       </div>
@@ -471,14 +471,14 @@ export function BookmarkDetailContent({
                 });
               } else {
                 onReadLater?.(bookmark.id, {
-                  onSuccess: () => toast({ title: "Marked read later" }),
+                  onSuccess: () => toast({ title: "Added to Later" }),
                   onError: () => toast({ title: "Failed to update", variant: "destructive" }),
                 });
               }
             }}
           >
             {bookmark.read_later ? <BookmarkX className="h-3.5 w-3.5 mr-1.5" /> : <BookmarkCheck className="h-3.5 w-3.5 mr-1.5" />}
-            {bookmark.read_later ? "Clear read later" : "Read later"}
+            {bookmark.read_later ? "Remove from Later" : "Add to Later"}
           </Button>
         )}
         {onArchive && !bookmark.is_archived && (

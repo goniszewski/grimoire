@@ -1,7 +1,7 @@
 {
   "name": "grimoire",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "license": "MIT",
   "author": "Robert Goniszewski",
   "repository": {
@@ -19,7 +19,7 @@
     "build:demo": "vite build --mode demo",
     "verify:demo-bundle": "bash scripts/verify-demo-bundle.sh",
     "build:dev": "vite build --mode development",
-    "check": "npm run check:fast && npm run docs:api:check && npm run build",
+    "check": "npm run release:metadata:check && npm run check:fast && npm run docs:api:check && npm run build",
     "check:fast": "npm run lint && npm run type-check && npm run test && npm run test:daemon",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -42,6 +42,9 @@
     "docs:openapi:check": "bun run scripts/generate-api-docs.ts --check --openapi-only",
     "package:release": "bun run scripts/package-release.ts",
     "release:validate": "bun run scripts/release-artifacts-validator.ts",
+    "release:metadata:check": "bun run scripts/release-metadata.ts --check",
+    "release:formula:prepare": "bun run scripts/release-metadata.ts --prepare-formula",
+    "release:final:check": "bun run scripts/release-final-check.ts",
     "installer:matrix:linux": "bash scripts/validate-linux-installer-matrix.sh",
     "test:homebrew": "bash scripts/homebrew-smoke.sh",
     "test:homebrew:published": "bash scripts/homebrew-smoke.sh published",

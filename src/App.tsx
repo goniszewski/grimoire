@@ -15,6 +15,7 @@ import CategoryDetail from "./pages/CategoryDetail";
 import Tags from "./pages/Tags";
 import TagDetail from "./pages/TagDetail";
 import NotFound from "./pages/NotFound";
+import Revisit from "./pages/Revisit";
 import { demoRouterBasename, isDemoMode } from "@/demo/enabled";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/domains" element={<Domains />} />
             <Route path="/timeline" element={<Timeline />} />
             <Route path="/review-queue" element={<ReviewQueue />} />
+            <Route path="/later" element={<Revisit />} />
             <Route path="/archive" element={<Archive />} />
             <Route path="/trash" element={<Trash />} />
             <Route path="/settings" element={<Settings />} />

@@ -4,6 +4,21 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - Unreleased
+
+### Added
+- Later / Revisit rounds present a small shuffled stack of saved bookmarks,
+  remember progress locally, and support Skip, Mark as read, Postpone, Undo,
+  Remove from Later, and recoverable Trash.
+- Paste multiple links into the save dialog, optionally add them to Later, and
+  see per-link failures; a single link can include a note.
+- Sidebar folders can expand and collapse.
+
+### Fixed
+- Bookmarklet capture works on pages whose content security policy blocks the
+  old embedded frame, and failed AI enrichment responses can be retried.
+- Docker builds use aligned frontend lockfiles.
+
 ## [1.2.0] - 2026-09-17
 
 ### Added

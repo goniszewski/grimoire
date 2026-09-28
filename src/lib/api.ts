@@ -51,6 +51,9 @@ import type {
   ImportTagRemappingInputDto,
   PaginationDto,
   RelatedBookmarksResponseDto,
+  RevisitBookmarkDto,
+  RevisitDecisionDto,
+  RevisitStateDto,
   ReprocessBatchResponseDto,
   ReprocessBatchStatusResponseDto,
   ReprocessRequestDto,
@@ -426,6 +429,20 @@ export class ApiError extends Error {
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
+async function responseError(res: Response): Promise<ApiError> {
+  let title = `HTTP ${res.status}`;
+  let detail: string | undefined;
+  try {
+    const body = await res.json() as { title?: string; detail?: string; error?: string };
+    if (body.title) title = body.title;
+    if (body.detail) detail = body.detail;
+    else if (body.error) detail = body.error;
+  } catch {
+    // Keep the HTTP status fallback when the error body is not JSON.
+  }
+  return new ApiError(res.status, title, detail);
+}
+
 async function apiFetch<T>(
   path: string,
   options?: RequestInit
@@ -439,17 +456,7 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    let title = `HTTP ${res.status}`;
-    let detail: string | undefined;
-    try {
-      const body = await res.json() as { title?: string; detail?: string; error?: string };
-      if (body.title) title = body.title;
-      if (body.detail) detail = body.detail;
-      else if (body.error) detail = body.error;
-    } catch {
-      // Keep the HTTP status fallback when the error body is not JSON.
-    }
-    throw new ApiError(res.status, title, detail);
+    throw await responseError(res);
   }
 
   if (res.status === 204) return undefined as unknown as T;
@@ -616,11 +623,36 @@ export async function getBookmark(id: string): Promise<BookmarkDetailResponseDto
   return apiFetch<BookmarkDetailResponseDto>(`/bookmarks/${id}`);
 }
 
-export async function createBookmark(url: string, title?: string): Promise<BookmarkResponseDto> {
+export async function createBookmark(
+  url: string,
+  title?: string,
+  options?: { read_later?: 0 | 1; notes?: string }
+): Promise<BookmarkResponseDto> {
   return apiFetch<BookmarkResponseDto>("/bookmarks", {
     method: "POST",
-    body: JSON.stringify({ url, title } satisfies BookmarkCreateRequestDto),
+    body: JSON.stringify({ url, title, ...options } satisfies BookmarkCreateRequestDto),
   });
+}
+
+export type RevisitDecision = RevisitDecisionDto;
+export type RevisitBookmark = RevisitBookmarkDto;
+export type RevisitState = RevisitStateDto;
+
+export async function getRevisitState(): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit");
+}
+export async function startRevisitRound(size: 5 | 10 | 20 = 5): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/round", { method: "POST", body: JSON.stringify({ size }) });
+}
+export async function actOnRevisit(
+  bookmark_id: string,
+  action: RevisitDecision,
+  delay: "day" | "week" | "month" = "day"
+): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/action", { method: "POST", body: JSON.stringify({ bookmark_id, action, delay }) });
+}
+export async function undoRevisit(): Promise<{ data: RevisitState }> {
+  return apiFetch("/revisit/undo", { method: "POST" });
 }
 
 export async function updateBookmark(
@@ -812,17 +844,7 @@ async function fetchImportForm<T>(
     body: importFormData(file, duplicatePolicy, remapping),
   });
   if (!res.ok) {
-    let title = `HTTP ${res.status}`;
-    let detail: string | undefined;
-    try {
-      const body = await res.json() as { title?: string; detail?: string; error?: string };
-      if (body.title) title = body.title;
-      if (body.detail) detail = body.detail;
-      else if (body.error) detail = body.error;
-    } catch {
-      // Keep the HTTP status fallback when the error body is not JSON.
-    }
-    throw new ApiError(res.status, title, detail);
+    throw await responseError(res);
   }
   return res.json() as Promise<T>;
 }

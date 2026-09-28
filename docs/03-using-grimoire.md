@@ -25,9 +25,31 @@ After save, Grimoire pulls readable content when it can:
 
 - **Categories** — create, rename, nest (max three levels), drag to reorder or reparent
 - **Tags** — create, rename, attach; browse from Tags pages
-- **Per bookmark** — title, notes, pin, read/unread, read later, archive, trash, restore, permanent delete
-- **Bulk** — select bookmarks to delete, move, or toggle read later
+- **Per bookmark** — title, notes, pin, read/unread, Later, archive, trash, restore, permanent delete
+- **Bulk** — select bookmarks to delete, move, or toggle Later
 - **Filters** — category, tag, domain, date, and related library filters
+
+## Later and Revisit
+
+Use **Add → Add these to Later** to save one URL or paste a list of URLs. A single
+link can also have a note explaining why you saved it. The save dialog confirms
+which links reached Grimoire; failed links remain in the dialog for retry. An
+existing active bookmark is added to Later without replacing its note or tags.
+
+**Later** appears in the sidebar, and the library shows an invitation when you
+have Later bookmarks. Start a shuffled round of five (or choose ten or twenty),
+or browse all Later bookmarks with the ordinary library filter. You can pause a round and continue
+it later. The queue and progress are stored in the local daemon.
+
+Opening the original page or reading extracted content does not mark a bookmark
+read. **Mark as read** records its read time and removes it from Later while keeping
+the bookmark. **Skip** moves to the next card while keeping the bookmark in Later;
+it can appear again in a later pass. **Postpone for** makes it eligible after a day,
+week, or month; it does not send a notification. For an already-read card, **Done
+with this** removes it from Later without changing its read time. The **More** menu
+offers **Remove from Later** without marking an unread bookmark read, plus **Move
+to Trash** using the ordinary recoverable trash. **Undo** reverses the last round
+decision and returns to that card.
 
 Optional AI can suggest summary, tags, and a broad category during ingest. When an **embedding** provider is configured, an organization agent may propose duplicates or similar categories; review them in **Review Queue**.
 

@@ -103,7 +103,8 @@ test.describe("First-run experience", () => {
     await expect(page.getByText(/AI enrichment is disabled/i)).toBeVisible({ timeout: 10_000 });
 
     // Dismiss
-    await page.getByRole("button", { name: /dismiss/i }).click();
+    await page.getByRole("note").filter({ hasText: /AI enrichment is disabled/i })
+      .getByRole("button", { name: /dismiss/i }).click();
     await expect(page.getByText(/AI enrichment is disabled/i)).not.toBeVisible();
 
     // Reload — should still be dismissed (localStorage persisted)
