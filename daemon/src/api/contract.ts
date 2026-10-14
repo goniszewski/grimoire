@@ -1034,7 +1034,7 @@ const schemas = {
     {
       enabled: booleanSchema("Whether this runtime feature is usable"),
       provider: stringSchema("Resolved provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
       }),
       model: nullable(stringSchema("Resolved model")),
       base_url: nullable(stringSchema("Resolved base URL", { format: "uri" })),
@@ -1081,7 +1081,7 @@ const schemas = {
       ai: objectSchema(
         {
           provider: stringSchema("LLM provider", {
-            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
           }),
           openai: objectSchema(
             {
@@ -1129,6 +1129,14 @@ const schemas = {
             },
             ["api_key", "base_url", "model"]
           ),
+          cheaperinference: objectSchema(
+            {
+              api_key: stringSchema("Redacted Cheaper Inference API key. Empty string means unset"),
+              base_url: stringSchema("Cheaper Inference OpenAI-compatible base URL", { format: "uri" }),
+              model: stringSchema("Cheaper Inference chat model"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
           embeddings: objectSchema(
             {
               provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
@@ -1153,6 +1161,7 @@ const schemas = {
           "openrouter",
           "openai_compatible",
           "deepseek",
+          "cheaperinference",
           "embeddings",
         ]
       ),
@@ -1200,7 +1209,7 @@ const schemas = {
   SettingsPatch: objectSchema({
     ai: objectSchema({
       provider: stringSchema("LLM provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
       }),
       openai: objectSchema({
         api_key: stringSchema("OpenAI API key, empty string clears it"),
@@ -1229,6 +1238,11 @@ const schemas = {
         api_key: stringSchema("DeepSeek API key, empty string clears it"),
         base_url: stringSchema("DeepSeek OpenAI-compatible base URL", { format: "uri" }),
         model: stringSchema("DeepSeek chat model"),
+      }),
+      cheaperinference: objectSchema({
+        api_key: stringSchema("Cheaper Inference API key, empty string clears it"),
+        base_url: stringSchema("Cheaper Inference OpenAI-compatible base URL", { format: "uri" }),
+        model: stringSchema("Cheaper Inference chat model"),
       }),
       embeddings: objectSchema({
         provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),

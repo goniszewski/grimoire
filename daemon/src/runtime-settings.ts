@@ -41,6 +41,7 @@ const OLLAMA_BASE_URL = "http://localhost:11434";
 const ANTHROPIC_BASE_URL = "https://api.anthropic.com";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+const CHEAPERINFERENCE_BASE_URL = "https://api.cheaperinference.com/v1";
 const OPENROUTER_TITLE = "Grimoire";
 const REDACTED_SECRET = "***";
 const AI_PROVIDERS = new Set<AiProvider>([
@@ -50,6 +51,7 @@ const AI_PROVIDERS = new Set<AiProvider>([
   "openrouter",
   "openai_compatible",
   "deepseek",
+  "cheaperinference",
   "none",
 ]);
 const EMBEDDING_PROVIDERS = new Set<EmbeddingProvider>([
@@ -177,6 +179,19 @@ function resolveLlmConfig(settings: Settings): EffectiveLlmConfig | null {
     };
   }
 
+  if (provider === "cheaperinference") {
+    const apiKey = cleanSecret(settings.ai.cheaperinference.api_key);
+    const model = clean(settings.ai.cheaperinference.model);
+    if (!apiKey || !model) return null;
+    return {
+      kind: "openai-compatible",
+      provider: "cheaperinference",
+      baseUrl: normalizeBaseUrl(settings.ai.cheaperinference.base_url, CHEAPERINFERENCE_BASE_URL),
+      apiKey,
+      model,
+    };
+  }
+
   return null;
 }
 
@@ -247,6 +262,7 @@ function configuredLlmModel(settings: Settings): string | null {
   if (provider === "openrouter") return clean(settings.ai.openrouter.model) || null;
   if (provider === "openai_compatible") return clean(settings.ai.openai_compatible.model) || null;
   if (provider === "deepseek") return clean(settings.ai.deepseek.model) || null;
+  if (provider === "cheaperinference") return clean(settings.ai.cheaperinference.model) || null;
   return null;
 }
 
@@ -258,6 +274,9 @@ function configuredLlmBaseUrl(settings: Settings): string | null {
   if (provider === "openrouter") return normalizeBaseUrl(settings.ai.openrouter.base_url, OPENROUTER_BASE_URL);
   if (provider === "openai_compatible") return normalizeBaseUrl(settings.ai.openai_compatible.base_url, "");
   if (provider === "deepseek") return normalizeBaseUrl(settings.ai.deepseek.base_url, DEEPSEEK_BASE_URL);
+  if (provider === "cheaperinference") {
+    return normalizeBaseUrl(settings.ai.cheaperinference.base_url, CHEAPERINFERENCE_BASE_URL);
+  }
   return null;
 }
 

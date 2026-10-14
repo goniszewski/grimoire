@@ -784,6 +784,20 @@ describe("settings-driven AI runtime configuration", () => {
         expectedModel: "deepseek-v4-flash",
         expectedOpenRouterTitle: null,
       },
+      {
+        provider: "cheaperinference",
+        patch: {
+          cheaperinference: {
+            api_key: "cheaperinference-key",
+            base_url: "https://api.cheaperinference.com/v1",
+            model: "gpt-5.4-mini",
+          },
+        },
+        expectedUrl: "https://api.cheaperinference.com/v1/chat/completions",
+        expectedAuth: "Bearer cheaperinference-key",
+        expectedModel: "gpt-5.4-mini",
+        expectedOpenRouterTitle: null,
+      },
     ];
 
     for (const testCase of cases) {
