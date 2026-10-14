@@ -1798,7 +1798,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -1821,6 +1821,10 @@ Request body:
 | `ai.deepseek.api_key` | string | no | DeepSeek API key, empty string clears it |
 | `ai.deepseek.base_url` | string | no | DeepSeek OpenAI-compatible base URL |
 | `ai.deepseek.model` | string | no | DeepSeek chat model |
+| `ai.cheaperinference` | object | no |  |
+| `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
+| `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
+| `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -4234,7 +4238,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `enabled` | boolean | yes | Whether this runtime feature is usable |
-| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
+| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
 | `model` | string \| null | yes | Resolved model |
 | `base_url` | string \| null | yes | Resolved base URL |
 
@@ -4253,7 +4257,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 |---|---|---:|---|
 | `llm` | RuntimeLlmCapability | yes |  |
 | `llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
+| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
 | `llm.model` | string \| null | yes | Resolved model |
 | `llm.base_url` | string \| null | yes | Resolved base URL |
 | `embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4280,7 +4284,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | yes |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
 | `ai.openai` | object | yes |  |
 | `ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `ai.openai.model` | string | yes | OpenAI chat model |
@@ -4303,6 +4307,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.deepseek.api_key` | string | yes | Redacted DeepSeek API key. Empty string means unset |
 | `ai.deepseek.base_url` | string | yes | DeepSeek OpenAI-compatible base URL |
 | `ai.deepseek.model` | string | yes | DeepSeek chat model |
+| `ai.cheaperinference` | object | yes |  |
+| `ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
+| `ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
+| `ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
 | `ai.embeddings` | object | yes |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `ai.embeddings.model` | string | yes | Embedding model |
@@ -4333,7 +4341,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `runtime` | RuntimeCapabilities | yes |  |
 | `runtime.llm` | RuntimeLlmCapability | yes |  |
 | `runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
+| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
 | `runtime.llm.model` | string \| null | yes | Resolved model |
 | `runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4352,7 +4360,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -4375,6 +4383,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.deepseek.api_key` | string | no | DeepSeek API key, empty string clears it |
 | `ai.deepseek.base_url` | string | no | DeepSeek OpenAI-compatible base URL |
 | `ai.deepseek.model` | string | no | DeepSeek chat model |
+| `ai.cheaperinference` | object | no |  |
+| `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
+| `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
+| `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -4411,7 +4423,7 @@ Response data
 |---|---|---:|---|
 | `data` | Settings | yes |  |
 | `data.ai` | object | yes |  |
-| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | LLM provider |
+| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
 | `data.ai.openai` | object | yes |  |
 | `data.ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `data.ai.openai.model` | string | yes | OpenAI chat model |
@@ -4434,6 +4446,10 @@ Response data
 | `data.ai.deepseek.api_key` | string | yes | Redacted DeepSeek API key. Empty string means unset |
 | `data.ai.deepseek.base_url` | string | yes | DeepSeek OpenAI-compatible base URL |
 | `data.ai.deepseek.model` | string | yes | DeepSeek chat model |
+| `data.ai.cheaperinference` | object | yes |  |
+| `data.ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
+| `data.ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
+| `data.ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
 | `data.ai.embeddings` | object | yes |  |
 | `data.ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `data.ai.embeddings.model` | string | yes | Embedding model |
@@ -4464,7 +4480,7 @@ Response data
 | `data.runtime` | RuntimeCapabilities | yes |  |
 | `data.runtime.llm` | RuntimeLlmCapability | yes |  |
 | `data.runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "none" | yes | Resolved provider |
+| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
 | `data.runtime.llm.model` | string \| null | yes | Resolved model |
 | `data.runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `data.runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |

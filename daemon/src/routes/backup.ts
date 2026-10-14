@@ -71,6 +71,7 @@ type PortableSettings = {
     openrouter: Omit<Settings["ai"]["openrouter"], "api_key">;
     openai_compatible: Omit<Settings["ai"]["openai_compatible"], "api_key">;
     deepseek: Omit<Settings["ai"]["deepseek"], "api_key">;
+    cheaperinference: Omit<Settings["ai"]["cheaperinference"], "api_key">;
     embeddings: {
       provider: Settings["ai"]["embeddings"]["provider"];
       model: string;
@@ -192,6 +193,10 @@ function portableSettings(settings: Settings): PortableSettings {
       deepseek: {
         base_url: settings.ai.deepseek.base_url,
         model: settings.ai.deepseek.model,
+      },
+      cheaperinference: {
+        base_url: settings.ai.cheaperinference.base_url,
+        model: settings.ai.cheaperinference.model,
       },
       embeddings: {
         provider: settings.ai.embeddings.provider,

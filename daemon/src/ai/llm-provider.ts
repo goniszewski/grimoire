@@ -12,7 +12,8 @@ export type OpenAiCompatibleLlmProvider =
   | "ollama"
   | "openrouter"
   | "openai_compatible"
-  | "deepseek";
+  | "deepseek"
+  | "cheaperinference";
 
 export interface OpenAiCompatibleLlmConfig extends LlmConfig {
   kind: "openai-compatible";
