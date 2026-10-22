@@ -68,6 +68,25 @@ test.describe("First-run experience", () => {
     await expect(page.getByRole("button", { name: /import from browser/i })).toBeVisible();
   });
 
+  test("theme changes with one click and persists after reload", async ({ page }) => {
+    await setupBaseMocks(page, []);
+    await page.goto("/");
+
+    await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+
+    await page.getByRole("button", { name: "Switch to light theme" }).click();
+
+    await expect(page.locator("html")).toHaveClass(/light/);
+    await expect(page.getByRole("button", { name: "Switch to dark theme" })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("grimoire-theme"))).toBe("light");
+
+    await page.reload();
+
+    await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("html")).toHaveClass(/light/);
+  });
+
   test("adding a bookmark removes the empty-state", async ({ page }) => {
     const bookmarks: unknown[] = [];
     await setupBaseMocks(page, bookmarks);

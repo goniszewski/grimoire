@@ -104,13 +104,6 @@ const Index = () => {
     exitSelectionMode();
   }, [store.pageSelectionKey, exitSelectionMode]);
 
-  // Dark mode by default (only if no prior preference)
-  useEffect(() => {
-    if (!document.documentElement.classList.contains("light")) {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
   useEffect(() => {
     const nextRouteTag = requestedTag?.trim() || null;
     if (nextRouteTag) {
