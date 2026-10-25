@@ -16,11 +16,7 @@ import { lookup } from "node:dns/promises";
 export function isPrivateHost(hostname: string): boolean {
   // Strip brackets, zone ids, trailing FQDN dots (localhost. / localhost..),
   // and case-fold.
-  const host = hostname
-    .replace(/^\[|\]$/g, "")
-    .replace(/%.*$/, "")
-    .replace(/\.+$/g, "")
-    .toLowerCase();
+  const host = stripTrailingDots(hostname.replace(/^\[|\]$/g, "").split("%")[0]).toLowerCase();
 
   if (!host) return true;
 
@@ -51,7 +47,7 @@ export async function resolvesToPrivateAddress(
 ): Promise<boolean> {
   if (isPrivateHost(hostname)) return true;
 
-  const host = hostname.replace(/^\[|\]$/g, "").replace(/\.+$/g, "");
+  const host = stripTrailingDots(hostname.replace(/^\[|\]$/g, ""));
   if (host.includes(":") || parseIpv4(host)) return false;
 
   signal?.throwIfAborted();
@@ -65,6 +61,12 @@ export async function resolvesToPrivateAddress(
     return false;
   }
   return addresses.some((address) => isPrivateHost(address));
+}
+
+function stripTrailingDots(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 46) end -= 1;
+  return value.slice(0, end);
 }
 
 function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
