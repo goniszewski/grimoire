@@ -65,7 +65,7 @@ export async function fetchFollowingSafeRedirects(
   let response: Response | null = null;
 
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
-    if (await resolvesToPrivateAddress(current.hostname, options.resolveHost)) {
+    if (await resolvesToPrivateAddress(current.hostname, options.resolveHost, options.signal)) {
       throw new Error(`Fetch to private host blocked: ${current.toString()}`);
     }
     response = await fetch(current.toString(), {

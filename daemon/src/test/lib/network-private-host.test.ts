@@ -152,4 +152,20 @@ describe("resolvesToPrivateAddress", () => {
   it("does not block on lookup failure", async () => {
     expect(await resolvesToPrivateAddress("nxdomain.example.com", resolver({}))).toBe(false);
   });
+
+  it("abandons a stalled lookup when the signal aborts", async () => {
+    const controller = new AbortController();
+    const stalled = () => new Promise<string[]>(() => {});
+    const pending = resolvesToPrivateAddress("slow.example.com", stalled, controller.signal);
+    controller.abort(new Error("timed out"));
+    await expect(pending).rejects.toThrow("timed out");
+  });
+
+  it("rejects immediately when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort(new Error("already aborted"));
+    await expect(
+      resolvesToPrivateAddress("slow.example.com", async () => ["93.184.216.34"], controller.signal)
+    ).rejects.toThrow("already aborted");
+  });
 });

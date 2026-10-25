@@ -280,7 +280,7 @@ async function fetchMedia(candidate: BookmarkMediaCandidate): Promise<{
   let response: Response | null = null;
   try {
     for (let redirectCount = 0; redirectCount <= MEDIA_FETCH_MAX_REDIRECTS; redirectCount += 1) {
-      if (await resolvesToPrivateAddress(source.hostname)) return null;
+      if (await resolvesToPrivateAddress(source.hostname, undefined, controller.signal)) return null;
       response = await fetch(source.toString(), {
         headers: {
           Accept: "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon,*/*;q=0.2",

@@ -40,23 +40,40 @@ export function isPrivateHost(hostname: string): boolean {
  * Note: the later `fetch` resolves the name again, so a DNS server that
  * answers differently between the two lookups can still win the race. This
  * check defeats static public-name-to-private-IP records, not that race.
+ *
+ * When `signal` aborts, the pending lookup is abandoned and the abort reason
+ * is thrown so callers' timeouts still bound the whole operation.
  */
 export async function resolvesToPrivateAddress(
   hostname: string,
-  resolver: HostResolver = defaultResolver
+  resolver: HostResolver = defaultResolver,
+  signal?: AbortSignal
 ): Promise<boolean> {
   if (isPrivateHost(hostname)) return true;
 
   const host = hostname.replace(/^\[|\]$/g, "").replace(/\.+$/g, "");
   if (host.includes(":") || parseIpv4(host)) return false;
 
+  signal?.throwIfAborted();
+
   let addresses: string[];
   try {
-    addresses = await resolver(host);
-  } catch {
+    addresses = await raceAbort(resolver(host), signal);
+  } catch (error) {
+    // Cancellation must propagate; only genuine lookup failures are ignored.
+    if (signal?.aborted) throw error;
     return false;
   }
   return addresses.some((address) => isPrivateHost(address));
+}
+
+function raceAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+  });
 }
 
 export type HostResolver = (hostname: string) => Promise<string[]>;
