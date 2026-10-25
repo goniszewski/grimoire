@@ -2,7 +2,7 @@
  * Outbound fetch helpers with manual redirect validation (SSRF defense).
  */
 
-import { isPrivateHost } from "./network.js";
+import { isPrivateHost, resolvesToPrivateAddress, type HostResolver } from "./network.js";
 import { parsePublicHttpUrl } from "./public-url.js";
 
 const DEFAULT_MAX_REDIRECTS = 10;
@@ -36,11 +36,15 @@ export interface SafeFetchOptions {
   maxRedirects?: number;
   /** When true, skip the initial private-host check (caller already validated). */
   skipInitialHostCheck?: boolean;
+  /** Overrides DNS resolution (tests). Defaults to the system resolver. */
+  resolveHost?: HostResolver;
 }
 
 /**
  * Fetch a URL while validating every redirect target before following it.
  * Never uses automatic redirect following, so private intermediates are never contacted.
+ * Each hop's hostname is also resolved and rejected if any address is private, so a
+ * public name pointing at an internal address is blocked before it is contacted.
  */
 export async function fetchFollowingSafeRedirects(
   inputUrl: string,
@@ -61,6 +65,9 @@ export async function fetchFollowingSafeRedirects(
   let response: Response | null = null;
 
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
+    if (await resolvesToPrivateAddress(current.hostname, options.resolveHost)) {
+      throw new Error(`Fetch to private host blocked: ${current.toString()}`);
+    }
     response = await fetch(current.toString(), {
       headers: options.headers,
       redirect: "manual",

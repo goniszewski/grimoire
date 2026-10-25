@@ -2,79 +2,145 @@
  * Shared network utilities.
  */
 
+import { lookup } from "node:dns/promises";
+
 /**
- * Returns true if the hostname resolves to a private, loopback, link-local,
- * or otherwise non-routable address.
+ * Returns true if the hostname is, or syntactically names, a private,
+ * loopback, link-local, or otherwise non-routable destination.
  *
- * Used in SSRF mitigations across the codebase.
- * NOTE: This is a best-effort syntactic check. DNS rebinding (a public hostname
- * that resolves to a private IP at fetch time) is not mitigated here and is
- * considered an accepted risk for a local-only daemon.
+ * Used in SSRF mitigations across the codebase. This check is purely
+ * syntactic and never touches DNS; callers that fetch over the network should
+ * also run {@link resolvesToPrivateAddress} so a public name that points at a
+ * private address is rejected.
  */
 export function isPrivateHost(hostname: string): boolean {
-  // Strip brackets, trailing FQDN dots (localhost. / localhost..), and case-fold.
+  // Strip brackets, zone ids, trailing FQDN dots (localhost. / localhost..),
+  // and case-fold.
   const host = hostname
     .replace(/^\[|\]$/g, "")
+    .replace(/%.*$/, "")
     .replace(/\.+$/g, "")
     .toLowerCase();
 
-  if (isPrivateIpv4(host)) return true;
+  if (!host) return true;
 
-  // IPv4-mapped and IPv4-compatible IPv6 literals can address the same
-  // private services as their dotted-quad forms. Classify the embedded address
-  // before applying the IPv6-only checks below.
-  const embeddedIpv4 = embeddedIpv4Address(host);
-  if (embeddedIpv4 && isPrivateIpv4(embeddedIpv4)) return true;
+  if (host.includes(":")) return isPrivateIpv6(host);
 
-  // Loopback
-  if (host === "localhost" || host === "::1") return true;
+  const ipv4 = parseIpv4(host);
+  if (ipv4) return isPrivateIpv4Octets(ipv4);
 
-  // Link-local IPv6
-  if (/^fe80:/i.test(host)) return true;
-
-  // IPv6 ULA (Unique Local Address, RFC 4193) — fc00::/7 covers fc** and fd**
-  if (/^f[cd][0-9a-f]{2}:/i.test(host)) return true;
-
-  // IPv6 site-local (deprecated but still routable internally)
-  if (/^fec[0-9a-f]:/i.test(host)) return true;
-
-  // Unspecified IPv6
-  if (host === "::") return true;
-
-  return false;
+  return isInternalHostname(host);
 }
 
-function isPrivateIpv4(host: string): boolean {
-  // Loopback
-  if (/^127\./.test(host)) return true;
+/**
+ * Resolves `hostname` and returns true if ANY returned address is private.
+ * IP literals are classified without a lookup. Lookup failures return false:
+ * the subsequent fetch fails on the same name, so there is nothing to protect.
+ *
+ * Note: the later `fetch` resolves the name again, so a DNS server that
+ * answers differently between the two lookups can still win the race. This
+ * check defeats static public-name-to-private-IP records, not that race.
+ */
+export async function resolvesToPrivateAddress(
+  hostname: string,
+  resolver: HostResolver = defaultResolver
+): Promise<boolean> {
+  if (isPrivateHost(hostname)) return true;
 
-  // Link-local (AWS IMDS, etc.)
-  if (/^169\.254\./.test(host)) return true;
+  const host = hostname.replace(/^\[|\]$/g, "").replace(/\.+$/g, "");
+  if (host.includes(":") || parseIpv4(host)) return false;
 
-  // Private ranges
-  if (/^10\./.test(host)) return true;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
-  if (/^192\.168\./.test(host)) return true;
-
-  // CGNAT / shared address space (RFC 6598)
-  if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return true;
-
-  // Unspecified / broadcast
-  return host === "0.0.0.0";
+  let addresses: string[];
+  try {
+    addresses = await resolver(host);
+  } catch {
+    return false;
+  }
+  return addresses.some((address) => isPrivateHost(address));
 }
 
-function embeddedIpv4Address(host: string): string | null {
-  if (!host.includes(":")) return null;
+export type HostResolver = (hostname: string) => Promise<string[]>;
+
+const defaultResolver: HostResolver = async (hostname) => {
+  const results = await lookup(hostname, { all: true });
+  return results.map((result) => result.address);
+};
+
+const INTERNAL_SUFFIXES = [
+  ".localhost",
+  ".local",
+  ".localdomain",
+  ".internal",
+  ".home.arpa",
+];
+
+function isInternalHostname(host: string): boolean {
+  if (host === "localhost") return true;
+  // Public hosts always have at least two labels; bare names resolve through
+  // the local search domain or hosts file (e.g. `instance-data`, `router`).
+  if (!host.includes(".")) return true;
+  return INTERNAL_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+
+function parseIpv4(host: string): [number, number, number, number] | null {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!match) return null;
+  const octets = match.slice(1).map(Number);
+  if (octets.some((octet) => octet > 255)) return null;
+  return octets as [number, number, number, number];
+}
+
+function isPrivateIpv4Octets([a, b, c]: [number, number, number, number]): boolean {
+  if (a === 0) return true; // 0.0.0.0/8 "this network"
+  if (a === 10) return true; // RFC 1918
+  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT, RFC 6598
+  if (a === 127) return true; // loopback
+  if (a === 169 && b === 254) return true; // link-local (AWS IMDS, etc.)
+  if (a === 172 && b >= 16 && b <= 31) return true; // RFC 1918
+  if (a === 192 && b === 0 && c === 0) return true; // IETF protocol assignments
+  if (a === 192 && b === 0 && c === 2) return true; // TEST-NET-1
+  if (a === 192 && b === 168) return true; // RFC 1918
+  if (a === 198 && (b === 18 || b === 19)) return true; // benchmarking
+  if (a === 198 && b === 51 && c === 100) return true; // TEST-NET-2
+  if (a === 203 && b === 0 && c === 113) return true; // TEST-NET-3
+  return a >= 224; // multicast, reserved, broadcast
+}
+
+function isPrivateIpv6(host: string): boolean {
   const words = parseIpv6Words(host);
-  if (!words || words.length !== 8) return null;
+  // Unparseable IPv6 never reaches a legitimate public server.
+  if (!words) return true;
 
-  // The first 80 bits are zero for IPv4-compatible and IPv4-mapped
-  // addresses. The sixth word is 0 for compatible or ffff for mapped.
-  if (!words.slice(0, 5).every((word) => word === 0) || (words[5] !== 0 && words[5] !== 0xffff)) {
-    return null;
+  const [w0, w1, w2, w3, w4, w5, w6, w7] = words;
+  const embedded = (hi: number, lo: number) =>
+    isPrivateIpv4Octets([hi >> 8, hi & 0xff, lo >> 8, lo & 0xff]);
+
+  // ::, ::1
+  if (words.slice(0, 7).every((word) => word === 0) && w7 <= 1) return true;
+
+  // IPv4-compatible (::/96) and IPv4-mapped (::ffff:0:0/96).
+  if (words.slice(0, 5).every((word) => word === 0) && (w5 === 0 || w5 === 0xffff)) {
+    return embedded(w6, w7);
   }
 
-  return [words[6] >> 8, words[6] & 0xff, words[7] >> 8, words[7] & 0xff].join(".");
+  if ((w0 & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((w0 & 0xffc0) === 0xfec0) return true; // fec0::/10 site-local (deprecated)
+  if ((w0 & 0xfe00) === 0xfc00) return true; // fc00::/7 ULA
+  if ((w0 & 0xff00) === 0xff00) return true; // ff00::/8 multicast
+  if (w0 === 0x2001 && w1 === 0x0db8) return true; // 2001:db8::/32 documentation
+  if (w0 === 0x2001 && w1 === 0) return true; // 2001::/32 Teredo (client IP is obfuscated)
+  if (w0 === 0x0100 && w1 === 0 && w2 === 0 && w3 === 0) return true; // 100::/64 discard
+
+  // NAT64: 64:ff9b::/96 embeds an IPv4 address; 64:ff9b:1::/48 is local-use.
+  if (w0 === 0x0064 && w1 === 0xff9b) {
+    if (w2 === 1) return true;
+    if (w2 === 0 && w3 === 0 && w4 === 0 && w5 === 0) return embedded(w6, w7);
+  }
+
+  // 6to4: 2002:AABB:CCDD::/48 embeds the IPv4 address in words 1-2.
+  if (w0 === 0x2002) return embedded(w1, w2);
+
+  return false;
 }
 
 function parseIpv6Words(host: string): number[] | null {
