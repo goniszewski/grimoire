@@ -23,7 +23,7 @@ import { DemoModeBanner } from "@/components/DemoModeBanner";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="grimoire-theme">
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="grimoire-theme">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />

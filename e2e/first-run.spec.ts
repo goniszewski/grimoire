@@ -68,8 +68,21 @@ test.describe("First-run experience", () => {
     await expect(page.getByRole("button", { name: /import from browser/i })).toBeVisible();
   });
 
+  test("theme follows the system setting by default", async ({ page }) => {
+    await setupBaseMocks(page, []);
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+
+    await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("html")).toHaveClass(/light/);
+
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+
   test("theme changes with one click and persists after reload", async ({ page }) => {
     await setupBaseMocks(page, []);
+    await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
 
     await expect(page.getByText(/your library is empty/i)).toBeVisible({ timeout: 10_000 });
