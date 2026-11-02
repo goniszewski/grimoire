@@ -123,8 +123,8 @@ Open `http://127.0.0.1:3210`.
   category/tag management, import/export, backup/restore, diagnostics, and
   local update checks.
 - Runs without AI providers. Optional providers include OpenAI, Ollama,
-  Anthropic, OpenRouter, DeepSeek international, and custom OpenAI-compatible
-  chat or embeddings endpoints.
+  Anthropic, OpenRouter, DeepSeek international, Cheaper Inference, and custom
+  OpenAI-compatible chat or embeddings endpoints.
 
 ## How It Works
 

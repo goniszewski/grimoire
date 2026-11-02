@@ -96,6 +96,7 @@ describe("API documentation generator", () => {
       "openrouter",
       "openai_compatible",
       "deepseek",
+      "cheaperinference",
       "none",
     ]);
     expect(settingsPatch.properties.ai.properties.anthropic.properties.api_key.type).toBe("string");

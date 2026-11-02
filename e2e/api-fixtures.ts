@@ -69,6 +69,11 @@ export function makeSettings(aiProvider: SettingsDto["ai"]["provider"] = "none")
         base_url: "https://api.deepseek.com",
         model: "deepseek-v4-flash",
       },
+      cheaperinference: {
+        api_key: "",
+        base_url: "https://api.cheaperinference.com/v1",
+        model: "gpt-5.4-mini",
+      },
       embeddings: {
         provider: "openai",
         model: "text-embedding-3-small",

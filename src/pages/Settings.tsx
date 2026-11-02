@@ -101,7 +101,7 @@ import DemoSettings from "@/pages/DemoSettings";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Provider = ApiAiProvider;
-type ApiKeyProvider = "anthropic" | "openrouter" | "openai_compatible" | "deepseek";
+type ApiKeyProvider = "anthropic" | "openrouter" | "openai_compatible" | "deepseek" | "cheaperinference";
 
 interface ApiKeyProviderFormState {
   api_key: string;
@@ -117,6 +117,7 @@ interface AiFormState {
   openrouter: ApiKeyProviderFormState;
   openai_compatible: ApiKeyProviderFormState;
   deepseek: ApiKeyProviderFormState;
+  cheaperinference: ApiKeyProviderFormState;
 }
 
 interface EmbeddingsFormState {
@@ -186,6 +187,11 @@ const apiKeyProviderMeta: Record<ApiKeyProvider, {
     baseUrlPlaceholder: "https://api.deepseek.com",
     modelPlaceholder: "deepseek-v4-flash",
   },
+  cheaperinference: {
+    apiKeyPlaceholder: "ci_live_...",
+    baseUrlPlaceholder: "https://api.cheaperinference.com/v1",
+    modelPlaceholder: "gpt-5.4-mini",
+  },
 };
 
 function defaultAiFormState(): AiFormState {
@@ -212,6 +218,11 @@ function defaultAiFormState(): AiFormState {
       api_key: "",
       base_url: "https://api.deepseek.com",
       model: "deepseek-v4-flash",
+    },
+    cheaperinference: {
+      api_key: "",
+      base_url: "https://api.cheaperinference.com/v1",
+      model: "gpt-5.4-mini",
     },
   };
 }
@@ -251,6 +262,7 @@ function aiFormStateFromSettings(settings: Partial<ApiSettings["ai"]> | undefine
     },
     openai_compatible: mergeApiKeyProvider(defaults.openai_compatible, settings?.openai_compatible),
     deepseek: mergeApiKeyProvider(defaults.deepseek, settings?.deepseek),
+    cheaperinference: mergeApiKeyProvider(defaults.cheaperinference, settings?.cheaperinference),
   };
 }
 
@@ -726,6 +738,7 @@ const LocalSettings = () => {
         openrouter: secretProviderPatch(ai.openrouter),
         openai_compatible: secretProviderPatch(ai.openai_compatible),
         deepseek: secretProviderPatch(ai.deepseek),
+        cheaperinference: secretProviderPatch(ai.cheaperinference),
         embeddings: {
           provider: embeddings.provider,
           model: embeddings.model,
@@ -1049,6 +1062,7 @@ const LocalSettings = () => {
                       <SelectItem value="openrouter">OpenRouter</SelectItem>
                       <SelectItem value="openai_compatible">OpenAI compatible</SelectItem>
                       <SelectItem value="deepseek">DeepSeek</SelectItem>
+                      <SelectItem value="cheaperinference">Cheaper Inference</SelectItem>
                       <SelectItem value="none">None</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1146,6 +1160,7 @@ const LocalSettings = () => {
                 )}
                 {ai.provider === "openai_compatible" && renderApiKeyProviderFields("openai_compatible")}
                 {ai.provider === "deepseek" && renderApiKeyProviderFields("deepseek")}
+                {ai.provider === "cheaperinference" && renderApiKeyProviderFields("cheaperinference")}
 
                 {ai.provider !== "none" && (
                   <div className="flex items-center gap-3">

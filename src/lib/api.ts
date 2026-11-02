@@ -383,6 +383,11 @@ export interface ApiSettings {
       base_url: SettingsDto["ai"]["deepseek"]["base_url"];
       model: SettingsDto["ai"]["deepseek"]["model"];
     };
+    cheaperinference: {
+      api_key: SettingsDto["ai"]["cheaperinference"]["api_key"];
+      base_url: SettingsDto["ai"]["cheaperinference"]["base_url"];
+      model: SettingsDto["ai"]["cheaperinference"]["model"];
+    };
     embeddings: {
       provider: ApiEmbeddingProvider;
       model: SettingsDto["ai"]["embeddings"]["model"];

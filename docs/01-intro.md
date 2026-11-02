@@ -13,7 +13,7 @@ your machine while leaving integrations optional.
 - Tags and nested categories (up to three levels)
 - Personal notes, pin, read / unread, read later, archive, and trash
 - Keyword search always; semantic and hybrid search when embeddings are configured
-- Optional AI summaries, tags, and categories (OpenAI, Ollama, Anthropic, OpenRouter, DeepSeek, or a custom OpenAI-compatible endpoint)
+- Optional AI summaries, tags, and categories (OpenAI, Ollama, Anthropic, OpenRouter, DeepSeek, Cheaper Inference, or a custom OpenAI-compatible endpoint)
 - Import browser bookmarks (HTML); export JSON or CSV
 - Local backups, restore, and diagnostics
 - Single user, loopback by default (`127.0.0.1:3210`)

@@ -31,6 +31,7 @@ function settingsResponse(runtimeEnrichment: boolean) {
         openrouter: { api_key: "", base_url: "https://openrouter.ai/api/v1", model: "openai/gpt-latest" },
         openai_compatible: { api_key: "", base_url: "http://localhost:8000/v1", model: "custom-chat-model" },
         deepseek: { api_key: "", base_url: "https://api.deepseek.com", model: "deepseek-v4-flash" },
+        cheaperinference: { api_key: "", base_url: "https://api.cheaperinference.com/v1", model: "gpt-5.4-mini" },
         embeddings: {
           provider: "openai" as const,
           model: "text-embedding-3-small",

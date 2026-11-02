@@ -8025,6 +8025,7 @@
               "openrouter",
               "openai_compatible",
               "deepseek",
+              "cheaperinference",
               "none"
             ]
           },
@@ -8170,6 +8171,7 @@
                   "openrouter",
                   "openai_compatible",
                   "deepseek",
+                  "cheaperinference",
                   "none"
                 ]
               },
@@ -8306,6 +8308,30 @@
                 ],
                 "additionalProperties": false
               },
+              "cheaperinference": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Redacted Cheaper Inference API key. Empty string means unset"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "Cheaper Inference OpenAI-compatible base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Cheaper Inference chat model"
+                  }
+                },
+                "required": [
+                  "api_key",
+                  "base_url",
+                  "model"
+                ],
+                "additionalProperties": false
+              },
               "embeddings": {
                 "type": "object",
                 "properties": {
@@ -8363,6 +8389,7 @@
               "openrouter",
               "openai_compatible",
               "deepseek",
+              "cheaperinference",
               "embeddings"
             ],
             "additionalProperties": false
@@ -8503,6 +8530,7 @@
                   "openrouter",
                   "openai_compatible",
                   "deepseek",
+                  "cheaperinference",
                   "none"
                 ]
               },
@@ -8607,6 +8635,25 @@
                   "model": {
                     "type": "string",
                     "description": "DeepSeek chat model"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "cheaperinference": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Cheaper Inference API key, empty string clears it"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "Cheaper Inference OpenAI-compatible base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Cheaper Inference chat model"
                   }
                 },
                 "additionalProperties": false

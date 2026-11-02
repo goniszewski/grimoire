@@ -72,8 +72,9 @@ Environment variables are only first-start or unattended defaults.
 | `EMBEDDING_MODEL` | Default embedding model. |
 
 Additional LLM providers are configured through persisted Settings after
-startup: Anthropic, OpenRouter, custom OpenAI-compatible chat endpoints, and
-DeepSeek international each have separate API key, base URL, and model fields.
+startup: Anthropic, OpenRouter, custom OpenAI-compatible chat endpoints,
+DeepSeek international, and Cheaper Inference each have separate API key, base
+URL, and model fields.
 Custom OpenAI-compatible embeddings use their own provider, API key, base URL,
 and model instead of sharing the selected LLM provider.
 

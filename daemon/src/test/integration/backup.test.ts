@@ -186,6 +186,11 @@ describe("Backup API", () => {
           base_url: "https://api.deepseek.com",
           model: "deepseek-v4-flash",
         },
+        cheaperinference: {
+          api_key: "backup-cheaperinference-secret",
+          base_url: "https://api.cheaperinference.com/v1",
+          model: "gpt-5.4-mini",
+        },
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -858,6 +863,11 @@ describe("Backup API", () => {
           base_url: "https://api.deepseek.com",
           model: "deepseek-v4-flash",
         },
+        cheaperinference: {
+          api_key: "backup-cheaperinference-secret",
+          base_url: "https://api.cheaperinference.com/v1",
+          model: "gpt-5.4-mini",
+        },
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -911,6 +921,11 @@ describe("Backup API", () => {
           api_key: "current-deepseek-secret",
           base_url: "https://api.deepseek.com",
           model: "deepseek-current",
+        },
+        cheaperinference: {
+          api_key: "current-cheaperinference-secret",
+          base_url: "https://api.cheaperinference.com/v1",
+          model: "gpt-5.4-mini",
         },
         embeddings: {
           provider: "openai",
