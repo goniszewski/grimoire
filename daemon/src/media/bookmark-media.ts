@@ -3,7 +3,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
-import { isPrivateHost } from "../lib/network.js";
+import { isPrivateHost, resolvesToPrivateAddress } from "../lib/network.js";
+import { isRedirectStatus as isFetchRedirectStatus } from "../lib/safe-fetch.js";
 import { version as APP_VERSION } from "../../package.json";
 import type { BookmarkMediaKind, BookmarkMediaRow } from "../db/types.js";
 
@@ -211,7 +212,7 @@ function safeHttpMediaUrl(value: string, base?: URL): URL | null {
 }
 
 function isRedirectStatus(status: number): boolean {
-  return status >= 300 && status < 400;
+  return isFetchRedirectStatus(status);
 }
 
 function isAllowedCachedImageType(mediaType: string): boolean {
@@ -279,6 +280,7 @@ async function fetchMedia(candidate: BookmarkMediaCandidate): Promise<{
   let response: Response | null = null;
   try {
     for (let redirectCount = 0; redirectCount <= MEDIA_FETCH_MAX_REDIRECTS; redirectCount += 1) {
+      if (await resolvesToPrivateAddress(source.hostname, undefined, controller.signal)) return null;
       response = await fetch(source.toString(), {
         headers: {
           Accept: "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon,*/*;q=0.2",
