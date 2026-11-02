@@ -167,6 +167,10 @@ function currentSchemaVersion(db: Database): string {
   }
 }
 
+function portableEndpoint(provider: { base_url: string; model: string }) {
+  return { base_url: provider.base_url, model: provider.model };
+}
+
 function portableSettings(settings: Settings): PortableSettings {
   return {
     ai: {
@@ -190,14 +194,8 @@ function portableSettings(settings: Settings): PortableSettings {
         base_url: settings.ai.openai_compatible.base_url,
         model: settings.ai.openai_compatible.model,
       },
-      deepseek: {
-        base_url: settings.ai.deepseek.base_url,
-        model: settings.ai.deepseek.model,
-      },
-      cheaperinference: {
-        base_url: settings.ai.cheaperinference.base_url,
-        model: settings.ai.cheaperinference.model,
-      },
+      deepseek: portableEndpoint(settings.ai.deepseek),
+      cheaperinference: portableEndpoint(settings.ai.cheaperinference),
       embeddings: {
         provider: settings.ai.embeddings.provider,
         model: settings.ai.embeddings.model,

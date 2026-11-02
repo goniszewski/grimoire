@@ -227,8 +227,9 @@ function removeRedactedSecretPlaceholders(patch: Partial<Settings>): Partial<Set
   removeIfRedacted(sanitized.ai?.anthropic, "api_key");
   removeIfRedacted(sanitized.ai?.openrouter, "api_key");
   removeIfRedacted(sanitized.ai?.openai_compatible, "api_key");
-  removeIfRedacted(sanitized.ai?.deepseek, "api_key");
-  removeIfRedacted(sanitized.ai?.cheaperinference, "api_key");
+  for (const provider of ["deepseek", "cheaperinference"] as const) {
+    removeIfRedacted(sanitized.ai?.[provider], "api_key");
+  }
   removeIfRedacted(sanitized.ai?.embeddings?.openai_compatible, "api_key");
   removeIfRedacted(sanitized.app?.lock, "pin_hash");
   removeIfRedacted(sanitized.backup?.s3, "access_key");
@@ -469,6 +470,10 @@ export function validateSettingsPatch(patch: unknown): string | null {
 // ─── Redaction ────────────────────────────────────────────────────────────────
 
 /** Returns settings with API keys replaced by a sentinel so callers know one is set. */
+function redactApiKeyProvider(provider: ApiKeyProviderSettings): ApiKeyProviderSettings {
+  return { ...provider, api_key: provider.api_key ? "***" : "" };
+}
+
 export function redactSettings(settings: Settings): object {
   return {
     ...settings,
@@ -490,14 +495,8 @@ export function redactSettings(settings: Settings): object {
         ...settings.ai.openai_compatible,
         api_key: settings.ai.openai_compatible.api_key ? "***" : "",
       },
-      deepseek: {
-        ...settings.ai.deepseek,
-        api_key: settings.ai.deepseek.api_key ? "***" : "",
-      },
-      cheaperinference: {
-        ...settings.ai.cheaperinference,
-        api_key: settings.ai.cheaperinference.api_key ? "***" : "",
-      },
+      deepseek: redactApiKeyProvider(settings.ai.deepseek),
+      cheaperinference: redactApiKeyProvider(settings.ai.cheaperinference),
       embeddings: {
         ...settings.ai.embeddings,
         openai_compatible: {
