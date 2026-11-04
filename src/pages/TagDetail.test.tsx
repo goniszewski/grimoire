@@ -153,7 +153,7 @@ describe("TagDetail", () => {
     );
     expect(screen.getByRole("link", { name: "Manage tags" })).toHaveAttribute("href", "/tags");
     expect(screen.getByRole("button", { name: "Rename #typescript tag" })).toBeInTheDocument();
-    expect(screen.getByText("Example bookmark")).toBeInTheDocument();
+    expect(await screen.findByText("Example bookmark")).toBeInTheDocument();
     expect(screen.getByText("1-20 of 22")).toBeInTheDocument();
     expect(mockedListBookmarks).toHaveBeenCalledWith({
       tag: "typescript",
@@ -248,7 +248,7 @@ describe("TagDetail", () => {
     renderTagDetail();
 
     expect(await screen.findByRole("heading", { name: "#typescript" })).toBeInTheDocument();
-    expect(screen.getByText("No bookmarks with this tag yet")).toBeInTheDocument();
+    expect(await screen.findByText("No bookmarks with this tag yet")).toBeInTheDocument();
   });
 
   it("does not request scoped bookmarks for an unknown tag", async () => {
