@@ -77,7 +77,7 @@ const Tags = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteTag,
+    mutationFn: (id: string) => deleteTag(id),
     onSuccess: () => {
       const deletedName = deleteTarget?.name;
       invalidateTagAffectedQueries();
