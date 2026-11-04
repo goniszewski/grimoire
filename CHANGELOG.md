@@ -4,6 +4,22 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] - Unreleased
+
+### Added
+- Cheaper Inference is available as an AI provider.
+
+### Fixed
+- Theme switching works and the selected theme is remembered.
+- Grimoire works behind trusted reverse proxy origins.
+
+### Security
+- Outbound fetches resolve each hop's hostname and reject private or reserved
+  addresses, including NAT64, 6to4, and Teredo-embedded IPv6 and internal-only
+  hostnames.
+- Dependencies updated to resolve audit findings, including `fast-uri`
+  (GHSA-58mr-gqgx-xq4g, GHSA-qw65-cvwx-89v3).
+
 ## [1.3.0] - 2026-09-28
 
 ### Added

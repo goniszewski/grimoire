@@ -29,8 +29,8 @@ describe("release metadata", () => {
       writeFileSync(installerPath, readFileSync(installerPath, "utf8").replace(`LITTLEIMP_VERSION:-${publishedVersion}`, "LITTLEIMP_VERSION:-0.0.0"));
       expect(checkReleaseMetadata(root)).toContain("One-command installer default differs from published release");
       const daemonPath = join(root, "daemon/package.json");
-      writeFileSync(daemonPath, readFileSync(daemonPath, "utf8").replace('"version": "1.3.0"', '"version": "1.2.0"'));
-      expect(checkReleaseMetadata(root)).toContain("daemon/package.json version 1.2.0 differs from package.json 1.3.0");
+      writeFileSync(daemonPath, readFileSync(daemonPath, "utf8").replace('"version": "1.3.1"', '"version": "1.2.0"'));
+      expect(checkReleaseMetadata(root)).toContain("daemon/package.json version 1.2.0 differs from package.json 1.3.1");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
