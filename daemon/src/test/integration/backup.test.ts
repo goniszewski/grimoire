@@ -30,6 +30,15 @@ function makeFileDb(dir: string): { db: Database; dbPath: string } {
   return { db, dbPath };
 }
 
+// Shared fixture for the Cheaper Inference provider block in settings payloads.
+function cheaperInferenceSettings(prefix: "backup" | "current") {
+  return {
+    api_key: `${prefix}-cheaperinference-secret`,
+    base_url: "https://api.cheaperinference.com/v1",
+    model: "gpt-5.4-mini",
+  };
+}
+
 const EMPTY_S3_CONFIG = {
   endpoint: "",
   bucket: "",
@@ -186,11 +195,7 @@ describe("Backup API", () => {
           base_url: "https://api.deepseek.com",
           model: "deepseek-v4-flash",
         },
-        cheaperinference: {
-          api_key: "backup-cheaperinference-secret",
-          base_url: "https://api.cheaperinference.com/v1",
-          model: "gpt-5.4-mini",
-        },
+        cheaperinference: cheaperInferenceSettings("backup"),
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -863,11 +868,7 @@ describe("Backup API", () => {
           base_url: "https://api.deepseek.com",
           model: "deepseek-v4-flash",
         },
-        cheaperinference: {
-          api_key: "backup-cheaperinference-secret",
-          base_url: "https://api.cheaperinference.com/v1",
-          model: "gpt-5.4-mini",
-        },
+        cheaperinference: cheaperInferenceSettings("backup"),
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -922,11 +923,7 @@ describe("Backup API", () => {
           base_url: "https://api.deepseek.com",
           model: "deepseek-current",
         },
-        cheaperinference: {
-          api_key: "current-cheaperinference-secret",
-          base_url: "https://api.cheaperinference.com/v1",
-          model: "gpt-5.4-mini",
-        },
+        cheaperinference: cheaperInferenceSettings("current"),
         embeddings: {
           provider: "openai",
           model: "embed-current",
