@@ -57,7 +57,7 @@ function assertPassword(password: string): void {
   }
 }
 
-function randomBytes(length: number): Uint8Array {
+function randomBytes(length: number): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
   return bytes;
@@ -67,7 +67,7 @@ function toBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString("base64");
 }
 
-function fromBase64(value: string): Uint8Array {
+function fromBase64(value: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(Buffer.from(value, "base64"));
 }
 
@@ -113,7 +113,7 @@ function assertExtractionTargetAvailable(outputDir: string): void {
 
 async function deriveKey(
   password: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
   usages: KeyUsage[]
 ): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
@@ -148,7 +148,7 @@ function encodePackage(metadata: PackageMetadata, ciphertext: Uint8Array): Uint8
   return output;
 }
 
-function decodePackage(bytes: Uint8Array): { metadata: PackageMetadata; ciphertext: Uint8Array } {
+function decodePackage(bytes: Uint8Array<ArrayBuffer>): { metadata: PackageMetadata; ciphertext: Uint8Array<ArrayBuffer> } {
   if (bytes.length < magicBytes.length + 4) {
     throw new BackupPackageError("Encrypted backup package is malformed");
   }

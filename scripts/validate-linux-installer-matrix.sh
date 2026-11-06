@@ -4,7 +4,17 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RELEASE_DIR="${PROJECT_ROOT}/release"
 PACKAGE_VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).version)" "${PROJECT_ROOT}/package.json")"
-RELEASE_ARCHIVE_NAME="${LITTLEIMP_RELEASE_ARCHIVE_NAME:-little-imp-${PACKAGE_VERSION}-linux.tar.gz}"
+if [[ -n "${LITTLEIMP_RELEASE_ARCHIVE_NAME:-}" ]]; then
+  RELEASE_ARCHIVE_NAME="${LITTLEIMP_RELEASE_ARCHIVE_NAME}"
+else
+  RELEASE_ARCHIVE_NAME="$(node -e '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const artifact = manifest.artifacts.find((entry) => entry.platform === "linux");
+    if (manifest.version !== process.argv[2] || !artifact) process.exit(1);
+    console.log(artifact.archive);
+  ' "${RELEASE_DIR}/release-manifest.json" "${PACKAGE_VERSION}")"
+fi
 RELEASE_ARCHIVE_PATH="${RELEASE_DIR}/${RELEASE_ARCHIVE_NAME}"
 DEFAULT_TARGETS=("ubuntu:24.04" "debian:12")
 TARGETS=("$@")

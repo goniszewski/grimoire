@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 type Platform = "macos" | "linux";
 const platforms: Platform[] = ["macos", "linux"];
@@ -36,7 +37,7 @@ function checkedArtifacts(manifest: Manifest): Artifact[] {
     const entries = manifest.artifacts.filter((artifact) => artifact.platform === platform);
     if (entries.length !== 1) throw new Error(`Expected one ${platform} release artifact`);
     const artifact = entries[0];
-    if (artifact.archive !== `little-imp-${manifest.version}-${platform}.tar.gz`) {
+    if (artifact.archive !== releaseArchiveFileName(manifest.version, platform)) {
       throw new Error(`Wrong ${platform} archive name`);
     }
     if (!/^[a-f0-9]{64}$/.test(artifact.sha256)) throw new Error(`Invalid ${platform} SHA-256`);

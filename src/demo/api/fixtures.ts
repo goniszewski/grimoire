@@ -473,6 +473,7 @@ export const DEMO_SETTINGS: SettingsDto = {
     openrouter: { api_key: "", base_url: "https://example.invalid/openrouter", model: "openai/gpt-latest" },
     openai_compatible: { api_key: "", base_url: "https://example.invalid/ai", model: "custom-chat-model" },
     deepseek: { api_key: "", base_url: "https://example.invalid/deepseek", model: "deepseek-chat" },
+    cheaperinference: { api_key: "", base_url: "https://example.invalid/cheaperinference", model: "gpt-5.4-mini" },
     embeddings: {
       provider: "openai",
       model: "text-embedding-3-small",

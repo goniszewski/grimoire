@@ -33,4 +33,18 @@ Use the Serve URL Tailscale prints. Prefer this over opening firewall ports. Det
 - Do not treat Grimoire as a multi-user public web app — it is single-user and local-trust
 - If you use a reverse proxy, terminate auth at the proxy or VPN and keep Grimoire on `127.0.0.1`
 
+## Browser access through a reverse proxy
+
+The browser-facing origin must be explicitly trusted for write requests. With
+the repository Compose file, pass the exact origin when creating the container:
+
+```sh
+CORS_ORIGINS=https://grimoire.example.com docker compose up -d --force-recreate
+```
+
+Include the scheme and any non-default port. Use commas for more than one exact
+origin. Paths, credentials, and wildcards are rejected. `CORS_ORIGINS` only
+controls the browser origin check; it does not authenticate users, so keep
+authentication at the proxy or VPN.
+
 Threat model: [SECURITY.md](../SECURITY.md). Docker notes: [docker-deployment.md](./docker-deployment.md).

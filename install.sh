@@ -61,6 +61,18 @@ assert_safe_version() {
   fi
 }
 
+release_archive_prefix() {
+  if [[ ! "${VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)([-+][A-Za-z0-9.+-]+)?$ ]]; then
+    die "Unsupported release version: ${VERSION}"
+  fi
+  local major="${BASH_REMATCH[1]}" minor="${BASH_REMATCH[2]}" patch="${BASH_REMATCH[3]}"
+  if (( 10#${major} > 1 || (10#${major} == 1 && (10#${minor} > 3 || (10#${minor} == 3 && 10#${patch} > 0))) )); then
+    echo "grimoire"
+  else
+    echo "little-imp"
+  fi
+}
+
 detect_platform() {
   case "$(uname -s)" in
     Darwin) echo "macos" ;;
@@ -300,7 +312,7 @@ main() {
   local platform archive_root archive_name archive_url checksum_url signature_url
   platform="$(detect_platform)"
   archive_root="little-imp-${VERSION}-${platform}"
-  archive_name="${archive_root}.tar.gz"
+  archive_name="$(release_archive_prefix)-${VERSION}-${platform}.tar.gz"
   archive_url="${RELEASE_BASE_URL%/}/${archive_name}"
   checksum_url="${archive_url}.sha256"
   signature_url="${archive_url}.asc"

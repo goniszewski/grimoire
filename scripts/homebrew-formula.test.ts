@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { releaseArchiveFileName } from "../daemon/src/update/release-names";
 
 type PackageJson = {
   version: string;
@@ -40,7 +41,7 @@ function expectedReleaseChecksums(version: string): ReleaseChecksumBaseline {
     const artifacts = manifest.artifacts.filter((entry) => entry.platform === platform);
     expect(artifacts).toHaveLength(1);
     const artifact = artifacts[0];
-    expect(artifact.archive).toBe(`little-imp-${version}-${platform}.tar.gz`);
+    expect(artifact.archive).toBe(releaseArchiveFileName(version, platform));
     expect(artifact.sha256).toMatch(/^[a-f0-9]{64}$/);
     return [platform, artifact.sha256];
   })) as ReleaseChecksumBaseline;
@@ -100,7 +101,7 @@ describe("Homebrew formula packaging", () => {
     const formula = readFileSync(formulaPath, "utf8");
 
     for (const platform of platforms) {
-      const archive = `little-imp-${version}-${platform}.tar.gz`;
+      const archive = releaseArchiveFileName(version, platform);
       const releaseUrl = `https://github.com/goniszewski/grimoire/releases/download/v${version}/${archive}`;
       const urlLine = `url "${releaseUrl}"`;
       const snippet = formulaSnippetAfter(formula, urlLine);

@@ -7,7 +7,7 @@
 <br>
 
 [![Quality Gates](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/goniszewski/grimoire/actions/workflows/quality.yml)
-![Release target](https://img.shields.io/badge/release-1.3.0-7c3aed)
+![Release target](https://img.shields.io/badge/release-1.3.1-7c3aed)
 ![Bun 1.x](https://img.shields.io/badge/Bun-1.x-black)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
@@ -123,8 +123,8 @@ Open `http://127.0.0.1:3210`.
   category/tag management, import/export, backup/restore, diagnostics, and
   local update checks.
 - Runs without AI providers. Optional providers include OpenAI, Ollama,
-  Anthropic, OpenRouter, DeepSeek international, and custom OpenAI-compatible
-  chat or embeddings endpoints.
+  Anthropic, OpenRouter, DeepSeek international, Cheaper Inference, and custom
+  OpenAI-compatible chat or embeddings endpoints.
 
 ## How It Works
 
@@ -251,6 +251,7 @@ The daemon reads install-time defaults from `~/.local/share/littleimp/.env`.
 | `HOST` | `127.0.0.1` | Bind address. Keep localhost for security. |
 | `PORT` | `3210` | Daemon HTTP port. |
 | `DATA_DIR` | `~/.local/share/littleimp` | Database, backups, and logs. |
+| `CORS_ORIGINS` | local development origins | Comma-separated exact browser origins trusted for writes. Required for an authenticated reverse proxy or a non-default browser-facing port, for example `https://grimoire.example.com`. Paths, credentials, and wildcards are not accepted. |
 | `NODE_ENV` | `production` | Use `development` for local development logging. |
 | `LOG_FORMAT` | `json` | `json` or `pretty`. |
 

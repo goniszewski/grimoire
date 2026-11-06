@@ -51,6 +51,8 @@ describe("installed-app smoke suite", () => {
     expect(() => detectReleasePlatform("win32")).toThrow("Unsupported installed-app smoke platform");
     expect(releaseArchiveName("0.1.0-beta", "linux")).toBe("little-imp-0.1.0-beta-linux.tar.gz");
     expect(releaseArchiveName("0.1.0-beta", "macos")).toBe("little-imp-0.1.0-beta-macos.tar.gz");
+    expect(releaseArchiveName("1.3.0", "macos")).toBe("little-imp-1.3.0-macos.tar.gz");
+    expect(releaseArchiveName("1.3.1", "macos")).toBe("grimoire-1.3.1-macos.tar.gz");
     expect(defaultPublishedReleaseBaseUrl("0.1.0-beta")).toBe(
       "https://github.com/goniszewski/grimoire/releases/download/v0.1.0-beta"
     );
@@ -60,7 +62,7 @@ describe("installed-app smoke suite", () => {
   });
 
   it("downloads and verifies published release artifacts before running the smoke", async () => {
-    const version = "1.2.3-beta";
+    const version = "1.3.1";
     const platform = "linux";
     const archiveName = releaseArchiveName(version, platform);
     const releaseDir = mkdtempSync(join(tmpdir(), "little-imp-published-release-"));
@@ -80,7 +82,7 @@ describe("installed-app smoke suite", () => {
     const result = await downloadPublishedReleaseArtifact({
       version,
       platform,
-      releaseBaseUrl: "https://downloads.example.test/releases/v1.2.3-beta",
+      releaseBaseUrl: "https://downloads.example.test/releases/v1.3.1",
       downloadDir,
       fetchImpl: fetchFromReleaseDir(releaseDir),
       signatureRunner,

@@ -83,6 +83,11 @@ formula SHA-256 against the supplied archive; this does not prove public
 asset availability. Set the working-tree formula URLs and checksums to those
 exact candidate archives before running this command:
 
+Archives after v1.3.0 use `grimoire-<version>-<platform>.tar.gz`, with matching
+`.sha256` and `.asc` files. Published v1.3.0 and older downloads keep their
+`little-imp-` names. The directory inside each archive remains `little-imp-`
+for installer compatibility.
+
 ```sh
 HOMEBREW_TEST_ARCHIVE_DIR=/absolute/path/to/verified-archives \
 HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 \

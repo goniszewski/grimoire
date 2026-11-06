@@ -100,6 +100,11 @@ function settingsResponse(aiPatch: Record<string, unknown> = {}) {
       base_url: "https://api.deepseek.com",
       model: "deepseek-v4-flash",
     },
+    cheaperinference: {
+      api_key: "",
+      base_url: "https://api.cheaperinference.com/v1",
+      model: "gpt-5.4-mini",
+    },
     embeddings: {
       provider: "openai" as const,
       model: "text-embedding-3-small",
@@ -660,7 +665,7 @@ describe("Settings AI providers", () => {
     expect(await screen.findByText("Connection failed")).toBeInTheDocument();
 
     fireEvent.click(modelCombobox);
-    fireEvent.click(screen.getByRole("option", { name: /OpenAI: GPT-5\.2/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /OpenAI: GPT-5\.2/ }));
 
     const testButton = screen.getByTitle("Save changes and test the current configuration");
     expect(testButton).toBeEnabled();
@@ -723,7 +728,7 @@ describe("Settings AI providers", () => {
     fireEvent.change(screen.getByPlaceholderText("Search OpenRouter models…"), {
       target: { value: "gpt-5.2" },
     });
-    fireEvent.click(screen.getByRole("option", { name: /OpenAI: GPT-5\.2/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /OpenAI: GPT-5\.2/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
@@ -811,7 +816,7 @@ describe("Settings AI providers", () => {
     fireEvent.change(screen.getByPlaceholderText("Search OpenRouter models…"), {
       target: { value: "my/custom-router-model" },
     });
-    fireEvent.click(screen.getByRole("option", { name: /my\/custom-router-model/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /my\/custom-router-model/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {

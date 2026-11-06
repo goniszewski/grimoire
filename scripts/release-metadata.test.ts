@@ -29,8 +29,8 @@ describe("release metadata", () => {
       writeFileSync(installerPath, readFileSync(installerPath, "utf8").replace(`LITTLEIMP_VERSION:-${publishedVersion}`, "LITTLEIMP_VERSION:-0.0.0"));
       expect(checkReleaseMetadata(root)).toContain("One-command installer default differs from published release");
       const daemonPath = join(root, "daemon/package.json");
-      writeFileSync(daemonPath, readFileSync(daemonPath, "utf8").replace('"version": "1.3.0"', '"version": "1.2.0"'));
-      expect(checkReleaseMetadata(root)).toContain("daemon/package.json version 1.2.0 differs from package.json 1.3.0");
+      writeFileSync(daemonPath, readFileSync(daemonPath, "utf8").replace('"version": "1.3.1"', '"version": "1.2.0"'));
+      expect(checkReleaseMetadata(root)).toContain("daemon/package.json version 1.2.0 differs from package.json 1.3.1");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -50,5 +50,23 @@ describe("release metadata", () => {
     expect(prepared).toContain('v1.3.0/little-imp-1.3.0-linux.tar.gz"\n    sha256 "' + "b".repeat(64));
     expect(() => prepareHomebrewFormula(formula, { ...manifest, artifacts: manifest.artifacts.slice(0, 1) }))
       .toThrow("Expected one linux release artifact");
+  });
+
+  it("prepares both formula pins for future Grimoire-named archives", () => {
+    const formula = readFileSync(join(projectRoot, "Formula/grimoire.rb"), "utf8");
+    const manifest = {
+      version: "1.3.1",
+      artifacts: [
+        { platform: "macos" as const, archive: "grimoire-1.3.1-macos.tar.gz", sha256: "a".repeat(64) },
+        { platform: "linux" as const, archive: "grimoire-1.3.1-linux.tar.gz", sha256: "b".repeat(64) },
+      ],
+    };
+    const prepared = prepareHomebrewFormula(formula, manifest);
+    expect(prepared).toContain("v1.3.1/grimoire-1.3.1-macos.tar.gz");
+    expect(prepared).toContain("v1.3.1/grimoire-1.3.1-linux.tar.gz");
+    expect(() => prepareHomebrewFormula(formula, {
+      ...manifest,
+      artifacts: [{ ...manifest.artifacts[0], archive: "little-imp-1.3.1-macos.tar.gz" }, manifest.artifacts[1]],
+    })).toThrow("Wrong macos archive name");
   });
 });

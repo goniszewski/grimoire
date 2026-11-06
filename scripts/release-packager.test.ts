@@ -6,6 +6,7 @@ import {
   buildPayloadChecksums,
   createReleaseManifest,
   packageRelease,
+  releaseArchiveName,
   stageReleasePayload,
 } from "./release-packager";
 
@@ -15,10 +16,10 @@ function writeFixtureFile(root: string, path: string, contents: string): void {
   writeFileSync(fullPath, contents);
 }
 
-function createProjectFixture(): string {
+function createProjectFixture(version = "1.2.3-beta"): string {
   const root = mkdtempSync(join(tmpdir(), "little-imp-release-fixture-"));
 
-  writeFixtureFile(root, "package.json", JSON.stringify({ name: "little-imp", version: "1.2.3-beta" }));
+  writeFixtureFile(root, "package.json", JSON.stringify({ name: "little-imp", version }));
   writeFixtureFile(root, "LICENSE", "license\n");
   writeFixtureFile(root, "README.md", "# Little Imp\n");
   writeFixtureFile(root, "dist/index.html", "<div id=\"root\"></div>\n");
@@ -40,6 +41,22 @@ function createProjectFixture(): string {
 }
 
 describe("release packager", () => {
+  it("renames future archive files while keeping published names and payload roots", () => {
+    expect(releaseArchiveName("1.3.0", "linux")).toBe("little-imp-1.3.0-linux.tar.gz");
+    expect(releaseArchiveName("1.3.1", "linux")).toBe("grimoire-1.3.1-linux.tar.gz");
+    expect(releaseArchiveName("1.4.0-beta.1", "macos")).toBe("grimoire-1.4.0-beta.1-macos.tar.gz");
+
+    const projectRoot = createProjectFixture("1.3.1");
+    const outputDir = mkdtempSync(join(tmpdir(), "grimoire-release-output-"));
+    const result = packageRelease({
+      projectRoot, outputDir, version: "1.3.1", platforms: ["linux"], skipBuild: true,
+      logger: { log: () => undefined },
+    });
+    expect(result.manifest.artifacts[0].archive).toBe("grimoire-1.3.1-linux.tar.gz");
+    expect(existsSync(join(outputDir, "grimoire-1.3.1-linux.tar.gz"))).toBe(true);
+    expect(existsSync(join(outputDir, "grimoire-1.3.1-linux.tar.gz.sha256"))).toBe(true);
+  });
+
   it("stages the installable payload with daemon runtime files, frontend bundle, CLI, and metadata", () => {
     const projectRoot = createProjectFixture();
     const stageRoot = join(mkdtempSync(join(tmpdir(), "little-imp-release-stage-")), "payload");

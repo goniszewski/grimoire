@@ -6,6 +6,7 @@ import { dirname, join } from "path";
 import { spawnSync } from "child_process";
 import { runLittleImpCli } from "../cli.js";
 import { version as PACKAGE_VERSION } from "../../package.json";
+import { releaseArchiveName } from "../update/upgrade.js";
 
 type FetchCall = {
   url: string;
@@ -16,6 +17,11 @@ type SpawnCall = {
   command: string;
   args: string[];
 };
+
+it("uses branded archive downloads only after the published 1.3.0 release", () => {
+  expect(releaseArchiveName("1.3.0", "linux")).toBe("little-imp-1.3.0-linux.tar.gz");
+  expect(releaseArchiveName("1.3.1", "linux")).toBe("grimoire-1.3.1-linux.tar.gz");
+});
 
 function makeUpdateHarness(response: unknown, status = 200, env: Record<string, string | undefined> = {}) {
   const stdout: string[] = [];
@@ -65,7 +71,7 @@ function createUpgradeArchiveFixture(options: { badChecksum?: boolean; signature
   const version = options.version ?? "0.2.0-beta";
   const platform = platformName();
   const archiveRoot = `little-imp-${version}-${platform}`;
-  const archiveName = `${archiveRoot}.tar.gz`;
+  const archiveName = releaseArchiveName(version, platform);
   const archivePath = join(releaseDir, archiveName);
   const checksumPath = `${archivePath}.sha256`;
   const signaturePath = `${archivePath}.asc`;
