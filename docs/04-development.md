@@ -90,7 +90,7 @@ for installer compatibility.
 
 ```sh
 HOMEBREW_TEST_ARCHIVE_DIR=/absolute/path/to/verified-archives \
-HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 \
+HOMEBREW_TEST_EXPECTED_VERSION=1.3.1 \
 HOMEBREW_TEST_PORT=13210 npm run test:homebrew
 ```
 
@@ -105,7 +105,7 @@ mode. Without the older formula, the test exercises a same-version reinstall.
 
 For the v1.3 release, after merging an approved PR into `main`:
 
-1. Require a clean `main` at the exact remote commit and a `v1.3.0` tag at
+1. Require a clean `main` at the exact remote commit and a `v1.3.1` tag at
    that commit. Build both archives from that checkout with
    `npm run package:release`, then sign them with
    `scripts/sign-release-artifacts.sh`. Run
@@ -118,7 +118,7 @@ For the v1.3 release, after merging an approved PR into `main`:
    Commit the reviewed public formula and metadata changes to `main`.
    If any archive changes, rebuild, sign, and verify it again before updating
    pins. No separate tap repository is needed.
-3. Run `HOMEBREW_TEST_EXPECTED_VERSION=1.3.0 npm run test:homebrew:published`
+3. Run `HOMEBREW_TEST_EXPECTED_VERSION=1.3.1 npm run test:homebrew:published`
    on clean macOS and Linux Homebrew hosts. Record the public URL/download,
    service health, and data-preservation results before declaring support.
 
