@@ -18,11 +18,31 @@ authentication, a VPN, or another trusted access control layer.
 
 ## Quick Start
 
+Pull the published image (no build required):
+
 ```sh
 git clone https://github.com/goniszewski/grimoire.git
 cd grimoire
 docker compose up -d
 ```
+
+Compose pulls `goniszewski/grimoire:1.3.1` for `linux/amd64` and `linux/arm64`.
+Override the version with `GRIMOIRE_VERSION=<x.y.z> docker compose up -d`, or
+build from source with `docker compose build`.
+
+### Image tags
+
+| Tag | Meaning |
+|-----|---------|
+| `X.Y.Z` | Exact release. Recommended for reproducible installs. |
+| `X.Y` | Latest patch of a minor release. |
+| `latest` | Latest tested 1.x release. Moved manually after smoke tests. |
+| `legacy-v0.5` | The pre-1.0 image that `latest` used to point to. Preserved for rollback. |
+
+> **Upgrading from v0.5?** `latest` is no longer the v0.5 app, and 1.x is not a
+> drop-in upgrade: the data layout changed from `/app/data` to `/data`. Do not
+> point an existing v0.5 volume at the new image. Follow
+> [Migrating from v0.5 Docker](#migrating-from-v05-docker) first.
 
 Open `http://127.0.0.1:3210`.
 
@@ -202,6 +222,42 @@ ports:
   - "3210:3210"
   - "0.0.0.0:3210:3210"
 ```
+
+## Migrating from v0.5 Docker
+
+The v0.5 image stored data in `/app/data`; 1.x uses `/data`. Migration is
+additive and never modifies the old data. Your v0.5 container keeps working on
+the `legacy-v0.5` tag until you are satisfied.
+
+1. **Back up the old data** (adjust the volume or path to your v0.5 setup):
+
+   ```sh
+   docker compose down   # run in your old v0.5 checkout
+   docker run --rm -v <old-data-volume>:/app/data -v "$PWD":/backup alpine \
+     tar czf /backup/grimoire-v05-data.tar.gz -C /app data
+   ```
+
+   Pin your old setup to `goniszewski/grimoire:legacy-v0.5` if you want to roll
+   back later.
+
+2. **Start 1.x with a fresh volume** (new directory or new Compose project):
+
+   ```sh
+   docker compose up -d
+   ```
+
+3. **Inspect, dry-run, then apply** with the `grimoire` CLI against the
+   backup archive. See [migration.md](migration.md) for installing the CLI and
+   all options:
+
+   ```sh
+   grimoire migrate inspect --archive grimoire-v05-data.tar.gz
+   grimoire migrate apply --archive grimoire-v05-data.tar.gz --owner YOUR_USERNAME --dry-run
+   grimoire migrate apply --archive grimoire-v05-data.tar.gz --owner YOUR_USERNAME --yes
+   ```
+
+   The CLI talks to `http://127.0.0.1:3210` by default, which is the loopback
+   port the container publishes. Keep that port bound to `127.0.0.1`.
 
 ## Cleanup
 

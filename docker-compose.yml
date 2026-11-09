@@ -1,5 +1,8 @@
 services:
   grimoire:
+    # Pull the published image by default; `docker compose build` still builds
+    # locally from this checkout.
+    image: goniszewski/grimoire:${GRIMOIRE_VERSION:-1.3.1}
     build:
       context: .
       dockerfile: Dockerfile
