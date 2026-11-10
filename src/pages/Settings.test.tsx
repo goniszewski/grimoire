@@ -105,11 +105,7 @@ function settingsResponse(aiPatch: Record<string, unknown> = {}) {
       base_url: "https://api.cheaperinference.com/v1",
       model: "gpt-5.4-mini",
     },
-    litellm: {
-      api_key: "",
-      base_url: "http://localhost:4000",
-      model: "gpt-4o-mini",
-    },
+    litellm: { api_key: "", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
     embeddings: {
       provider: "openai" as const,
       model: "text-embedding-3-small",
@@ -864,11 +860,7 @@ describe("Settings AI providers", () => {
     updateSettings.mockResolvedValue(settingsResponse());
     mockedGetSettings.mockResolvedValue(settingsResponse({
       provider: "litellm" as const,
-      litellm: {
-        api_key: "***",
-        base_url: "http://localhost:4000",
-        model: "gpt-4o-mini",
-      },
+      litellm: { api_key: "***", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
     }));
     mockedFetchAiModels.mockResolvedValue([
       { id: "gpt-4o-mini", name: "gpt-4o-mini", context_length: 128000, prompt_price: null, completion_price: null },

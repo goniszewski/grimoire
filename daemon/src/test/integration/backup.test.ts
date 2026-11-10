@@ -41,11 +41,7 @@ function cheaperInferenceSettings(prefix: "backup" | "current") {
 
 // Shared fixture for the LiteLLM proxy block: the key is a proxy virtual key.
 function litellmSettings(prefix: "backup" | "current") {
-  return {
-    api_key: `${prefix}-litellm-virtual-key`,
-    base_url: "https://litellm.backup.example",
-    model: `${prefix}-proxy-alias`,
-  };
+  return { api_key: `${prefix}-litellm-virtual-key`, base_url: "https://litellm.backup.example", model: `${prefix}-proxy-alias` };
 }
 
 const EMPTY_S3_CONFIG = {

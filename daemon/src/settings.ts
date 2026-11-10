@@ -155,11 +155,7 @@ const DEFAULT_SETTINGS: Settings = {
       base_url: "https://api.cheaperinference.com/v1",
       model: "gpt-5.4-mini",
     },
-    litellm: {
-      api_key: "",
-      base_url: "http://localhost:4000",
-      model: "gpt-4o-mini",
-    },
+    litellm: { api_key: "", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
     embeddings: {
       provider: "openai",
       model: Config.EMBEDDING_MODEL,
