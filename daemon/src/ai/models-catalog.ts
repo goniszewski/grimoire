@@ -121,6 +121,13 @@ async function fetchJsonWithTimeout(url: string): Promise<Record<string, unknown
   }
 }
 
+/** `url` without trailing slashes (a loop, so no regex backtracking on long input). */
+export function trimTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === "/") end--;
+  return url.slice(0, end);
+}
+
 /**
  * LiteLLM proxy model modes that answer chat completions. Embedding, image,
  * audio and rerank deployments are left out of the chat model picker.
@@ -148,11 +155,11 @@ async function fetchLiteLLMJson(url: string, apiKey: string): Promise<Record<str
       signal: controller.signal,
     });
     if (res.status === 404) {
-      res.body?.cancel();
+      await res.body?.cancel();
       return null;
     }
     if (!res.ok) {
-      res.body?.cancel();
+      await res.body?.cancel();
       // Do not propagate the upstream body into the API response.
       throw new Error(`HTTP ${res.status}`);
     }
@@ -187,7 +194,7 @@ function mapLiteLLMModel(raw: Record<string, unknown>): AiModelInfo | null {
  * behind it. Proxies that do not expose /model/info fall back to /v1/models.
  */
 async function fetchLiteLLMModels(baseUrl: string, apiKey: string): Promise<AiModelInfo[]> {
-  const root = baseUrl.replace(/\/+$/, "").replace(/\/v1$/i, "");
+  const root = trimTrailingSlashes(baseUrl).replace(/\/v1$/i, "");
   const models: AiModelInfo[] = [];
   const seen = new Set<string>();
   const push = (model: AiModelInfo | null) => {

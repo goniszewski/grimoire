@@ -153,6 +153,23 @@ function stripModelTilde(model: string | undefined): string {
   return model ? model.replace(/^~+/, "") : "";
 }
 
+type CatalogModel = Awaited<ReturnType<typeof fetchAiModels>>[number];
+
+/** Model catalog entries as Combobox items, with the context window as a hint. */
+function catalogModelItems(models: CatalogModel[] | undefined) {
+  return (models ?? []).map((model) => ({
+    value: model.id,
+    label: model.name,
+    hint: model.context_length ? `${(model.context_length / 1000).toFixed(0)}k context` : undefined,
+  }));
+}
+
+/** The error message to show for a failed catalog fetch, or null. */
+function catalogError(query: { isError: boolean; error: unknown }): string | null {
+  if (!query.isError) return null;
+  return query.error instanceof Error ? query.error.message : "Failed to load models";
+}
+
 function secretProviderPatch(provider: ApiKeyProviderFormState) {
   const patch: { api_key?: string; base_url: string; model: string } = {
     base_url: provider.base_url,
@@ -722,14 +739,7 @@ const LocalSettings = () => {
     staleTime: 5 * 60_000,
   });
   const openRouterModelItems = useMemo(
-    () =>
-      (openRouterModelsQuery.data ?? []).map((model) => ({
-        value: model.id,
-        label: model.name,
-        hint: model.context_length
-          ? `${(model.context_length / 1000).toFixed(0)}k context`
-          : undefined,
-      })),
+    () => catalogModelItems(openRouterModelsQuery.data),
     [openRouterModelsQuery.data]
   );
 
@@ -742,14 +752,7 @@ const LocalSettings = () => {
     staleTime: 5 * 60_000,
   });
   const liteLLMModelItems = useMemo(
-    () =>
-      (liteLLMModelsQuery.data ?? []).map((model) => ({
-        value: model.id,
-        label: model.name,
-        hint: model.context_length
-          ? `${(model.context_length / 1000).toFixed(0)}k context`
-          : undefined,
-      })),
+    () => catalogModelItems(liteLLMModelsQuery.data),
     [liteLLMModelsQuery.data]
   );
 
@@ -989,6 +992,31 @@ const LocalSettings = () => {
     );
   }
 
+  /** Model picker filled from a provider catalog; typing a model not in the list still works. */
+  function renderCatalogModelField(opts: {
+    value: string;
+    onValueChange: (model: string) => void;
+    items: ReturnType<typeof catalogModelItems>;
+    query: { isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown };
+    searchPlaceholder: string;
+  }) {
+    return (
+      <Combobox
+        value={opts.value}
+        onValueChange={opts.onValueChange}
+        items={opts.items}
+        ariaLabel="Model"
+        placeholder="Select a model…"
+        searchPlaceholder={opts.searchPlaceholder}
+        emptyText="No matching models"
+        allowCustom
+        loading={opts.query.isLoading}
+        error={catalogError(opts.query)}
+        onRetry={() => void opts.query.refetch()}
+      />
+    );
+  }
+
   function renderApiKeyProviderFields(provider: ApiKeyProvider) {
     return (
       <>
@@ -1156,27 +1184,14 @@ const LocalSettings = () => {
                     {renderApiKeyFields("openrouter")}
                     <div className="space-y-1.5">
                       <Label className="text-xs">Model</Label>
-                      <Combobox
-                        value={ai.openrouter.model}
-                        onValueChange={(model) =>
-                          updateAiApiKeyProvider("openrouter", { model: stripModelTilde(model) })
-                        }
-                        items={openRouterModelItems}
-                        ariaLabel="Model"
-                        placeholder="Select a model…"
-                        searchPlaceholder="Search OpenRouter models…"
-                        emptyText="No matching models"
-                        allowCustom
-                        loading={openRouterModelsQuery.isLoading}
-                        error={
-                          openRouterModelsQuery.isError
-                            ? openRouterModelsQuery.error instanceof Error
-                              ? openRouterModelsQuery.error.message
-                              : "Failed to load models"
-                            : null
-                        }
-                        onRetry={() => void openRouterModelsQuery.refetch()}
-                      />
+                      {renderCatalogModelField({
+                        value: ai.openrouter.model,
+                        onValueChange: (model) =>
+                          updateAiApiKeyProvider("openrouter", { model: stripModelTilde(model) }),
+                        items: openRouterModelItems,
+                        query: openRouterModelsQuery,
+                        searchPlaceholder: "Search OpenRouter models…",
+                      })}
                       <div className="flex items-center gap-2 pt-1">
                         <Checkbox
                           id="free-models-only"
@@ -1201,25 +1216,13 @@ const LocalSettings = () => {
                     {renderApiKeyFields("litellm")}
                     <div className="space-y-1.5">
                       <Label className="text-xs">Model</Label>
-                      <Combobox
-                        value={ai.litellm.model}
-                        onValueChange={(model) => updateAiApiKeyProvider("litellm", { model })}
-                        items={liteLLMModelItems}
-                        ariaLabel="Model"
-                        placeholder="Select a model…"
-                        searchPlaceholder="Search proxy models…"
-                        emptyText="No matching models"
-                        allowCustom
-                        loading={liteLLMModelsQuery.isLoading}
-                        error={
-                          liteLLMModelsQuery.isError
-                            ? liteLLMModelsQuery.error instanceof Error
-                              ? liteLLMModelsQuery.error.message
-                              : "Failed to load models"
-                            : null
-                        }
-                        onRetry={() => void liteLLMModelsQuery.refetch()}
-                      />
+                      {renderCatalogModelField({
+                        value: ai.litellm.model,
+                        onValueChange: (model) => updateAiApiKeyProvider("litellm", { model }),
+                        items: liteLLMModelItems,
+                        query: liteLLMModelsQuery,
+                        searchPlaceholder: "Search proxy models…",
+                      })}
                       <p className="text-xs text-muted-foreground">
                         Models served by the saved proxy. Save after changing the proxy URL or key to refresh the list.
                       </p>

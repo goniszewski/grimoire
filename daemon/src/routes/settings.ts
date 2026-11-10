@@ -3,7 +3,7 @@ import { settingsManager, redactSettings, validateSettingsPatch } from "../setti
 import { log } from "../logger.js";
 import { LITELLM_BASE_URL, resolveRuntimeSettings } from "../runtime-settings.js";
 import { testProviderConnection } from "../ai/llm-provider.js";
-import { listProviderModels } from "../ai/models-catalog.js";
+import { listProviderModels, trimTrailingSlashes } from "../ai/models-catalog.js";
 import { normalizeHttpsBaseUrl } from "../lib/base-url.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 /** The saved LiteLLM proxy URL (validated as http/https on save), or the default local proxy. */
 function normalizeLiteLLMBaseUrl(raw: string): string {
-  return (raw.trim() || LITELLM_BASE_URL).replace(/\/+$/, "");
+  return trimTrailingSlashes(raw.trim() || LITELLM_BASE_URL);
 }
 
 function problem(
