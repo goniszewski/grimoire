@@ -97,12 +97,14 @@ describe("API documentation generator", () => {
       "openai_compatible",
       "deepseek",
       "cheaperinference",
+      "litellm",
       "none",
     ]);
     expect(settingsPatch.properties.ai.properties.anthropic.properties.api_key.type).toBe("string");
     expect(settingsPatch.properties.ai.properties.openrouter.properties.base_url.format).toBe("uri");
     expect(settingsPatch.properties.ai.properties.openai_compatible.properties.model.type).toBe("string");
     expect(settingsPatch.properties.ai.properties.deepseek.properties.model.type).toBe("string");
+    expect(settingsPatch.properties.ai.properties.litellm.properties.base_url.format).toBe("uri");
     expect(document.schemas.RuntimeEmbeddingCapability.properties.provider.enum).toEqual([
       "openai",
       "ollama",

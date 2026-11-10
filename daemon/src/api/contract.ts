@@ -1034,7 +1034,7 @@ const schemas = {
     {
       enabled: booleanSchema("Whether this runtime feature is usable"),
       provider: stringSchema("Resolved provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
       }),
       model: nullable(stringSchema("Resolved model")),
       base_url: nullable(stringSchema("Resolved base URL", { format: "uri" })),
@@ -1081,7 +1081,7 @@ const schemas = {
       ai: objectSchema(
         {
           provider: stringSchema("LLM provider", {
-            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
           }),
           openai: objectSchema(
             {
@@ -1137,6 +1137,14 @@ const schemas = {
             },
             ["api_key", "base_url", "model"]
           ),
+          litellm: objectSchema(
+            {
+              api_key: stringSchema("Redacted LiteLLM proxy virtual key. Empty string means unset"),
+              base_url: stringSchema("LiteLLM proxy base URL", { format: "uri" }),
+              model: stringSchema("LiteLLM proxy model name"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
           embeddings: objectSchema(
             {
               provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
@@ -1162,6 +1170,7 @@ const schemas = {
           "openai_compatible",
           "deepseek",
           "cheaperinference",
+          "litellm",
           "embeddings",
         ]
       ),
@@ -1209,7 +1218,7 @@ const schemas = {
   SettingsPatch: objectSchema({
     ai: objectSchema({
       provider: stringSchema("LLM provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
       }),
       openai: objectSchema({
         api_key: stringSchema("OpenAI API key, empty string clears it"),
@@ -1243,6 +1252,11 @@ const schemas = {
         api_key: stringSchema("Cheaper Inference API key, empty string clears it"),
         base_url: stringSchema("Cheaper Inference OpenAI-compatible base URL", { format: "uri" }),
         model: stringSchema("Cheaper Inference chat model"),
+      }),
+      litellm: objectSchema({
+        api_key: stringSchema("LiteLLM proxy virtual key, empty string clears it"),
+        base_url: stringSchema("LiteLLM proxy base URL", { format: "uri" }),
+        model: stringSchema("LiteLLM proxy model name"),
       }),
       embeddings: objectSchema({
         provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
@@ -1302,7 +1316,7 @@ const schemas = {
   ),
   AiModelCatalog: objectSchema(
     {
-      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter"] }),
+      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter", "litellm"] }),
       free: booleanSchema("Whether only free models were requested"),
       fetched_at: stringSchema("Catalog fetch timestamp", { format: "date-time" }),
       models: arrayOf(ref("AiModel"), "Available models"),
@@ -2970,12 +2984,12 @@ export const apiContract = {
       method: "GET",
       path: "/settings/ai-models",
       tag: "Settings",
-      summary: "List models available from an AI provider catalog (currently OpenRouter).",
+      summary: "List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).",
       description:
-        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
       request: {
         query: objectSchema({
-          provider: stringSchema("Provider to list models for", { enum: ["openrouter"] }),
+          provider: stringSchema("Provider to list models for", { enum: ["openrouter", "litellm"] }),
           free: stringSchema("When true, only free models are returned", { enum: ["true", "false"] }),
         }),
       },

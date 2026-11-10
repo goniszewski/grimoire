@@ -2816,8 +2816,8 @@
         "tags": [
           "Settings"
         ],
-        "summary": "List models available from an AI provider catalog (currently OpenRouter).",
-        "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+        "summary": "List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).",
+        "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
         "operationId": "getSettingsAiModels",
         "parameters": [
           {
@@ -2829,7 +2829,8 @@
               "type": "string",
               "description": "Provider to list models for",
               "enum": [
-                "openrouter"
+                "openrouter",
+                "litellm"
               ]
             }
           },
@@ -8026,6 +8027,7 @@
               "openai_compatible",
               "deepseek",
               "cheaperinference",
+              "litellm",
               "none"
             ]
           },
@@ -8172,6 +8174,7 @@
                   "openai_compatible",
                   "deepseek",
                   "cheaperinference",
+                  "litellm",
                   "none"
                 ]
               },
@@ -8332,6 +8335,30 @@
                 ],
                 "additionalProperties": false
               },
+              "litellm": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Redacted LiteLLM proxy virtual key. Empty string means unset"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "LiteLLM proxy base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "LiteLLM proxy model name"
+                  }
+                },
+                "required": [
+                  "api_key",
+                  "base_url",
+                  "model"
+                ],
+                "additionalProperties": false
+              },
               "embeddings": {
                 "type": "object",
                 "properties": {
@@ -8390,6 +8417,7 @@
               "openai_compatible",
               "deepseek",
               "cheaperinference",
+              "litellm",
               "embeddings"
             ],
             "additionalProperties": false
@@ -8531,6 +8559,7 @@
                   "openai_compatible",
                   "deepseek",
                   "cheaperinference",
+                  "litellm",
                   "none"
                 ]
               },
@@ -8654,6 +8683,25 @@
                   "model": {
                     "type": "string",
                     "description": "Cheaper Inference chat model"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "litellm": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "LiteLLM proxy virtual key, empty string clears it"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "LiteLLM proxy base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "LiteLLM proxy model name"
                   }
                 },
                 "additionalProperties": false
@@ -8878,7 +8926,8 @@
             "type": "string",
             "description": "Provider the catalog was fetched from",
             "enum": [
-              "openrouter"
+              "openrouter",
+              "litellm"
             ]
           },
           "free": {

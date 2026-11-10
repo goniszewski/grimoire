@@ -101,7 +101,7 @@ import DemoSettings from "@/pages/DemoSettings";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Provider = ApiAiProvider;
-type ApiKeyProvider = "anthropic" | "openrouter" | "openai_compatible" | "deepseek" | "cheaperinference";
+type ApiKeyProvider = "anthropic" | "openrouter" | "openai_compatible" | "deepseek" | "cheaperinference" | "litellm";
 
 interface ApiKeyProviderFormState {
   api_key: string;
@@ -118,6 +118,7 @@ interface AiFormState {
   openai_compatible: ApiKeyProviderFormState;
   deepseek: ApiKeyProviderFormState;
   cheaperinference: ApiKeyProviderFormState;
+  litellm: ApiKeyProviderFormState;
 }
 
 interface EmbeddingsFormState {
@@ -132,6 +133,7 @@ export const settingsKeys = {
   all: ["settings"] as const,
   diagnostics: ["settings", "diagnostics"] as const,
   aiModels: (free: boolean) => ["settings", "ai-models", "openrouter", free] as const,
+  liteLLMModels: ["settings", "ai-models", "litellm"] as const,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -192,6 +194,11 @@ const apiKeyProviderMeta: Record<ApiKeyProvider, {
     baseUrlPlaceholder: "https://api.cheaperinference.com/v1",
     modelPlaceholder: "gpt-5.4-mini",
   },
+  litellm: {
+    apiKeyPlaceholder: "optional virtual key (sk-...)",
+    baseUrlPlaceholder: "http://localhost:4000",
+    modelPlaceholder: "gpt-4o-mini",
+  },
 };
 
 function defaultAiFormState(): AiFormState {
@@ -223,6 +230,11 @@ function defaultAiFormState(): AiFormState {
       api_key: "",
       base_url: "https://api.cheaperinference.com/v1",
       model: "gpt-5.4-mini",
+    },
+    litellm: {
+      api_key: "",
+      base_url: "http://localhost:4000",
+      model: "gpt-4o-mini",
     },
   };
 }
@@ -263,6 +275,7 @@ function aiFormStateFromSettings(settings: Partial<ApiSettings["ai"]> | undefine
     openai_compatible: mergeApiKeyProvider(defaults.openai_compatible, settings?.openai_compatible),
     deepseek: mergeApiKeyProvider(defaults.deepseek, settings?.deepseek),
     cheaperinference: mergeApiKeyProvider(defaults.cheaperinference, settings?.cheaperinference),
+    litellm: mergeApiKeyProvider(defaults.litellm, settings?.litellm),
   };
 }
 
@@ -720,6 +733,26 @@ const LocalSettings = () => {
     [openRouterModelsQuery.data]
   );
 
+  // ─── LiteLLM proxy model catalog ───────────────────────────────────────────
+  // Lists the chat models the saved proxy serves (fetched with its saved key).
+  const liteLLMModelsQuery = useQuery({
+    queryKey: settingsKeys.liteLLMModels,
+    queryFn: () => fetchAiModels("litellm", false),
+    enabled: ai.provider === "litellm",
+    staleTime: 5 * 60_000,
+  });
+  const liteLLMModelItems = useMemo(
+    () =>
+      (liteLLMModelsQuery.data ?? []).map((model) => ({
+        value: model.id,
+        label: model.name,
+        hint: model.context_length
+          ? `${(model.context_length / 1000).toFixed(0)}k context`
+          : undefined,
+      })),
+    [liteLLMModelsQuery.data]
+  );
+
   const buildAiSettingsPatch = () => {
     // Build the patch. For API keys that are still showing the redacted
     // sentinel (user didn't touch them), omit the field entirely so the
@@ -739,6 +772,7 @@ const LocalSettings = () => {
         openai_compatible: secretProviderPatch(ai.openai_compatible),
         deepseek: secretProviderPatch(ai.deepseek),
         cheaperinference: secretProviderPatch(ai.cheaperinference),
+        litellm: secretProviderPatch(ai.litellm),
         embeddings: {
           provider: embeddings.provider,
           model: embeddings.model,
@@ -1063,6 +1097,7 @@ const LocalSettings = () => {
                       <SelectItem value="openai_compatible">OpenAI compatible</SelectItem>
                       <SelectItem value="deepseek">DeepSeek</SelectItem>
                       <SelectItem value="cheaperinference">Cheaper Inference</SelectItem>
+                      <SelectItem value="litellm">LiteLLM</SelectItem>
                       <SelectItem value="none">None</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1161,6 +1196,36 @@ const LocalSettings = () => {
                 {ai.provider === "openai_compatible" && renderApiKeyProviderFields("openai_compatible")}
                 {ai.provider === "deepseek" && renderApiKeyProviderFields("deepseek")}
                 {ai.provider === "cheaperinference" && renderApiKeyProviderFields("cheaperinference")}
+                {ai.provider === "litellm" && (
+                  <>
+                    {renderApiKeyFields("litellm")}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Model</Label>
+                      <Combobox
+                        value={ai.litellm.model}
+                        onValueChange={(model) => updateAiApiKeyProvider("litellm", { model })}
+                        items={liteLLMModelItems}
+                        ariaLabel="Model"
+                        placeholder="Select a model…"
+                        searchPlaceholder="Search proxy models…"
+                        emptyText="No matching models"
+                        allowCustom
+                        loading={liteLLMModelsQuery.isLoading}
+                        error={
+                          liteLLMModelsQuery.isError
+                            ? liteLLMModelsQuery.error instanceof Error
+                              ? liteLLMModelsQuery.error.message
+                              : "Failed to load models"
+                            : null
+                        }
+                        onRetry={() => void liteLLMModelsQuery.refetch()}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Models served by the saved proxy. Save after changing the proxy URL or key to refresh the list.
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {ai.provider !== "none" && (
                   <div className="flex items-center gap-3">
