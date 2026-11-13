@@ -4,6 +4,25 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Multi-architecture (amd64 and arm64) Docker images are published to Docker Hub
+  as `goniszewski/grimoire`, tagged with the exact version (`X.Y.Z`) and the
+  minor version (`X.Y`). `docker compose up -d` now pulls the image instead of
+  building it.
+- A guide for moving a v0.5 Docker install to 1.x, using `grimoire migrate`
+  inside the container.
+
+### Changed
+- The Docker Hub `latest` tag now points to Grimoire 1.x. The old v0.5 image
+  stays available as `goniszewski/grimoire:legacy-v0.5`. A v0.5 data volume is
+  not compatible with 1.x (data moved from `/app/data` to `/data`); follow the
+  migration guide before upgrading.
+
+### Security
+- Development dependency `minimatch` updated to resolve a Dependabot alert.
+
 ## [1.3.1] - 2026-11-06
 
 ### Added
