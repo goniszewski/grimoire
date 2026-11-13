@@ -1,19 +1,19 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "artifacts": [
     {
       "platform": "macos",
-      "archive": "little-imp-1.3.0-macos.tar.gz",
-      "checksum": "little-imp-1.3.0-macos.tar.gz.sha256",
-      "sha256": "8e87d6631e7ba0bcef91c68a4035b42b7e7eb8c7562791fe3cdd3fd1b9adcf83",
-      "signature": "little-imp-1.3.0-macos.tar.gz.asc"
+      "archive": "grimoire-1.3.1-macos.tar.gz",
+      "checksum": "grimoire-1.3.1-macos.tar.gz.sha256",
+      "sha256": "2dabf322bec523b11972778e00fcf049435458861d0974e8350a78d8ae2640c5",
+      "signature": "grimoire-1.3.1-macos.tar.gz.asc"
     },
     {
       "platform": "linux",
-      "archive": "little-imp-1.3.0-linux.tar.gz",
-      "checksum": "little-imp-1.3.0-linux.tar.gz.sha256",
-      "sha256": "d12a1e74f75c449a81b9ef0eaa053d1e602a4565cbb6536962962a1da5367c61",
-      "signature": "little-imp-1.3.0-linux.tar.gz.asc"
+      "archive": "grimoire-1.3.1-linux.tar.gz",
+      "checksum": "grimoire-1.3.1-linux.tar.gz.sha256",
+      "sha256": "76fac3c35a88bf97f05a3cf8babfc360e6c0f471fce864607b502bed00b639d7",
+      "signature": "grimoire-1.3.1-linux.tar.gz.asc"
     }
   ]
 }
