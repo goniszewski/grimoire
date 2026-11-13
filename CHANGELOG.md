@@ -4,7 +4,7 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.3.1] - Unreleased
+## [1.3.1] - 2026-11-06
 
 ### Added
 - Cheaper Inference is available as an AI provider.
