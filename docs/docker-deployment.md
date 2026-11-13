@@ -247,17 +247,23 @@ the `legacy-v0.5` tag until you are satisfied.
    ```
 
 3. **Inspect, dry-run, then apply** with the `grimoire` CLI against the
-   backup archive. See [migration.md](migration.md) for installing the CLI and
-   all options:
+   backup archive. The daemon reads the archive from its own filesystem, so
+   copy it into the container and run the CLI there (the image has no
+   `grimoire` binary on `PATH`; the CLI is `bun src/cli.ts` in `/app/daemon`).
+   See [migration.md](migration.md) for all options:
 
    ```sh
-   grimoire migrate inspect --archive grimoire-v05-data.tar.gz
-   grimoire migrate apply --archive grimoire-v05-data.tar.gz --owner YOUR_USERNAME --dry-run
-   grimoire migrate apply --archive grimoire-v05-data.tar.gz --owner YOUR_USERNAME --yes
+   docker compose cp grimoire-v05-data.tar.gz grimoire:/data/grimoire-v05-data.tar.gz
+   docker compose exec -w /app/daemon grimoire bun src/cli.ts migrate inspect \
+     --archive /data/grimoire-v05-data.tar.gz
+   docker compose exec -w /app/daemon grimoire bun src/cli.ts migrate apply \
+     --archive /data/grimoire-v05-data.tar.gz --owner YOUR_USERNAME --dry-run
+   docker compose exec -w /app/daemon grimoire bun src/cli.ts migrate apply \
+     --archive /data/grimoire-v05-data.tar.gz --owner YOUR_USERNAME --yes
    ```
 
-   The CLI talks to `http://127.0.0.1:3210` by default, which is the loopback
-   port the container publishes. Keep that port bound to `127.0.0.1`.
+   Running the CLI from the host with a host path fails with
+   `archivePath not found`, because the path is resolved inside the container.
 
 ## Cleanup
 
