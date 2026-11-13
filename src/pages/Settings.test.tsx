@@ -105,6 +105,7 @@ function settingsResponse(aiPatch: Record<string, unknown> = {}) {
       base_url: "https://api.cheaperinference.com/v1",
       model: "gpt-5.4-mini",
     },
+    litellm: { api_key: "", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
     embeddings: {
       provider: "openai" as const,
       model: "text-embedding-3-small",
@@ -851,6 +852,71 @@ describe("Settings AI providers", () => {
 
     await waitFor(() => {
       expect(mockedFetchAiModels.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("lists the LiteLLM proxy's models and saves the picked one without the redacted key", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "litellm" as const,
+      litellm: { api_key: "***", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
+    }));
+    mockedFetchAiModels.mockResolvedValue([
+      { id: "gpt-4o-mini", name: "gpt-4o-mini", context_length: 128000, prompt_price: null, completion_price: null },
+      { id: "claude-sonnet", name: "claude-sonnet", context_length: 200000, prompt_price: null, completion_price: null },
+    ]);
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(mockedFetchAiModels).toHaveBeenCalledWith("litellm", false);
+    });
+    // A proxy has no free tier, so the OpenRouter filter is not offered.
+    expect(screen.queryByRole("checkbox", { name: "Free models only" })).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("http://localhost:4000")).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole("combobox", { name: "Model" }));
+    fireEvent.change(screen.getByPlaceholderText("Search proxy models…"), { target: { value: "claude" } });
+    fireEvent.click(await screen.findByRole("option", { name: /claude-sonnet/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            provider: "litellm",
+            litellm: { base_url: "http://localhost:4000", model: "claude-sonnet" },
+          }),
+        })
+      );
+    });
+  });
+
+  it("saves a newly entered LiteLLM virtual key", async () => {
+    const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
+    updateSettings.mockResolvedValue(settingsResponse());
+    mockedGetSettings.mockResolvedValue(settingsResponse({
+      provider: "litellm" as const,
+      litellm: { api_key: "", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
+    }));
+    mockedFetchAiModels.mockResolvedValue([]);
+
+    render(<Settings />, { wrapper: makeWrapper() });
+
+    fireEvent.change(await screen.findByPlaceholderText("optional virtual key (sk-...)"), {
+      target: { value: "sk-litellm-virtual" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ai: expect.objectContaining({
+            litellm: expect.objectContaining({ api_key: "sk-litellm-virtual" }),
+          }),
+        })
+      );
     });
   });
 

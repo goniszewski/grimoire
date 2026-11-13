@@ -1798,7 +1798,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -1825,6 +1825,10 @@ Request body:
 | `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
 | `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
+| `ai.litellm` | object | no |  |
+| `ai.litellm.api_key` | string | no | LiteLLM proxy virtual key, empty string clears it |
+| `ai.litellm.base_url` | string | no | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | no | LiteLLM proxy model name |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -1874,15 +1878,15 @@ Responses:
 
 #### GET /settings/ai-models
 
-List models available from an AI provider catalog (currently OpenRouter).
+List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).
 
-The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
+The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
 
 Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `provider` | "openrouter" | no | Provider to list models for |
+| `provider` | "openrouter" \| "litellm" | no | Provider to list models for |
 | `free` | "true" \| "false" | no | When true, only free models are returned |
 
 Responses:
@@ -4238,7 +4242,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `enabled` | boolean | yes | Whether this runtime feature is usable |
-| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `model` | string \| null | yes | Resolved model |
 | `base_url` | string \| null | yes | Resolved base URL |
 
@@ -4257,7 +4261,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 |---|---|---:|---|
 | `llm` | RuntimeLlmCapability | yes |  |
 | `llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `llm.model` | string \| null | yes | Resolved model |
 | `llm.base_url` | string \| null | yes | Resolved base URL |
 | `embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4284,7 +4288,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | yes |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | LLM provider |
 | `ai.openai` | object | yes |  |
 | `ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `ai.openai.model` | string | yes | OpenAI chat model |
@@ -4311,6 +4315,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
 | `ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
+| `ai.litellm` | object | yes |  |
+| `ai.litellm.api_key` | string | yes | Redacted LiteLLM proxy virtual key. Empty string means unset |
+| `ai.litellm.base_url` | string | yes | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | yes | LiteLLM proxy model name |
 | `ai.embeddings` | object | yes |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `ai.embeddings.model` | string | yes | Embedding model |
@@ -4341,7 +4349,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `runtime` | RuntimeCapabilities | yes |  |
 | `runtime.llm` | RuntimeLlmCapability | yes |  |
 | `runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `runtime.llm.model` | string \| null | yes | Resolved model |
 | `runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4360,7 +4368,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -4387,6 +4395,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
 | `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
+| `ai.litellm` | object | no |  |
+| `ai.litellm.api_key` | string | no | LiteLLM proxy virtual key, empty string clears it |
+| `ai.litellm.base_url` | string | no | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | no | LiteLLM proxy model name |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -4423,7 +4435,7 @@ Response data
 |---|---|---:|---|
 | `data` | Settings | yes |  |
 | `data.ai` | object | yes |  |
-| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
+| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | LLM provider |
 | `data.ai.openai` | object | yes |  |
 | `data.ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `data.ai.openai.model` | string | yes | OpenAI chat model |
@@ -4450,6 +4462,10 @@ Response data
 | `data.ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
 | `data.ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
 | `data.ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
+| `data.ai.litellm` | object | yes |  |
+| `data.ai.litellm.api_key` | string | yes | Redacted LiteLLM proxy virtual key. Empty string means unset |
+| `data.ai.litellm.base_url` | string | yes | LiteLLM proxy base URL |
+| `data.ai.litellm.model` | string | yes | LiteLLM proxy model name |
 | `data.ai.embeddings` | object | yes |  |
 | `data.ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `data.ai.embeddings.model` | string | yes | Embedding model |
@@ -4480,7 +4496,7 @@ Response data
 | `data.runtime` | RuntimeCapabilities | yes |  |
 | `data.runtime.llm` | RuntimeLlmCapability | yes |  |
 | `data.runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `data.runtime.llm.model` | string \| null | yes | Resolved model |
 | `data.runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `data.runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4516,7 +4532,7 @@ Response data
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `provider` | "openrouter" \| "litellm" | yes | Provider the catalog was fetched from |
 | `free` | boolean | yes | Whether only free models were requested |
 | `fetched_at` | string | yes | Catalog fetch timestamp |
 | `models` | array<AiModel> | yes | Available models |
@@ -4528,7 +4544,7 @@ AI model catalog response
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | AiModelCatalog | yes |  |
-| `data.provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `data.provider` | "openrouter" \| "litellm" | yes | Provider the catalog was fetched from |
 | `data.free` | boolean | yes | Whether only free models were requested |
 | `data.fetched_at` | string | yes | Catalog fetch timestamp |
 | `data.models` | array<AiModel> | yes | Available models |

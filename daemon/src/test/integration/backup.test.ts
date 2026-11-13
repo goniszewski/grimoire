@@ -39,6 +39,11 @@ function cheaperInferenceSettings(prefix: "backup" | "current") {
   };
 }
 
+// Shared fixture for the LiteLLM proxy block: the key is a proxy virtual key.
+function litellmSettings(prefix: "backup" | "current") {
+  return { api_key: `${prefix}-litellm-virtual-key`, base_url: "https://litellm.backup.example", model: `${prefix}-proxy-alias` };
+}
+
 const EMPTY_S3_CONFIG = {
   endpoint: "",
   bucket: "",
@@ -196,6 +201,7 @@ describe("Backup API", () => {
           model: "deepseek-v4-flash",
         },
         cheaperinference: cheaperInferenceSettings("backup"),
+        litellm: litellmSettings("backup"),
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -241,6 +247,7 @@ describe("Backup API", () => {
         openrouter: { api_key?: string; base_url: string; model: string };
         openai_compatible: { api_key?: string; base_url: string; model: string };
         deepseek: { api_key?: string; base_url: string; model: string };
+        litellm: { api_key?: string; base_url: string; model: string };
         embeddings: {
           provider: string;
           model: string;
@@ -280,6 +287,10 @@ describe("Backup API", () => {
     expect(backupSettings.ai.deepseek).toEqual({
       base_url: "https://api.deepseek.com",
       model: "deepseek-v4-flash",
+    });
+    expect(backupSettings.ai.litellm).toEqual({
+      base_url: "https://litellm.backup.example",
+      model: "backup-proxy-alias",
     });
     expect(backupSettings.ai.embeddings).toEqual({
       provider: "openai_compatible",
@@ -869,6 +880,7 @@ describe("Backup API", () => {
           model: "deepseek-v4-flash",
         },
         cheaperinference: cheaperInferenceSettings("backup"),
+        litellm: litellmSettings("backup"),
         embeddings: {
           provider: "openai_compatible",
           model: "nomic-embed-text",
@@ -924,6 +936,7 @@ describe("Backup API", () => {
           model: "deepseek-current",
         },
         cheaperinference: cheaperInferenceSettings("current"),
+        litellm: litellmSettings("current"),
         embeddings: {
           provider: "openai",
           model: "embed-current",
@@ -968,6 +981,8 @@ describe("Backup API", () => {
     expect(restored.ai.openai_compatible.api_key).toBe("current-custom-secret");
     expect(restored.ai.deepseek.model).toBe("deepseek-v4-flash");
     expect(restored.ai.deepseek.api_key).toBe("current-deepseek-secret");
+    expect(restored.ai.litellm.model).toBe("backup-proxy-alias");
+    expect(restored.ai.litellm.api_key).toBe("current-litellm-virtual-key");
     expect(restored.ai.embeddings.provider).toBe("openai_compatible");
     expect(restored.ai.embeddings.model).toBe("nomic-embed-text");
     expect(restored.ai.embeddings.openai_compatible.model).toBe("custom-backup-embed");

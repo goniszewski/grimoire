@@ -72,6 +72,7 @@ type PortableSettings = {
     openai_compatible: Omit<Settings["ai"]["openai_compatible"], "api_key">;
     deepseek: Omit<Settings["ai"]["deepseek"], "api_key">;
     cheaperinference: Omit<Settings["ai"]["cheaperinference"], "api_key">;
+    litellm: Omit<Settings["ai"]["litellm"], "api_key">;
     embeddings: {
       provider: Settings["ai"]["embeddings"]["provider"];
       model: string;
@@ -196,6 +197,7 @@ function portableSettings(settings: Settings): PortableSettings {
       },
       deepseek: portableEndpoint(settings.ai.deepseek),
       cheaperinference: portableEndpoint(settings.ai.cheaperinference),
+      litellm: portableEndpoint(settings.ai.litellm),
       embeddings: {
         provider: settings.ai.embeddings.provider,
         model: settings.ai.embeddings.model,

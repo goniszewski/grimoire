@@ -388,6 +388,11 @@ export interface ApiSettings {
       base_url: SettingsDto["ai"]["cheaperinference"]["base_url"];
       model: SettingsDto["ai"]["cheaperinference"]["model"];
     };
+    litellm: {
+      api_key: SettingsDto["ai"]["litellm"]["api_key"];
+      base_url: SettingsDto["ai"]["litellm"]["base_url"];
+      model: SettingsDto["ai"]["litellm"]["model"];
+    };
     embeddings: {
       provider: ApiEmbeddingProvider;
       model: SettingsDto["ai"]["embeddings"]["model"];
@@ -988,12 +993,13 @@ export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
 }
 
 /**
- * Lists models from an AI provider catalog (currently OpenRouter).
- * The daemon fetches the public catalog; `free` filters to zero-cost models.
+ * Lists models from an AI provider catalog: OpenRouter's public catalog, where
+ * `free` filters to zero-cost models, or the chat models of the configured
+ * LiteLLM proxy.
  * The custom header is required by the daemon so foreign web pages cannot
  * blind-trigger outbound catalog fetches.
  */
-export async function fetchAiModels(provider: "openrouter", free: boolean): Promise<ApiAiModel[]> {
+export async function fetchAiModels(provider: "openrouter" | "litellm", free: boolean): Promise<ApiAiModel[]> {
   const query = new URLSearchParams({ provider, free: String(free) });
   const res = await apiFetch<ApiAiModelCatalogResponse>(`/settings/ai-models?${query.toString()}`, {
     headers: { "X-LittleImp-Frontend": "1" },
