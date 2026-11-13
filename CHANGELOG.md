@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A LiteLLM proxy is available as an AI provider in Settings. Choose a model
+  from the list the proxy serves; the virtual key is optional and is left out
+  of backups.
 - Multi-architecture (amd64 and arm64) Docker images are published to Docker Hub
   as `goniszewski/grimoire`, tagged with the exact version (`X.Y.Z`) and the
   minor version (`X.Y`). `docker compose up -d` now pulls the image instead of
