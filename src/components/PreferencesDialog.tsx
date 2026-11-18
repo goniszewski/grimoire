@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { LayoutGrid, List, Lock, ShieldCheck, ShieldOff } from "lucide-react";
+import { GalleryVertical, LayoutGrid, List, Lock, ShieldCheck, ShieldOff } from "lucide-react";
 import { ViewMode } from "@/hooks/use-preferences";
 import { toast } from "sonner";
 import { isDemoMode } from "@/demo/enabled";
@@ -105,6 +105,10 @@ export function PreferencesDialog({
               <ToggleGroupItem value="list" aria-label="List view" className="gap-1.5 text-xs">
                 <List className="h-3.5 w-3.5" />
                 List
+              </ToggleGroupItem>
+              <ToggleGroupItem value="gallery" aria-label="Gallery view" className="gap-1.5 text-xs">
+                <GalleryVertical className="h-3.5 w-3.5" />
+                Gallery
               </ToggleGroupItem>
             </ToggleGroup>
           </div>

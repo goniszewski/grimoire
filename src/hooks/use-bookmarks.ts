@@ -248,6 +248,8 @@ export interface UIBookmark {
   summary: string;
   domain: string;
   favicon: string;
+  /** Cached preview image/screenshot URL (daemon media), or null when none */
+  screenshot?: string | null;
   tags: string[];
   /** category name — resolved from category_id */
   category: string;
@@ -305,6 +307,7 @@ type BookmarkForUi = {
   description: ApiBookmark["description"];
   domain: ApiBookmark["domain"];
   favicon_url: ApiBookmark["favicon_url"];
+  screenshot_url?: ApiBookmark["screenshot_url"];
   tags: ApiBookmark["tags"];
   category_id: ApiBookmark["category_id"];
   status: ApiBookmark["status"];
@@ -330,6 +333,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     summary: bm.description ?? "",
     domain: bm.domain,
     favicon: normaliseDaemonMediaUrl(bm.favicon_url) ?? generatedFavicon(bm.domain),
+    screenshot: normaliseDaemonMediaUrl(bm.screenshot_url),
     tags: bm.tags,
     category: bm.category_id ? (categoryMap.get(bm.category_id) ?? "Uncategorized") : "Uncategorized",
     category_id: bm.category_id,

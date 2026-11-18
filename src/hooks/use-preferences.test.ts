@@ -64,4 +64,25 @@ describe("usePreferences", () => {
     expect(result.current.viewMode).toBe("list");
     expect(result.current.showButtonLabels).toBe(true);
   });
+
+  it("persists gallery view mode and the images-only filter across reloads", () => {
+    const { result } = renderHook(() => usePreferences());
+    expect(result.current.galleryImagesOnly).toBe(false);
+    act(() => {
+      result.current.updatePreferences({ viewMode: "gallery", galleryImagesOnly: true });
+    });
+    const stored = JSON.parse(localStorage.getItem(PREFS_KEY)!);
+    expect(stored.viewMode).toBe("gallery");
+    expect(stored.galleryImagesOnly).toBe(true);
+
+    const { result: reloaded } = renderHook(() => usePreferences());
+    expect(reloaded.current.viewMode).toBe("gallery");
+    expect(reloaded.current.galleryImagesOnly).toBe(true);
+  });
+
+  it("falls back to the default for an unknown stored view mode", () => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ viewMode: "masonry" }));
+    const { result } = renderHook(() => usePreferences());
+    expect(result.current.viewMode).toBe("list");
+  });
 });
