@@ -26,7 +26,7 @@ cd grimoire
 docker compose up -d
 ```
 
-Compose pulls `goniszewski/grimoire:1.3.1` for `linux/amd64` and `linux/arm64`.
+Compose pulls `goniszewski/grimoire:1.4.0` for `linux/amd64` and `linux/arm64`.
 Override the version with `GRIMOIRE_VERSION=<x.y.z> docker compose up -d`, or
 build from source with `docker compose build`.
 
