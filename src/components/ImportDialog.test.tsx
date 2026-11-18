@@ -337,10 +337,14 @@ describe("ImportDialog", () => {
   });
 
   it("uses the daemon-suggested tag name instead of the raw source spelling when remapping", async () => {
-    const preview = mockPreview();
-    preview.remapping.tags = [
-      { sourceTag: "web dev", action: "renamed", targetTagId: null, targetName: "web-dev", status: "new" },
-    ];
+    const base = mockPreview();
+    const preview: ImportPreview = {
+      ...base,
+      remapping: {
+        ...base.remapping,
+        tags: [{ sourceTag: "web dev", action: "renamed", targetTagId: null, targetName: "web-dev", status: "new" }],
+      },
+    };
     mockResolved(api.previewImportBookmarksFile, { data: preview });
     render(<ImportDialog open onOpenChange={vi.fn()} onImport={vi.fn()} />);
     const file = uploadFile();
