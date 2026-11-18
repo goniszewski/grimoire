@@ -53,10 +53,9 @@ export function BookmarkGalleryCard({ bookmark, onClick, selectionMode, selected
         ) : (
           <span
             data-testid="gallery-placeholder"
-            className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-muted p-4 text-muted-foreground"
+            className="flex aspect-[4/3] w-full flex-col items-center justify-center bg-muted p-4 text-muted-foreground"
           >
             <img src={bookmark.favicon} alt="" loading="lazy" className="h-8 w-8 rounded" />
-            <span className="max-w-full truncate text-xs">{bookmark.domain}</span>
           </span>
         )}
         <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3 pt-8 text-white">
