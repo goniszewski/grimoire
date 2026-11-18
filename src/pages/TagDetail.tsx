@@ -265,7 +265,7 @@ const TagDetail = () => {
                 <Hash className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">#{tag.name}</h1>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground" title={tag.description ?? undefined}>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground" title={tag.description ?? undefined}>
                 {tag.description || "Tag detail and scoped bookmark results"}
               </p>
             </div>
@@ -304,6 +304,14 @@ const TagDetail = () => {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6">
+        {tag.description && (
+          <p
+            className="mb-4 whitespace-pre-wrap break-words rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground"
+            data-testid="tag-description-full"
+          >
+            {tag.description}
+          </p>
+        )}
         <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border bg-card px-4 py-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

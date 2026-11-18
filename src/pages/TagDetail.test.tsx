@@ -164,6 +164,17 @@ describe("TagDetail", () => {
     } satisfies ListBookmarksParams);
   });
 
+  it("shows a long tag description in full below the clamped header", async () => {
+    const description = "Notes about this tag. ".repeat(20).trim();
+    mockedListTags.mockResolvedValue({ data: [makeTag({ description })] });
+    mockedListBookmarks.mockResolvedValue(bookmarkResponse([], { total: 0, limit: 20, offset: 0, has_more: false }));
+
+    renderTagDetail();
+
+    expect(await screen.findByRole("heading", { name: "#typescript" })).toBeInTheDocument();
+    expect(screen.getByTestId("tag-description-full")).toHaveTextContent(description);
+  });
+
   it("uses daemon pagination when moving between scoped tag pages", async () => {
     mockedListTags.mockResolvedValue({ data: [makeTag({ bookmark_count: 21 })] });
     mockedListBookmarks.mockImplementation((params: ListBookmarksParams) => {
