@@ -363,8 +363,10 @@ export function AppSidebar({
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const activeTags = selectedTags ?? (selectedTag ? [selectedTag] : []);
+  // Non-modifier way to multi-select (touch / keyboard): plain clicks toggle tags.
+  const [combineTags, setCombineTags] = useState(false);
   const handleTagClick = (event: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }, tag: string) => {
-    if (onToggleTag && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+    if (onToggleTag && (combineTags || event.ctrlKey || event.metaKey || event.shiftKey)) {
       onToggleTag(tag);
       return;
     }
@@ -1015,11 +1017,25 @@ export function AppSidebar({
                 <Hash className="h-3.5 w-3.5 mr-1.5" />
                 {!collapsed && "Tags"}
               </span>
+              {!collapsed && onToggleTag && (
+                <button
+                  type="button"
+                  onClick={() => setCombineTags((v) => !v)}
+                  aria-pressed={combineTags}
+                  className={cn(
+                    "ml-auto mr-1 h-4 px-1 text-[10px] rounded hover:bg-accent transition-colors",
+                    combineTags ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Combine tags: clicking tags adds or removes them from the filter"
+                >
+                  Combine
+                </button>
+              )}
               {!collapsed && (
                 <button
                   type="button"
                   onClick={() => navigate("/tags")}
-                  className="ml-auto h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  className={cn("h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors", !onToggleTag && "ml-auto")}
                   title="Manage tags"
                   aria-label="Manage tags"
                 >
@@ -1035,8 +1051,17 @@ export function AppSidebar({
                       key={t.tag}
                       variant={activeTags.includes(t.tag) ? "default" : "secondary"}
                       className="text-[10px] px-1.5 py-0 h-5 font-mono cursor-pointer transition-colors"
-                      title="Click to filter; Ctrl/Cmd/Shift-click to combine several tags"
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={activeTags.includes(t.tag)}
+                      title="Click to filter; Ctrl/Cmd/Shift-click or Combine tags to select several"
                       onClick={(event) => handleTagClick(event, t.tag)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleTagClick(event, t.tag);
+                        }
+                      }}
                     >
                       {t.tag}
                       <span className="ml-1 opacity-60">{t.count}</span>

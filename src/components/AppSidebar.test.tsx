@@ -73,8 +73,8 @@ vi.mock("@/components/ui/select", () => ({
 }));
 
 vi.mock("@/components/ui/badge", () => ({
-  Badge: ({ children, className, onClick, variant }: { children: React.ReactNode; className?: string; onClick?: () => void; variant?: string }) => (
-    <span data-testid="badge" className={className} onClick={onClick} data-variant={variant}>{children}</span>
+  Badge: ({ children, variant, ...rest }: React.HTMLAttributes<HTMLSpanElement> & { variant?: string }) => (
+    <span data-testid="badge" data-variant={variant} {...rest}>{children}</span>
   ),
 }));
 
@@ -340,6 +340,24 @@ describe("AppSidebar — renders category tree", () => {
     // A plain click still replaces the selection.
     fireEvent.click(typescriptBadge);
     expect(onSelectTag).toHaveBeenCalled();
+  });
+
+  it("lets keyboard and touch users combine tags without modifier keys", () => {
+    const onSelectTag = vi.fn();
+    const onToggleTag = vi.fn();
+    render(<AppSidebar {...defaultProps} onSelectTag={onSelectTag} onToggleTag={onToggleTag} />, {
+      wrapper: makeWrapper(),
+    });
+    const badge = screen.getAllByTestId("badge").find((el) => el.textContent?.includes("typescript"))!;
+    expect(badge).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(badge, { key: "Enter" });
+    expect(onSelectTag).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Combine" }));
+    fireEvent.keyDown(badge, { key: " " });
+    expect(onToggleTag).toHaveBeenCalledWith("typescript");
+    expect(onSelectTag).toHaveBeenCalledTimes(1);
   });
 
   it("navigates to the tag management surface from the sidebar", () => {
