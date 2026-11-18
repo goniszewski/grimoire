@@ -180,6 +180,36 @@ describe("Import API", () => {
     expect(json.data.every((bookmark) => bookmark.read_later === 0)).toBe(true);
   });
 
+  it("normalises imported tag names to the tag format and skips tags with nothing usable", async () => {
+    const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+<DT><A HREF="https://example.com/a" TAGS="Web Dev,c++,über,node.js,日本語,web-dev">Tagged</A>
+</DL><p>`;
+
+    const res = await app.request("/import", { method: "POST", body: formWithHtml(html) });
+    expect(res.status).toBe(200);
+    const summary = await res.json() as {
+      data: { remapping: { tags: Array<{ sourceTag: string; action: string; targetName: string | null; status: string }> } };
+    };
+    const bySource = new Map(summary.data.remapping.tags.map((tag) => [tag.sourceTag, tag]));
+    expect(bySource.get("web dev")).toMatchObject({ action: "renamed", targetName: "web-dev", status: "new" });
+    expect(bySource.get("c++")).toMatchObject({ action: "renamed", targetName: "c-plus-plus" });
+    expect(bySource.get("über")).toMatchObject({ action: "renamed", targetName: "uber" });
+    expect(bySource.get("node.js")).toMatchObject({ action: "renamed", targetName: "node-js" });
+    expect(bySource.get("web-dev")).toMatchObject({ action: "new", targetName: "web-dev" });
+    expect(bySource.get("日本語")).toMatchObject({ action: "skipped", targetName: null, status: "skipped" });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
+    const tagsRes = await app.request("/tags");
+    const tags = await tagsRes.json() as { data: Array<{ name: string }> };
+    expect(tags.data.map((tag) => tag.name).sort()).toEqual(["c-plus-plus", "node-js", "uber", "web-dev"]);
+
+    const listRes = await app.request("/bookmarks");
+    const list = await listRes.json() as { data: Array<{ tags: string[] }> };
+    expect([...(list.data[0]?.tags ?? [])].sort()).toEqual(["c-plus-plus", "node-js", "uber", "web-dev"]);
+  });
+
   it("imports Netscape folder hierarchy as categories and assigns bookmark categories", async () => {
     const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">

@@ -114,8 +114,11 @@ browsers. A preview shows what will happen before anything is saved. What
 carries over:
 
 - URL, title, and the added date (`ADD_DATE`).
-- Tags from the `TAGS` attribute, which you can rename or merge in the preview.
-  Imported tags keep their original spelling (for example `web dev` or `c++`).
+- Tags from the `TAGS` attribute. Names are converted to Grimoire's tag format
+  (lowercase letters, digits and hyphens): `Web Dev` becomes `web-dev`, `über`
+  becomes `uber`, `c++` becomes `c-plus-plus`. A tag with nothing usable left,
+  such as one written only in a non-Latin script, is skipped. The preview shows
+  the resulting name for every tag, and you can rename, merge or skip it there.
 - Notes: the description that follows a link (`<DD>`) becomes the bookmark's notes.
 - Folders become categories.
 

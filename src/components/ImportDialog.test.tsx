@@ -336,6 +336,32 @@ describe("ImportDialog", () => {
     });
   });
 
+  it("uses the daemon-suggested tag name instead of the raw source spelling when remapping", async () => {
+    const preview = mockPreview();
+    preview.remapping.tags = [
+      { sourceTag: "web dev", action: "renamed", targetTagId: null, targetName: "web-dev", status: "new" },
+    ];
+    mockResolved(api.previewImportBookmarksFile, { data: preview });
+    render(<ImportDialog open onOpenChange={vi.fn()} onImport={vi.fn()} />);
+    const file = uploadFile();
+
+    await screen.findByText("Import Preview");
+    expect(await screen.findByLabelText("Target tag name for web dev")).toHaveValue("web-dev");
+
+    fireEvent.change(screen.getByLabelText("Tag action for web dev"), { target: { value: "new" } });
+
+    await waitFor(() => {
+      expect(api.previewImportBookmarksFile).toHaveBeenLastCalledWith(file, {
+        active: "skip",
+        archived: "skip",
+        trashed: "skip",
+      }, {
+        folders: [],
+        tags: [{ sourceTag: "web dev", action: "new", targetName: "web-dev" }],
+      });
+    });
+  });
+
   it("commits the selected policy only after confirmation and reports final progress", async () => {
     mockResolved(api.importBookmarksFile, {
       data: {
