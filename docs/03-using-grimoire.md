@@ -106,6 +106,28 @@ blocks the capture window.
 
 You can also import a Netscape/HTML bookmark export from your browser, and export your library as JSON or CSV.
 
+### Importing from Shaarli, Linkding, Pinboard and others
+
+Any tool that exports the standard Netscape/HTML bookmark format works with
+**Import**, including Shaarli (*Tools → Export*), Linkding, Pinboard and
+browsers. A preview shows what will happen before anything is saved. What
+carries over:
+
+- URL, title, and the added date (`ADD_DATE`).
+- Tags from the `TAGS` attribute, which you can rename or merge in the preview.
+  Imported tags keep their original spelling (for example `web dev` or `c++`).
+- Notes: the description that follows a link (`<DD>`) becomes the bookmark's notes.
+- Folders become categories.
+
+What does not carry over:
+
+- Public/private flags (`PRIVATE`): Grimoire is single-user and local-first, so
+  every bookmark is simply yours.
+- Notes without a link (for example a Shaarli grocery-list note): there is no
+  URL to save, so they are listed as skipped in the preview. Copy them manually
+  if you need them.
+- Links to private or loopback addresses and non-http(s) links are skipped.
+
 ## Share links (prefilled Add dialog)
 
 Open Grimoire at `/add` with query parameters to start a save from a bookmarklet,
