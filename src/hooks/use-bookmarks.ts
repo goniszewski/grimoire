@@ -348,6 +348,18 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
   };
 }
 
+export interface AddBookmarkOptions {
+  readLater?: boolean;
+  notes?: string;
+  title?: string;
+  tags?: string[];
+}
+
+/** Maps a raw API bookmark to the UI shape (used to open a bookmark found outside the loaded list). */
+export function apiBookmarkToUI(bm: ApiBookmark, categories: Array<{ id: string; name: string }>): UIBookmark {
+  return toUIBookmark(bm, new Map(categories.map((c) => [c.id, c.name])));
+}
+
 function toUICategories(categories: ApiCategory[], depth = 0, counts?: Map<string, number>): UICategory[] {
   return categories.flatMap((category) => [
     {
@@ -838,8 +850,24 @@ export function useBookmarks() {
   // ─── Mutations ────────────────────────────────────────────────────────────
 
   const addBookmarkMutation = useMutation({
-    mutationFn: ({ url, readLater, notes }: { url: string; readLater?: boolean; notes?: string }) =>
-      createBookmark(url, undefined, { read_later: readLater ? 1 : 0, ...(notes ? { notes } : {}) }),
+    mutationFn: async ({ url, readLater, notes, title, tags }: AddBookmarkOptions & { url: string }) => {
+      const created = await createBookmark(url, title || undefined, {
+        read_later: readLater ? 1 : 0,
+        ...(notes ? { notes } : {}),
+      });
+      if (tags && tags.length > 0 && created?.data?.id) {
+        // The create endpoint takes no tags; apply them right after. A tag failure must not fail the save.
+        try {
+          // Merge with tags already on the bookmark: the create endpoint is idempotent and may have
+          // returned an existing bookmark, whose tags must not be replaced.
+          const existingTags = Array.isArray(created.data.tags) ? created.data.tags : [];
+          await updateBookmark(created.data.id, { tags: [...new Set([...existingTags, ...tags])] });
+        } catch {
+          // Bookmark is saved; tags can be added from its detail view.
+        }
+      }
+      return created;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["revisit"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
@@ -937,7 +965,7 @@ export function useBookmarks() {
 
   // ─── Public API matching use-bookmark-store interface ─────────────────────
 
-  const addBookmark = useCallback(async (url: string, options?: { readLater?: boolean; notes?: string }) => {
+  const addBookmark = useCallback(async (url: string, options?: AddBookmarkOptions) => {
     await addBookmarkMutation.mutateAsync({ url, ...options });
   }, [addBookmarkMutation]);
 
@@ -971,9 +999,9 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { category_id: matches[0][0] } });
   }, [updateBookmarkMutation, categoryMap]);
 
-  const updateBookmarkField = useCallback((id: string, field: "title" | "url" | "summary", value: string) => {
+  const updateBookmarkField = useCallback(async (id: string, field: "title" | "url" | "summary", value: string): Promise<void> => {
     if (field === "title") {
-      updateBookmarkMutation.mutate({ id, patch: { title: value } });
+      await updateBookmarkMutation.mutateAsync({ id, patch: { title: value } });
     }
     // url and summary changes are not directly supported by PUT /bookmarks/:id
     // (url changes would require re-ingestion; summary is from content extraction)
@@ -1025,8 +1053,8 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { read_at: null } }, callbacks);
   }, [updateBookmarkMutation]);
 
-  const updateBookmarkNotes = useCallback((id: string, notes: string | null) => {
-    updateBookmarkMutation.mutate({ id, patch: { notes } });
+  const updateBookmarkNotes = useCallback(async (id: string, notes: string | null): Promise<void> => {
+    await updateBookmarkMutation.mutateAsync({ id, patch: { notes } });
   }, [updateBookmarkMutation]);
 
   const resetLibraryPreferences = useCallback(() => {

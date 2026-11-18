@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
+import { clearDraft, editDraftKey, isStringDraft, loadDraft } from "@/lib/draft-storage";
 import { useQuery } from "@tanstack/react-query";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { getBookmark } from "@/lib/api";
@@ -32,8 +34,8 @@ interface BookmarkDetailProps {
   onOpenChange: (open: boolean) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
-  onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
-  onUpdateNotes: (id: string, notes: string | null) => void;
+  onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => Promise<void> | void;
+  onUpdateNotes: (id: string, notes: string | null) => Promise<void> | void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -66,7 +68,38 @@ export function BookmarkDetail({
   const isMobile = useIsMobile();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
+  const [titleRestored, setTitleRestored] = useState(false);
   const bookmarkId = bookmark?.id ?? null;
+  const savedTitle = bookmark?.title ?? "";
+  const titleDraftKey = bookmarkId ? editDraftKey(bookmarkId, "title") : null;
+
+  // Offer back an unsaved title edit when this bookmark is opened again.
+  useEffect(() => {
+    if (!titleDraftKey || !open) return;
+    const draft = loadDraft(titleDraftKey, isStringDraft);
+    if (draft !== null && draft.trim() && draft !== savedTitle) {
+      setTitleInput(draft);
+      setEditingTitle(true);
+      setTitleRestored(true);
+    } else {
+      if (draft !== null) clearDraft(titleDraftKey);
+      setEditingTitle(false);
+      setTitleRestored(false);
+    }
+    // Re-run only when the target or visibility changes, not on every title update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titleDraftKey, open]);
+
+  useDraftAutosave(titleDraftKey, titleInput, {
+    active: editingTitle && open,
+    isEmpty: (value) => !value.trim() || value === savedTitle,
+  });
+
+  const closeTitleEditor = (discardDraft = true) => {
+    if (discardDraft && titleDraftKey) clearDraft(titleDraftKey);
+    setTitleRestored(false);
+    setEditingTitle(false);
+  };
 
   const detailQuery = useQuery({
     queryKey: ["bookmark-detail", bookmarkId],
@@ -96,9 +129,16 @@ export function BookmarkDetail({
 
   const handleTitleSubmit = () => {
     if (titleInput.trim() && titleInput.trim() !== bookmark.title) {
-      onUpdateField(bookmark.id, "title", titleInput.trim());
+      // Keep the draft until the save succeeds, so a failed save can be restored.
+      const draftKey = titleDraftKey;
+      closeTitleEditor(false);
+      void Promise.resolve(onUpdateField(bookmark.id, "title", titleInput.trim())).then(
+        () => { if (draftKey) clearDraft(draftKey); },
+        () => undefined,
+      );
+      return;
     }
-    setEditingTitle(false);
+    closeTitleEditor();
   };
 
   const headerContent = (
@@ -119,7 +159,14 @@ export function BookmarkDetail({
   );
 
   const editableTitle = editingTitle ? (
-    <div className="flex items-center gap-1.5 pr-8">
+    <div className="flex flex-col gap-1 pr-8">
+      {titleRestored && (
+        <p role="status" className="text-xs text-muted-foreground">
+          Restored unsaved draft —{" "}
+          <button type="button" className="underline" onClick={() => closeTitleEditor()}>Discard</button>
+        </p>
+      )}
+      <div className="flex items-center gap-1.5">
       <Input
         value={titleInput}
         onChange={(e) => setTitleInput(e.target.value)}
@@ -130,9 +177,10 @@ export function BookmarkDetail({
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleTitleSubmit}>
         <Check className="h-3.5 w-3.5" />
       </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditingTitle(false)}>
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => closeTitleEditor()}>
         <X className="h-3.5 w-3.5" />
       </Button>
+      </div>
     </div>
   ) : (
     <div className="flex items-center gap-1.5 group/title">

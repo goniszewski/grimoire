@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (or Ctrl/Cmd/Shift-click tags) and choose whether bookmarks must have all of
   them or any of them. The API accepts up to 25 repeated `tag` parameters with
   `tag_match=all|any` (#10).
+- Share links: opening `/add?url=…&title=…&note=…&tags=a,b` prefills the Add
+  Bookmark dialog (usable from bookmarklets, scripts, or Android share). If the
+  URL is already saved, the existing bookmark opens for editing instead. The
+  Add dialog now also accepts a title and tags for a single URL.
+- Unsaved drafts of the Add dialog and of bookmark title/notes edits are kept in
+  browser local storage and offered back after an accidental close, failed save,
+  or crash. They never leave the browser and are not part of backups.
 - A LiteLLM proxy is available as an AI provider in Settings. Choose a model
   from the list the proxy serves; the virtual key is optional and is left out
   of backups.

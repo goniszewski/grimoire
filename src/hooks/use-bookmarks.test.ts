@@ -888,7 +888,7 @@ describe("useBookmarks — bookmark mutation patches", () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
 
-    act(() => result.current.updateBookmarkField("bm-1", "title", "Renamed"));
+    await act(async () => { await result.current.updateBookmarkField("bm-1", "title", "Renamed"); });
     await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { title: "Renamed" }));
 
     act(() => result.current.updateBookmarkTags("bm-1", ["typescript", "testing"]));
@@ -928,10 +928,10 @@ describe("useBookmarks — bookmark mutation patches", () => {
     act(() => result.current.markAsUnread("bm-1"));
     await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { read_at: null }));
 
-    act(() => result.current.updateBookmarkNotes("bm-1", "note"));
+    await act(async () => { await result.current.updateBookmarkNotes("bm-1", "note"); });
     await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { notes: "note" }));
 
-    act(() => result.current.updateBookmarkNotes("bm-1", null));
+    await act(async () => { await result.current.updateBookmarkNotes("bm-1", null); });
     await waitFor(() => expect(mockedUpdateBookmark).toHaveBeenLastCalledWith("bm-1", { notes: null }));
   });
 
@@ -940,8 +940,8 @@ describe("useBookmarks — bookmark mutation patches", () => {
     const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 });
 
-    act(() => result.current.updateBookmarkField("bm-1", "url", "https://example.com/new"));
-    act(() => result.current.updateBookmarkField("bm-1", "summary", "new summary"));
+    await act(async () => { await result.current.updateBookmarkField("bm-1", "url", "https://example.com/new"); });
+    await act(async () => { await result.current.updateBookmarkField("bm-1", "summary", "new summary"); });
 
     expect(mockedUpdateBookmark).not.toHaveBeenCalled();
   });

@@ -105,6 +105,41 @@ blocks the capture window.
 
 You can also import a Netscape/HTML bookmark export from your browser, and export your library as JSON or CSV.
 
+## Share links (prefilled Add dialog)
+
+Open Grimoire at `/add` with query parameters to start a save from a bookmarklet,
+a custom script, or an Android share action:
+
+```
+http://127.0.0.1:3210/add?url=https%3A%2F%2Fexample.com%2Fpost&title=Nice%20post&note=Read%20later&tags=reading,rust
+```
+
+`127.0.0.1:3210` is the default address of the installed app and the Docker image. When running the Vite dev server (`npm run dev`), use `http://localhost:5173` instead.
+
+| Parameter | Meaning | Limits |
+|-----------|---------|--------|
+| `url` | Link to save. Must be `http` or `https`, no embedded credentials. | 2048 characters |
+| `title` | Optional title | 300 characters |
+| `note` | Optional personal note | 10,000 characters |
+| `tags` | Optional comma-separated tags | 20 tags, 50 characters each |
+
+Remember to URL-encode the values. Grimoire opens the Add dialog with those
+fields filled in; nothing is saved until you press **Save Bookmark**. If the URL
+is already saved as an active bookmark, that bookmark opens for editing instead
+and the shared title, note and tags are ignored. Parameters are removed from the
+address bar once read. Invalid values (for example a `javascript:` URL) are
+dropped, and everything is treated as plain text.
+
+## Unsaved drafts
+
+While the Add dialog is open, and while you edit a bookmark's title or notes,
+Grimoire keeps your in-progress text in this browser's local storage. If you
+close the dialog by accident, a save fails, or the tab crashes, reopening the
+same dialog restores the text with a "Restored unsaved draft" notice and a
+**Discard** button. Drafts are cleared when you save, cancel, or discard, and drafts older than 7 days are dropped automatically. They
+stay in the browser only: they are never sent to the daemon and are not part of
+backups. Clearing site data removes them.
+
 ## Backups
 
 From Settings or the `grimoire` CLI you can create, list, verify, and restore local snapshots. The legacy `littleimp` command remains available as a compatibility alias. Encrypted packages and optional scheduled/S3 targets are available in Settings when configured. Restores verify checksums and create a rollback copy first.
