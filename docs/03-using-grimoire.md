@@ -24,7 +24,7 @@ After save, Grimoire pulls readable content when it can:
 ## Organize
 
 - **Categories** — create, rename, nest (max three levels), drag to reorder or reparent
-- **Tags** — create, rename, attach; browse from Tags pages
+- **Tags** — create, rename, add a short description, attach; browse from Tags pages
 - **Per bookmark** — title, notes, pin, read/unread, Later, archive, trash, restore, permanent delete
 - **Bulk** — select bookmarks to delete, move, or toggle Later
 - **Filters** — category, tag, domain, date, and related library filters
