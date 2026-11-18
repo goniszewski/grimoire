@@ -37,7 +37,9 @@ interface AddBookmarkDialogProps {
 }
 
 function parseTagInput(value: string): string[] {
-  return [...new Set(value.split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
+  // The API only accepts normalized tags (^[a-z0-9]+(-[a-z0-9]+)*$, max 50); slugify so e.g. "Web Dev" is kept.
+  const slug = (tag: string) => tag.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50).replace(/-+$/, "");
+  return [...new Set(value.split(",").map(slug).filter(Boolean))];
 }
 
 export function AddBookmarkDialog({ open, onOpenChange, onAdd, prefill }: AddBookmarkDialogProps) {

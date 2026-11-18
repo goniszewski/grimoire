@@ -7,6 +7,8 @@
  */
 
 const DRAFT_PREFIX = "grimoire:draft:v1:";
+/** Drafts may hold private notes; stale ones are dropped on read instead of lingering forever. */
+export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface DraftEnvelope<T> {
   savedAt: number;
@@ -33,6 +35,11 @@ export function loadDraft<T>(key: string, isValid: (value: unknown) => value is 
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null || !("data" in parsed)) return null;
+    const savedAt = (parsed as { savedAt?: unknown }).savedAt;
+    if (typeof savedAt !== "number" || Date.now() - savedAt > DRAFT_MAX_AGE_MS) {
+      window.localStorage.removeItem(DRAFT_PREFIX + key);
+      return null;
+    }
     const data = (parsed as { data: unknown }).data;
     return isValid(data) ? data : null;
   } catch {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearDraft, isNewBookmarkDraft, loadDraft, saveDraft } from "./draft-storage";
+import { DRAFT_MAX_AGE_MS, clearDraft, isNewBookmarkDraft, loadDraft, saveDraft } from "./draft-storage";
 
 describe("draft storage", () => {
   beforeEach(() => window.localStorage.clear());
@@ -33,5 +33,13 @@ describe("draft storage", () => {
     expect(saveDraft("new", draft)).toBe(false);
     expect(loadDraft("new", isNewBookmarkDraft)).toBeNull();
     expect(() => clearDraft("new")).not.toThrow();
+  });
+
+  it("drops drafts older than the max age", () => {
+    saveDraft("new", draft);
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + DRAFT_MAX_AGE_MS + 1000);
+    expect(loadDraft("new", isNewBookmarkDraft)).toBeNull();
+    vi.restoreAllMocks();
+    expect(window.localStorage.length).toBe(0);
   });
 });

@@ -858,7 +858,10 @@ export function useBookmarks() {
       if (tags && tags.length > 0 && created?.data?.id) {
         // The create endpoint takes no tags; apply them right after. A tag failure must not fail the save.
         try {
-          await updateBookmark(created.data.id, { tags });
+          // Merge with tags already on the bookmark: the create endpoint is idempotent and may have
+          // returned an existing bookmark, whose tags must not be replaced.
+          const existingTags = Array.isArray(created.data.tags) ? created.data.tags : [];
+          await updateBookmark(created.data.id, { tags: [...new Set([...existingTags, ...tags])] });
         } catch {
           // Bookmark is saved; tags can be added from its detail view.
         }
