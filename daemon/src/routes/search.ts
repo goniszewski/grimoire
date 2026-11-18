@@ -37,7 +37,7 @@ export function createSearchRoute(deps: SearchDeps): Hono {
     const rawMode = c.req.query("mode") ?? "keyword";
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), 100);
     const offset = parseIntParam(c.req.query("offset"), 0);
-    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name), (name) => c.req.queries(name));
     const parsedSort = parseBookmarkRouteSort((name) => c.req.query(name));
 
     const validModes: SearchMode[] = ["keyword", "semantic", "hybrid"];
@@ -65,7 +65,6 @@ export function createSearchRoute(deps: SearchDeps): Hono {
       result = await repo.search({
         q,
         mode,
-        tag: c.req.query("tag") ?? undefined,
         domain: c.req.query("domain") ?? undefined,
         category_id: c.req.query("category_id") ?? undefined,
         category: c.req.query("category") ?? undefined,

@@ -5,20 +5,20 @@ import { EmbeddingRepository } from "./embedding-repository.js";
 import { getEmbedding, EmbeddingConfig } from "../ai/embeddings.js";
 import {
   appendBookmarkParityFilterConditions,
+  appendTagFilterCondition,
   buildBookmarkOrderBy,
   compareBookmarksBySort,
   normalizeDateUpperBound,
 } from "./bookmark-filters.js";
-import type { BookmarkParityFilters, BookmarkSortOptions } from "./bookmark-filters.js";
+import type { BookmarkParityFilters, BookmarkSortOptions, BookmarkTagFilters } from "./bookmark-filters.js";
 
 // ─── Query option types ───────────────────────────────────────────────────────
 
 export type SearchMode = "keyword" | "semantic" | "hybrid";
 
-export interface SearchOptions extends BookmarkParityFilters, BookmarkSortOptions {
+export interface SearchOptions extends BookmarkParityFilters, BookmarkSortOptions, BookmarkTagFilters {
   q?: string;
   mode?: SearchMode;
-  tag?: string;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -106,19 +106,14 @@ export class SearchRepository {
   // ─── Keyword (FTS5) search — synchronous ──────────────────────────────────
 
   keywordSearch(opts: SearchOptions): SearchResult {
-    const { q, tag, domain, category_id, category, date_from, date_to, limit, offset } = opts;
+    const { q, domain, category_id, category, date_from, date_to, limit, offset } = opts;
     const hasQuery = typeof q === "string" && q.trim().length > 0;
 
     // ── Build bookmark filter conditions ──────────────────────────────────────
     const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
     const filterParams: (string | number)[] = [];
 
-    if (tag) {
-      conditions.push(
-        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
-      );
-      filterParams.push(tag);
-    }
+    appendTagFilterCondition(conditions, filterParams, opts);
     if (domain) {
       conditions.push("b.domain = ?");
       filterParams.push(domain);
@@ -457,12 +452,7 @@ export class SearchRepository {
     const conditions: string[] = ["b.is_archived = 0", "b.is_trashed = 0"];
     const params: (string | number)[] = [];
 
-    if (opts.tag) {
-      conditions.push(
-        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
-      );
-      params.push(opts.tag);
-    }
+    appendTagFilterCondition(conditions, params, opts);
     if (opts.domain) { conditions.push("b.domain = ?"); params.push(opts.domain); }
     if (opts.category_id) {
       conditions.push("b.category_id = ?");

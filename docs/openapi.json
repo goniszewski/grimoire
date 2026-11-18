@@ -262,10 +262,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -669,10 +683,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -1545,10 +1573,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -3763,10 +3805,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {

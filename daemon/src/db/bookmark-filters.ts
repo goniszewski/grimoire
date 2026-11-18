@@ -11,6 +11,15 @@ export const bookmarkSortDirections = ["asc", "desc"] as const;
 export type BookmarkSortKey = (typeof bookmarkSortKeys)[number];
 export type BookmarkSortDirection = (typeof bookmarkSortDirections)[number];
 
+export type TagMatchMode = "all" | "any";
+
+export interface BookmarkTagFilters {
+  /** One tag name or several. Names match case-insensitively. */
+  tag?: string | string[];
+  /** `all` (default): bookmark must have every tag. `any`: at least one. */
+  tag_match?: TagMatchMode;
+}
+
 export interface BookmarkParityFilters {
   read_state?: ReadStateFilter;
   is_pinned?: 0 | 1;
@@ -38,6 +47,42 @@ interface SortableBookmarkRow {
 
 export function normalizeDateUpperBound(value: string): string {
   return value.length === 10 ? `${value}T23:59:59Z` : value;
+}
+
+/** Trim, drop empties, and de-duplicate (case-insensitively) a tag filter value. */
+export function normalizeTagFilter(tag: string | string[] | undefined): string[] {
+  const values = Array.isArray(tag) ? tag : tag === undefined ? [] : [tag];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    const key = trimmed.toLowerCase();
+    if (!trimmed || seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+/**
+ * Append a tag membership condition. With one tag this is the classic exact
+ * tag filter; with several, `all` requires every tag and `any` at least one.
+ * A tag that does not exist matches nothing (so it empties an `all` filter).
+ */
+export function appendTagFilterCondition(
+  conditions: string[],
+  params: (string | number)[],
+  filters: BookmarkTagFilters,
+  alias = "b"
+): void {
+  const tags = normalizeTagFilter(filters.tag);
+  if (tags.length === 0) return;
+  const placeholders = tags.map(() => "?").join(", ");
+  const having = filters.tag_match === "any" ? "" : ` GROUP BY bt.bookmark_id HAVING COUNT(DISTINCT t.id) = ${tags.length}`;
+  conditions.push(
+    `${alias}.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name COLLATE NOCASE IN (${placeholders})${having})`
+  );
+  params.push(...tags);
 }
 
 export function appendBookmarkParityFilterConditions(

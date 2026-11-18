@@ -216,7 +216,7 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const maxLimit = archived ? 500 : 100;
     const limit = Math.min(parseIntParam(c.req.query("limit"), 20), maxLimit);
     const offset = parseIntParam(c.req.query("offset"), 0);
-    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name), (name) => c.req.queries(name));
     if (!parsedFilters.ok) {
       return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
     }
@@ -228,7 +228,6 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
     const result = repo.list({
       limit,
       offset,
-      tag: c.req.query("tag") ?? undefined,
       domain: c.req.query("domain") ?? undefined,
       category_id: c.req.query("category_id") ?? undefined,
       category: c.req.query("category") ?? undefined,
@@ -252,13 +251,12 @@ export function createBookmarksRoute(deps: BookmarksDeps): Hono {
 
   // GET /bookmarks/aggregates — page-independent active-library counts
   router.get("/bookmarks/aggregates", (c) => {
-    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+    const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name), (name) => c.req.queries(name));
     if (!parsedFilters.ok) {
       return problem(c, 422, "Unprocessable Entity", parsedFilters.detail);
     }
 
     return ok(c, repo.aggregates({
-      tag: c.req.query("tag") ?? undefined,
       domain: c.req.query("domain") ?? undefined,
       category_id: c.req.query("category_id") ?? undefined,
       category: c.req.query("category") ?? undefined,
