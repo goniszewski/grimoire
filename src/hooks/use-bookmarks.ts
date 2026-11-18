@@ -348,6 +348,18 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
   };
 }
 
+export interface AddBookmarkOptions {
+  readLater?: boolean;
+  notes?: string;
+  title?: string;
+  tags?: string[];
+}
+
+/** Maps a raw API bookmark to the UI shape (used to open a bookmark found outside the loaded list). */
+export function apiBookmarkToUI(bm: ApiBookmark, categories: Array<{ id: string; name: string }>): UIBookmark {
+  return toUIBookmark(bm, new Map(categories.map((c) => [c.id, c.name])));
+}
+
 function toUICategories(categories: ApiCategory[], depth = 0, counts?: Map<string, number>): UICategory[] {
   return categories.flatMap((category) => [
     {
@@ -838,8 +850,21 @@ export function useBookmarks() {
   // ─── Mutations ────────────────────────────────────────────────────────────
 
   const addBookmarkMutation = useMutation({
-    mutationFn: ({ url, readLater, notes }: { url: string; readLater?: boolean; notes?: string }) =>
-      createBookmark(url, undefined, { read_later: readLater ? 1 : 0, ...(notes ? { notes } : {}) }),
+    mutationFn: async ({ url, readLater, notes, title, tags }: AddBookmarkOptions & { url: string }) => {
+      const created = await createBookmark(url, title || undefined, {
+        read_later: readLater ? 1 : 0,
+        ...(notes ? { notes } : {}),
+      });
+      if (tags && tags.length > 0 && created?.data?.id) {
+        // The create endpoint takes no tags; apply them right after. A tag failure must not fail the save.
+        try {
+          await updateBookmark(created.data.id, { tags });
+        } catch {
+          // Bookmark is saved; tags can be added from its detail view.
+        }
+      }
+      return created;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["revisit"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
@@ -937,7 +962,7 @@ export function useBookmarks() {
 
   // ─── Public API matching use-bookmark-store interface ─────────────────────
 
-  const addBookmark = useCallback(async (url: string, options?: { readLater?: boolean; notes?: string }) => {
+  const addBookmark = useCallback(async (url: string, options?: AddBookmarkOptions) => {
     await addBookmarkMutation.mutateAsync({ url, ...options });
   }, [addBookmarkMutation]);
 

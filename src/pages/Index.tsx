@@ -24,7 +24,9 @@ import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { ExportMenu } from "@/components/ExportMenu";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { usePreferences } from "@/hooks/use-preferences";
-import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
+import { UIBookmark as Bookmark, apiBookmarkToUI } from "@/hooks/use-bookmarks";
+import { useShareLink } from "@/hooks/use-share-link";
+import type { SharePrefill } from "@/lib/share-link";
 import { ApiBookmark } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +58,7 @@ const Index = () => {
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [sharePrefill, setSharePrefill] = useState<SharePrefill | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -77,6 +80,28 @@ const Index = () => {
     queryKey: ["revisit"], queryFn: getRevisitState, enabled: !isDemoMode && !appLock.locked,
   });
   const { addBookmark, setSelectedTag, setReadLaterOnly, readLaterOnly } = store;
+
+  const handleAddOpenChange = useCallback((open: boolean) => {
+    setAddOpen(open);
+    if (!open) setSharePrefill(null);
+  }, []);
+
+  useShareLink({
+    enabled: !appLock.locked,
+    onAdd: (prefill) => {
+      if (isDemoMode) {
+        setInstallPromptOpen(true);
+        return;
+      }
+      setSharePrefill(prefill);
+      setAddOpen(true);
+    },
+    onEditExisting: (existing) => {
+      setDetailOpen(true);
+      setSelectedBookmark(apiBookmarkToUI(existing, store.categories));
+      toast({ title: "Already saved", description: "Opened the existing bookmark so you can edit it." });
+    },
+  });
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -906,8 +931,9 @@ const Index = () => {
       {/* Dialogs */}
       {!isDemoMode && <AddBookmarkDialog
         open={addOpen}
-        onOpenChange={setAddOpen}
+        onOpenChange={handleAddOpenChange}
         onAdd={store.addBookmark}
+        prefill={sharePrefill}
       />}
       {!isDemoMode && <ImportDialog
         open={importOpen}
