@@ -63,6 +63,25 @@ Optional AI can suggest summary, tags, and a broad category during ingest. When 
 
 Related bookmarks use embeddings when available.
 
+### Searching by several words and tags
+
+Keyword search treats each space-separated word as its own term, and every term
+must match somewhere in the bookmark's title, summary, tags, or saved content.
+Typing `android app opensource` therefore finds bookmarks that carry those three
+tags, or mention them elsewhere. Matching is whole-word, and there is no
+`tag:name` syntax.
+
+To filter by tags exactly, click a tag in the sidebar, then Ctrl/Cmd/Shift-click
+more tags to add or remove them. The active tags appear under **Filtering by**
+with a **Match all / Match any** button: *all* keeps bookmarks that have every
+selected tag (the default), *any* keeps bookmarks that have at least one. Tag
+filters combine with the search box and the other filters. A tag that does not
+exist matches nothing under *all* and is ignored under *any*. Multi-tag
+selections last for the session; only the first tag is remembered.
+
+Through the API, repeat the parameter: `GET /bookmarks?tag=android&tag=app&tag_match=any`
+(also supported by `/search`, `/bookmarks/aggregates`, and `/export`).
+
 ## Capture from the browser
 
 The rewritten Chrome/Firefox extension is still being prepared for publication.

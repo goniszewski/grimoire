@@ -34,13 +34,12 @@ function escapeCSV(v: string | null | undefined): string {
 }
 
 function buildFilters(c: Context): FilterOptions | { error: string } {
-  const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name));
+  const parsedFilters = parseBookmarkRouteFilters((name) => c.req.query(name), (name) => c.req.queries(name));
   if (!parsedFilters.ok) {
     return { error: parsedFilters.detail };
   }
 
   return {
-    tag: c.req.query("tag") ?? undefined,
     domain: c.req.query("domain") ?? undefined,
     category_id: c.req.query("category_id") ?? undefined,
     category: c.req.query("category") ?? undefined,

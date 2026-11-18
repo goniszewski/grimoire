@@ -6504,7 +6504,15 @@
           "properties": {
             "tag": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            },
+            "tag_match": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             },
             "domain": {
               "type": "string",
@@ -6683,7 +6691,15 @@
           "properties": {
             "tag": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            },
+            "tag_match": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             },
             "domain": {
               "type": "string",
@@ -7508,7 +7524,15 @@
             },
             "tag": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            },
+            "tag_match": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             },
             "domain": {
               "type": "string",
@@ -9639,7 +9663,15 @@
             },
             "tag": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            },
+            "tag_match": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             },
             "domain": {
               "type": "string",

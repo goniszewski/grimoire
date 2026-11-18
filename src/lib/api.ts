@@ -569,10 +569,20 @@ export function appendLibrarySort(q: URLSearchParams, params: LibrarySortParams)
   if (params.direction) q.set("direction", params.direction);
 }
 
+export type TagMatch = "all" | "any";
+
+/** Serialises one or many tag names as repeated `tag` params, plus `tag_match` when several. */
+export function appendTagFilter(q: URLSearchParams, tag?: string | string[], tagMatch?: TagMatch): void {
+  const tags = (Array.isArray(tag) ? tag : tag ? [tag] : []).filter(Boolean);
+  for (const name of tags) q.append("tag", name);
+  if (tags.length > 1 && tagMatch) q.set("tag_match", tagMatch);
+}
+
 export interface ListBookmarksParams extends LibraryParityFilterParams, LibrarySortParams {
   limit?: number;
   offset?: number;
-  tag?: string;
+  tag?: string | string[];
+  tag_match?: TagMatch;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -603,7 +613,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   const q = new URLSearchParams();
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -621,7 +631,7 @@ export async function listLibraryAggregates(
   params: LibraryAggregatesParams = {}
 ): Promise<LibraryAggregatesResponse> {
   const q = new URLSearchParams();
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -737,7 +747,8 @@ export async function getReprocessStatus(batchId: string): Promise<ReprocessBatc
 export interface SearchParams extends LibraryParityFilterParams, LibrarySortParams {
   q: string;
   mode?: SearchResponseDto["meta"]["mode"];
-  tag?: string;
+  tag?: string | string[];
+  tag_match?: TagMatch;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -751,7 +762,7 @@ export interface SearchParams extends LibraryParityFilterParams, LibrarySortPara
 export async function searchBookmarks(params: SearchParams): Promise<SearchResponseDto> {
   const q = new URLSearchParams({ q: params.q });
   if (params.mode) q.set("mode", params.mode);
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -1041,7 +1052,8 @@ export async function testAiConnection(): Promise<{ ok: boolean; error?: string 
 export async function downloadExport(
   format: "json" | "csv",
   filters: {
-    tag?: string;
+    tag?: string | string[];
+    tag_match?: TagMatch;
     domain?: string;
     category_id?: string;
     category?: string;
@@ -1051,7 +1063,7 @@ export async function downloadExport(
   } & LibraryParityFilterParams = {}
 ): Promise<{ blob: Blob; filename: string }> {
   const params = new URLSearchParams({ format });
-  if (filters.tag) params.set("tag", filters.tag);
+  appendTagFilter(params, filters.tag, filters.tag_match);
   if (filters.domain) params.set("domain", filters.domain);
   if (filters.category_id) params.set("category_id", filters.category_id);
   if (filters.category) params.set("category", filters.category);

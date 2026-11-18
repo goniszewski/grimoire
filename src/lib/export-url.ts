@@ -1,8 +1,9 @@
-import { appendLibraryParityFilters, DAEMON_URL } from "./api";
-import type { LibraryParityFilterParams } from "./api";
+import { appendLibraryParityFilters, appendTagFilter, DAEMON_URL } from "./api";
+import type { LibraryParityFilterParams, TagMatch } from "./api";
 
 export interface ExportFilters extends LibraryParityFilterParams {
-  tag?: string;
+  tag?: string | string[];
+  tag_match?: TagMatch;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -13,7 +14,7 @@ export interface ExportFilters extends LibraryParityFilterParams {
 
 export function buildExportUrl(format: "json" | "csv", filters: ExportFilters = {}): string {
   const params = new URLSearchParams({ format });
-  if (filters.tag) params.set("tag", filters.tag);
+  appendTagFilter(params, filters.tag, filters.tag_match);
   if (filters.domain) params.set("domain", filters.domain);
   if (filters.category_id) params.set("category_id", filters.category_id);
   if (filters.category) params.set("category", filters.category);

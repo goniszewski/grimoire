@@ -3,10 +3,11 @@ import { BookmarkRow, BookmarkContentRow, TagRow, JobRow } from "./types.js";
 import { deleteBookmarkMediaCacheSync } from "../media/bookmark-media.js";
 import {
   appendBookmarkParityFilterConditions,
+  appendTagFilterCondition,
   buildBookmarkOrderBy,
   normalizeDateUpperBound,
 } from "./bookmark-filters.js";
-import type { BookmarkParityFilters, BookmarkSortOptions } from "./bookmark-filters.js";
+import type { BookmarkParityFilters, BookmarkSortOptions, BookmarkTagFilters } from "./bookmark-filters.js";
 
 // ─── Query result shapes ──────────────────────────────────────────────────────
 
@@ -18,10 +19,9 @@ export interface BookmarkWithContent extends BookmarkWithTags {
   content: BookmarkContentRow | null;
 }
 
-export interface ListBookmarksOptions extends BookmarkParityFilters, BookmarkSortOptions {
+export interface ListBookmarksOptions extends BookmarkParityFilters, BookmarkSortOptions, BookmarkTagFilters {
   limit: number;
   offset: number;
-  tag?: string;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -50,8 +50,7 @@ export interface ExportBookmarkRow {
   notes: string | null;
 }
 
-export interface FilterOptions extends BookmarkParityFilters {
-  tag?: string;
+export interface FilterOptions extends BookmarkParityFilters, BookmarkTagFilters {
   domain?: string;
   category_id?: string;
   category?: string;
@@ -653,12 +652,7 @@ export class BookmarkRepository {
     ];
     const params: (string | number)[] = [];
 
-    if (filters.tag) {
-      conditions.push(
-        `b.id IN (SELECT bt.bookmark_id FROM bookmark_tags bt JOIN tags t ON t.id = bt.tag_id WHERE t.name = ? COLLATE NOCASE)`
-      );
-      params.push(filters.tag);
-    }
+    appendTagFilterCondition(conditions, params, filters);
     if (filters.domain) {
       conditions.push("b.domain = ?");
       params.push(filters.domain);

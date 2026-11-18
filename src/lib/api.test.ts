@@ -214,6 +214,28 @@ describe("library filter API", () => {
     expect(url.searchParams.get("last_opened_to")).toBe("2026-06-02");
   });
 
+  it("serializes multiple tags as repeated params with tag_match", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(JSON.stringify({ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    await listBookmarks({ tag: ["android", "app"], tag_match: "any" });
+    await listBookmarks({ tag: "solo", tag_match: "any" });
+    await searchBookmarks({ q: "x", tag: ["a", "b"] });
+
+    const multi = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(multi.searchParams.getAll("tag")).toEqual(["android", "app"]);
+    expect(multi.searchParams.get("tag_match")).toBe("any");
+    const single = new URL(String(fetchSpy.mock.calls[1][0]));
+    expect(single.searchParams.getAll("tag")).toEqual(["solo"]);
+    expect(single.searchParams.has("tag_match")).toBe(false);
+    const search = new URL(String(fetchSpy.mock.calls[2][0]));
+    expect(search.searchParams.getAll("tag")).toEqual(["a", "b"]);
+  });
+
   it("serializes server sort params for bookmark list requests", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }), {

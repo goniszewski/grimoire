@@ -336,7 +336,10 @@ const Index = () => {
   const activeFilters = [
     store.selectedCategory && { label: store.selectedCategory, clear: () => store.setSelectedCategory(null) },
     store.selectedDomain && { label: store.selectedDomain, clear: () => store.setSelectedDomain(null) },
-    store.selectedTag && { label: `#${store.selectedTag}`, clear: () => store.setSelectedTag(null) },
+    ...(store.selectedTags ?? (store.selectedTag ? [store.selectedTag] : [])).map((tag) => ({
+      label: `#${tag}`,
+      clear: () => (store.toggleTag ? store.toggleTag(tag) : store.setSelectedTag(null)),
+    })),
     store.readLaterOnly && { label: "Later", clear: () => setLaterFilter(false) },
     store.readStateFilter !== "all" && {
       label: store.readStateFilter === "read" ? "Read" : "Unread",
@@ -399,9 +402,11 @@ const Index = () => {
           selectedCategory={store.selectedCategory}
           selectedCategoryId={store.selectedCategoryId}
           selectedTag={store.selectedTag}
+          selectedTags={store.selectedTags}
           selectedDomain={store.selectedDomain}
           onSelectCategory={store.setSelectedCategory}
           onSelectTag={store.setSelectedTag}
+          onToggleTag={store.toggleTag}
           onSelectDomain={store.setSelectedDomain}
           totalCount={totalResults}
         />
@@ -435,7 +440,7 @@ const Index = () => {
               <ExportMenu
                 showLabel={showButtonLabels}
                 filters={{
-                  tag: store.selectedTag ?? undefined,
+                  ...(store.tagFilterParam ?? { tag: store.selectedTag ?? undefined }),
                   category_id: store.selectedCategoryId ?? undefined,
                   category: store.selectedCategory ?? undefined,
                   domain: store.selectedDomain ?? undefined,
@@ -496,6 +501,18 @@ const Index = () => {
                     <X className="h-3 w-3" />
                   </Badge>
                 ))}
+                {(store.selectedTags?.length ?? 0) > 1 && store.setTagMatch && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    aria-label={`Tag match: ${store.tagMatch === "any" ? "any tag" : "all tags"}. Click to switch.`}
+                    onClick={() => store.setTagMatch(store.tagMatch === "any" ? "all" : "any")}
+                  >
+                    Match {store.tagMatch === "any" ? "any" : "all"}
+                  </Button>
+                )}
               </div>
             )}
 

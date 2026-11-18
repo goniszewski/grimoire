@@ -481,6 +481,43 @@ describe("useBookmarks — data normalisation", () => {
   });
 });
 
+describe("useBookmarks — multi-tag filter", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    mockedListBookmarks.mockResolvedValue(bookmarkListResponse([makeApiBookmark()]));
+  });
+
+  it("sends several tags with tag_match and clears extras on a plain selection", async () => {
+    const { result } = renderHook(() => useBookmarks(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.toggleTag("android"));
+    act(() => result.current.toggleTag("app"));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tag: ["android", "app"], tag_match: "all" })
+      )
+    );
+    expect(result.current.selectedTags).toEqual(["android", "app"]);
+
+    act(() => result.current.setTagMatch("any"));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(expect.objectContaining({ tag_match: "any" }))
+    );
+
+    act(() => result.current.toggleTag("android"));
+    await waitFor(() => expect(result.current.selectedTags).toEqual(["app"]));
+    await waitFor(() =>
+      expect(mockedListBookmarks).toHaveBeenLastCalledWith(
+        expect.objectContaining({ tag: "app", tag_match: undefined })
+      )
+    );
+
+    act(() => result.current.setSelectedTag("other"));
+    expect(result.current.selectedTags).toEqual(["other"]);
+  });
+});
+
 describe("useBookmarks — sorting", () => {
   const older = makeApiBookmark({ id: "a", created_at: "2023-01-01T00:00:00Z", title: "Banana" });
   const newer = makeApiBookmark({ id: "b", created_at: "2024-06-01T00:00:00Z", title: "Apple" });
