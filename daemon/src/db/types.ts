@@ -71,6 +71,7 @@ export interface BookmarkMediaRow {
 export interface TagRow {
   id: string;
   name: string;
+  description: string | null;
   created_at: string;
 }
 

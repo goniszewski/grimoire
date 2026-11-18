@@ -13,7 +13,7 @@ import {
   Search,
   Tags as TagsIcon,
 } from "lucide-react";
-import { listBookmarks, listTags, renameTag, type ApiBookmark, type ApiTag } from "@/lib/api";
+import { listBookmarks, listTags, updateTag, type ApiBookmark, type ApiTag } from "@/lib/api";
 import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -192,8 +192,8 @@ const TagDetail = () => {
   }
 
   const renameMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const response = await renameTag(id, name);
+    mutationFn: async ({ id, name, description }: { id: string; name: string; description: string | null }) => {
+      const response = await updateTag(id, { name, description });
       return response.data;
     },
     onSuccess: (response) => {
@@ -201,11 +201,11 @@ const TagDetail = () => {
       invalidateTagAffectedQueries();
       setRenameOpen(false);
       setRenameError(null);
-      toast({ title: "Tag renamed", description: `#${response.name}` });
+      toast({ title: "Tag updated", description: `#${response.name}` });
       navigate(`/tags/${encodeURIComponent(response.name)}`, { replace: true });
     },
     onError: (error: Error) => {
-      setRenameError(error.message || "Tag could not be renamed.");
+      setRenameError(error.message || "Tag could not be updated.");
     },
   });
 
@@ -265,7 +265,9 @@ const TagDetail = () => {
                 <Hash className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">#{tag.name}</h1>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">Tag detail and scoped bookmark results</p>
+              <p className="mt-1 text-sm text-muted-foreground" title={tag.description ?? undefined}>
+                {tag.description || "Tag detail and scoped bookmark results"}
+              </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
@@ -292,10 +294,10 @@ const TagDetail = () => {
                 setRenameError(null);
                 setRenameOpen(true);
               }}
-              aria-label={`Rename #${tag.name} tag`}
+              aria-label={`Edit #${tag.name} tag`}
             >
               <Pencil className="h-4 w-4" />
-              Rename
+              Edit
             </Button>
           </div>
         </div>
@@ -392,17 +394,17 @@ const TagDetail = () => {
           setRenameOpen(open);
           if (!open) setRenameError(null);
         }}
-        onSubmit={(name) => {
+        onSubmit={({ name, description }) => {
           if (!tag) return;
           setRenameError(null);
-          renameMutation.mutate({ id: tag.id, name });
+          renameMutation.mutate({ id: tag.id, name, description });
         }}
       />
 
       <DemoInstallPrompt
         open={demoPromptOpen}
         onOpenChange={setDemoPromptOpen}
-        action="Rename tags"
+        action="Edit tags"
       />
     </div>
   );

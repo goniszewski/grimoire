@@ -11,6 +11,7 @@ import {
   previewImportBookmarksFile,
   recordBookmarkOpen,
   renameTag,
+  updateTag,
   resolveDaemonUrl,
   searchBookmarks,
   updateBookmark,
@@ -405,6 +406,27 @@ describe("tag management API", () => {
     expect(fetchSpy).toHaveBeenCalledWith(
       "http://127.0.0.1:3210/tags/tag-1",
       expect.objectContaining({ method: "DELETE" })
+    );
+  });
+
+  it("sends tag descriptions on create and update", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(
+        JSON.stringify({ data: { id: "tag-1", name: "rag", description: "Notes", created_at: "2026-05-31T12:00:00Z" } }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    await createTag("rag", "Notes");
+    expect(fetchSpy).toHaveBeenLastCalledWith(
+      "http://127.0.0.1:3210/tags",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ name: "rag", description: "Notes" }) })
+    );
+
+    await updateTag("tag-1", { description: null });
+    expect(fetchSpy).toHaveBeenLastCalledWith(
+      "http://127.0.0.1:3210/tags/tag-1",
+      expect.objectContaining({ method: "PUT", body: JSON.stringify({ description: null }) })
     );
   });
 

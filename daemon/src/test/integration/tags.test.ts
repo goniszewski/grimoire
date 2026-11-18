@@ -206,6 +206,75 @@ describe("Tags API", () => {
     expect(res.status).toBe(404);
   });
 
+  // ─── Tag descriptions ─────────────────────────────────────────────────────
+
+  async function putTag(id: string, body: unknown) {
+    return app.request(`/tags/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("POST /tags stores a trimmed description and null when omitted", async () => {
+    const res = await app.request("/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "rag", description: "  Retrieval notes  " }),
+    });
+    expect(res.status).toBe(201);
+    const json = await res.json() as { data: { description: string | null } };
+    expect(json.data.description).toBe("Retrieval notes");
+
+    const plain = await createTag("plain");
+    expect((plain.data as { description?: string | null }).description).toBeNull();
+  });
+
+  it("POST /tags rejects non-string and over-long descriptions", async () => {
+    for (const description of [42, "x".repeat(501)]) {
+      const res = await app.request("/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "bad", description }),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("PUT /tags/:id updates description alone without renaming", async () => {
+    const { data: tag } = await createTag("typescript");
+    const res = await putTag(tag.id, { description: "Typed JS" });
+    expect(res.status).toBe(200);
+    const json = await res.json() as { data: { name: string; description: string | null } };
+    expect(json.data).toEqual(expect.objectContaining({ name: "typescript", description: "Typed JS" }));
+
+    const list = await (await app.request("/tags")).json() as { data: Array<{ id: string; description: string | null }> };
+    expect(list.data.find((t) => t.id === tag.id)?.description).toBe("Typed JS");
+  });
+
+  it("PUT /tags/:id renames while preserving description, and clears with null or blank", async () => {
+    const { data: tag } = await createTag("typescript");
+    await putTag(tag.id, { description: "Typed JS" });
+
+    const renamed = await (await putTag(tag.id, { name: "ts" })).json() as { data: { name: string; description: string | null } };
+    expect(renamed.data).toEqual(expect.objectContaining({ name: "ts", description: "Typed JS" }));
+
+    const cleared = await (await putTag(tag.id, { description: null })).json() as { data: { description: string | null } };
+    expect(cleared.data.description).toBeNull();
+
+    await putTag(tag.id, { description: "again" });
+    const blank = await (await putTag(tag.id, { description: "   " })).json() as { data: { description: string | null } };
+    expect(blank.data.description).toBeNull();
+  });
+
+  it("PUT /tags/:id validates description and requires name or description", async () => {
+    const { data: tag } = await createTag("typescript");
+    expect((await putTag(tag.id, { description: "x".repeat(501) })).status).toBe(422);
+    expect((await putTag(tag.id, { description: 5 })).status).toBe(422);
+    expect((await putTag(tag.id, {})).status).toBe(422);
+    expect((await putTag(tag.id, { name: "  " })).status).toBe(422);
+  });
+
   // ─── POST /bookmarks/:id/tags ─────────────────────────────────────────────
 
   it("POST /bookmarks/:id/tags attaches a tag to a bookmark", async () => {

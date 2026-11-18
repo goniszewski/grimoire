@@ -2248,6 +2248,12 @@
           "type": "string",
           "description": "Tag name"
         },
+        "description": {
+          "type": "string",
+          "description": "Optional tag description",
+          "maxLength": 500,
+          "nullable": true
+        },
         "created_at": {
           "type": "string",
           "description": "Creation timestamp",
@@ -2257,6 +2263,7 @@
       "required": [
         "id",
         "name",
+        "description",
         "created_at"
       ],
       "additionalProperties": false,
@@ -2273,6 +2280,12 @@
           "type": "string",
           "description": "Tag name"
         },
+        "description": {
+          "type": "string",
+          "description": "Optional tag description",
+          "maxLength": 500,
+          "nullable": true
+        },
         "created_at": {
           "type": "string",
           "description": "Creation timestamp",
@@ -2287,6 +2300,7 @@
       "required": [
         "id",
         "name",
+        "description",
         "created_at",
         "bookmark_count"
       ],
@@ -2300,12 +2314,37 @@
           "type": "string",
           "description": "Tag name, normalized to lowercase",
           "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional tag description; blank or null stores no description",
+          "maxLength": 500,
+          "nullable": true
         }
       },
       "required": [
         "name"
       ],
       "additionalProperties": false
+    },
+    "TagUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "New tag name, normalized to lowercase",
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "description": "Tag description; blank or null clears it, omitted leaves it unchanged",
+          "maxLength": 500,
+          "nullable": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "At least one of name or description is required"
     },
     "TagListResponse": {
       "type": "object",
@@ -7883,6 +7922,7 @@
                 {
                   "id": "tag_rag",
                   "name": "rag",
+                  "description": "Retrieval-augmented generation notes",
                   "created_at": "2026-06-01T09:30:00.000Z",
                   "bookmark_count": 1
                 }
@@ -7946,6 +7986,7 @@
               "data": {
                 "id": "tag_rag",
                 "name": "rag",
+                "description": "Retrieval-augmented generation notes",
                 "created_at": "2026-06-01T09:30:00.000Z"
               }
             }
@@ -7957,8 +7998,8 @@
       "method": "PUT",
       "path": "/tags/:id",
       "tag": "Tags",
-      "summary": "Rename a tag without changing bookmark associations.",
-      "description": "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+      "summary": "Rename a tag and/or edit its description without changing bookmark associations.",
+      "description": "Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.",
       "request": {
         "pathParams": {
           "type": "object",
@@ -7976,13 +8017,13 @@
         "body": {
           "contentType": "application/json",
           "schema": {
-            "ref": "TagRequest"
+            "ref": "TagUpdateRequest"
           }
         }
       },
       "responses": {
         "200": {
-          "description": "Renamed tag",
+          "description": "Updated tag",
           "contentType": "application/json",
           "schema": {
             "ref": "TagResponse"
@@ -8010,7 +8051,7 @@
           }
         },
         "422": {
-          "description": "Invalid tag name",
+          "description": "Invalid tag name or description",
           "contentType": "application/problem+json",
           "schema": {
             "ref": "ProblemDetails"

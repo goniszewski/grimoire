@@ -37,6 +37,23 @@ function isValidTagName(name: string): boolean {
 }
 
 const MAX_TAG_NAME_LEN = 50;
+const MAX_TAG_DESCRIPTION_LEN = 500;
+
+/** Parse an optional description. Returns undefined when absent, null to clear, or an error string. */
+function parseDescription(
+  body: Record<string, unknown>
+): { value: string | null | undefined } | { error: string } {
+  if (!("description" in body) || body.description === undefined) return { value: undefined };
+  const raw = body.description;
+  if (raw === null) return { value: null };
+  if (typeof raw !== "string") return { error: "`description` must be a string or null" };
+  const trimmed = raw.trim();
+  if (!trimmed) return { value: null };
+  if (trimmed.length > MAX_TAG_DESCRIPTION_LEN) {
+    return { error: `\`description\` must be at most ${MAX_TAG_DESCRIPTION_LEN} characters` };
+  }
+  return { value: trimmed };
+}
 
 // ─── Route factory ────────────────────────────────────────────────────────────
 
@@ -80,14 +97,17 @@ export function createTagsRoute(deps: TagsDeps): Hono {
       );
     }
 
+    const description = parseDescription(b);
+    if ("error" in description) return problem(c, 422, "Unprocessable Entity", description.error);
+
     const existing = tagRepo.findByName(name);
     if (existing) return ok(c, existing, 200);
 
-    const tag = tagRepo.upsert(name);
+    const tag = tagRepo.upsert(name, description.value);
     return ok(c, tag, 201);
   });
 
-  // PUT /tags/:id — rename a tag without changing bookmark associations
+  // PUT /tags/:id — rename a tag and/or edit its description; bookmark associations are unchanged
   router.put("/tags/:id", async (c) => {
     const tagId = c.req.param("id");
     const currentTag = tagRepo.findById(tagId);
@@ -101,41 +121,52 @@ export function createTagsRoute(deps: TagsDeps): Hono {
     }
 
     if (typeof body !== "object" || body === null || Array.isArray(body)) {
-      return problem(c, 422, "Unprocessable Entity", "Tag rename body must be a JSON object");
+      return problem(c, 422, "Unprocessable Entity", "Tag update body must be a JSON object");
     }
 
     const b = body as Record<string, unknown>;
+    const hasName = b.name !== undefined;
+    const description = parseDescription(b);
+    if ("error" in description) return problem(c, 422, "Unprocessable Entity", description.error);
 
-    if (typeof b.name !== "string" || !b.name.trim()) {
-      return problem(c, 422, "Unprocessable Entity", "`name` (non-empty string) is required");
+    if (!hasName && description.value === undefined) {
+      return problem(c, 422, "Unprocessable Entity", "`name` or `description` is required");
     }
 
-    const name = b.name.toLowerCase().trim();
+    let name: string | undefined;
+    if (hasName) {
+      if (typeof b.name !== "string" || !b.name.trim()) {
+        return problem(c, 422, "Unprocessable Entity", "`name` must be a non-empty string");
+      }
+      name = b.name.toLowerCase().trim();
 
-    if (name.length > MAX_TAG_NAME_LEN) {
-      return problem(c, 422, "Unprocessable Entity", `\`name\` must be at most ${MAX_TAG_NAME_LEN} characters`);
+      if (name.length > MAX_TAG_NAME_LEN) {
+        return problem(c, 422, "Unprocessable Entity", `\`name\` must be at most ${MAX_TAG_NAME_LEN} characters`);
+      }
+
+      if (!isValidTagName(name)) {
+        return problem(
+          c,
+          422,
+          "Unprocessable Entity",
+          "`name` must contain only lowercase letters, digits, and hyphens (no leading/trailing hyphens)"
+        );
+      }
+
+      const duplicate = tagRepo.findByName(name);
+      if (duplicate && duplicate.id !== tagId) {
+        return problem(c, 409, "Conflict", `Tag "${name}" already exists`);
+      }
     }
 
-    if (!isValidTagName(name)) {
-      return problem(
-        c,
-        422,
-        "Unprocessable Entity",
-        "`name` must contain only lowercase letters, digits, and hyphens (no leading/trailing hyphens)"
-      );
-    }
-
-    const duplicate = tagRepo.findByName(name);
-    if (duplicate && duplicate.id !== tagId) {
-      return problem(c, 409, "Conflict", `Tag "${name}" already exists`);
-    }
-
-    if (currentTag.name === name) return ok(c, currentTag, 200);
+    const patch: { name?: string; description?: string | null } = {};
+    if (name !== undefined && name !== currentTag.name) patch.name = name;
+    if (description.value !== undefined) patch.description = description.value;
 
     try {
-      const renamed = tagRepo.rename(tagId, name);
-      if (!renamed) return problem(c, 404, "Not Found", "Tag not found");
-      return ok(c, renamed, 200);
+      const updated = tagRepo.update(tagId, patch);
+      if (!updated) return problem(c, 404, "Not Found", "Tag not found");
+      return ok(c, updated, 200);
     } catch (err) {
       if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
         return problem(c, 409, "Conflict", `Tag "${name}" already exists`);

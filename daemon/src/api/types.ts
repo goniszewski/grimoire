@@ -73,6 +73,7 @@ export type TagRecordDto = ApiDto<"TagRecord">;
 export type TagWithCountDto = ApiDto<"TagWithCount">;
 export type TagDto = TagRecordDto;
 export type TagRequestDto = ApiDto<"TagRequest">;
+export type TagUpdateRequestDto = ApiDto<"TagUpdateRequest">;
 export type TagListResponseDto = ApiDto<"TagListResponse">;
 export type TagResponseDto = ApiDto<"TagResponse">;
 export type DomainDto = ApiDto<"Domain">;

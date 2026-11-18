@@ -66,6 +66,7 @@ import type {
   SuggestionsResponseDto,
   TagListResponseDto,
   TagRequestDto,
+  TagUpdateRequestDto,
   TagResponseDto,
   TimelinePageDto,
   UpdateCheckResponseDto,
@@ -207,6 +208,7 @@ type ApiTagRecordDto = TagResponseDto["data"];
 export interface ApiTag {
   id: ApiTagDto["id"];
   name: ApiTagDto["name"];
+  description: ApiTagDto["description"];
   created_at: ApiTagDto["created_at"];
   bookmark_count: ApiTagDto["bookmark_count"];
 }
@@ -214,6 +216,7 @@ export interface ApiTag {
 export interface ApiTagRecord {
   id: ApiTagRecordDto["id"];
   name: ApiTagRecordDto["name"];
+  description: ApiTagRecordDto["description"];
   created_at: ApiTagRecordDto["created_at"];
 }
 
@@ -799,17 +802,23 @@ export async function listTags(): Promise<ApiTagListResponse> {
   return apiFetch<ApiTagListResponse>("/tags");
 }
 
-export async function createTag(name: string): Promise<ApiTagResponse> {
+export async function createTag(name: string, description?: string | null): Promise<ApiTagResponse> {
+  const body: TagRequestDto = description ? { name, description } : { name };
   return apiFetch<ApiTagResponse>("/tags", {
     method: "POST",
-    body: JSON.stringify({ name } satisfies TagRequestDto),
+    body: JSON.stringify(body),
   });
 }
 
 export async function renameTag(id: string, name: string): Promise<ApiTagResponse> {
+  return updateTag(id, { name });
+}
+
+/** Update a tag's name and/or description. A null or blank description clears it. */
+export async function updateTag(id: string, patch: TagUpdateRequestDto): Promise<ApiTagResponse> {
   return apiFetch<ApiTagResponse>(`/tags/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ name } satisfies TagRequestDto),
+    body: JSON.stringify(patch),
   });
 }
 
