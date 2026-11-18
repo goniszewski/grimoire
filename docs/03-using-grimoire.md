@@ -28,6 +28,7 @@ After save, Grimoire pulls readable content when it can:
 - **Per bookmark** — title, notes, pin, read/unread, Later, archive, trash, restore, permanent delete
 - **Bulk** — select bookmarks to delete, move, or toggle Later
 - **Filters** — category, tag, domain, date, and related library filters
+- **Views** — switch between list, grid, and gallery from the library toolbar or Preferences. Gallery is an image-first masonry layout using each bookmark's cached preview image; bookmarks without one show a placeholder, and **Images only** hides them. The choice is remembered in this browser.
 
 ## Later and Revisit
 
