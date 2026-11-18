@@ -172,20 +172,20 @@ describe("littleimp update CLI", () => {
   it("reports the newest compatible release from the configured source", async () => {
     const harness = makeUpdateHarness([
       {
-        tag_name: "v1.4.0-beta.1",
-        name: "Grimoire 1.4.0 beta 1",
+        tag_name: "v1.5.0-beta.1",
+        name: "Grimoire 1.5.0 beta 1",
         draft: false,
         prerelease: true,
         published_at: "2026-05-18T12:00:00Z",
-        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0-beta.1",
+        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.5.0-beta.1",
       },
       {
-        tag_name: "v1.4.0",
-        name: "Grimoire 1.4.0",
+        tag_name: "v1.5.0",
+        name: "Grimoire 1.5.0",
         draft: false,
         prerelease: false,
         published_at: "2026-05-17T12:00:00Z",
-        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0",
+        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.5.0",
       },
     ]);
 
@@ -210,12 +210,12 @@ describe("littleimp update CLI", () => {
       source: "https://updates.example.test/releases",
       channel: "stable",
       latest: {
-        version: "1.4.0",
-        tag: "v1.4.0",
-        name: "Grimoire 1.4.0",
+        version: "1.5.0",
+        tag: "v1.5.0",
+        name: "Grimoire 1.5.0",
         prerelease: false,
         published_at: "2026-05-17T12:00:00Z",
-        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0",
+        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.5.0",
       },
     });
   });
@@ -564,7 +564,7 @@ describe("littleimp update CLI", () => {
   });
 
   it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
-    const fixture = createUpgradeArchiveFixture({ version: "1.4.0", signature: true });
+    const fixture = createUpgradeArchiveFixture({ version: "1.5.0", signature: true });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];
