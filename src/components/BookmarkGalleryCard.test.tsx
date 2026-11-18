@@ -68,3 +68,13 @@ describe("BookmarkGalleryCard", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 });
+
+describe("BookmarkGalleryCard image refresh", () => {
+  it("retries when the screenshot URL changes after a load error", () => {
+    const { rerender } = render(<BookmarkGalleryCard bookmark={makeBookmark()} onClick={vi.fn()} />);
+    fireEvent.error(screen.getByAltText("Preview of Sunset photo"));
+    expect(screen.getByTestId("gallery-placeholder")).toBeInTheDocument();
+    rerender(<BookmarkGalleryCard bookmark={makeBookmark({ screenshot: "http://127.0.0.1:3210/media/bookmarks/bm-1/m-2" })} onClick={vi.fn()} />);
+    expect(screen.getByAltText("Preview of Sunset photo")).toBeInTheDocument();
+  });
+});

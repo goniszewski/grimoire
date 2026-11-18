@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { UIBookmark } from "@/hooks/use-bookmarks";
 
@@ -19,8 +18,9 @@ const MAX_TAGS = 3;
  * cached image (or whose image fails to load) get a placeholder tile.
  */
 export function BookmarkGalleryCard({ bookmark, onClick, selectionMode, selected, onToggleSelect }: BookmarkGalleryCardProps) {
-  const [failed, setFailed] = useState(false);
-  const imageUrl = failed ? null : bookmark.screenshot;
+  // Track which URL failed so a refreshed screenshot URL gets a fresh attempt.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const imageUrl = bookmark.screenshot && bookmark.screenshot !== failedUrl ? bookmark.screenshot : null;
   const tags = bookmark.tags.slice(0, MAX_TAGS);
 
   const handleActivate = () => {
@@ -47,31 +47,31 @@ export function BookmarkGalleryCard({ bookmark, onClick, selectionMode, selected
             alt={`Preview of ${bookmark.title}`}
             loading="lazy"
             decoding="async"
-            onError={() => setFailed(true)}
+            onError={() => setFailedUrl(imageUrl)}
             className="block h-auto min-h-24 w-full bg-muted"
           />
         ) : (
-          <div
+          <span
             data-testid="gallery-placeholder"
             className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-muted p-4 text-muted-foreground"
           >
             <img src={bookmark.favicon} alt="" loading="lazy" className="h-8 w-8 rounded" />
             <span className="max-w-full truncate text-xs">{bookmark.domain}</span>
-          </div>
+          </span>
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3 pt-8 text-white">
-          <h3 className="line-clamp-2 text-sm font-medium leading-snug">{bookmark.title}</h3>
-          <p className="truncate text-xs text-white/70">{bookmark.domain}</p>
+        <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3 pt-8 text-white">
+          <span className="line-clamp-2 block text-sm font-medium leading-snug">{bookmark.title}</span>
+          <span className="block truncate text-xs text-white/80">{bookmark.domain}</span>
           {tags.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
+            <span className="mt-1.5 flex flex-wrap gap-1">
               {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[10px]">
+                <span key={tag} className="rounded-md bg-secondary px-1.5 py-0 text-[10px] font-semibold text-secondary-foreground">
                   {tag}
-                </Badge>
+                </span>
               ))}
-            </div>
+            </span>
           )}
-        </div>
+        </span>
       </button>
     </article>
   );

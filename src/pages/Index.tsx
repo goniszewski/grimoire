@@ -235,9 +235,16 @@ const Index = () => {
     });
   }, []);
 
+  const galleryBookmarks = useMemo(
+    () => (galleryImagesOnly ? store.filteredBookmarks.filter((b) => !!b.screenshot) : store.filteredBookmarks),
+    [galleryImagesOnly, store.filteredBookmarks],
+  );
+
+  // Select only what is visible: in gallery "Images only" mode, hidden bookmarks must not be bulk-acted on.
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(store.filteredBookmarks.map((b) => b.id)));
-  }, [store.filteredBookmarks]);
+    const visible = viewMode === "gallery" ? galleryBookmarks : store.filteredBookmarks;
+    setSelectedIds(new Set(visible.map((b) => b.id)));
+  }, [viewMode, galleryBookmarks, store.filteredBookmarks]);
 
   const handleBulkDelete = useCallback(() => {
     const ids = [...selectedIds];
@@ -321,10 +328,6 @@ const Index = () => {
   }, [store, updatePreferences]);
 
   const nextViewMode = viewMode === "list" ? "grid" : viewMode === "grid" ? "gallery" : "list";
-  const galleryBookmarks = useMemo(
-    () => (galleryImagesOnly ? store.filteredBookmarks.filter((b) => !!b.screenshot) : store.filteredBookmarks),
-    [galleryImagesOnly, store.filteredBookmarks],
-  );
 
   const handleOpenDetail = useCallback((bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
