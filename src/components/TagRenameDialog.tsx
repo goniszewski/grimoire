@@ -99,7 +99,7 @@ export function TagRenameDialog({
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               maxLength={MAX_TAG_DESCRIPTION_LEN}
-              rows={3}
+              rows={5}
               placeholder="What is this tag for?"
             />
           </div>
