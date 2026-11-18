@@ -33,6 +33,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A guide for moving a v0.5 Docker install to 1.x, using `grimoire migrate`
   inside the container.
 
+### Fixed
+- Imports from Shaarli and other PHP-based exporters no longer show apostrophes
+  as `&#039;` in titles and notes, and the import guide now covers Shaarli,
+  Linkding and Pinboard exports (#8).
+
 ### Changed
 - The Docker Hub `latest` tag now points to Grimoire 1.x. The old v0.5 image
   stays available as `goniszewski/grimoire:legacy-v0.5`. A v0.5 data volume is

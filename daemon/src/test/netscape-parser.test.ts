@@ -71,4 +71,72 @@ describe("Netscape bookmark parser", () => {
     expect(parsed.skipped.map((row) => row.reason)).toEqual(["invalid_url", "private_url"]);
     expect(parsed.warnings).toHaveLength(2);
   });
+
+  describe("Shaarli exports", () => {
+    // Shaarli (PHP) escapes apostrophes as &#039; and emits PRIVATE/LAST_MODIFIED
+    // attributes, comma-separated TAGS, and a <DD> description after each link.
+    const SHAARLI_EXPORT = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- This is an automatically generated file.
+It will be read and overwritten.
+DO NOT EDIT! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+<DT><A HREF="https://example.com/a?x=1&amp;y=2" ADD_DATE="1600000000" LAST_MODIFIED="1600000009" PRIVATE="0" TAGS="Web Dev,c++,über">Rock &#039;n&#039; Roll &amp; &quot;more&quot;</A>
+<DD>Line one
+line two with &lt;b&gt; and &#x27;hex&#x27; and &amp;lt;
+<DT><A HREF="?abcdef" ADD_DATE="1600000001" PRIVATE="1" TAGS="note">Grocery list</A>
+<DD>milk
+<DT><A HREF="https://example.com/b" ADD_DATE="1600000003" PRIVATE="1" TAGS="">No description</A>
+<DT><A HREF="https://example.com/c" ADD_DATE="1600000004" PRIVATE="0" TAGS="x">Empty description</A>
+<DD>
+</DL><p>`;
+
+    it("decodes numeric entities and keeps tags, dates, and multi-line notes", () => {
+      const parsed = parseNetscapeBookmarks(SHAARLI_EXPORT);
+
+      expect(parsed.bookmarks).toHaveLength(3);
+      const [first, second, third] = parsed.bookmarks;
+      expect(first?.url).toBe("https://example.com/a?x=1&y=2");
+      expect(first?.title).toBe(`Rock 'n' Roll & "more"`);
+      expect(first?.addDate).toBe(1_600_000_000);
+      expect(first?.tags).toEqual(["web dev", "c++", "über"]);
+      expect(first?.notes).toBe("Line one\nline two with <b> and 'hex' and &lt;");
+      expect(second?.tags).toEqual([]);
+      expect(second?.notes).toBeNull();
+      expect(third?.notes).toBeNull();
+    });
+
+    it("reports link-less Shaarli notes as skipped rows instead of importing them", () => {
+      const parsed = parseNetscapeBookmarks(SHAARLI_EXPORT);
+
+      expect(parsed.skipped).toHaveLength(1);
+      expect(parsed.skipped[0]).toMatchObject({ url: "?abcdef", title: "Grocery list", reason: "invalid_url" });
+    });
+
+    it("parses a 5000 link export with 1700 distinct tags quickly", () => {
+      const rows = Array.from({ length: 5000 }, (_, index) => {
+        const tags = `t${index % 1700},t${(index * 7) % 1700}`;
+        return `<DT><A HREF="https://big.example.com/${index}" ADD_DATE="${1_600_000_000 + index}" PRIVATE="0" TAGS="${tags}">Title ${index}</A>\n<DD>Description ${index}`;
+      }).join("\n");
+
+      const started = performance.now();
+      const parsed = parseNetscapeBookmarks(`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n${rows}\n</DL><p>`);
+      const elapsedMs = performance.now() - started;
+
+      expect(parsed.bookmarks).toHaveLength(5000);
+      expect(parsed.skipped).toHaveLength(0);
+      expect(new Set(parsed.bookmarks.flatMap((row) => row.tags)).size).toBe(1700);
+      expect(elapsedMs).toBeLessThan(2000);
+    });
+  });
+
+  it("decodes entities once and leaves unknown or invalid references untouched", () => {
+    const parsed = parseNetscapeBookmarks(
+      `<DL><DT><A HREF="https://example.com/e">&amp;lt; &#0; &#xD800; &bogus; &#65;&#x42;</A></DL>`
+    );
+
+    expect(parsed.bookmarks[0]?.title).toBe("&lt; &#0; &#xD800; &bogus; AB");
+  });
 });
