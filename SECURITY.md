@@ -4,6 +4,7 @@
 
 | Version | Supported |
 | --- | --- |
+| `1.4.0` | Yes |
 | `1.3.1` | Yes |
 | `1.3.0` | Yes |
 | `1.2.0` | Yes |
@@ -33,7 +34,7 @@ Please include:
 
 ## Security Boundary Summary
 
-Grimoire is local-first, single-user, and loopback-first for `1.3.1`.
+Grimoire is local-first, single-user, and loopback-first for `1.4.0`.
 
 - Native daemon default: `127.0.0.1:3210`.
 - Docker host port default: `127.0.0.1:3210:3210`.
