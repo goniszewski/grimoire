@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAppLock } from "@/hooks/use-app-lock";
 import { LockScreen } from "@/components/LockScreen";
@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { BookmarkCard } from "@/components/BookmarkCard";
+import { BookmarkGalleryCard } from "@/components/BookmarkGalleryCard";
 import { BookmarkDetail } from "@/components/BookmarkDetail";
 import { AddBookmarkDialog } from "@/components/AddBookmarkDialog";
 import { ImportDialog } from "@/components/ImportDialog";
@@ -24,7 +25,9 @@ import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { ExportMenu } from "@/components/ExportMenu";
 import { PreferencesDialog } from "@/components/PreferencesDialog";
 import { usePreferences } from "@/hooks/use-preferences";
-import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
+import { UIBookmark as Bookmark, apiBookmarkToUI } from "@/hooks/use-bookmarks";
+import { useShareLink } from "@/hooks/use-share-link";
+import type { SharePrefill } from "@/lib/share-link";
 import { ApiBookmark } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
+import { Plus, Upload, X, BookmarkIcon, List, LayoutGrid, GalleryVertical, ImageIcon, ArrowUpDown, CheckSquare, Trash2, XCircle, FolderInput, Settings, BookmarkCheck, BookmarkX, ChevronLeft, ChevronRight, Eye, MousePointerClick, Pin, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRevisitState, loadDemoData } from "@/lib/api";
@@ -56,6 +59,7 @@ const Index = () => {
   const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [sharePrefill, setSharePrefill] = useState<SharePrefill | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -67,7 +71,7 @@ const Index = () => {
   const [refineOpen, setRefineOpen] = useState(false);
   const lastPageSelectionKey = useRef(store.pageSelectionKey);
   const routeTagFilterActive = useRef(false);
-  const { showButtonLabels, viewMode, updatePreferences } = usePreferences();
+  const { showButtonLabels, viewMode, galleryImagesOnly, updatePreferences } = usePreferences();
   const appLock = useAppLock();
   const { aiEnabled, isLoading: settingsLoading } = useSettings();
   const { showBanner: updateAvailable, dismiss: dismissUpdateBanner, result: updateCheckResult } = useUpdateCheck();
@@ -77,6 +81,28 @@ const Index = () => {
     queryKey: ["revisit"], queryFn: getRevisitState, enabled: !isDemoMode && !appLock.locked,
   });
   const { addBookmark, setSelectedTag, setReadLaterOnly, readLaterOnly } = store;
+
+  const handleAddOpenChange = useCallback((open: boolean) => {
+    setAddOpen(open);
+    if (!open) setSharePrefill(null);
+  }, []);
+
+  useShareLink({
+    enabled: !appLock.locked,
+    onAdd: (prefill) => {
+      if (isDemoMode) {
+        setInstallPromptOpen(true);
+        return;
+      }
+      setSharePrefill(prefill);
+      setAddOpen(true);
+    },
+    onEditExisting: (existing) => {
+      setDetailOpen(true);
+      setSelectedBookmark(apiBookmarkToUI(existing, store.categories));
+      toast({ title: "Already saved", description: "Opened the existing bookmark so you can edit it." });
+    },
+  });
 
   const exitSelectionMode = useCallback(() => {
     setSelectionMode(false);
@@ -209,9 +235,16 @@ const Index = () => {
     });
   }, []);
 
+  const galleryBookmarks = useMemo(
+    () => (galleryImagesOnly ? store.filteredBookmarks.filter((b) => !!b.screenshot) : store.filteredBookmarks),
+    [galleryImagesOnly, store.filteredBookmarks],
+  );
+
+  // Select only what is visible: in gallery "Images only" mode, hidden bookmarks must not be bulk-acted on.
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(store.filteredBookmarks.map((b) => b.id)));
-  }, [store.filteredBookmarks]);
+    const visible = viewMode === "gallery" ? galleryBookmarks : store.filteredBookmarks;
+    setSelectedIds(new Set(visible.map((b) => b.id)));
+  }, [viewMode, galleryBookmarks, store.filteredBookmarks]);
 
   const handleBulkDelete = useCallback(() => {
     const ids = [...selectedIds];
@@ -290,9 +323,11 @@ const Index = () => {
 
   const handleResetLibraryViewPreferences = useCallback(() => {
     store.resetLibraryPreferences();
-    updatePreferences({ viewMode: "list" });
+    updatePreferences({ viewMode: "list", galleryImagesOnly: false });
     toast({ title: "Library view reset" });
   }, [store, updatePreferences]);
+
+  const nextViewMode = viewMode === "list" ? "grid" : viewMode === "grid" ? "gallery" : "list";
 
   const handleOpenDetail = useCallback((bookmark: Bookmark) => {
     setSelectedBookmark(bookmark);
@@ -336,7 +371,10 @@ const Index = () => {
   const activeFilters = [
     store.selectedCategory && { label: store.selectedCategory, clear: () => store.setSelectedCategory(null) },
     store.selectedDomain && { label: store.selectedDomain, clear: () => store.setSelectedDomain(null) },
-    store.selectedTag && { label: `#${store.selectedTag}`, clear: () => store.setSelectedTag(null) },
+    ...(store.selectedTags ?? (store.selectedTag ? [store.selectedTag] : [])).map((tag) => ({
+      label: `#${tag}`,
+      clear: () => (store.toggleTag ? store.toggleTag(tag) : store.setSelectedTag(null)),
+    })),
     store.readLaterOnly && { label: "Later", clear: () => setLaterFilter(false) },
     store.readStateFilter !== "all" && {
       label: store.readStateFilter === "read" ? "Read" : "Unread",
@@ -381,7 +419,7 @@ const Index = () => {
     !!store.lastOpenedRange.to ||
     !!store.dateRange.from ||
     !!store.dateRange.to;
-  const hasCustomLibraryView = store.hasCustomLibraryPreferences || viewMode !== "list";
+  const hasCustomLibraryView = store.hasCustomLibraryPreferences || viewMode !== "list" || galleryImagesOnly;
 
   if (appLock.locked) {
     return <LockScreen onUnlock={appLock.unlock} />;
@@ -399,9 +437,11 @@ const Index = () => {
           selectedCategory={store.selectedCategory}
           selectedCategoryId={store.selectedCategoryId}
           selectedTag={store.selectedTag}
+          selectedTags={store.selectedTags}
           selectedDomain={store.selectedDomain}
           onSelectCategory={store.setSelectedCategory}
           onSelectTag={store.setSelectedTag}
+          onToggleTag={store.toggleTag}
           onSelectDomain={store.setSelectedDomain}
           totalCount={totalResults}
         />
@@ -435,7 +475,7 @@ const Index = () => {
               <ExportMenu
                 showLabel={showButtonLabels}
                 filters={{
-                  tag: store.selectedTag ?? undefined,
+                  ...(store.tagFilterParam ?? { tag: store.selectedTag ?? undefined }),
                   category_id: store.selectedCategoryId ?? undefined,
                   category: store.selectedCategory ?? undefined,
                   domain: store.selectedDomain ?? undefined,
@@ -496,6 +536,18 @@ const Index = () => {
                     <X className="h-3 w-3" />
                   </Badge>
                 ))}
+                {(store.selectedTags?.length ?? 0) > 1 && store.setTagMatch && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    aria-label={`Tag match: ${store.tagMatch === "any" ? "any tag" : "all tags"}. Click to switch.`}
+                    onClick={() => store.setTagMatch(store.tagMatch === "any" ? "all" : "any")}
+                  >
+                    Match {store.tagMatch === "any" ? "any" : "all"}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -586,12 +638,25 @@ const Index = () => {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-xs"
-                      aria-label={viewMode === "list" ? "Switch to grid view" : "Switch to list view"}
-                      onClick={() => updatePreferences({ viewMode: viewMode === "list" ? "grid" : "list" })}
+                      aria-label={`Switch to ${nextViewMode} view`}
+                      onClick={() => updatePreferences({ viewMode: nextViewMode })}
                     >
-                      {viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">{viewMode === "list" ? "List" : "Grid"}</span>
+                      {viewMode === "list" ? <List className="h-3.5 w-3.5" /> : viewMode === "grid" ? <LayoutGrid className="h-3.5 w-3.5" /> : <GalleryVertical className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">{viewMode === "list" ? "List" : viewMode === "grid" ? "Grid" : "Gallery"}</span>
                     </Button>
+                    {viewMode === "gallery" && (
+                      <Button
+                        variant={galleryImagesOnly ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        aria-pressed={galleryImagesOnly}
+                        aria-label="Show only bookmarks with images"
+                        onClick={() => updatePreferences({ galleryImagesOnly: !galleryImagesOnly })}
+                      >
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Images only</span>
+                      </Button>
+                    )}
                     {store.filteredBookmarks.length > 0 && (
                       <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)} className="h-8 text-xs">
                         <CheckSquare className="h-3 w-3" />
@@ -719,6 +784,26 @@ const Index = () => {
                 Loading a valid page...
               </div>
             ) : store.filteredBookmarks.length > 0 ? (
+              viewMode === "gallery" ? (
+                galleryBookmarks.length > 0 ? (
+                  <div data-testid="bookmark-results" className="columns-1 gap-3 sm:columns-2 lg:columns-3 xl:columns-4">
+                    {galleryBookmarks.map((bookmark) => (
+                      <BookmarkGalleryCard
+                        key={bookmark.id}
+                        bookmark={bookmark}
+                        onClick={handleOpenDetail}
+                        selectionMode={selectionMode}
+                        selected={selectedIds.has(bookmark.id)}
+                        onToggleSelect={toggleSelect}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div data-testid="gallery-empty" className="rounded-lg border px-4 py-12 text-center text-sm text-muted-foreground">
+                    No bookmarks on this page have images yet. Turn off "Images only" to see them all.
+                  </div>
+                )
+              ) : (
               <div data-testid="bookmark-results" className={viewMode === "grid"
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
                 : "flex flex-col gap-2"
@@ -744,6 +829,7 @@ const Index = () => {
                   />
                 ))}
               </div>
+              )
             ) : totalResults === 0 && !hasLibraryContext ? (
               /* First-run / empty library state */
               <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -889,8 +975,9 @@ const Index = () => {
       {/* Dialogs */}
       {!isDemoMode && <AddBookmarkDialog
         open={addOpen}
-        onOpenChange={setAddOpen}
+        onOpenChange={handleAddOpenChange}
         onAdd={store.addBookmark}
+        prefill={sharePrefill}
       />}
       {!isDemoMode && <ImportDialog
         open={importOpen}

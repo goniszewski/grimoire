@@ -7,6 +7,7 @@ import { spawnSync } from "child_process";
 import { runLittleImpCli } from "../cli.js";
 import { version as PACKAGE_VERSION } from "../../package.json";
 import { releaseArchiveName } from "../update/upgrade.js";
+import { NEWER_VERSION, expectedNewerRelease, newerReleaseFixtures } from "./helpers/release-fixtures.js";
 
 type FetchCall = {
   url: string;
@@ -170,24 +171,9 @@ function makeUpgradeHarness(
 
 describe("littleimp update CLI", () => {
   it("reports the newest compatible release from the configured source", async () => {
-    const harness = makeUpdateHarness([
-      {
-        tag_name: "v1.4.0-beta.1",
-        name: "Grimoire 1.4.0 beta 1",
-        draft: false,
-        prerelease: true,
-        published_at: "2026-05-18T12:00:00Z",
-        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0-beta.1",
-      },
-      {
-        tag_name: "v1.4.0",
-        name: "Grimoire 1.4.0",
-        draft: false,
-        prerelease: false,
-        published_at: "2026-05-17T12:00:00Z",
-        html_url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0",
-      },
-    ]);
+    const harness = makeUpdateHarness(
+      newerReleaseFixtures({ beta: "2026-05-18T12:00:00Z", stable: "2026-05-17T12:00:00Z" })
+    );
 
     const code = await harness.run([
       "update",
@@ -209,14 +195,7 @@ describe("littleimp update CLI", () => {
       update_available: true,
       source: "https://updates.example.test/releases",
       channel: "stable",
-      latest: {
-        version: "1.4.0",
-        tag: "v1.4.0",
-        name: "Grimoire 1.4.0",
-        prerelease: false,
-        published_at: "2026-05-17T12:00:00Z",
-        url: "https://github.com/goniszewski/grimoire/releases/tag/v1.4.0",
-      },
+      latest: expectedNewerRelease("2026-05-17T12:00:00Z"),
     });
   });
 
@@ -564,7 +543,7 @@ describe("littleimp update CLI", () => {
   });
 
   it("checks the release source before downloading the latest compatible upgrade when no version is provided", async () => {
-    const fixture = createUpgradeArchiveFixture({ version: "1.4.0", signature: true });
+    const fixture = createUpgradeArchiveFixture({ version: NEWER_VERSION, signature: true });
     const stdout: string[] = [];
     const stderr: string[] = [];
     const fetchCalls: FetchCall[] = [];

@@ -428,6 +428,22 @@ async function run(): Promise<void> {
   });
   assertBudget(tagFilter, LARGE_LIBRARY_BUDGETS_MS.tagFilter);
 
+  const multiTagFilter = await timeAsync("multi-tag filter", async () => {
+    const allResponse = await context.app.request("/bookmarks?tag=topic-3&tag=topic-5&limit=30");
+    const all = await expectJson<PagedResponse>(allResponse, 200);
+    if (all.data.some((bookmark) => !bookmark.tags?.includes("topic-3") || !bookmark.tags?.includes("topic-5"))) {
+      throw new Error("Multi-tag (all) filter returned rows missing a tag");
+    }
+    const anyResponse = await context.app.request("/bookmarks?tag=topic-3&tag=topic-5&tag_match=any&limit=30");
+    const any = await expectJson<PagedResponse>(anyResponse, 200);
+    if (any.pagination.total < all.pagination.total || any.pagination.total === 0) {
+      throw new Error("Multi-tag (any) filter total is inconsistent with (all)");
+    }
+    const searchResponse = await context.app.request("/search?q=topic&tag=topic-3&tag=topic-5&limit=30");
+    await expectJson<PagedResponse>(searchResponse, 200);
+  });
+  assertBudget(multiTagFilter, LARGE_LIBRARY_BUDGETS_MS.multiTagFilter);
+
   const domainFilter = await timeAsync("domain filter", async () => {
     const response = await context.app.request("/bookmarks?domain=perf-7.example.com&limit=30");
     const json = await expectJson<PagedResponse>(response, 200);
@@ -564,6 +580,7 @@ async function run(): Promise<void> {
     search,
     categoryFilter,
     tagFilter,
+    multiTagFilter,
     domainFilter,
     dateFilter,
     combinedFilter,

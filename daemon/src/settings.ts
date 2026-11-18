@@ -34,6 +34,7 @@ export type AiProvider =
   | "openai_compatible"
   | "deepseek"
   | "cheaperinference"
+  | "litellm"
   | "none";
 
 export type EmbeddingProvider = "openai" | "ollama" | "openai_compatible";
@@ -59,6 +60,8 @@ export interface AiSettings {
   openai_compatible: ApiKeyProviderSettings;
   deepseek: ApiKeyProviderSettings;
   cheaperinference: ApiKeyProviderSettings;
+  /** A LiteLLM proxy: base_url is the proxy, api_key an optional virtual key. */
+  litellm: ApiKeyProviderSettings;
   embeddings: {
     provider: EmbeddingProvider;
     model: string;
@@ -152,6 +155,7 @@ const DEFAULT_SETTINGS: Settings = {
       base_url: "https://api.cheaperinference.com/v1",
       model: "gpt-5.4-mini",
     },
+    litellm: { api_key: "", base_url: "http://localhost:4000", model: "gpt-4o-mini" },
     embeddings: {
       provider: "openai",
       model: Config.EMBEDDING_MODEL,
@@ -227,7 +231,7 @@ function removeRedactedSecretPlaceholders(patch: Partial<Settings>): Partial<Set
   removeIfRedacted(sanitized.ai?.anthropic, "api_key");
   removeIfRedacted(sanitized.ai?.openrouter, "api_key");
   removeIfRedacted(sanitized.ai?.openai_compatible, "api_key");
-  for (const provider of ["deepseek", "cheaperinference"] as const) {
+  for (const provider of ["deepseek", "cheaperinference", "litellm"] as const) {
     removeIfRedacted(sanitized.ai?.[provider], "api_key");
   }
   removeIfRedacted(sanitized.ai?.embeddings?.openai_compatible, "api_key");
@@ -255,6 +259,7 @@ const VALID_AI_PROVIDERS = new Set<AiProvider>([
   "openai_compatible",
   "deepseek",
   "cheaperinference",
+  "litellm",
   "none",
 ]);
 const VALID_EMBEDDING_PROVIDERS = new Set<EmbeddingProvider>([
@@ -345,7 +350,7 @@ export function validateSettingsPatch(patch: unknown): string | null {
       if ("model" in oo && (typeof oo.model !== "string" || !(oo.model as string).trim())) return "`ai.ollama.model` must be a non-empty string";
     }
 
-    for (const provider of ["anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference"] as const) {
+    for (const provider of ["anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm"] as const) {
       if (provider in a) {
         const error = validateProviderConfig(`ai.${provider}`, a[provider]);
         if (error) return error;
@@ -497,6 +502,7 @@ export function redactSettings(settings: Settings): object {
       },
       deepseek: redactApiKeyProvider(settings.ai.deepseek),
       cheaperinference: redactApiKeyProvider(settings.ai.cheaperinference),
+      litellm: redactApiKeyProvider(settings.ai.litellm),
       embeddings: {
         ...settings.ai.embeddings,
         openai_compatible: {

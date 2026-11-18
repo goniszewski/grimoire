@@ -283,7 +283,8 @@ Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `tag` | string | no | Filter by tag name |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
+| `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
@@ -372,7 +373,8 @@ Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `tag` | string | no | Filter by tag name |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
+| `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
@@ -874,7 +876,8 @@ Query parameters:
 |---|---|---:|---|
 | `q` | string | no | Search query |
 | `mode` | "keyword" \| "semantic" \| "hybrid" | no | Search mode |
-| `tag` | string | no | Filter by tag name |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
+| `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
@@ -1158,6 +1161,7 @@ Content-Type: application/json
     {
       "id": "tag_rag",
       "name": "rag",
+      "description": "Retrieval-augmented generation notes",
       "created_at": "2026-06-01T09:30:00.000Z",
       "bookmark_count": 1
     }
@@ -1177,6 +1181,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
 
 Responses:
 
@@ -1209,6 +1214,7 @@ Content-Type: application/json
   "data": {
     "id": "tag_rag",
     "name": "rag",
+    "description": "Retrieval-augmented generation notes",
     "created_at": "2026-06-01T09:30:00.000Z"
   }
 }
@@ -1216,9 +1222,9 @@ Content-Type: application/json
 
 #### PUT /tags/:id
 
-Rename a tag without changing bookmark associations.
+Rename a tag and/or edit its description without changing bookmark associations.
 
-Duplicate target tag names are rejected with 409 rather than merged implicitly.
+Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.
 
 Path parameters:
 
@@ -1229,21 +1235,22 @@ Path parameters:
 Request body:
 
 - Content type: `application/json`
-- Schema: `TagRequest`
+- Schema: `TagUpdateRequest`
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `name` | string | yes | Tag name, normalized to lowercase |
+| `name` | string | no | New tag name, normalized to lowercase |
+| `description` | string \| null | no | Tag description; blank or null clears it, omitted leaves it unchanged |
 
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
-| `200` | application/json | `TagResponse` | Renamed tag |
+| `200` | application/json | `TagResponse` | Updated tag |
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `404` | application/problem+json | `ProblemDetails` | Tag not found |
 | `409` | application/problem+json | `ProblemDetails` | Duplicate tag name |
-| `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+| `422` | application/problem+json | `ProblemDetails` | Invalid tag name or description |
 
 #### DELETE /tags/:id
 
@@ -1280,6 +1287,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
 
 Responses:
 
@@ -1798,7 +1806,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -1825,6 +1833,10 @@ Request body:
 | `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
 | `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
+| `ai.litellm` | object | no |  |
+| `ai.litellm.api_key` | string | no | LiteLLM proxy virtual key, empty string clears it |
+| `ai.litellm.base_url` | string | no | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | no | LiteLLM proxy model name |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -1874,15 +1886,15 @@ Responses:
 
 #### GET /settings/ai-models
 
-List models available from an AI provider catalog (currently OpenRouter).
+List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).
 
-The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
+The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.
 
 Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `provider` | "openrouter" | no | Provider to list models for |
+| `provider` | "openrouter" \| "litellm" | no | Provider to list models for |
 | `free` | "true" \| "false" | no | When true, only free models are returned |
 
 Responses:
@@ -2363,7 +2375,8 @@ Query parameters:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `format` | "json" \| "csv" | no | Export format |
-| `tag` | string | no | Filter by tag name |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
+| `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
 | `category` | string | no | Filter by category name |
@@ -3745,6 +3758,7 @@ Tag row returned by create and attach endpoints
 |---|---|---:|---|
 | `id` | string | yes | Tag ID |
 | `name` | string | yes | Tag name |
+| `description` | string \| null | yes | Optional tag description |
 | `created_at` | string | yes | Creation timestamp |
 
 ### TagWithCount
@@ -3755,6 +3769,7 @@ Tag row with active bookmark count returned by tag listings
 |---|---|---:|---|
 | `id` | string | yes | Tag ID |
 | `name` | string | yes | Tag name |
+| `description` | string \| null | yes | Optional tag description |
 | `created_at` | string | yes | Creation timestamp |
 | `bookmark_count` | integer | yes | Active bookmark count |
 
@@ -3763,6 +3778,16 @@ Tag row with active bookmark count returned by tag listings
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
+
+### TagUpdateRequest
+
+At least one of name or description is required
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | New tag name, normalized to lowercase |
+| `description` | string \| null | no | Tag description; blank or null clears it, omitted leaves it unchanged |
 
 ### TagListResponse
 
@@ -3781,6 +3806,7 @@ Response data
 | `data` | TagRecord | yes |  |
 | `data.id` | string | yes | Tag ID |
 | `data.name` | string | yes | Tag name |
+| `data.description` | string \| null | yes | Optional tag description |
 | `data.created_at` | string | yes | Creation timestamp |
 
 ### Domain
@@ -4238,7 +4264,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `enabled` | boolean | yes | Whether this runtime feature is usable |
-| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `model` | string \| null | yes | Resolved model |
 | `base_url` | string \| null | yes | Resolved base URL |
 
@@ -4257,7 +4283,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 |---|---|---:|---|
 | `llm` | RuntimeLlmCapability | yes |  |
 | `llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `llm.model` | string \| null | yes | Resolved model |
 | `llm.base_url` | string \| null | yes | Resolved base URL |
 | `embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4284,7 +4310,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | yes |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | LLM provider |
 | `ai.openai` | object | yes |  |
 | `ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `ai.openai.model` | string | yes | OpenAI chat model |
@@ -4311,6 +4337,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
 | `ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
+| `ai.litellm` | object | yes |  |
+| `ai.litellm.api_key` | string | yes | Redacted LiteLLM proxy virtual key. Empty string means unset |
+| `ai.litellm.base_url` | string | yes | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | yes | LiteLLM proxy model name |
 | `ai.embeddings` | object | yes |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `ai.embeddings.model` | string | yes | Embedding model |
@@ -4341,7 +4371,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `runtime` | RuntimeCapabilities | yes |  |
 | `runtime.llm` | RuntimeLlmCapability | yes |  |
 | `runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `runtime.llm.model` | string \| null | yes | Resolved model |
 | `runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4360,7 +4390,7 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `ai` | object | no |  |
-| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | no | LLM provider |
+| `ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | no | LLM provider |
 | `ai.openai` | object | no |  |
 | `ai.openai.api_key` | string | no | OpenAI API key, empty string clears it |
 | `ai.openai.model` | string | no | OpenAI chat model |
@@ -4387,6 +4417,10 @@ Experimental v0.5 migrate request. Provide dataDir, dbPath, or archivePath.
 | `ai.cheaperinference.api_key` | string | no | Cheaper Inference API key, empty string clears it |
 | `ai.cheaperinference.base_url` | string | no | Cheaper Inference OpenAI-compatible base URL |
 | `ai.cheaperinference.model` | string | no | Cheaper Inference chat model |
+| `ai.litellm` | object | no |  |
+| `ai.litellm.api_key` | string | no | LiteLLM proxy virtual key, empty string clears it |
+| `ai.litellm.base_url` | string | no | LiteLLM proxy base URL |
+| `ai.litellm.model` | string | no | LiteLLM proxy model name |
 | `ai.embeddings` | object | no |  |
 | `ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | no | Embedding provider |
 | `ai.embeddings.model` | string | no | Embedding model |
@@ -4423,7 +4457,7 @@ Response data
 |---|---|---:|---|
 | `data` | Settings | yes |  |
 | `data.ai` | object | yes |  |
-| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | LLM provider |
+| `data.ai.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | LLM provider |
 | `data.ai.openai` | object | yes |  |
 | `data.ai.openai.api_key` | string | yes | Redacted OpenAI API key. Empty string means unset |
 | `data.ai.openai.model` | string | yes | OpenAI chat model |
@@ -4450,6 +4484,10 @@ Response data
 | `data.ai.cheaperinference.api_key` | string | yes | Redacted Cheaper Inference API key. Empty string means unset |
 | `data.ai.cheaperinference.base_url` | string | yes | Cheaper Inference OpenAI-compatible base URL |
 | `data.ai.cheaperinference.model` | string | yes | Cheaper Inference chat model |
+| `data.ai.litellm` | object | yes |  |
+| `data.ai.litellm.api_key` | string | yes | Redacted LiteLLM proxy virtual key. Empty string means unset |
+| `data.ai.litellm.base_url` | string | yes | LiteLLM proxy base URL |
+| `data.ai.litellm.model` | string | yes | LiteLLM proxy model name |
 | `data.ai.embeddings` | object | yes |  |
 | `data.ai.embeddings.provider` | "openai" \| "ollama" \| "openai_compatible" | yes | Embedding provider |
 | `data.ai.embeddings.model` | string | yes | Embedding model |
@@ -4480,7 +4518,7 @@ Response data
 | `data.runtime` | RuntimeCapabilities | yes |  |
 | `data.runtime.llm` | RuntimeLlmCapability | yes |  |
 | `data.runtime.llm.enabled` | boolean | yes | Whether this runtime feature is usable |
-| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "none" | yes | Resolved provider |
+| `data.runtime.llm.provider` | "openai" \| "ollama" \| "anthropic" \| "openrouter" \| "openai_compatible" \| "deepseek" \| "cheaperinference" \| "litellm" \| "none" | yes | Resolved provider |
 | `data.runtime.llm.model` | string \| null | yes | Resolved model |
 | `data.runtime.llm.base_url` | string \| null | yes | Resolved base URL |
 | `data.runtime.embeddings` | RuntimeEmbeddingCapability | yes |  |
@@ -4516,7 +4554,7 @@ Response data
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `provider` | "openrouter" \| "litellm" | yes | Provider the catalog was fetched from |
 | `free` | boolean | yes | Whether only free models were requested |
 | `fetched_at` | string | yes | Catalog fetch timestamp |
 | `models` | array<AiModel> | yes | Available models |
@@ -4528,7 +4566,7 @@ AI model catalog response
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | AiModelCatalog | yes |  |
-| `data.provider` | "openrouter" | yes | Provider the catalog was fetched from |
+| `data.provider` | "openrouter" \| "litellm" | yes | Provider the catalog was fetched from |
 | `data.free` | boolean | yes | Whether only free models were requested |
 | `data.fetched_at` | string | yes | Catalog fetch timestamp |
 | `data.models` | array<AiModel> | yes | Available models |

@@ -2,12 +2,13 @@ import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Hash, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { createTag, deleteTag, listTags, renameTag, type ApiTag } from "@/lib/api";
+import { createTag, deleteTag, listTags, updateTag, type ApiTag } from "@/lib/api";
 import { bookmarkKeys } from "@/hooks/use-bookmarks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { TagRenameDialog } from "@/components/TagRenameDialog";
 import {
   AlertDialog,
@@ -20,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { MAX_TAG_NAME_LEN, normaliseTagName, validateTagName } from "@/lib/tag-names";
+import { MAX_TAG_DESCRIPTION_LEN, MAX_TAG_NAME_LEN, normaliseTagName, validateTagName } from "@/lib/tag-names";
 import { applyRenamedTagToCache } from "@/lib/tag-cache";
 import { isDemoMode } from "@/demo/enabled";
 import { DemoInstallPrompt } from "@/components/DemoInstallPrompt";
@@ -33,6 +34,7 @@ const Tags = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [tagInput, setTagInput] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiTag | null>(null);
   const [renameTarget, setRenameTarget] = useState<ApiTag | null>(null);
@@ -61,13 +63,14 @@ const Tags = () => {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const response = await createTag(name);
+    mutationFn: async ({ name, description }: { name: string; description: string | null }) => {
+      const response = await createTag(name, description);
       return response.data;
     },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: bookmarkKeys.tags });
       setTagInput("");
+      setDescriptionInput("");
       setFormError(null);
       toast({ title: "Tag saved", description: `#${response.name}` });
     },
@@ -94,8 +97,8 @@ const Tags = () => {
   });
 
   const renameMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const response = await renameTag(id, name);
+    mutationFn: async ({ id, name, description }: { id: string; name: string; description: string | null }) => {
+      const response = await updateTag(id, { name, description });
       return response.data;
     },
     onSuccess: (response) => {
@@ -103,10 +106,10 @@ const Tags = () => {
       invalidateTagAffectedQueries();
       setRenameTarget(null);
       setRenameError(null);
-      toast({ title: "Tag renamed", description: `#${response.name}` });
+      toast({ title: "Tag updated", description: `#${response.name}` });
     },
     onError: (error: Error) => {
-      setRenameError(error.message || "Tag could not be renamed.");
+      setRenameError(error.message || "Tag could not be updated.");
     },
   });
 
@@ -122,7 +125,7 @@ const Tags = () => {
       setFormError(validationError);
       return;
     }
-    createMutation.mutate(name);
+    createMutation.mutate({ name, description: descriptionInput.trim() || null });
   }
 
   function confirmDelete() {
@@ -154,7 +157,7 @@ const Tags = () => {
           <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed bg-muted/30 p-4">
             <div>
               <h2 className="text-sm font-medium">Tag management is local-only</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Install Grimoire to create, rename, or delete tags in a private library.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Install Grimoire to create, edit, or delete tags in a private library.</p>
             </div>
             <Button size="sm" onClick={() => setDemoPromptOpen(true)}>Install Grimoire</Button>
           </section>
@@ -182,6 +185,15 @@ const Tags = () => {
                   {formError}
                 </p>
               )}
+              <Label htmlFor="tag-description">Description (optional)</Label>
+              <Textarea
+                id="tag-description"
+                value={descriptionInput}
+                onChange={(event) => setDescriptionInput(event.target.value)}
+                placeholder="What is this tag for?"
+                maxLength={MAX_TAG_DESCRIPTION_LEN}
+                rows={2}
+              />
             </div>
             <Button type="submit" className="self-end" disabled={createMutation.isPending}>
               {createMutation.isPending ? (
@@ -231,6 +243,11 @@ const Tags = () => {
                     </Badge>
                     <span className="text-xs text-muted-foreground">{bookmarkCountLabel(tag.bookmark_count)}</span>
                   </div>
+                  {tag.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground" title={tag.description}>
+                      {tag.description}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Button asChild variant="outline" size="sm">
@@ -251,8 +268,8 @@ const Tags = () => {
                       setRenameTarget(tag);
                       setRenameError(null);
                     }}
-                    aria-label={`Rename ${tag.name} tag`}
-                    title={`Rename ${tag.name} tag`}
+                    aria-label={`Edit ${tag.name} tag`}
+                    title={`Edit ${tag.name} tag`}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -307,10 +324,10 @@ const Tags = () => {
             setRenameError(null);
           }
         }}
-        onSubmit={(name) => {
+        onSubmit={({ name, description }) => {
           if (!renameTarget) return;
           setRenameError(null);
-          renameMutation.mutate({ id: renameTarget.id, name });
+          renameMutation.mutate({ id: renameTarget.id, name, description });
         }}
       />
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,21 +13,105 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { isSafeExternalBookmarkUrl } from "@/lib/safe-url";
 import { toast } from "@/hooks/use-toast";
+import type { SharePrefill } from "@/lib/share-link";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
+import {
+  clearDraft,
+  isNewBookmarkDraft,
+  isNewBookmarkDraftEmpty,
+  loadDraft,
+  newBookmarkDraftKey,
+  saveDraft,
+  type NewBookmarkDraft,
+} from "@/lib/draft-storage";
 
 interface AddBookmarkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (url: string, options?: { readLater?: boolean; notes?: string }) => Promise<void> | void;
+  onAdd: (
+    url: string,
+    options?: { readLater?: boolean; notes?: string; title?: string; tags?: string[] },
+  ) => Promise<void> | void;
+  /** Values from a share link; take precedence over a stored draft. */
+  prefill?: SharePrefill | null;
 }
 
-export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDialogProps) {
+function parseTagInput(value: string): string[] {
+  // The API only accepts normalized tags (^[a-z0-9]+(-[a-z0-9]+)*$, max 50); slugify so e.g. "Web Dev" is kept.
+  const slug = (tag: string) => tag.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50).replace(/-+$/, "");
+  return [...new Set(value.split(",").map(slug).filter(Boolean))];
+}
+
+export function AddBookmarkDialog({ open, onOpenChange, onAdd, prefill }: AddBookmarkDialogProps) {
   const [urls, setUrls] = useState("");
   const [readLater, setReadLater] = useState(false);
   const [notes, setNotes] = useState("");
+  const [title, setTitle] = useState("");
+  const [tags, setTags] = useState("");
+  const [draftReady, setDraftReady] = useState(false);
+  const [restoredDraft, setRestoredDraft] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [failureDetails, setFailureDetails] = useState<{ url: string; reason: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const draft: NewBookmarkDraft = { urls, title, notes, tags, readLater };
+
+  // On open: a share link prefill wins; otherwise restore any unsaved draft.
+  useEffect(() => {
+    if (!open) {
+      setDraftReady(false);
+      return;
+    }
+    if (prefill) {
+      setUrls(prefill.url);
+      setTitle(prefill.title);
+      setNotes(prefill.notes);
+      setTags(prefill.tags.join(", "));
+      setRestoredDraft(false);
+    } else {
+      const stored = loadDraft(newBookmarkDraftKey, isNewBookmarkDraft);
+      if (stored && !isNewBookmarkDraftEmpty(stored)) {
+        setUrls(stored.urls);
+        setTitle(stored.title);
+        setNotes(stored.notes);
+        setTags(stored.tags);
+        setReadLater(stored.readLater);
+        setRestoredDraft(true);
+      }
+    }
+    setDraftReady(true);
+  }, [open, prefill]);
+
+  useDraftAutosave(newBookmarkDraftKey, draft, {
+    active: open && draftReady,
+    isEmpty: isNewBookmarkDraftEmpty,
+  });
+
+  const resetForm = useCallback(() => {
+    setUrls("");
+    setNotes("");
+    setTitle("");
+    setTags("");
+    setReadLater(false);
+    setRestoredDraft(false);
+  }, []);
+
+  const discardDraft = () => {
+    clearDraft(newBookmarkDraftKey);
+    resetForm();
+  };
+
+  // Closing by Escape/overlay keeps the draft (flushed now so the debounce cannot lose it).
+  const handleOpenChange = (next: boolean) => {
+    if (!next && !isNewBookmarkDraftEmpty(draft)) saveDraft(newBookmarkDraftKey, draft);
+    onOpenChange(next);
+  };
+
+  const handleCancel = () => {
+    discardDraft();
+    onOpenChange(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +137,12 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
           continue;
         }
         try {
-          await onAdd(url, { readLater, ...(items.length === 1 && notes.trim() ? { notes: notes.trim() } : {}) });
+          await onAdd(url, {
+            readLater,
+            ...(items.length === 1 && notes.trim() ? { notes: notes.trim() } : {}),
+            ...(items.length === 1 && title.trim() ? { title: title.trim() } : {}),
+            ...(items.length === 1 && parseTagInput(tags).length > 0 ? { tags: parseTagInput(tags) } : {}),
+          });
           saved += 1;
         } catch (caught) {
           failed.push({ url, reason: caught instanceof Error ? caught.message : "Could not save this URL." });
@@ -67,8 +156,8 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
           setFailureDetails(failed);
         }
       } else {
-        setUrls("");
-        setNotes("");
+        clearDraft(newBookmarkDraftKey);
+        resetForm();
         const confirmation = `${saved} saved to Grimoire${readLater ? " and added to Later" : ""}. You can close the original tabs.`;
         if (items.length === 1) {
           toast({ title: "Bookmark saved", description: confirmation });
@@ -83,7 +172,7 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -94,6 +183,14 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
             Paste one URL or a list of URLs. Saving is confirmed before you close the original tabs.
           </DialogDescription>
         </DialogHeader>
+        {restoredDraft && (
+          <p role="status" className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <span>Restored unsaved draft</span>
+            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={discardDraft}>
+              Discard
+            </Button>
+          </p>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Textarea
@@ -121,9 +218,11 @@ export function AddBookmarkDialog({ open, onOpenChange, onAdd }: AddBookmarkDial
             <Checkbox checked={readLater} onCheckedChange={(checked) => setReadLater(checked === true)} disabled={submitting} />
             Add these to Later
           </label>
+          <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title (optional, single URL only)" aria-label="Title" disabled={submitting} />
           <Input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Why did you save this? (single URL only)" disabled={submitting} />
+          <Input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="Tags, comma separated (single URL only)" aria-label="Tags" disabled={submitting} />
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={!urls.trim() || submitting}>

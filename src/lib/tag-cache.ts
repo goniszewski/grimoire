@@ -11,6 +11,7 @@ export function applyRenamedTagToCache(queryClient: QueryClient, renamedTag: Api
         ? {
             ...tag,
             name: renamedTag.name,
+            description: renamedTag.description,
             created_at: renamedTag.created_at,
           }
         : tag

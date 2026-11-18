@@ -40,6 +40,7 @@ const OPENAI_BASE_URL = "https://api.openai.com/v1";
 const OLLAMA_BASE_URL = "http://localhost:11434";
 const ANTHROPIC_BASE_URL = "https://api.anthropic.com";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+export const LITELLM_BASE_URL = "http://localhost:4000";
 // Hosted OpenAI-compatible providers that need an API key and share one config shape.
 const KEYED_OPENAI_COMPATIBLE_BASE_URLS = {
   deepseek: "https://api.deepseek.com",
@@ -60,6 +61,7 @@ const AI_PROVIDERS = new Set<AiProvider>([
   "openai_compatible",
   "deepseek",
   "cheaperinference",
+  "litellm",
   "none",
 ]);
 const EMBEDDING_PROVIDERS = new Set<EmbeddingProvider>([
@@ -174,6 +176,21 @@ function resolveLlmConfig(settings: Settings): EffectiveLlmConfig | null {
     };
   }
 
+  if (provider === "litellm") {
+    // A LiteLLM proxy speaks the OpenAI chat API; its virtual key is optional
+    // (a proxy without a master key accepts unauthenticated requests).
+    const model = clean(settings.ai.litellm.model);
+    const baseUrl = normalizeBaseUrl(settings.ai.litellm.base_url, LITELLM_BASE_URL);
+    if (!model) return null;
+    return {
+      kind: "openai-compatible",
+      provider: "litellm",
+      baseUrl,
+      apiKey: cleanSecret(settings.ai.litellm.api_key),
+      model,
+    };
+  }
+
   if (isKeyedOpenAiCompatible(provider)) {
     const config = settings.ai[provider];
     const apiKey = cleanSecret(config.api_key);
@@ -257,6 +274,7 @@ function configuredLlmModel(settings: Settings): string | null {
   if (provider === "anthropic") return clean(settings.ai.anthropic.model) || null;
   if (provider === "openrouter") return clean(settings.ai.openrouter.model) || null;
   if (provider === "openai_compatible") return clean(settings.ai.openai_compatible.model) || null;
+  if (provider === "litellm") return clean(settings.ai.litellm.model) || null;
   if (isKeyedOpenAiCompatible(provider)) return clean(settings.ai[provider].model) || null;
   return null;
 }
@@ -268,6 +286,7 @@ function configuredLlmBaseUrl(settings: Settings): string | null {
   if (provider === "anthropic") return normalizeAnthropicBaseUrl(settings.ai.anthropic.base_url);
   if (provider === "openrouter") return normalizeBaseUrl(settings.ai.openrouter.base_url, OPENROUTER_BASE_URL);
   if (provider === "openai_compatible") return normalizeBaseUrl(settings.ai.openai_compatible.base_url, "");
+  if (provider === "litellm") return normalizeBaseUrl(settings.ai.litellm.base_url, LITELLM_BASE_URL);
   if (isKeyedOpenAiCompatible(provider)) {
     return normalizeBaseUrl(settings.ai[provider].base_url, KEYED_OPENAI_COMPATIBLE_BASE_URLS[provider]);
   }

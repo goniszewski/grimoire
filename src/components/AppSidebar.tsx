@@ -331,9 +331,13 @@ interface AppSidebarProps {
   selectedCategory: string | null;
   selectedCategoryId?: string | null;
   selectedTag: string | null;
+  /** All active tags (primary first); defaults to the single selectedTag. */
+  selectedTags?: string[];
   selectedDomain: string | null;
   onSelectCategory: (category: string | null, categoryId?: string | null) => void;
   onSelectTag: (tag: string | null) => void;
+  /** Add/remove a tag from a multi-tag selection (Ctrl/Cmd/Shift-click on a tag). */
+  onToggleTag?: (tag: string) => void;
   onSelectDomain: (domain: string | null) => void;
   totalCount: number;
 }
@@ -347,15 +351,27 @@ export function AppSidebar({
   selectedCategory,
   selectedCategoryId,
   selectedTag,
+  selectedTags,
   selectedDomain,
   onSelectCategory,
   onSelectTag,
+  onToggleTag,
   onSelectDomain,
   totalCount,
 }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
+  const activeTags = selectedTags ?? (selectedTag ? [selectedTag] : []);
+  // Non-modifier way to multi-select (touch / keyboard): plain clicks toggle tags.
+  const [combineTags, setCombineTags] = useState(false);
+  const handleTagClick = (event: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }, tag: string) => {
+    if (onToggleTag && (combineTags || event.ctrlKey || event.metaKey || event.shiftKey)) {
+      onToggleTag(tag);
+      return;
+    }
+    onSelectTag(activeTags.length === 1 && activeTags[0] === tag ? null : tag);
+  };
   const [domainsExpanded, setDomainsExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState(loadCollapsedCategoryIds);
@@ -1001,11 +1017,25 @@ export function AppSidebar({
                 <Hash className="h-3.5 w-3.5 mr-1.5" />
                 {!collapsed && "Tags"}
               </span>
+              {!collapsed && onToggleTag && (
+                <button
+                  type="button"
+                  onClick={() => setCombineTags((v) => !v)}
+                  aria-pressed={combineTags}
+                  className={cn(
+                    "ml-auto mr-1 h-4 px-1 text-[10px] rounded hover:bg-accent transition-colors",
+                    combineTags ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Combine tags: clicking tags adds or removes them from the filter"
+                >
+                  Combine
+                </button>
+              )}
               {!collapsed && (
                 <button
                   type="button"
                   onClick={() => navigate("/tags")}
-                  className="ml-auto h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  className={cn("h-4 w-4 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors", !onToggleTag && "ml-auto")}
                   title="Manage tags"
                   aria-label="Manage tags"
                 >
@@ -1019,9 +1049,19 @@ export function AppSidebar({
                   {visibleTags.map((t) => (
                     <Badge
                       key={t.tag}
-                      variant={selectedTag === t.tag ? "default" : "secondary"}
+                      variant={activeTags.includes(t.tag) ? "default" : "secondary"}
                       className="text-[10px] px-1.5 py-0 h-5 font-mono cursor-pointer transition-colors"
-                      onClick={() => onSelectTag(selectedTag === t.tag ? null : t.tag)}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={activeTags.includes(t.tag)}
+                      title="Click to filter; Ctrl/Cmd/Shift-click or Combine tags to select several"
+                      onClick={(event) => handleTagClick(event, t.tag)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleTagClick(event, t.tag);
+                        }
+                      }}
                     >
                       {t.tag}
                       <span className="ml-1 opacity-60">{t.count}</span>
@@ -1042,8 +1082,8 @@ export function AppSidebar({
                   {tags.slice(0, 3).map((t) => (
                     <SidebarMenuItem key={t.tag}>
                       <SidebarMenuButton
-                        onClick={() => onSelectTag(selectedTag === t.tag ? null : t.tag)}
-                        className={cn(selectedTag === t.tag && "bg-accent text-accent-foreground")}
+                        onClick={(event) => handleTagClick(event, t.tag)}
+                        className={cn(activeTags.includes(t.tag) && "bg-accent text-accent-foreground")}
                         tooltip={`#${t.tag} (${t.count})`}
                       >
                         <span className="text-[10px] font-mono shrink-0">#{t.tag.slice(0, 1)}</span>

@@ -4,6 +4,54 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - Unreleased
+
+### Added
+- Tags can have an optional description. Add one when creating a tag or edit it
+  from the Tags page or a tag's detail page; it shows under the tag name and
+  is kept in backups (#186).
+- Filter by several tags at once: turn on Combine in the sidebar's Tags header
+  (or Ctrl/Cmd/Shift-click tags) and choose whether bookmarks must have all of
+  them or any of them. The API accepts up to 25 repeated `tag` parameters with
+  `tag_match=all|any` (#10).
+- Share links: opening `/add?url=…&title=…&note=…&tags=a,b` prefills the Add
+  Bookmark dialog (usable from bookmarklets, scripts, or Android share). If the
+  URL is already saved, the existing bookmark opens for editing instead. The
+  Add dialog now also accepts a title and tags for a single URL.
+- Unsaved drafts of the Add dialog and of bookmark title/notes edits are kept in
+  browser local storage and offered back after an accidental close, failed save,
+  or crash. They never leave the browser, are not part of backups, and expire
+  after 7 days.
+- A gallery view shows bookmarks as an image-first masonry of their cached
+  preview images, with an optional "Images only" filter (#197).
+- A LiteLLM proxy is available as an AI provider in Settings. Choose a model
+  from the list the proxy serves; the virtual key is optional and is left out
+  of backups.
+- Multi-architecture (amd64 and arm64) Docker images are published to Docker Hub
+  as `goniszewski/grimoire`, tagged with the exact version (`X.Y.Z`) and the
+  minor version (`X.Y`). `docker compose up -d` now pulls the image instead of
+  building it.
+- A guide for moving a v0.5 Docker install to 1.x, using `grimoire migrate`
+  inside the container.
+
+### Fixed
+- Imports from Shaarli and other PHP-based exporters no longer show apostrophes
+  as `&#039;` in titles and notes, and the import guide now covers Shaarli,
+  Linkding and Pinboard exports (#8).
+- Imported tags are converted to Grimoire's tag format (for example `Web Dev`
+  becomes `web-dev`) instead of being created with spellings the tag editor
+  would reject. Tags with nothing usable left are skipped, and the import
+  preview shows the final name for each tag.
+
+### Changed
+- The Docker Hub `latest` tag now points to Grimoire 1.x. The old v0.5 image
+  stays available as `goniszewski/grimoire:legacy-v0.5`. A v0.5 data volume is
+  not compatible with 1.x (data moved from `/app/data` to `/data`); follow the
+  migration guide before upgrading.
+
+### Security
+- Development dependency `minimatch` updated to resolve a Dependabot alert.
+
 ## [1.3.1] - 2026-11-06
 
 ### Added

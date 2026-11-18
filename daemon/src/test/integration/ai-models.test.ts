@@ -393,6 +393,130 @@ describe("GET /settings/ai-models", () => {
     expect(urls).toEqual(["https://or.example.test/v1/models"]);
   });
 
+  describe("provider=litellm", () => {
+    function liteLLMModelInfoBody(): Record<string, unknown> {
+      return {
+        data: [
+          {
+            model_name: "claude-sonnet",
+            model_info: { mode: "chat", max_input_tokens: 200000, input_cost_per_token: 3e-6, output_cost_per_token: 1.5e-5 },
+          },
+          // A second deployment of the same model name (load balancing) is listed once.
+          { model_name: "claude-sonnet", model_info: { mode: "chat", max_input_tokens: 200000 } },
+          { model_name: "gemini-flash", model_info: { mode: "chat", max_tokens: 65536 } },
+          { model_name: "legacy-instruct", model_info: {} },
+          { model_name: "text-embedding", model_info: { mode: "embedding" } },
+          { model_name: "whisper", model_info: { mode: "audio_transcription" } },
+          { model_info: { mode: "chat" } },
+        ],
+      };
+    }
+
+    function writeLiteLLM(litellm: { api_key?: string; base_url: string; model?: string }) {
+      settingsManager.write({
+        ai: { litellm: { api_key: "", model: "claude-sonnet", ...litellm } },
+      } as Parameters<typeof settingsManager.write>[0]);
+    }
+
+    it("lists the proxy's chat models from /model/info with the virtual key", async () => {
+      writeLiteLLM({ api_key: "sk-litellm-virtual", base_url: "http://localhost:4000/" });
+      const requests: Array<{ url: string; authorization: string | null; redirect?: RequestRedirect }> = [];
+      globalThis.fetch = (async (input, init) => {
+        requests.push({
+          url: requestUrl(input),
+          authorization: init?.headers ? new Headers(init.headers).get("authorization") : null,
+          redirect: init?.redirect,
+        });
+        return new Response(JSON.stringify(liteLLMModelInfoBody()), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }) as typeof fetch;
+
+      const res = await catalogRequest("/settings/ai-models?provider=litellm");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        data: {
+          provider: string;
+          models: Array<{ id: string; name: string; context_length: number | null; prompt_price: string | null; completion_price: string | null }>;
+        };
+      };
+      // The loopback proxy is the same host chat requests already use; redirects are not followed.
+      expect(requests).toEqual([
+        { url: "http://localhost:4000/model/info", authorization: "Bearer sk-litellm-virtual", redirect: "manual" },
+      ]);
+      expect(body.data.provider).toBe("litellm");
+      expect(body.data.models).toEqual([
+        { id: "claude-sonnet", name: "claude-sonnet", context_length: 200000, prompt_price: "0.000003", completion_price: "0.000015" },
+        { id: "gemini-flash", name: "gemini-flash", context_length: 65536, prompt_price: null, completion_price: null },
+        { id: "legacy-instruct", name: "legacy-instruct", context_length: null, prompt_price: null, completion_price: null },
+      ]);
+    });
+
+    it("sends no Authorization header when no virtual key is saved", async () => {
+      writeLiteLLM({ base_url: "https://litellm.example.test/v1" });
+      const requests: Array<{ url: string; authorization: string | null }> = [];
+      globalThis.fetch = (async (input, init) => {
+        requests.push({
+          url: requestUrl(input),
+          authorization: init?.headers ? new Headers(init.headers).get("authorization") : null,
+        });
+        return new Response(JSON.stringify({ data: [] }), { status: 200 });
+      }) as typeof fetch;
+
+      const res = await catalogRequest("/settings/ai-models?provider=litellm");
+      expect(res.status).toBe(200);
+      // A base URL saved with /v1 still reaches the proxy root's /model/info.
+      expect(requests).toEqual([{ url: "https://litellm.example.test/model/info", authorization: null }]);
+    });
+
+    it("falls back to /v1/models when /model/info is not available", async () => {
+      writeLiteLLM({ api_key: "sk-key", base_url: "http://localhost:4000" });
+      const urls: string[] = [];
+      globalThis.fetch = (async (input) => {
+        const url = requestUrl(input);
+        urls.push(url);
+        if (url.endsWith("/model/info")) return new Response("not found", { status: 404 });
+        return new Response(JSON.stringify({ data: [{ id: "gpt-4o-mini" }, { id: "" }, { id: "claude-sonnet" }] }), {
+          status: 200,
+        });
+      }) as typeof fetch;
+
+      const res = await catalogRequest("/settings/ai-models?provider=litellm");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { models: Array<{ id: string; context_length: number | null }> } };
+      expect(urls).toEqual(["http://localhost:4000/model/info", "http://localhost:4000/v1/models"]);
+      expect(body.data.models.map((m) => m.id)).toEqual(["gpt-4o-mini", "claude-sonnet"]);
+    });
+
+    it("returns 502 without the upstream body when the proxy rejects the key", async () => {
+      writeLiteLLM({ api_key: "sk-wrong", base_url: "http://localhost:4000" });
+      globalThis.fetch = (async () =>
+        new Response("Authentication Error, Invalid proxy server token passed. secret-detail", {
+          status: 401,
+        })) as unknown as typeof fetch;
+
+      const res = await catalogRequest("/settings/ai-models?provider=litellm");
+      expect(res.status).toBe(502);
+      const body = (await res.json()) as { title: string; detail?: string };
+      expect(body.title).toBe("Upstream Model Catalog Error");
+      expect(body.detail).toBe("HTTP 401");
+    });
+
+    it("does not follow a redirect from the proxy", async () => {
+      writeLiteLLM({ api_key: "sk-key", base_url: "http://localhost:4000" });
+      let calls = 0;
+      globalThis.fetch = (async () => {
+        calls += 1;
+        return new Response(null, { status: 302, headers: { location: "https://elsewhere.example/model/info" } });
+      }) as unknown as typeof fetch;
+
+      const res = await catalogRequest("/settings/ai-models?provider=litellm");
+      expect(res.status).toBe(502);
+      expect(calls).toBe(1);
+    });
+  });
+
   it("defaults free to false when the query param is missing", async () => {
     globalThis.fetch = (async () =>
       new Response(JSON.stringify(openRouterCatalogBody()), {

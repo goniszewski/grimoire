@@ -511,6 +511,11 @@ describe("settings-driven AI runtime configuration", () => {
             base_url: "https://api.deepseek.com",
             model: "deepseek-v4-flash",
           },
+          litellm: {
+            api_key: "sk-litellm-secret",
+            base_url: "http://localhost:4000",
+            model: "claude-sonnet",
+          },
           embeddings: {
             provider: "openai_compatible",
             model: "text-embedding-3-small",
@@ -534,6 +539,7 @@ describe("settings-driven AI runtime configuration", () => {
           openrouter: { api_key: string };
           openai_compatible: { api_key: string };
           deepseek: { api_key: string };
+          litellm: { api_key: string };
           embeddings: { openai_compatible: { api_key: string } };
         };
         runtime: {
@@ -547,6 +553,7 @@ describe("settings-driven AI runtime configuration", () => {
     expect(getJson.data.ai.openrouter.api_key).toBe("***");
     expect(getJson.data.ai.openai_compatible.api_key).toBe("***");
     expect(getJson.data.ai.deepseek.api_key).toBe("***");
+    expect(getJson.data.ai.litellm.api_key).toBe("***");
     expect(getJson.data.ai.embeddings.openai_compatible.api_key).toBe("***");
     expect(getJson.data.runtime.llm).toEqual({
       enabled: true,
@@ -796,6 +803,35 @@ describe("settings-driven AI runtime configuration", () => {
         expectedUrl: "https://api.cheaperinference.com/v1/chat/completions",
         expectedAuth: "Bearer cheaperinference-key",
         expectedModel: "gpt-5.4-mini",
+        expectedOpenRouterTitle: null,
+      },
+      {
+        provider: "litellm",
+        patch: {
+          litellm: {
+            api_key: "sk-litellm-virtual-key",
+            base_url: "http://localhost:4000/",
+            model: "claude-sonnet",
+          },
+        },
+        expectedUrl: "http://localhost:4000/chat/completions",
+        expectedAuth: "Bearer sk-litellm-virtual-key",
+        expectedModel: "claude-sonnet",
+        expectedOpenRouterTitle: null,
+      },
+      {
+        // A proxy without a master key: the virtual key is optional.
+        provider: "litellm",
+        patch: {
+          litellm: {
+            api_key: "",
+            base_url: "http://litellm.internal:4000",
+            model: "gemini-flash",
+          },
+        },
+        expectedUrl: "http://litellm.internal:4000/chat/completions",
+        expectedAuth: null,
+        expectedModel: "gemini-flash",
         expectedOpenRouterTitle: null,
       },
     ];

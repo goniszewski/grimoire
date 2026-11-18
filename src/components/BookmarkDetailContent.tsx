@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
+import { clearDraft, editDraftKey, isStringDraft, loadDraft } from "@/lib/draft-storage";
 import { UIBookmark as Bookmark } from "@/hooks/use-bookmarks";
 import { PipelineRecoveryPanel } from "./PipelineRecoveryPanel";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +18,7 @@ interface BookmarkDetailContentProps {
   bookmark: Bookmark;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
-  onUpdateNotes: (id: string, notes: string | null) => void;
+  onUpdateNotes: (id: string, notes: string | null) => Promise<void> | void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -66,6 +68,8 @@ export function BookmarkDetailContent({
   const [categoryInput, setCategoryInput] = useState("");
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesInput, setNotesInput] = useState("");
+  const [notesRestored, setNotesRestored] = useState(false);
+  const notesDraftKey = editDraftKey(bookmark.id, "notes");
   const [hiddenMediaIds, setHiddenMediaIds] = useState<Set<string>>(new Set());
   const [openMetrics, setOpenMetrics] = useState({
     opened_count: bookmark.opened_count,
@@ -108,6 +112,33 @@ export function BookmarkDetailContent({
     setHiddenMediaIds(new Set());
   }, [bookmark.id, bookmark.opened_count, bookmark.last_opened_at]);
 
+  // Offer back an unsaved notes edit (crash, accidental close) when this bookmark is shown again.
+  useEffect(() => {
+    const draft = loadDraft(notesDraftKey, isStringDraft);
+    if (draft !== null && draft !== (bookmark.notes ?? "")) {
+      setNotesInput(draft);
+      setEditingNotes(true);
+      setNotesRestored(true);
+    } else {
+      if (draft !== null) clearDraft(notesDraftKey);
+      setEditingNotes(false);
+      setNotesRestored(false);
+    }
+    // Only when the target bookmark changes; later notes updates must not clobber an edit in progress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notesDraftKey]);
+
+  useDraftAutosave(notesDraftKey, notesInput, {
+    active: editingNotes,
+    isEmpty: (value) => value === (bookmark.notes ?? ""),
+  });
+
+  const closeNotesEditor = (discardDraft = true) => {
+    if (discardDraft) clearDraft(notesDraftKey);
+    setNotesRestored(false);
+    setEditingNotes(false);
+  };
+
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && tagInput.trim()) {
       const newTag = tagInput.trim().toLowerCase();
@@ -132,9 +163,16 @@ export function BookmarkDetailContent({
   const handleNotesSubmit = () => {
     const trimmed = notesInput.trim() || null;
     if (trimmed !== (bookmark.notes?.trim() || null)) {
-      onUpdateNotes(bookmark.id, trimmed);
+      // Keep the draft until the save succeeds, so a failed save can be restored.
+      const draftKey = notesDraftKey;
+      closeNotesEditor(false);
+      void Promise.resolve(onUpdateNotes(bookmark.id, trimmed)).then(
+        () => clearDraft(draftKey),
+        () => undefined,
+      );
+      return;
     }
-    setEditingNotes(false);
+    closeNotesEditor();
   };
 
   const handleRecordedOpen = (metrics: RecordedOpenMetrics) => {
@@ -276,6 +314,12 @@ export function BookmarkDetailContent({
         </div>
         {editingNotes ? (
           <div className="space-y-1.5">
+            {notesRestored && (
+              <p role="status" className="text-xs text-muted-foreground">
+                Restored unsaved draft —{" "}
+                <button type="button" className="underline" onClick={() => closeNotesEditor()}>Discard</button>
+              </p>
+            )}
             <Textarea
               value={notesInput}
               onChange={(e) => setNotesInput(e.target.value)}
@@ -287,7 +331,7 @@ export function BookmarkDetailContent({
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNotesSubmit}>
                 <Check className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingNotes(false)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => closeNotesEditor()}>
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>

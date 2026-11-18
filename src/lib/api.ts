@@ -66,6 +66,7 @@ import type {
   SuggestionsResponseDto,
   TagListResponseDto,
   TagRequestDto,
+  TagUpdateRequestDto,
   TagResponseDto,
   TimelinePageDto,
   UpdateCheckResponseDto,
@@ -207,6 +208,7 @@ type ApiTagRecordDto = TagResponseDto["data"];
 export interface ApiTag {
   id: ApiTagDto["id"];
   name: ApiTagDto["name"];
+  description: ApiTagDto["description"];
   created_at: ApiTagDto["created_at"];
   bookmark_count: ApiTagDto["bookmark_count"];
 }
@@ -214,6 +216,7 @@ export interface ApiTag {
 export interface ApiTagRecord {
   id: ApiTagRecordDto["id"];
   name: ApiTagRecordDto["name"];
+  description: ApiTagRecordDto["description"];
   created_at: ApiTagRecordDto["created_at"];
 }
 
@@ -388,6 +391,11 @@ export interface ApiSettings {
       base_url: SettingsDto["ai"]["cheaperinference"]["base_url"];
       model: SettingsDto["ai"]["cheaperinference"]["model"];
     };
+    litellm: {
+      api_key: SettingsDto["ai"]["litellm"]["api_key"];
+      base_url: SettingsDto["ai"]["litellm"]["base_url"];
+      model: SettingsDto["ai"]["litellm"]["model"];
+    };
     embeddings: {
       provider: ApiEmbeddingProvider;
       model: SettingsDto["ai"]["embeddings"]["model"];
@@ -561,10 +569,20 @@ export function appendLibrarySort(q: URLSearchParams, params: LibrarySortParams)
   if (params.direction) q.set("direction", params.direction);
 }
 
+export type TagMatch = "all" | "any";
+
+/** Serialises one or many tag names as repeated `tag` params, plus `tag_match` when several. */
+export function appendTagFilter(q: URLSearchParams, tag?: string | string[], tagMatch?: TagMatch): void {
+  const tags = (Array.isArray(tag) ? tag : tag ? [tag] : []).filter(Boolean);
+  for (const name of tags) q.append("tag", name);
+  if (tags.length > 1 && tagMatch) q.set("tag_match", tagMatch);
+}
+
 export interface ListBookmarksParams extends LibraryParityFilterParams, LibrarySortParams {
   limit?: number;
   offset?: number;
-  tag?: string;
+  tag?: string | string[];
+  tag_match?: TagMatch;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -595,7 +613,7 @@ export async function listBookmarks(params: ListBookmarksParams = {}): Promise<B
   const q = new URLSearchParams();
   if (params.limit != null) q.set("limit", String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -613,7 +631,7 @@ export async function listLibraryAggregates(
   params: LibraryAggregatesParams = {}
 ): Promise<LibraryAggregatesResponse> {
   const q = new URLSearchParams();
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -729,7 +747,8 @@ export async function getReprocessStatus(batchId: string): Promise<ReprocessBatc
 export interface SearchParams extends LibraryParityFilterParams, LibrarySortParams {
   q: string;
   mode?: SearchResponseDto["meta"]["mode"];
-  tag?: string;
+  tag?: string | string[];
+  tag_match?: TagMatch;
   domain?: string;
   category_id?: string;
   category?: string;
@@ -743,7 +762,7 @@ export interface SearchParams extends LibraryParityFilterParams, LibrarySortPara
 export async function searchBookmarks(params: SearchParams): Promise<SearchResponseDto> {
   const q = new URLSearchParams({ q: params.q });
   if (params.mode) q.set("mode", params.mode);
-  if (params.tag) q.set("tag", params.tag);
+  appendTagFilter(q, params.tag, params.tag_match);
   if (params.domain) q.set("domain", params.domain);
   if (params.category_id) q.set("category_id", params.category_id);
   if (params.category) q.set("category", params.category);
@@ -794,17 +813,23 @@ export async function listTags(): Promise<ApiTagListResponse> {
   return apiFetch<ApiTagListResponse>("/tags");
 }
 
-export async function createTag(name: string): Promise<ApiTagResponse> {
+export async function createTag(name: string, description?: string | null): Promise<ApiTagResponse> {
+  const body: TagRequestDto = description ? { name, description } : { name };
   return apiFetch<ApiTagResponse>("/tags", {
     method: "POST",
-    body: JSON.stringify({ name } satisfies TagRequestDto),
+    body: JSON.stringify(body),
   });
 }
 
 export async function renameTag(id: string, name: string): Promise<ApiTagResponse> {
+  return updateTag(id, { name });
+}
+
+/** Update a tag's name and/or description. A null or blank description clears it. */
+export async function updateTag(id: string, patch: TagUpdateRequestDto): Promise<ApiTagResponse> {
   return apiFetch<ApiTagResponse>(`/tags/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ name } satisfies TagRequestDto),
+    body: JSON.stringify(patch),
   });
 }
 
@@ -988,12 +1013,13 @@ export async function getDiagnostics(): Promise<{ data: ApiDiagnostics }> {
 }
 
 /**
- * Lists models from an AI provider catalog (currently OpenRouter).
- * The daemon fetches the public catalog; `free` filters to zero-cost models.
+ * Lists models from an AI provider catalog: OpenRouter's public catalog, where
+ * `free` filters to zero-cost models, or the chat models of the configured
+ * LiteLLM proxy.
  * The custom header is required by the daemon so foreign web pages cannot
  * blind-trigger outbound catalog fetches.
  */
-export async function fetchAiModels(provider: "openrouter", free: boolean): Promise<ApiAiModel[]> {
+export async function fetchAiModels(provider: "openrouter" | "litellm", free: boolean): Promise<ApiAiModel[]> {
   const query = new URLSearchParams({ provider, free: String(free) });
   const res = await apiFetch<ApiAiModelCatalogResponse>(`/settings/ai-models?${query.toString()}`, {
     headers: { "X-LittleImp-Frontend": "1" },
@@ -1026,7 +1052,8 @@ export async function testAiConnection(): Promise<{ ok: boolean; error?: string 
 export async function downloadExport(
   format: "json" | "csv",
   filters: {
-    tag?: string;
+    tag?: string | string[];
+    tag_match?: TagMatch;
     domain?: string;
     category_id?: string;
     category?: string;
@@ -1036,7 +1063,7 @@ export async function downloadExport(
   } & LibraryParityFilterParams = {}
 ): Promise<{ blob: Blob; filename: string }> {
   const params = new URLSearchParams({ format });
-  if (filters.tag) params.set("tag", filters.tag);
+  appendTagFilter(params, filters.tag, filters.tag_match);
   if (filters.domain) params.set("domain", filters.domain);
   if (filters.category_id) params.set("category_id", filters.category_id);
   if (filters.category) params.set("category", filters.category);

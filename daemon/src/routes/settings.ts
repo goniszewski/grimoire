@@ -1,14 +1,19 @@
 import { Hono, Context, type Next } from "hono";
 import { settingsManager, redactSettings, validateSettingsPatch } from "../settings.js";
 import { log } from "../logger.js";
-import { resolveRuntimeSettings } from "../runtime-settings.js";
+import { LITELLM_BASE_URL, resolveRuntimeSettings } from "../runtime-settings.js";
 import { testProviderConnection } from "../ai/llm-provider.js";
-import { listProviderModels } from "../ai/models-catalog.js";
+import { listProviderModels, trimTrailingSlashes } from "../ai/models-catalog.js";
 import { normalizeHttpsBaseUrl } from "../lib/base-url.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+/** The saved LiteLLM proxy URL (validated as http/https on save), or the default local proxy. */
+function normalizeLiteLLMBaseUrl(raw: string): string {
+  return trimTrailingSlashes(raw.trim() || LITELLM_BASE_URL);
+}
 
 function problem(
   c: Context,
@@ -119,8 +124,10 @@ export function createSettingsRoute(): Hono {
 
   /**
    * GET /settings/ai-models?provider=openrouter&free=true
-   * Lists models available from the configured provider (currently OpenRouter).
-   * The OpenRouter catalog is public, so no API key is required.
+   * GET /settings/ai-models?provider=litellm
+   * Lists models available from the configured provider. The OpenRouter
+   * catalog is public, so no API key is required. A LiteLLM proxy is asked
+   * for its chat models with the saved virtual key, when one is set.
    *
    * The endpoint triggers outbound requests on behalf of the browser, so it
    * requires the X-LittleImp-Frontend header that the app always sends. Foreign
@@ -132,7 +139,7 @@ export function createSettingsRoute(): Hono {
       return problem(c, 403, "Forbidden", "This endpoint requires the X-LittleImp-Frontend header");
     }
     const provider = c.req.query("provider");
-    if (provider !== "openrouter") {
+    if (provider !== "openrouter" && provider !== "litellm") {
       return problem(c, 400, "Unsupported Provider",
         `Model catalog is not available for provider '${provider}'`);
     }
@@ -144,6 +151,15 @@ export function createSettingsRoute(): Hono {
 
     try {
       const settings = settingsManager.read();
+      if (provider === "litellm") {
+        const result = await listProviderModels({
+          provider: "litellm",
+          free,
+          baseUrl: normalizeLiteLLMBaseUrl(settings.ai.litellm.base_url),
+          apiKey: settings.ai.litellm.api_key.trim(),
+        });
+        return ok(c, result);
+      }
       let baseUrl: string;
       try {
         baseUrl = normalizeHttpsBaseUrl(settings.ai.openrouter.base_url, OPENROUTER_BASE_URL);

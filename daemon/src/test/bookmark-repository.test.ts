@@ -358,4 +358,57 @@ describe("BookmarkRepository", () => {
       .get(bm.id);
     expect(junctions!.count).toBe(0);
   });
+
+  // ─── Multi-tag filter ────────────────────────────────────────────────────
+
+  describe("multi-tag filter", () => {
+    beforeEach(() => {
+      const a = repo.create("https://a.example.com", "A");
+      const b = repo.create("https://b.example.com", "B");
+      const c = repo.create("https://c.example.com", "C");
+      repo.setTags(a.id, ["android", "app", "opensource"]);
+      repo.setTags(b.id, ["android", "app"]);
+      repo.setTags(c.id, ["c++", "100%_done"]);
+    });
+
+    const titles = (opts: Parameters<BookmarkRepository["list"]>[0]) =>
+      repo.list(opts).items.map((i) => i.title).sort();
+    const base = { limit: 50, offset: 0 };
+
+    it("single tag string behaves as before (case-insensitive)", () => {
+      expect(titles({ ...base, tag: "ANDROID" })).toEqual(["A", "B"]);
+    });
+
+    it("AND is the default for several tags", () => {
+      expect(titles({ ...base, tag: ["android", "app", "opensource"] })).toEqual(["A"]);
+      expect(titles({ ...base, tag: ["android", "app"], tag_match: "all" })).toEqual(["A", "B"]);
+    });
+
+    it("OR matches any tag", () => {
+      expect(titles({ ...base, tag: ["opensource", "c++"], tag_match: "any" })).toEqual(["A", "C"]);
+    });
+
+    it("empty / blank / duplicate values are ignored", () => {
+      expect(repo.list({ ...base, tag: [] }).total).toBe(3);
+      expect(repo.list({ ...base, tag: ["", "  "] }).total).toBe(3);
+      expect(titles({ ...base, tag: ["android", "ANDROID", "opensource"] })).toEqual(["A"]);
+    });
+
+    it("a nonexistent tag empties AND but is ignored by OR", () => {
+      expect(repo.list({ ...base, tag: ["android", "nope"] }).total).toBe(0);
+      expect(titles({ ...base, tag: ["android", "nope"], tag_match: "any" })).toEqual(["A", "B"]);
+      expect(repo.list({ ...base, tag: "nope" }).total).toBe(0);
+    });
+
+    it("treats special characters literally", () => {
+      expect(titles({ ...base, tag: ["c++", "100%_done"] })).toEqual(["C"]);
+      expect(repo.list({ ...base, tag: "%" }).total).toBe(0);
+      expect(repo.list({ ...base, tag: "x' OR '1'='1" }).total).toBe(0);
+    });
+
+    it("aggregates honour the multi-tag filter", () => {
+      expect(repo.aggregates({ tag: ["android", "opensource"] }).total).toBe(1);
+      expect(repo.aggregates({ tag: ["android", "opensource"], tag_match: "any" }).total).toBe(2);
+    });
+  });
 });

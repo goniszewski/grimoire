@@ -281,3 +281,28 @@ describe("SearchRepository — keywordSearch", () => {
     expect(result.items.map((bookmark) => bookmark.id)).toContain(target.id);
   });
 });
+
+describe("SearchRepository — multi-tag filter and tokenised text", () => {
+  it("combines text tokens (any column incl. tags) with AND/OR tag filters", () => {
+    const db = makeTestDb();
+    const search = new SearchRepository(db);
+    const repo = new BookmarkRepository(db);
+    const a = repo.create("https://a.example.com", "Launcher");
+    const b = repo.create("https://b.example.com", "Notes app");
+    repo.setTags(a.id, ["android", "app", "opensource"]);
+    repo.setTags(b.id, ["android"]);
+
+    const q = (opts: Record<string, unknown>) =>
+      search.keywordSearch({ limit: 20, offset: 0, ...opts }).items.map((i) => i.title).sort();
+
+    // Space-separated words each match tags OR other fields (AND across words).
+    expect(q({ q: "android app opensource" })).toEqual(["Launcher"]);
+    expect(q({ q: "android app" })).toEqual(["Launcher", "Notes app"]);
+    // Tag filters, with and without text.
+    expect(q({ tag: ["android", "opensource"] })).toEqual(["Launcher"]);
+    expect(q({ tag: ["android", "opensource"], tag_match: "any" })).toEqual(["Launcher", "Notes app"]);
+    expect(q({ q: "notes", tag: ["android", "app"], tag_match: "any" })).toEqual(["Notes app"]);
+    expect(q({ q: "notes", tag: ["android", "app"] })).toEqual([]);
+    expect(q({ tag: ["android", "ghost"] })).toEqual([]);
+  });
+});

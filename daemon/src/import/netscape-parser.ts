@@ -80,14 +80,28 @@ function attr(attrStr: string, name: string): string | null {
   return m ? decodeHtmlEntities(m[1]) : null;
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
+/**
+ * Decode the entities bookmark exporters emit, in a single pass so that text
+ * like `&amp;lt;` becomes `&lt;` and is not decoded a second time. Covers the
+ * common named entities plus numeric references (`&#039;`, `&#x27;`), which PHP
+ * based exporters such as Shaarli use for apostrophes.
+ */
 function decodeHtmlEntities(s: string): string {
-  return s
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'");
+  return s.replace(/&(?:#(\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]+));/g, (match, dec, hex, named) => {
+    if (named !== undefined) return NAMED_ENTITIES[named.toLowerCase()] ?? match;
+    const code = dec !== undefined ? parseInt(dec, 10) : parseInt(hex, 16);
+    if (code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return match;
+    return String.fromCodePoint(code);
+  });
 }
 
 function stripTags(s: string): string {

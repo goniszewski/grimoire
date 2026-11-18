@@ -291,12 +291,12 @@ function buildRemappingInput(
           tagId: mapping.tagId,
         };
       }
-      const targetName = (mapping.targetName ?? sourceTag).trim();
-      if (!targetName) return null;
+      // Without an explicit name the daemon applies its suggested (normalised) name.
+      const targetName = mapping.targetName?.trim();
       return {
         sourceTag,
         action: mapping.action,
-        targetName,
+        ...(targetName ? { targetName } : {}),
       };
     })
     .filter((mapping): mapping is NonNullable<typeof mapping> => mapping !== null);
@@ -462,9 +462,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     patch: Partial<TagRemapState>,
     options: { previewImmediately?: boolean } = { previewImmediately: true }
   ) => {
+    const suggested = preview?.remapping.tags.find((mapping) => mapping.sourceTag === sourceTag);
     const current = tagMappings[sourceTag] ?? {
       action: "new" as const,
-      targetName: sourceTag,
+      targetName: suggested?.targetName ?? undefined,
     };
     const next = {
       ...tagMappings,

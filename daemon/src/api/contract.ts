@@ -118,7 +118,13 @@ const pagingQuery = objectSchema({
 });
 
 const bookmarkFilters = {
-  tag: stringSchema("Filter by tag name"),
+  tag: stringSchema(
+    "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+  ),
+  tag_match: stringSchema(
+    "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+    { enum: ["all", "any"] }
+  ),
   domain: stringSchema("Filter by exact domain"),
   category_id: stringSchema("Filter by exact category ID; takes precedence over category"),
   category: stringSchema("Filter by category name"),
@@ -631,22 +637,38 @@ const schemas = {
     {
       id: stringSchema("Tag ID"),
       name: stringSchema("Tag name"),
+      description: nullable(stringSchema("Optional tag description", { maxLength: 500 })),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
     },
-    ["id", "name", "created_at"],
+    ["id", "name", "description", "created_at"],
     "Tag row returned by create and attach endpoints"
   ),
   TagWithCount: objectSchema(
     {
       id: stringSchema("Tag ID"),
       name: stringSchema("Tag name"),
+      description: nullable(stringSchema("Optional tag description", { maxLength: 500 })),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
       bookmark_count: integerSchema("Active bookmark count", { minimum: 0 }),
     },
-    ["id", "name", "created_at", "bookmark_count"],
+    ["id", "name", "description", "created_at", "bookmark_count"],
     "Tag row with active bookmark count returned by tag listings"
   ),
-  TagRequest: objectSchema({ name: stringSchema("Tag name, normalized to lowercase", { maxLength: 50 }) }, ["name"]),
+  TagRequest: objectSchema(
+    {
+      name: stringSchema("Tag name, normalized to lowercase", { maxLength: 50 }),
+      description: nullable(stringSchema("Optional tag description; blank or null stores no description", { maxLength: 500 })),
+    },
+    ["name"]
+  ),
+  TagUpdateRequest: objectSchema(
+    {
+      name: stringSchema("New tag name, normalized to lowercase", { maxLength: 50 }),
+      description: nullable(stringSchema("Tag description; blank or null clears it, omitted leaves it unchanged", { maxLength: 500 })),
+    },
+    [],
+    "At least one of name or description is required"
+  ),
   TagListResponse: envelope(arrayOf(ref("TagWithCount"), "Tags")),
   TagResponse: envelope(ref("TagRecord")),
   Domain: objectSchema(
@@ -1034,7 +1056,7 @@ const schemas = {
     {
       enabled: booleanSchema("Whether this runtime feature is usable"),
       provider: stringSchema("Resolved provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
       }),
       model: nullable(stringSchema("Resolved model")),
       base_url: nullable(stringSchema("Resolved base URL", { format: "uri" })),
@@ -1081,7 +1103,7 @@ const schemas = {
       ai: objectSchema(
         {
           provider: stringSchema("LLM provider", {
-            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+            enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
           }),
           openai: objectSchema(
             {
@@ -1137,6 +1159,14 @@ const schemas = {
             },
             ["api_key", "base_url", "model"]
           ),
+          litellm: objectSchema(
+            {
+              api_key: stringSchema("Redacted LiteLLM proxy virtual key. Empty string means unset"),
+              base_url: stringSchema("LiteLLM proxy base URL", { format: "uri" }),
+              model: stringSchema("LiteLLM proxy model name"),
+            },
+            ["api_key", "base_url", "model"]
+          ),
           embeddings: objectSchema(
             {
               provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
@@ -1162,6 +1192,7 @@ const schemas = {
           "openai_compatible",
           "deepseek",
           "cheaperinference",
+          "litellm",
           "embeddings",
         ]
       ),
@@ -1209,7 +1240,7 @@ const schemas = {
   SettingsPatch: objectSchema({
     ai: objectSchema({
       provider: stringSchema("LLM provider", {
-        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "none"],
+        enum: ["openai", "ollama", "anthropic", "openrouter", "openai_compatible", "deepseek", "cheaperinference", "litellm", "none"],
       }),
       openai: objectSchema({
         api_key: stringSchema("OpenAI API key, empty string clears it"),
@@ -1243,6 +1274,11 @@ const schemas = {
         api_key: stringSchema("Cheaper Inference API key, empty string clears it"),
         base_url: stringSchema("Cheaper Inference OpenAI-compatible base URL", { format: "uri" }),
         model: stringSchema("Cheaper Inference chat model"),
+      }),
+      litellm: objectSchema({
+        api_key: stringSchema("LiteLLM proxy virtual key, empty string clears it"),
+        base_url: stringSchema("LiteLLM proxy base URL", { format: "uri" }),
+        model: stringSchema("LiteLLM proxy model name"),
       }),
       embeddings: objectSchema({
         provider: stringSchema("Embedding provider", { enum: ["openai", "ollama", "openai_compatible"] }),
@@ -1302,7 +1338,7 @@ const schemas = {
   ),
   AiModelCatalog: objectSchema(
     {
-      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter"] }),
+      provider: stringSchema("Provider the catalog was fetched from", { enum: ["openrouter", "litellm"] }),
       free: booleanSchema("Whether only free models were requested"),
       fetched_at: stringSchema("Catalog fetch timestamp", { format: "date-time" }),
       models: arrayOf(ref("AiModel"), "Available models"),
@@ -1944,6 +1980,7 @@ const exampleCategoryNode = {
 const exampleTag = {
   id: "tag_rag",
   name: "rag",
+  description: "Retrieval-augmented generation notes",
   created_at: exampleTimestamp,
 } as const;
 
@@ -2520,18 +2557,18 @@ export const apiContract = {
       method: "PUT",
       path: "/tags/:id",
       tag: "Tags",
-      summary: "Rename a tag without changing bookmark associations.",
-      description: "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+      summary: "Rename a tag and/or edit its description without changing bookmark associations.",
+      description: "Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.",
       request: {
         pathParams: idParam(),
-        body: { contentType: "application/json", schema: ref("TagRequest") },
+        body: { contentType: "application/json", schema: ref("TagUpdateRequest") },
       },
       responses: {
-        "200": jsonResponse("Renamed tag", ref("TagResponse")),
+        "200": jsonResponse("Updated tag", ref("TagResponse")),
         "400": problemResponse("Malformed JSON"),
         "404": problemResponse("Tag not found"),
         "409": problemResponse("Duplicate tag name"),
-        "422": problemResponse("Invalid tag name"),
+        "422": problemResponse("Invalid tag name or description"),
       },
     },
     {
@@ -2970,12 +3007,12 @@ export const apiContract = {
       method: "GET",
       path: "/settings/ai-models",
       tag: "Settings",
-      summary: "List models available from an AI provider catalog (currently OpenRouter).",
+      summary: "List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).",
       description:
-        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+        "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
       request: {
         query: objectSchema({
-          provider: stringSchema("Provider to list models for", { enum: ["openrouter"] }),
+          provider: stringSchema("Provider to list models for", { enum: ["openrouter", "litellm"] }),
           free: stringSchema("When true, only free models are returned", { enum: ["true", "false"] }),
         }),
       },

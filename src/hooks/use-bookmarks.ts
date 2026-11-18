@@ -18,6 +18,7 @@ import type {
   LibrarySortParams,
   LibraryAggregatesParams,
   LibraryParityFilterParams,
+  TagMatch,
 } from "@/lib/api";
 import {
   generatedFavicon,
@@ -247,6 +248,8 @@ export interface UIBookmark {
   summary: string;
   domain: string;
   favicon: string;
+  /** Cached preview image/screenshot URL (daemon media), or null when none */
+  screenshot?: string | null;
   tags: string[];
   /** category name — resolved from category_id */
   category: string;
@@ -304,6 +307,7 @@ type BookmarkForUi = {
   description: ApiBookmark["description"];
   domain: ApiBookmark["domain"];
   favicon_url: ApiBookmark["favicon_url"];
+  screenshot_url?: ApiBookmark["screenshot_url"];
   tags: ApiBookmark["tags"];
   category_id: ApiBookmark["category_id"];
   status: ApiBookmark["status"];
@@ -329,6 +333,7 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     summary: bm.description ?? "",
     domain: bm.domain,
     favicon: normaliseDaemonMediaUrl(bm.favicon_url) ?? generatedFavicon(bm.domain),
+    screenshot: normaliseDaemonMediaUrl(bm.screenshot_url),
     tags: bm.tags,
     category: bm.category_id ? (categoryMap.get(bm.category_id) ?? "Uncategorized") : "Uncategorized",
     category_id: bm.category_id,
@@ -345,6 +350,18 @@ function toUIBookmark(bm: BookmarkForUi, categoryMap: Map<string, string>): UIBo
     content: bm.content,
     media: normaliseBookmarkMediaSet(bm.media),
   };
+}
+
+export interface AddBookmarkOptions {
+  readLater?: boolean;
+  notes?: string;
+  title?: string;
+  tags?: string[];
+}
+
+/** Maps a raw API bookmark to the UI shape (used to open a bookmark found outside the loaded list). */
+export function apiBookmarkToUI(bm: ApiBookmark, categories: Array<{ id: string; name: string }>): UIBookmark {
+  return toUIBookmark(bm, new Map(categories.map((c) => [c.id, c.name])));
 }
 
 function toUICategories(categories: ApiCategory[], depth = 0, counts?: Map<string, number>): UICategory[] {
@@ -420,6 +437,9 @@ export function useBookmarks() {
 
   // ─── UI filter state ───────────────────────────────────────────────────────
   const [libraryPreferences, setLibraryPreferences] = useState<LibraryViewPreferences>(loadLibraryViewPreferences);
+  // Session-only extra tags (beyond the persisted primary tag) for multi-tag filtering.
+  const [extraTags, setExtraTags] = useState<string[]>([]);
+  const [tagMatch, setTagMatch] = useState<TagMatch>("all");
   const [selectedTagOverride, setSelectedTagOverride] = useState<string | null | undefined>(undefined);
   const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -476,6 +496,7 @@ export function useBookmarks() {
 
   const setSelectedTag = useCallback((tag: string | null, options?: PreferenceUpdateOptions) => {
     const nextTag = parseStringPreference(tag);
+    setExtraTags([]);
     if (options?.persist === false) {
       setSelectedTagOverride(nextTag);
       resetPage();
@@ -486,6 +507,29 @@ export function useBookmarks() {
     updateLibraryPreferences((current) => ({ ...current, selectedTag: nextTag }));
     resetPage();
   }, [resetPage, updateLibraryPreferences]);
+
+  /** Add or remove a tag from the multi-tag selection (the primary tag is the first entry). */
+  const toggleTag = useCallback((tag: string) => {
+    const name = tag.trim();
+    if (!name) return;
+    if (!selectedTag) {
+      setSelectedTag(name);
+      return;
+    }
+    if (selectedTag === name) {
+      const [next, ...rest] = extraTags;
+      setSelectedTag(next ?? null);
+      setExtraTags(rest);
+      return;
+    }
+    setExtraTags((current) => (current.includes(name) ? current.filter((t) => t !== name) : [...current, name]));
+    resetPage();
+  }, [extraTags, resetPage, selectedTag, setSelectedTag]);
+
+  const changeTagMatch = useCallback((match: TagMatch) => {
+    setTagMatch(match);
+    resetPage();
+  }, [resetPage]);
 
   const setSelectedDomain = useCallback((domain: string | null) => {
     updateLibraryPreferences((current) => ({ ...current, selectedDomain: parseStringPreference(domain) }));
@@ -608,6 +652,18 @@ export function useBookmarks() {
     return params;
   }, [readStateFilter, pinnedFilter, openActivityFilter, lastOpenedFrom, lastOpenedTo]);
 
+  const selectedTags = useMemo(
+    () => (selectedTag ? [selectedTag, ...extraTags.filter((t) => t !== selectedTag)] : []),
+    [selectedTag, extraTags]
+  );
+  const tagFilterParam = useMemo<{ tag?: string | string[]; tag_match?: TagMatch }>(
+    () => ({
+      tag: selectedTags.length > 1 ? selectedTags : (selectedTag ?? undefined),
+      tag_match: selectedTags.length > 1 ? tagMatch : undefined,
+    }),
+    [selectedTags, selectedTag, tagMatch]
+  );
+
   const aggregateParams = useMemo<LibraryAggregatesParams>(() => ({}), []);
 
   const aggregatesQuery = useQuery({
@@ -619,7 +675,7 @@ export function useBookmarks() {
   const listParams = useMemo(() => ({
     limit: pageSize,
     offset: pageOffset,
-    tag: selectedTag ?? undefined,
+    ...tagFilterParam,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
@@ -628,7 +684,7 @@ export function useBookmarks() {
     read_later: readLaterOnly ? true : undefined,
     ...parityFilterParams,
     ...toLibrarySortParams(librarySortBy),
-  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, librarySortBy]);
+  }), [pageSize, pageOffset, tagFilterParam, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, librarySortBy]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -642,7 +698,7 @@ export function useBookmarks() {
   const searchParams = useMemo(() => ({
     q: debouncedQuery,
     mode: searchMode,
-    tag: selectedTag ?? undefined,
+    ...tagFilterParam,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
@@ -653,7 +709,7 @@ export function useBookmarks() {
     limit: pageSize,
     offset: pageOffset,
     ...toLibrarySortParams(searchSortBy),
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, searchSortBy]);
+  }), [debouncedQuery, searchMode, tagFilterParam, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, searchSortBy]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -723,6 +779,8 @@ export function useBookmarks() {
     q: searchQuery.trim(),
     mode: searchMode,
     tag: selectedTag,
+    extraTags,
+    tagMatch,
     domain: selectedDomain,
     category: selectedCategory,
     categoryId: selectedCategoryId,
@@ -741,6 +799,8 @@ export function useBookmarks() {
     searchQuery,
     searchMode,
     selectedTag,
+    extraTags,
+    tagMatch,
     selectedDomain,
     selectedCategory,
     selectedCategoryId,
@@ -794,8 +854,24 @@ export function useBookmarks() {
   // ─── Mutations ────────────────────────────────────────────────────────────
 
   const addBookmarkMutation = useMutation({
-    mutationFn: ({ url, readLater, notes }: { url: string; readLater?: boolean; notes?: string }) =>
-      createBookmark(url, undefined, { read_later: readLater ? 1 : 0, ...(notes ? { notes } : {}) }),
+    mutationFn: async ({ url, readLater, notes, title, tags }: AddBookmarkOptions & { url: string }) => {
+      const created = await createBookmark(url, title || undefined, {
+        read_later: readLater ? 1 : 0,
+        ...(notes ? { notes } : {}),
+      });
+      if (tags && tags.length > 0 && created?.data?.id) {
+        // The create endpoint takes no tags; apply them right after. A tag failure must not fail the save.
+        try {
+          // Merge with tags already on the bookmark: the create endpoint is idempotent and may have
+          // returned an existing bookmark, whose tags must not be replaced.
+          const existingTags = Array.isArray(created.data.tags) ? created.data.tags : [];
+          await updateBookmark(created.data.id, { tags: [...new Set([...existingTags, ...tags])] });
+        } catch {
+          // Bookmark is saved; tags can be added from its detail view.
+        }
+      }
+      return created;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["revisit"] });
       qc.invalidateQueries({ queryKey: bookmarkKeys.lists() });
@@ -893,7 +969,7 @@ export function useBookmarks() {
 
   // ─── Public API matching use-bookmark-store interface ─────────────────────
 
-  const addBookmark = useCallback(async (url: string, options?: { readLater?: boolean; notes?: string }) => {
+  const addBookmark = useCallback(async (url: string, options?: AddBookmarkOptions) => {
     await addBookmarkMutation.mutateAsync({ url, ...options });
   }, [addBookmarkMutation]);
 
@@ -927,9 +1003,9 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { category_id: matches[0][0] } });
   }, [updateBookmarkMutation, categoryMap]);
 
-  const updateBookmarkField = useCallback((id: string, field: "title" | "url" | "summary", value: string) => {
+  const updateBookmarkField = useCallback(async (id: string, field: "title" | "url" | "summary", value: string): Promise<void> => {
     if (field === "title") {
-      updateBookmarkMutation.mutate({ id, patch: { title: value } });
+      await updateBookmarkMutation.mutateAsync({ id, patch: { title: value } });
     }
     // url and summary changes are not directly supported by PUT /bookmarks/:id
     // (url changes would require re-ingestion; summary is from content extraction)
@@ -981,8 +1057,8 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { read_at: null } }, callbacks);
   }, [updateBookmarkMutation]);
 
-  const updateBookmarkNotes = useCallback((id: string, notes: string | null) => {
-    updateBookmarkMutation.mutate({ id, patch: { notes } });
+  const updateBookmarkNotes = useCallback(async (id: string, notes: string | null): Promise<void> => {
+    await updateBookmarkMutation.mutateAsync({ id, patch: { notes } });
   }, [updateBookmarkMutation]);
 
   const resetLibraryPreferences = useCallback(() => {
@@ -1034,6 +1110,11 @@ export function useBookmarks() {
     setSelectedCategory: selectCategory,
     selectedTag,
     setSelectedTag,
+    selectedTags,
+    toggleTag,
+    tagMatch,
+    setTagMatch: changeTagMatch,
+    tagFilterParam,
     selectedDomain,
     setSelectedDomain,
     readLaterOnly,

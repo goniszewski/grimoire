@@ -1,11 +1,13 @@
-import type { BookmarkParityFilters, ReadStateFilter } from "../db/bookmark-filters.js";
+import type { BookmarkParityFilters, BookmarkTagFilters, ReadStateFilter } from "../db/bookmark-filters.js";
 import {
   isBookmarkSortDirection,
   isBookmarkSortKey,
+  MAX_TAG_FILTERS,
+  normalizeTagFilter,
 } from "../db/bookmark-filters.js";
 import type { BookmarkSortDirection, BookmarkSortKey } from "../db/bookmark-filters.js";
 
-export interface BookmarkRouteFilters extends BookmarkParityFilters {
+export interface BookmarkRouteFilters extends BookmarkParityFilters, BookmarkTagFilters {
   read_later?: 0 | 1;
 }
 
@@ -58,8 +60,19 @@ function parseDateParam(
 }
 
 export function parseBookmarkRouteFilters(
-  query: (name: string) => string | undefined
+  query: (name: string) => string | undefined,
+  queryAll?: (name: string) => string[] | undefined
 ): FilterParseResult {
+  const rawTags = queryAll?.("tag") ?? (query("tag") !== undefined ? [query("tag") as string] : []);
+  const tags = normalizeTagFilter(rawTags);
+  if (tags.length > MAX_TAG_FILTERS) {
+    return { ok: false, detail: `At most ${MAX_TAG_FILTERS} \`tag\` filters are allowed` };
+  }
+  const tagMatch = query("tag_match");
+  if (tagMatch !== undefined && tagMatch !== "" && tagMatch !== "all" && tagMatch !== "any") {
+    return { ok: false, detail: "`tag_match` must be all or any" };
+  }
+
   const readLater = parseBooleanFlagParam(query("read_later"));
   if (readLater === "invalid") {
     return { ok: false, detail: "`read_later` must be true, false, 1, or 0" };
@@ -98,6 +111,8 @@ export function parseBookmarkRouteFilters(
   return {
     ok: true,
     filters: {
+      tag: tags.length === 0 ? undefined : tags.length === 1 ? tags[0] : tags,
+      tag_match: tagMatch === "any" ? "any" : tagMatch === "all" ? "all" : undefined,
       read_later: readLater,
       read_state: readState,
       is_pinned: isPinned,

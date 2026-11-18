@@ -189,4 +189,34 @@ describe("Search API", () => {
     expect(typeof json.pagination.has_more).toBe("boolean");
     expect(json.meta.mode).toBe("keyword");
   });
+
+  it("GET /search and /bookmarks support repeated tag params with tag_match", async () => {
+    const repo = new BookmarkRepository(db);
+    const a = repo.create("https://a.example.com", "Alpha");
+    const b = repo.create("https://b.example.com", "Beta");
+    repo.setTags(a.id, ["android", "app"]);
+    repo.setTags(b.id, ["android"]);
+
+    const total = async (path: string) =>
+      ((await (await app.request(path)).json()) as { pagination: { total: number } }).pagination.total;
+
+    expect(await total("/bookmarks?tag=android")).toBe(2);
+    expect(await total("/bookmarks?tag=android&tag=app")).toBe(1);
+    expect(await total("/bookmarks?tag=android&tag=app&tag_match=any")).toBe(2);
+    expect(await total("/bookmarks?tag=app&tag=missing")).toBe(0);
+    expect(await total("/search?tag=android&tag=app")).toBe(1);
+    expect(await total("/search?q=alpha&tag=android&tag=app&tag_match=any")).toBe(1);
+    expect(await total("/search?tag=")).toBe(2);
+
+    for (const path of ["/bookmarks?tag_match=some", "/search?tag_match=some"]) {
+      expect((await app.request(path)).status).toBe(422);
+    }
+
+    const many = Array.from({ length: 26 }, (_, i) => `tag=t${i}`).join("&");
+    for (const path of [`/bookmarks?${many}`, `/search?${many}`, `/bookmarks/aggregates?${many}`, `/export?${many}`]) {
+      expect((await app.request(path)).status).toBe(422);
+    }
+    const ok = Array.from({ length: 25 }, (_, i) => `tag=t${i}`).join("&");
+    expect((await app.request(`/bookmarks?${ok}&tag_match=any`)).status).toBe(200);
+  });
 });

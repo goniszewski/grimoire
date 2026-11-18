@@ -24,10 +24,11 @@ After save, Grimoire pulls readable content when it can:
 ## Organize
 
 - **Categories** — create, rename, nest (max three levels), drag to reorder or reparent
-- **Tags** — create, rename, attach; browse from Tags pages
+- **Tags** — create, rename, add a short description, attach; browse from Tags pages
 - **Per bookmark** — title, notes, pin, read/unread, Later, archive, trash, restore, permanent delete
 - **Bulk** — select bookmarks to delete, move, or toggle Later
 - **Filters** — category, tag, domain, date, and related library filters
+- **Views** — switch between list, grid, and gallery from the library toolbar or Preferences. Gallery is an image-first masonry layout using each bookmark's cached preview image; bookmarks without one show a placeholder, and **Images only** hides them. The choice is remembered in this browser.
 
 ## Later and Revisit
 
@@ -63,6 +64,25 @@ Optional AI can suggest summary, tags, and a broad category during ingest. When 
 
 Related bookmarks use embeddings when available.
 
+### Searching by several words and tags
+
+Keyword search treats each space-separated word as its own term, and every term
+must match somewhere in the bookmark's title, summary, tags, or saved content.
+Typing `android app opensource` therefore finds bookmarks that carry those three
+tags, or mention them elsewhere. Matching is whole-word, and there is no
+`tag:name` syntax.
+
+To filter by tags exactly, click a tag in the sidebar, then Ctrl/Cmd/Shift-click
+more tags to add or remove them. The active tags appear under **Filtering by**
+with a **Match all / Match any** button: *all* keeps bookmarks that have every
+selected tag (the default), *any* keeps bookmarks that have at least one. Tag
+filters combine with the search box and the other filters. A tag that does not
+exist matches nothing under *all* and is ignored under *any*. Multi-tag
+selections last for the session; only the first tag is remembered.
+
+Through the API, repeat the parameter: `GET /bookmarks?tag=android&tag=app&tag_match=any`
+(also supported by `/search`, `/bookmarks/aggregates`, and `/export`).
+
 ## Capture from the browser
 
 The rewritten Chrome/Firefox extension is still being prepared for publication.
@@ -85,6 +105,66 @@ restrictive page CSPs such as GitHub's. Allow popups for the page if the browser
 blocks the capture window.
 
 You can also import a Netscape/HTML bookmark export from your browser, and export your library as JSON or CSV.
+
+### Importing from Shaarli, Linkding, Pinboard and others
+
+Any tool that exports the standard Netscape/HTML bookmark format works with
+**Import**, including Shaarli (*Tools → Export*), Linkding, Pinboard and
+browsers. A preview shows what will happen before anything is saved. What
+carries over:
+
+- URL, title, and the added date (`ADD_DATE`).
+- Tags from the `TAGS` attribute. Names are converted to Grimoire's tag format
+  (lowercase letters, digits and hyphens): `Web Dev` becomes `web-dev`, `über`
+  becomes `uber`, `c++` becomes `c-plus-plus`. A tag with nothing usable left,
+  such as one written only in a non-Latin script, is skipped. The preview shows
+  the resulting name for every tag, and you can rename, merge or skip it there.
+- Notes: the description that follows a link (`<DD>`) becomes the bookmark's notes.
+- Folders become categories.
+
+What does not carry over:
+
+- Public/private flags (`PRIVATE`): Grimoire is single-user and local-first, so
+  every bookmark is simply yours.
+- Notes without a link (for example a Shaarli grocery-list note): there is no
+  URL to save, so they are listed as skipped in the preview. Copy them manually
+  if you need them.
+- Links to private or loopback addresses and non-http(s) links are skipped.
+
+## Share links (prefilled Add dialog)
+
+Open Grimoire at `/add` with query parameters to start a save from a bookmarklet,
+a custom script, or an Android share action:
+
+```
+http://127.0.0.1:3210/add?url=https%3A%2F%2Fexample.com%2Fpost&title=Nice%20post&note=Read%20later&tags=reading,rust
+```
+
+`127.0.0.1:3210` is the default address of the installed app and the Docker image. When running the Vite dev server (`npm run dev`), use `http://localhost:5173` instead.
+
+| Parameter | Meaning | Limits |
+|-----------|---------|--------|
+| `url` | Link to save. Must be `http` or `https`, no embedded credentials. | 2048 characters |
+| `title` | Optional title | 300 characters |
+| `note` | Optional personal note | 10,000 characters |
+| `tags` | Optional comma-separated tags | 20 tags, 50 characters each |
+
+Remember to URL-encode the values. Grimoire opens the Add dialog with those
+fields filled in; nothing is saved until you press **Save Bookmark**. If the URL
+is already saved as an active bookmark, that bookmark opens for editing instead
+and the shared title, note and tags are ignored. Parameters are removed from the
+address bar once read. Invalid values (for example a `javascript:` URL) are
+dropped, and everything is treated as plain text.
+
+## Unsaved drafts
+
+While the Add dialog is open, and while you edit a bookmark's title or notes,
+Grimoire keeps your in-progress text in this browser's local storage. If you
+close the dialog by accident, a save fails, or the tab crashes, reopening the
+same dialog restores the text with a "Restored unsaved draft" notice and a
+**Discard** button. Drafts are cleared when you save, cancel, or discard, and drafts older than 7 days are dropped automatically. They
+stay in the browser only: they are never sent to the daemon and are not part of
+backups. Clearing site data removes them.
 
 ## Backups
 

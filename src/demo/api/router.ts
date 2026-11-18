@@ -423,7 +423,7 @@ export async function handleDemoRequest(request: Request): Promise<Response> {
   if (pathname === "/tags" && method === "GET") {
     const rows = activeBookmarks(state);
     const names = [...new Set(rows.flatMap((bookmark) => bookmark.tags))].sort((left, right) => left.localeCompare(right));
-    return json({ data: names.map((name, index) => ({ id: `tag-${index + 1}`, name, created_at: "2026-07-01T09:00:00.000Z", bookmark_count: rows.filter((bookmark) => bookmark.tags.includes(name)).length })) });
+    return json({ data: names.map((name, index) => ({ id: `tag-${index + 1}`, name, description: null, created_at: "2026-07-01T09:00:00.000Z", bookmark_count: rows.filter((bookmark) => bookmark.tags.includes(name)).length })) });
   }
   if (pathname === "/domains" && method === "GET") {
     const rows = activeBookmarks(state);

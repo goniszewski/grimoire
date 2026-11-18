@@ -10,7 +10,7 @@ import { bookmarkKeys } from "@/hooks/use-bookmarks";
 vi.mock("@/lib/api", () => ({
   listBookmarks: vi.fn(),
   listTags: vi.fn(),
-  renameTag: vi.fn(),
+  updateTag: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
@@ -24,12 +24,13 @@ type Pagination = {
 
 const mockedListBookmarks = api.listBookmarks as unknown as ReturnType<typeof vi.fn>;
 const mockedListTags = api.listTags as unknown as ReturnType<typeof vi.fn>;
-const mockedRenameTag = api.renameTag as unknown as ReturnType<typeof vi.fn>;
+const mockedUpdateTag = api.updateTag as unknown as ReturnType<typeof vi.fn>;
 
 function makeTag(overrides: Partial<ApiTag> = {}): ApiTag {
   return {
     id: "tag-1",
     name: "typescript",
+    description: null,
     created_at: "2026-05-31T12:00:00Z",
     bookmark_count: 22,
     ...overrides,
@@ -90,10 +91,11 @@ function renderTagDetail(path = "/tags/typescript") {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedListTags.mockResolvedValue({ data: [makeTag()] });
-  mockedRenameTag.mockResolvedValue({
+  mockedUpdateTag.mockResolvedValue({
     data: {
       id: "tag-1",
       name: "react-query",
+      description: null,
       created_at: "2026-05-31T12:00:00Z",
     },
   });
@@ -152,7 +154,7 @@ describe("TagDetail", () => {
       "/?tag=typescript"
     );
     expect(screen.getByRole("link", { name: "Manage tags" })).toHaveAttribute("href", "/tags");
-    expect(screen.getByRole("button", { name: "Rename #typescript tag" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit #typescript tag" })).toBeInTheDocument();
     expect(await screen.findByText("Example bookmark")).toBeInTheDocument();
     expect(screen.getByText("1-20 of 22")).toBeInTheDocument();
     expect(mockedListBookmarks).toHaveBeenCalledWith({
@@ -160,6 +162,17 @@ describe("TagDetail", () => {
       limit: 20,
       offset: 0,
     } satisfies ListBookmarksParams);
+  });
+
+  it("shows a long tag description in full below the clamped header", async () => {
+    const description = "Notes about this tag. ".repeat(20).trim();
+    mockedListTags.mockResolvedValue({ data: [makeTag({ description })] });
+    mockedListBookmarks.mockResolvedValue(bookmarkResponse([], { total: 0, limit: 20, offset: 0, has_more: false }));
+
+    renderTagDetail();
+
+    expect(await screen.findByRole("heading", { name: "#typescript" })).toBeInTheDocument();
+    expect(screen.getByTestId("tag-description-full")).toHaveTextContent(description);
   });
 
   it("uses daemon pagination when moving between scoped tag pages", async () => {
@@ -268,13 +281,13 @@ describe("TagDetail", () => {
     const { queryClient } = renderTagDetail();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    fireEvent.click(await screen.findByRole("button", { name: "Rename #typescript tag" }));
-    expect(screen.getByText("Rename #typescript")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Edit #typescript tag" }));
+    expect(screen.getByText("Edit #typescript")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("New tag name"), { target: { value: " React-Query " } });
-    fireEvent.click(screen.getByRole("button", { name: "Rename tag" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save tag" }));
 
-    await waitFor(() => expect(mockedRenameTag).toHaveBeenCalledWith("tag-1", "react-query"));
+    await waitFor(() => expect(mockedUpdateTag).toHaveBeenCalledWith("tag-1", { name: "react-query", description: null }));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.tags });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.lists() });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: bookmarkKeys.archive });

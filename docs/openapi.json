@@ -262,10 +262,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -669,10 +683,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -1545,10 +1573,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -2064,8 +2106,8 @@
         "tags": [
           "Tags"
         ],
-        "summary": "Rename a tag without changing bookmark associations.",
-        "description": "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+        "summary": "Rename a tag and/or edit its description without changing bookmark associations.",
+        "description": "Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.",
         "operationId": "putTagsId",
         "parameters": [
           {
@@ -2083,14 +2125,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TagRequest"
+                "$ref": "#/components/schemas/TagUpdateRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Renamed tag",
+            "description": "Updated tag",
             "content": {
               "application/json": {
                 "schema": {
@@ -2130,7 +2172,7 @@
             }
           },
           "422": {
-            "description": "Invalid tag name",
+            "description": "Invalid tag name or description",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2816,8 +2858,8 @@
         "tags": [
           "Settings"
         ],
-        "summary": "List models available from an AI provider catalog (currently OpenRouter).",
-        "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
+        "summary": "List models available from an AI provider catalog (OpenRouter or a LiteLLM proxy).",
+        "description": "The OpenRouter catalog endpoint is public and needs no API key. Pass free=true to list only models with zero prompt and completion pricing. For provider=litellm the configured LiteLLM proxy is asked for its chat models (/model/info, falling back to /v1/models) with the saved virtual key, and free is ignored. The endpoint triggers outbound requests on behalf of the browser, so it requires the X-LittleImp-Frontend header that the app always sends; foreign web pages cannot set custom headers and are therefore blocked.",
         "operationId": "getSettingsAiModels",
         "parameters": [
           {
@@ -2829,7 +2871,8 @@
               "type": "string",
               "description": "Provider to list models for",
               "enum": [
-                "openrouter"
+                "openrouter",
+                "litellm"
               ]
             }
           },
@@ -3762,10 +3805,24 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name"
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
+            }
+          },
+          {
+            "name": "tag_match",
+            "in": "query",
+            "required": false,
+            "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+            "schema": {
+              "type": "string",
+              "description": "How repeated tag filters combine: all (default) requires every tag, any requires at least one",
+              "enum": [
+                "all",
+                "any"
+              ]
             }
           },
           {
@@ -6690,6 +6747,12 @@
             "type": "string",
             "description": "Tag name"
           },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description",
+            "maxLength": 500,
+            "nullable": true
+          },
           "created_at": {
             "type": "string",
             "description": "Creation timestamp",
@@ -6699,6 +6762,7 @@
         "required": [
           "id",
           "name",
+          "description",
           "created_at"
         ],
         "additionalProperties": false
@@ -6715,6 +6779,12 @@
             "type": "string",
             "description": "Tag name"
           },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description",
+            "maxLength": 500,
+            "nullable": true
+          },
           "created_at": {
             "type": "string",
             "description": "Creation timestamp",
@@ -6729,6 +6799,7 @@
         "required": [
           "id",
           "name",
+          "description",
           "created_at",
           "bookmark_count"
         ],
@@ -6741,11 +6812,35 @@
             "type": "string",
             "description": "Tag name, normalized to lowercase",
             "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description; blank or null stores no description",
+            "maxLength": 500,
+            "nullable": true
           }
         },
         "required": [
           "name"
         ],
+        "additionalProperties": false
+      },
+      "TagUpdateRequest": {
+        "type": "object",
+        "description": "At least one of name or description is required",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New tag name, normalized to lowercase",
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "description": "Tag description; blank or null clears it, omitted leaves it unchanged",
+            "maxLength": 500,
+            "nullable": true
+          }
+        },
         "additionalProperties": false
       },
       "TagListResponse": {
@@ -8026,6 +8121,7 @@
               "openai_compatible",
               "deepseek",
               "cheaperinference",
+              "litellm",
               "none"
             ]
           },
@@ -8172,6 +8268,7 @@
                   "openai_compatible",
                   "deepseek",
                   "cheaperinference",
+                  "litellm",
                   "none"
                 ]
               },
@@ -8332,6 +8429,30 @@
                 ],
                 "additionalProperties": false
               },
+              "litellm": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Redacted LiteLLM proxy virtual key. Empty string means unset"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "LiteLLM proxy base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "LiteLLM proxy model name"
+                  }
+                },
+                "required": [
+                  "api_key",
+                  "base_url",
+                  "model"
+                ],
+                "additionalProperties": false
+              },
               "embeddings": {
                 "type": "object",
                 "properties": {
@@ -8390,6 +8511,7 @@
               "openai_compatible",
               "deepseek",
               "cheaperinference",
+              "litellm",
               "embeddings"
             ],
             "additionalProperties": false
@@ -8531,6 +8653,7 @@
                   "openai_compatible",
                   "deepseek",
                   "cheaperinference",
+                  "litellm",
                   "none"
                 ]
               },
@@ -8654,6 +8777,25 @@
                   "model": {
                     "type": "string",
                     "description": "Cheaper Inference chat model"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "litellm": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "LiteLLM proxy virtual key, empty string clears it"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "description": "LiteLLM proxy base URL",
+                    "format": "uri"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "LiteLLM proxy model name"
                   }
                 },
                 "additionalProperties": false
@@ -8878,7 +9020,8 @@
             "type": "string",
             "description": "Provider the catalog was fetched from",
             "enum": [
-              "openrouter"
+              "openrouter",
+              "litellm"
             ]
           },
           "free": {

@@ -25,6 +25,7 @@ export const LARGE_LIBRARY_BUDGETS_MS = {
   keywordSearch: 1_500,
   categoryFilter: 1_000,
   tagFilter: 1_000,
+  multiTagFilter: 1_000,
   domainFilter: 1_000,
   dateFilter: 1_000,
   combinedFilter: 1_000,
