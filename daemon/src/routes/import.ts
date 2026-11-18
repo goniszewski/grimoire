@@ -16,6 +16,7 @@ import { JobQueue } from "../queue.js";
 import { BookmarkRepository } from "../db/bookmark-repository.js";
 import { CategoryRepository } from "../db/category-repository.js";
 import { TagRepository } from "../db/tag-repository.js";
+import { slugifyTagName } from "../lib/tag-slug.js";
 import {
   parseNetscapeBookmarks,
   type ParsedBookmark,
@@ -598,15 +599,27 @@ function buildImportRemapping(
   const tagDecisions: ImportTagMappingDecision[] = [];
   for (const sourceTag of detectedTags) {
     const mapping = tagInputByKey.get(sourceTag);
-    const existingSourceTag = tagRepo.findByName(sourceTag);
 
     if (!mapping) {
+      // Tags from other tools keep their meaning but follow Grimoire's tag format.
+      const defaultName = slugifyTagName(sourceTag);
+      if (!defaultName) {
+        tagDecisions.push({
+          sourceTag,
+          action: "skipped",
+          targetTagId: null,
+          targetName: null,
+          status: "skipped",
+        });
+        continue;
+      }
+      const existingDefaultTag = tagRepo.findByName(defaultName);
       tagDecisions.push({
         sourceTag,
-        action: existingSourceTag ? "existing" : "new",
-        targetTagId: existingSourceTag?.id ?? null,
-        targetName: sourceTag,
-        status: existingSourceTag ? "existing" : "new",
+        action: existingDefaultTag ? "existing" : defaultName === sourceTag ? "new" : "renamed",
+        targetTagId: existingDefaultTag?.id ?? null,
+        targetName: defaultName,
+        status: existingDefaultTag ? "existing" : "new",
       });
       continue;
     }
@@ -640,7 +653,7 @@ function buildImportRemapping(
       continue;
     }
 
-    const targetName = normaliseImportTagName(mapping.targetName ?? sourceTag);
+    const targetName = normaliseImportTagName(mapping.targetName ?? slugifyTagName(sourceTag));
     if (!targetName) {
       return "`remapping.tags[].targetName` must not be empty";
     }
