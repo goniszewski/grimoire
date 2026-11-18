@@ -111,10 +111,10 @@ Open Grimoire at `/add` with query parameters to start a save from a bookmarklet
 a custom script, or an Android share action:
 
 ```
-http://localhost:5173/add?url=https%3A%2F%2Fexample.com%2Fpost&title=Nice%20post&note=Read%20later&tags=reading,rust
+http://127.0.0.1:3210/add?url=https%3A%2F%2Fexample.com%2Fpost&title=Nice%20post&note=Read%20later&tags=reading,rust
 ```
 
-Use your own Grimoire address in place of the example host (the frontend origin you normally open).
+`127.0.0.1:3210` is the default address of the installed app and the Docker image. When running the Vite dev server (`npm run dev`), use `http://localhost:5173` instead.
 
 | Parameter | Meaning | Limits |
 |-----------|---------|--------|
@@ -136,7 +136,7 @@ While the Add dialog is open, and while you edit a bookmark's title or notes,
 Grimoire keeps your in-progress text in this browser's local storage. If you
 close the dialog by accident, a save fails, or the tab crashes, reopening the
 same dialog restores the text with a "Restored unsaved draft" notice and a
-**Discard** button. Drafts are cleared when you save, cancel, or discard. They
+**Discard** button. Drafts are cleared when you save, cancel, or discard, and drafts older than 7 days are dropped automatically. They
 stay in the browser only: they are never sent to the daemon and are not part of
 backups. Clearing site data removes them.
 
