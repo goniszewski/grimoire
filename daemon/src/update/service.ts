@@ -124,12 +124,27 @@ function redactUpdateErrorMessage(err: unknown, source: string): string {
   return message.trim() || "fetch failed";
 }
 
+const MAX_VERSION_LENGTH = 128;
+const PRERELEASE_IDENTIFIER = /^[0-9A-Za-z-]+$/;
+
+function isValidPrereleaseIdentifier(identifier: string): boolean {
+  if (!PRERELEASE_IDENTIFIER.test(identifier)) return false;
+  // All-digit identifiers must not have leading zeros (SemVer 2.0.0 rule 9).
+  return !/^\d+$/.test(identifier) || /^(0|[1-9]\d*)$/.test(identifier);
+}
+
 export function parseVersion(raw: string): ParsedVersion | null {
+  if (raw.length > MAX_VERSION_LENGTH) return null;
   const normalized = raw.trim().replace(/^v/i, "").split("+", 1)[0];
+  // Each part is a simple linear pattern; prerelease identifiers are validated
+  // separately so the regex cannot backtrack on long hostile input.
   const match = normalized.match(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?$/
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/
   );
   if (!match) return null;
+  if (match[4] !== undefined && !match[4].split(".").every(isValidPrereleaseIdentifier)) {
+    return null;
+  }
   const major = Number(match[1]);
   const minor = Number(match[2]);
   const patch = Number(match[3]);
