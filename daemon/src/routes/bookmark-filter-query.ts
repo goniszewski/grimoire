@@ -2,6 +2,7 @@ import type { BookmarkParityFilters, BookmarkTagFilters, ReadStateFilter } from 
 import {
   isBookmarkSortDirection,
   isBookmarkSortKey,
+  MAX_TAG_FILTERS,
   normalizeTagFilter,
 } from "../db/bookmark-filters.js";
 import type { BookmarkSortDirection, BookmarkSortKey } from "../db/bookmark-filters.js";
@@ -64,6 +65,9 @@ export function parseBookmarkRouteFilters(
 ): FilterParseResult {
   const rawTags = queryAll?.("tag") ?? (query("tag") !== undefined ? [query("tag") as string] : []);
   const tags = normalizeTagFilter(rawTags);
+  if (tags.length > MAX_TAG_FILTERS) {
+    return { ok: false, detail: `At most ${MAX_TAG_FILTERS} \`tag\` filters are allowed` };
+  }
   const tagMatch = query("tag_match");
   if (tagMatch !== undefined && tagMatch !== "" && tagMatch !== "all" && tagMatch !== "any") {
     return { ok: false, detail: "`tag_match` must be all or any" };

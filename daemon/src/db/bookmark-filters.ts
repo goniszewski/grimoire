@@ -11,6 +11,9 @@ export const bookmarkSortDirections = ["asc", "desc"] as const;
 export type BookmarkSortKey = (typeof bookmarkSortKeys)[number];
 export type BookmarkSortDirection = (typeof bookmarkSortDirections)[number];
 
+/** Upper bound on distinct tags per request (keeps SQL parameter count and query cost bounded). */
+export const MAX_TAG_FILTERS = 25;
+
 export type TagMatchMode = "all" | "any";
 
 export interface BookmarkTagFilters {

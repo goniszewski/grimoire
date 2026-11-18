@@ -262,10 +262,10 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
             }
           },
           {
@@ -683,10 +683,10 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
             }
           },
           {
@@ -1573,10 +1573,10 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
             }
           },
           {
@@ -3805,10 +3805,10 @@
             "name": "tag",
             "in": "query",
             "required": false,
-            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively.",
+            "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags.",
             "schema": {
               "type": "string",
-              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+              "description": "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
             }
           },
           {

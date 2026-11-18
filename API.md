@@ -283,7 +283,7 @@ Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
 | `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
@@ -373,7 +373,7 @@ Query parameters:
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
 | `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
@@ -876,7 +876,7 @@ Query parameters:
 |---|---|---:|---|
 | `q` | string | no | Search query |
 | `mode` | "keyword" \| "semantic" \| "hybrid" | no | Search mode |
-| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
 | `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |
@@ -2375,7 +2375,7 @@ Query parameters:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `format` | "json" \| "csv" | no | Export format |
-| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. |
+| `tag` | string | no | Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags. |
 | `tag_match` | "all" \| "any" | no | How repeated tag filters combine: all (default) requires every tag, any requires at least one |
 | `domain` | string | no | Filter by exact domain |
 | `category_id` | string | no | Filter by exact category ID; takes precedence over category |

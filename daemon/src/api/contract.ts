@@ -119,7 +119,7 @@ const pagingQuery = objectSchema({
 
 const bookmarkFilters = {
   tag: stringSchema(
-    "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively."
+    "Filter by tag name. Repeat the parameter (tag=a&tag=b) to filter by several tags; see tag_match. Names match case-insensitively. At most 25 distinct tags."
   ),
   tag_match: stringSchema(
     "How repeated tag filters combine: all (default) requires every tag, any requires at least one",

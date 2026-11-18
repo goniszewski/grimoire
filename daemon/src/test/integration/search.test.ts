@@ -211,5 +211,12 @@ describe("Search API", () => {
     for (const path of ["/bookmarks?tag_match=some", "/search?tag_match=some"]) {
       expect((await app.request(path)).status).toBe(422);
     }
+
+    const many = Array.from({ length: 26 }, (_, i) => `tag=t${i}`).join("&");
+    for (const path of [`/bookmarks?${many}`, `/search?${many}`, `/bookmarks/aggregates?${many}`, `/export?${many}`]) {
+      expect((await app.request(path)).status).toBe(422);
+    }
+    const ok = Array.from({ length: 25 }, (_, i) => `tag=t${i}`).join("&");
+    expect((await app.request(`/bookmarks?${ok}&tag_match=any`)).status).toBe(200);
   });
 });
