@@ -14,3 +14,5 @@ export function validateTagName(name: string): string | null {
   }
   return null;
 }
+
+export const MAX_TAG_DESCRIPTION_LEN = 500;

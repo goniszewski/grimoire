@@ -729,6 +729,57 @@ describe("Backup API", () => {
     expect(restoredHash).toBe(snapshotHash);
   });
 
+  it("POST /restore preserves tag descriptions from the backup", async () => {
+    db.run("INSERT INTO tags (name, description) VALUES ('rag', 'Retrieval notes')");
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const backupName = ((await backupRes.json()) as { path: string }).path.split("/").at(-1)!;
+
+    db.run("UPDATE tags SET description = 'changed after backup'");
+    const res = await localOnlyApp.request("/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName }),
+    });
+    expect(res.status).toBe(200);
+
+    const restored = new Database(dbPath);
+    try {
+      const row = restored
+        .query<{ description: string | null }, []>("SELECT description FROM tags WHERE name = 'rag'")
+        .get();
+      expect(row?.description).toBe("Retrieval notes");
+    } finally {
+      restored.close();
+    }
+  });
+
+  it("POST /restore accepts an older backup whose tags table has no description column", async () => {
+    db.run("INSERT INTO tags (name) VALUES ('legacy')");
+    db.run("ALTER TABLE tags DROP COLUMN description");
+    db.run("DELETE FROM schema_migrations WHERE version = '0022'");
+    const localOnlyApp = createBackupRoute({ db, dbPath, dataDir, s3Config: EMPTY_S3_CONFIG });
+    const backupRes = await localOnlyApp.request("/backup", { method: "POST" });
+    const backupName = ((await backupRes.json()) as { path: string }).path.split("/").at(-1)!;
+
+    const res = await localOnlyApp.request("/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: backupName }),
+    });
+    expect(res.status).toBe(200);
+
+    const restored = new Database(dbPath);
+    try {
+      const row = restored
+        .query<{ name: string; description: string | null }, []>("SELECT name, description FROM tags WHERE name = 'legacy'")
+        .get();
+      expect(row).toEqual({ name: "legacy", description: null });
+    } finally {
+      restored.close();
+    }
+  });
+
   it("POST /restore stores rollback data inside DATA_DIR when its parent is not writable", async () => {
     process.env.XDG_CONFIG_HOME = join(dataDir, "config-home");
     settingsManager.invalidate();

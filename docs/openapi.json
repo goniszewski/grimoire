@@ -2064,8 +2064,8 @@
         "tags": [
           "Tags"
         ],
-        "summary": "Rename a tag without changing bookmark associations.",
-        "description": "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+        "summary": "Rename a tag and/or edit its description without changing bookmark associations.",
+        "description": "Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.",
         "operationId": "putTagsId",
         "parameters": [
           {
@@ -2083,14 +2083,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TagRequest"
+                "$ref": "#/components/schemas/TagUpdateRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Renamed tag",
+            "description": "Updated tag",
             "content": {
               "application/json": {
                 "schema": {
@@ -2130,7 +2130,7 @@
             }
           },
           "422": {
-            "description": "Invalid tag name",
+            "description": "Invalid tag name or description",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6691,6 +6691,12 @@
             "type": "string",
             "description": "Tag name"
           },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description",
+            "maxLength": 500,
+            "nullable": true
+          },
           "created_at": {
             "type": "string",
             "description": "Creation timestamp",
@@ -6700,6 +6706,7 @@
         "required": [
           "id",
           "name",
+          "description",
           "created_at"
         ],
         "additionalProperties": false
@@ -6716,6 +6723,12 @@
             "type": "string",
             "description": "Tag name"
           },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description",
+            "maxLength": 500,
+            "nullable": true
+          },
           "created_at": {
             "type": "string",
             "description": "Creation timestamp",
@@ -6730,6 +6743,7 @@
         "required": [
           "id",
           "name",
+          "description",
           "created_at",
           "bookmark_count"
         ],
@@ -6742,11 +6756,35 @@
             "type": "string",
             "description": "Tag name, normalized to lowercase",
             "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional tag description; blank or null stores no description",
+            "maxLength": 500,
+            "nullable": true
           }
         },
         "required": [
           "name"
         ],
+        "additionalProperties": false
+      },
+      "TagUpdateRequest": {
+        "type": "object",
+        "description": "At least one of name or description is required",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New tag name, normalized to lowercase",
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "description": "Tag description; blank or null clears it, omitted leaves it unchanged",
+            "maxLength": 500,
+            "nullable": true
+          }
+        },
         "additionalProperties": false
       },
       "TagListResponse": {

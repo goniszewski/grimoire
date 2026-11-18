@@ -631,22 +631,38 @@ const schemas = {
     {
       id: stringSchema("Tag ID"),
       name: stringSchema("Tag name"),
+      description: nullable(stringSchema("Optional tag description", { maxLength: 500 })),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
     },
-    ["id", "name", "created_at"],
+    ["id", "name", "description", "created_at"],
     "Tag row returned by create and attach endpoints"
   ),
   TagWithCount: objectSchema(
     {
       id: stringSchema("Tag ID"),
       name: stringSchema("Tag name"),
+      description: nullable(stringSchema("Optional tag description", { maxLength: 500 })),
       created_at: stringSchema("Creation timestamp", { format: "date-time" }),
       bookmark_count: integerSchema("Active bookmark count", { minimum: 0 }),
     },
-    ["id", "name", "created_at", "bookmark_count"],
+    ["id", "name", "description", "created_at", "bookmark_count"],
     "Tag row with active bookmark count returned by tag listings"
   ),
-  TagRequest: objectSchema({ name: stringSchema("Tag name, normalized to lowercase", { maxLength: 50 }) }, ["name"]),
+  TagRequest: objectSchema(
+    {
+      name: stringSchema("Tag name, normalized to lowercase", { maxLength: 50 }),
+      description: nullable(stringSchema("Optional tag description; blank or null stores no description", { maxLength: 500 })),
+    },
+    ["name"]
+  ),
+  TagUpdateRequest: objectSchema(
+    {
+      name: stringSchema("New tag name, normalized to lowercase", { maxLength: 50 }),
+      description: nullable(stringSchema("Tag description; blank or null clears it, omitted leaves it unchanged", { maxLength: 500 })),
+    },
+    [],
+    "At least one of name or description is required"
+  ),
   TagListResponse: envelope(arrayOf(ref("TagWithCount"), "Tags")),
   TagResponse: envelope(ref("TagRecord")),
   Domain: objectSchema(
@@ -1958,6 +1974,7 @@ const exampleCategoryNode = {
 const exampleTag = {
   id: "tag_rag",
   name: "rag",
+  description: "Retrieval-augmented generation notes",
   created_at: exampleTimestamp,
 } as const;
 
@@ -2534,18 +2551,18 @@ export const apiContract = {
       method: "PUT",
       path: "/tags/:id",
       tag: "Tags",
-      summary: "Rename a tag without changing bookmark associations.",
-      description: "Duplicate target tag names are rejected with 409 rather than merged implicitly.",
+      summary: "Rename a tag and/or edit its description without changing bookmark associations.",
+      description: "Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.",
       request: {
         pathParams: idParam(),
-        body: { contentType: "application/json", schema: ref("TagRequest") },
+        body: { contentType: "application/json", schema: ref("TagUpdateRequest") },
       },
       responses: {
-        "200": jsonResponse("Renamed tag", ref("TagResponse")),
+        "200": jsonResponse("Updated tag", ref("TagResponse")),
         "400": problemResponse("Malformed JSON"),
         "404": problemResponse("Tag not found"),
         "409": problemResponse("Duplicate tag name"),
-        "422": problemResponse("Invalid tag name"),
+        "422": problemResponse("Invalid tag name or description"),
       },
     },
     {

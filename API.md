@@ -1158,6 +1158,7 @@ Content-Type: application/json
     {
       "id": "tag_rag",
       "name": "rag",
+      "description": "Retrieval-augmented generation notes",
       "created_at": "2026-06-01T09:30:00.000Z",
       "bookmark_count": 1
     }
@@ -1177,6 +1178,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
 
 Responses:
 
@@ -1209,6 +1211,7 @@ Content-Type: application/json
   "data": {
     "id": "tag_rag",
     "name": "rag",
+    "description": "Retrieval-augmented generation notes",
     "created_at": "2026-06-01T09:30:00.000Z"
   }
 }
@@ -1216,9 +1219,9 @@ Content-Type: application/json
 
 #### PUT /tags/:id
 
-Rename a tag without changing bookmark associations.
+Rename a tag and/or edit its description without changing bookmark associations.
 
-Duplicate target tag names are rejected with 409 rather than merged implicitly.
+Send name, description, or both. Duplicate target tag names are rejected with 409 rather than merged implicitly.
 
 Path parameters:
 
@@ -1229,21 +1232,22 @@ Path parameters:
 Request body:
 
 - Content type: `application/json`
-- Schema: `TagRequest`
+- Schema: `TagUpdateRequest`
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `name` | string | yes | Tag name, normalized to lowercase |
+| `name` | string | no | New tag name, normalized to lowercase |
+| `description` | string \| null | no | Tag description; blank or null clears it, omitted leaves it unchanged |
 
 Responses:
 
 | Status | Content type | Schema | Description |
 |---|---|---|---|
-| `200` | application/json | `TagResponse` | Renamed tag |
+| `200` | application/json | `TagResponse` | Updated tag |
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `404` | application/problem+json | `ProblemDetails` | Tag not found |
 | `409` | application/problem+json | `ProblemDetails` | Duplicate tag name |
-| `422` | application/problem+json | `ProblemDetails` | Invalid tag name |
+| `422` | application/problem+json | `ProblemDetails` | Invalid tag name or description |
 
 #### DELETE /tags/:id
 
@@ -1280,6 +1284,7 @@ Request body:
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
 
 Responses:
 
@@ -3749,6 +3754,7 @@ Tag row returned by create and attach endpoints
 |---|---|---:|---|
 | `id` | string | yes | Tag ID |
 | `name` | string | yes | Tag name |
+| `description` | string \| null | yes | Optional tag description |
 | `created_at` | string | yes | Creation timestamp |
 
 ### TagWithCount
@@ -3759,6 +3765,7 @@ Tag row with active bookmark count returned by tag listings
 |---|---|---:|---|
 | `id` | string | yes | Tag ID |
 | `name` | string | yes | Tag name |
+| `description` | string \| null | yes | Optional tag description |
 | `created_at` | string | yes | Creation timestamp |
 | `bookmark_count` | integer | yes | Active bookmark count |
 
@@ -3767,6 +3774,16 @@ Tag row with active bookmark count returned by tag listings
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `name` | string | yes | Tag name, normalized to lowercase |
+| `description` | string \| null | no | Optional tag description; blank or null stores no description |
+
+### TagUpdateRequest
+
+At least one of name or description is required
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `name` | string | no | New tag name, normalized to lowercase |
+| `description` | string \| null | no | Tag description; blank or null clears it, omitted leaves it unchanged |
 
 ### TagListResponse
 
@@ -3785,6 +3802,7 @@ Response data
 | `data` | TagRecord | yes |  |
 | `data.id` | string | yes | Tag ID |
 | `data.name` | string | yes | Tag name |
+| `data.description` | string \| null | yes | Optional tag description |
 | `data.created_at` | string | yes | Creation timestamp |
 
 ### Domain

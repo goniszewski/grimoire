@@ -45,10 +45,13 @@ export class TagRepository {
     );
   }
 
-  /** Upsert a tag by name (lower-cased). Returns the row. */
-  upsert(name: string): TagRow {
+  /** Upsert a tag by name (lower-cased). Returns the row. Description only applies to newly created tags. */
+  upsert(name: string, description?: string | null): TagRow {
     const normalised = name.toLowerCase().trim();
-    this.db.run("INSERT OR IGNORE INTO tags (name) VALUES (?)", [normalised]);
+    this.db.run("INSERT OR IGNORE INTO tags (name, description) VALUES (?, ?)", [
+      normalised,
+      description ?? null,
+    ]);
     const row = this.findByName(normalised);
     if (!row) throw new Error(`Failed to upsert tag: ${name}`);
     return row;
@@ -64,6 +67,30 @@ export class TagRepository {
           .get(normalised, id) ?? null;
       if (!row) return null;
       this.refreshFtsTagsForTag(id);
+      return row;
+    })();
+  }
+
+  /** Update a tag's name and/or description. Omitted fields are left unchanged. */
+  update(id: string, patch: { name?: string; description?: string | null }): TagRow | null {
+    return this.db.transaction(() => {
+      const sets: string[] = [];
+      const params: (string | null)[] = [];
+      if (patch.name !== undefined) {
+        sets.push("name = ?");
+        params.push(patch.name.toLowerCase().trim());
+      }
+      if (patch.description !== undefined) {
+        sets.push("description = ?");
+        params.push(patch.description);
+      }
+      if (sets.length === 0) return this.findById(id);
+      const row =
+        this.db
+          .query<TagRow, (string | null)[]>(`UPDATE tags SET ${sets.join(", ")} WHERE id = ? RETURNING *`)
+          .get(...params, id) ?? null;
+      if (!row) return null;
+      if (patch.name !== undefined) this.refreshFtsTagsForTag(id);
       return row;
     })();
   }
