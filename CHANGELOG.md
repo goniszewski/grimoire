@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tags can have an optional description. Add one when creating a tag or edit it
   from the Tags page or a tag's detail page; it shows under the tag name and
   is kept in backups (#186).
+- Filter by several tags at once: turn on Combine in the sidebar's Tags header
+  (or Ctrl/Cmd/Shift-click tags) and choose whether bookmarks must have all of
+  them or any of them. The API accepts up to 25 repeated `tag` parameters with
+  `tag_match=all|any` (#10).
 - A LiteLLM proxy is available as an AI provider in Settings. Choose a model
   from the list the proxy serves; the virtual key is optional and is left out
   of backups.
