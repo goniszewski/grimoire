@@ -4,7 +4,7 @@ All notable changes to Grimoire will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.4.0] - Unreleased
 
 ### Added
 - Tags can have an optional description. Add one when creating a tag or edit it
@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Add dialog now also accepts a title and tags for a single URL.
 - Unsaved drafts of the Add dialog and of bookmark title/notes edits are kept in
   browser local storage and offered back after an accidental close, failed save,
-  or crash. They never leave the browser and are not part of backups.
+  or crash. They never leave the browser, are not part of backups, and expire
+  after 7 days.
 - A gallery view shows bookmarks as an image-first masonry of their cached
   preview images, with an optional "Images only" filter (#197).
 - A LiteLLM proxy is available as an AI provider in Settings. Choose a model
