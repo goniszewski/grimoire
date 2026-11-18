@@ -30,6 +30,7 @@ vi.mock("@/hooks/use-preferences", () => ({
   usePreferences: vi.fn(() => ({
     showButtonLabels: true,
     viewMode: "grid",
+    galleryImagesOnly: false,
     updatePreferences: vi.fn(),
   })),
 }));
@@ -120,6 +121,7 @@ function makeBookmark(index: number): UIBookmark {
     summary: "",
     domain: "example.com",
     favicon: "",
+    screenshot: null,
     tags: [],
     category: "Uncategorized",
     category_id: null,
@@ -244,6 +246,7 @@ beforeEach(() => {
   vi.mocked(usePreferences).mockReturnValue({
     showButtonLabels: true,
     viewMode: "grid",
+    galleryImagesOnly: false,
     updatePreferences: vi.fn(),
   });
   vi.mocked(useUpdateCheck).mockReturnValue({
@@ -316,12 +319,46 @@ describe("Quiet Library hierarchy", () => {
     vi.mocked(usePreferences).mockReturnValue({
       showButtonLabels: true,
       viewMode: "list",
+      galleryImagesOnly: false,
       updatePreferences: vi.fn(),
     });
 
     renderIndex();
 
     expect(screen.getByTestId("bookmark-results")).toHaveClass("flex-col");
+  });
+
+  it("renders the gallery layout and filters to bookmarks with images when images-only is on", () => {
+    const updatePreferences = vi.fn();
+    vi.mocked(usePreferences).mockReturnValue({
+      showButtonLabels: true,
+      viewMode: "gallery",
+      galleryImagesOnly: true,
+      updatePreferences,
+    });
+    const withImage = { ...makeBookmark(1), screenshot: "http://127.0.0.1:3210/media/bookmarks/bm-1/m" };
+    mockStore = makeStore({ filteredBookmarks: [withImage, makeBookmark(2)] });
+
+    renderIndex();
+
+    expect(screen.getByTestId("bookmark-results")).toHaveClass("columns-1");
+    expect(screen.getAllByTestId("gallery-card")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Show only bookmarks with images" }));
+    expect(updatePreferences).toHaveBeenCalledWith({ galleryImagesOnly: false });
+  });
+
+  it("cycles from grid to gallery from the toolbar toggle", () => {
+    const updatePreferences = vi.fn();
+    vi.mocked(usePreferences).mockReturnValue({
+      showButtonLabels: true,
+      viewMode: "grid",
+      galleryImagesOnly: false,
+      updatePreferences,
+    });
+    renderIndex();
+    fireEvent.click(screen.getByRole("button", { name: "Switch to gallery view" }));
+    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "gallery" });
   });
 });
 
@@ -414,6 +451,7 @@ describe("Index library view preferences", () => {
     vi.mocked(usePreferences).mockReturnValue({
       showButtonLabels: true,
       viewMode: "list",
+      galleryImagesOnly: false,
       updatePreferences,
     });
     mockStore = makeStore({
@@ -426,7 +464,7 @@ describe("Index library view preferences", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset library view preferences" }));
 
     expect(resetLibraryPreferences).toHaveBeenCalledTimes(1);
-    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "list" });
+    expect(updatePreferences).toHaveBeenCalledWith({ viewMode: "list", galleryImagesOnly: false });
   });
 });
 
