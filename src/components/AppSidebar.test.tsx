@@ -311,6 +311,37 @@ describe("AppSidebar — renders category tree", () => {
     expect(onSelectTag).toHaveBeenCalled();
   });
 
+  it("toggles into a multi-tag selection on modifier-click and highlights all active tags", () => {
+    const onSelectTag = vi.fn();
+    const onToggleTag = vi.fn();
+    render(
+      <AppSidebar
+        {...defaultProps}
+        selectedTag="typescript"
+        selectedTags={["typescript", "react"]}
+        onSelectTag={onSelectTag}
+        onToggleTag={onToggleTag}
+      />,
+      { wrapper: makeWrapper() }
+    );
+    const badges = screen.getAllByTestId("badge");
+    const typescriptBadge = badges.find((el) => el.textContent?.includes("typescript"))!;
+    const reactBadge = badges.find((el) => el.textContent?.includes("react"));
+    expect(typescriptBadge).toBeDefined();
+
+    if (reactBadge) {
+      fireEvent.click(reactBadge, { ctrlKey: true });
+      expect(onToggleTag).toHaveBeenCalledWith("react");
+    }
+    fireEvent.click(typescriptBadge, { metaKey: true });
+    expect(onToggleTag).toHaveBeenCalledWith("typescript");
+    expect(onSelectTag).not.toHaveBeenCalled();
+
+    // A plain click still replaces the selection.
+    fireEvent.click(typescriptBadge);
+    expect(onSelectTag).toHaveBeenCalled();
+  });
+
   it("navigates to the tag management surface from the sidebar", () => {
     render(<AppSidebar {...defaultProps} />, { wrapper: makeWrapperWithLocation() });
 

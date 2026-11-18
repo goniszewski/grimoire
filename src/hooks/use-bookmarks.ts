@@ -18,6 +18,7 @@ import type {
   LibrarySortParams,
   LibraryAggregatesParams,
   LibraryParityFilterParams,
+  TagMatch,
 } from "@/lib/api";
 import {
   generatedFavicon,
@@ -420,6 +421,9 @@ export function useBookmarks() {
 
   // ─── UI filter state ───────────────────────────────────────────────────────
   const [libraryPreferences, setLibraryPreferences] = useState<LibraryViewPreferences>(loadLibraryViewPreferences);
+  // Session-only extra tags (beyond the persisted primary tag) for multi-tag filtering.
+  const [extraTags, setExtraTags] = useState<string[]>([]);
+  const [tagMatch, setTagMatch] = useState<TagMatch>("all");
   const [selectedTagOverride, setSelectedTagOverride] = useState<string | null | undefined>(undefined);
   const [searchQuery, setSearchQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -476,6 +480,7 @@ export function useBookmarks() {
 
   const setSelectedTag = useCallback((tag: string | null, options?: PreferenceUpdateOptions) => {
     const nextTag = parseStringPreference(tag);
+    setExtraTags([]);
     if (options?.persist === false) {
       setSelectedTagOverride(nextTag);
       resetPage();
@@ -486,6 +491,29 @@ export function useBookmarks() {
     updateLibraryPreferences((current) => ({ ...current, selectedTag: nextTag }));
     resetPage();
   }, [resetPage, updateLibraryPreferences]);
+
+  /** Add or remove a tag from the multi-tag selection (the primary tag is the first entry). */
+  const toggleTag = useCallback((tag: string) => {
+    const name = tag.trim();
+    if (!name) return;
+    if (!selectedTag) {
+      setSelectedTag(name);
+      return;
+    }
+    if (selectedTag === name) {
+      const [next, ...rest] = extraTags;
+      setSelectedTag(next ?? null);
+      setExtraTags(rest);
+      return;
+    }
+    setExtraTags((current) => (current.includes(name) ? current.filter((t) => t !== name) : [...current, name]));
+    resetPage();
+  }, [extraTags, resetPage, selectedTag, setSelectedTag]);
+
+  const changeTagMatch = useCallback((match: TagMatch) => {
+    setTagMatch(match);
+    resetPage();
+  }, [resetPage]);
 
   const setSelectedDomain = useCallback((domain: string | null) => {
     updateLibraryPreferences((current) => ({ ...current, selectedDomain: parseStringPreference(domain) }));
@@ -608,6 +636,18 @@ export function useBookmarks() {
     return params;
   }, [readStateFilter, pinnedFilter, openActivityFilter, lastOpenedFrom, lastOpenedTo]);
 
+  const selectedTags = useMemo(
+    () => (selectedTag ? [selectedTag, ...extraTags.filter((t) => t !== selectedTag)] : []),
+    [selectedTag, extraTags]
+  );
+  const tagFilterParam = useMemo<{ tag?: string | string[]; tag_match?: TagMatch }>(
+    () => ({
+      tag: selectedTags.length > 1 ? selectedTags : (selectedTag ?? undefined),
+      tag_match: selectedTags.length > 1 ? tagMatch : undefined,
+    }),
+    [selectedTags, selectedTag, tagMatch]
+  );
+
   const aggregateParams = useMemo<LibraryAggregatesParams>(() => ({}), []);
 
   const aggregatesQuery = useQuery({
@@ -619,7 +659,7 @@ export function useBookmarks() {
   const listParams = useMemo(() => ({
     limit: pageSize,
     offset: pageOffset,
-    tag: selectedTag ?? undefined,
+    ...tagFilterParam,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
@@ -628,7 +668,7 @@ export function useBookmarks() {
     read_later: readLaterOnly ? true : undefined,
     ...parityFilterParams,
     ...toLibrarySortParams(librarySortBy),
-  }), [pageSize, pageOffset, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, librarySortBy]);
+  }), [pageSize, pageOffset, tagFilterParam, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, librarySortBy]);
 
   const bookmarksQuery = useQuery({
     queryKey: bookmarkKeys.list(listParams),
@@ -642,7 +682,7 @@ export function useBookmarks() {
   const searchParams = useMemo(() => ({
     q: debouncedQuery,
     mode: searchMode,
-    tag: selectedTag ?? undefined,
+    ...tagFilterParam,
     domain: selectedDomain ?? undefined,
     category_id: selectedCategoryId ?? undefined,
     category: selectedCategoryId ? undefined : (selectedCategory ?? undefined),
@@ -653,7 +693,7 @@ export function useBookmarks() {
     limit: pageSize,
     offset: pageOffset,
     ...toLibrarySortParams(searchSortBy),
-  }), [debouncedQuery, searchMode, selectedTag, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, searchSortBy]);
+  }), [debouncedQuery, searchMode, tagFilterParam, selectedDomain, selectedCategoryId, selectedCategory, dateFrom, dateTo, readLaterOnly, parityFilterParams, pageSize, pageOffset, searchSortBy]);
 
   const searchQuery_ = useQuery({
     queryKey: bookmarkKeys.search(debouncedQuery, searchParams),
@@ -723,6 +763,8 @@ export function useBookmarks() {
     q: searchQuery.trim(),
     mode: searchMode,
     tag: selectedTag,
+    extraTags,
+    tagMatch,
     domain: selectedDomain,
     category: selectedCategory,
     categoryId: selectedCategoryId,
@@ -741,6 +783,8 @@ export function useBookmarks() {
     searchQuery,
     searchMode,
     selectedTag,
+    extraTags,
+    tagMatch,
     selectedDomain,
     selectedCategory,
     selectedCategoryId,
@@ -1034,6 +1078,11 @@ export function useBookmarks() {
     setSelectedCategory: selectCategory,
     selectedTag,
     setSelectedTag,
+    selectedTags,
+    toggleTag,
+    tagMatch,
+    setTagMatch: changeTagMatch,
+    tagFilterParam,
     selectedDomain,
     setSelectedDomain,
     readLaterOnly,
