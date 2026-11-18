@@ -34,8 +34,8 @@ interface BookmarkDetailProps {
   onOpenChange: (open: boolean) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
-  onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => void;
-  onUpdateNotes: (id: string, notes: string | null) => void;
+  onUpdateField: (id: string, field: "title" | "url" | "summary", value: string) => Promise<void> | void;
+  onUpdateNotes: (id: string, notes: string | null) => Promise<void> | void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -95,8 +95,8 @@ export function BookmarkDetail({
     isEmpty: (value) => !value.trim() || value === savedTitle,
   });
 
-  const closeTitleEditor = () => {
-    if (titleDraftKey) clearDraft(titleDraftKey);
+  const closeTitleEditor = (discardDraft = true) => {
+    if (discardDraft && titleDraftKey) clearDraft(titleDraftKey);
     setTitleRestored(false);
     setEditingTitle(false);
   };
@@ -129,7 +129,14 @@ export function BookmarkDetail({
 
   const handleTitleSubmit = () => {
     if (titleInput.trim() && titleInput.trim() !== bookmark.title) {
-      onUpdateField(bookmark.id, "title", titleInput.trim());
+      // Keep the draft until the save succeeds, so a failed save can be restored.
+      const draftKey = titleDraftKey;
+      closeTitleEditor(false);
+      void Promise.resolve(onUpdateField(bookmark.id, "title", titleInput.trim())).then(
+        () => { if (draftKey) clearDraft(draftKey); },
+        () => undefined,
+      );
+      return;
     }
     closeTitleEditor();
   };
@@ -156,7 +163,7 @@ export function BookmarkDetail({
       {titleRestored && (
         <p role="status" className="text-xs text-muted-foreground">
           Restored unsaved draft —{" "}
-          <button type="button" className="underline" onClick={closeTitleEditor}>Discard</button>
+          <button type="button" className="underline" onClick={() => closeTitleEditor()}>Discard</button>
         </p>
       )}
       <div className="flex items-center gap-1.5">
@@ -170,7 +177,7 @@ export function BookmarkDetail({
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleTitleSubmit}>
         <Check className="h-3.5 w-3.5" />
       </Button>
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={closeTitleEditor}>
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => closeTitleEditor()}>
         <X className="h-3.5 w-3.5" />
       </Button>
       </div>

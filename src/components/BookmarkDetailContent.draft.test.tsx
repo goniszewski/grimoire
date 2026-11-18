@@ -52,7 +52,24 @@ describe("BookmarkDetailContent notes draft", () => {
     await waitFor(() => expect(window.localStorage.getItem(KEY)).not.toBeNull());
     fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").findIndex((b) => b.querySelector("svg.lucide-check"))]);
     expect(onUpdateNotes).toHaveBeenCalledWith("bm-1", "done");
-    expect(window.localStorage.getItem(KEY)).toBeNull();
+    await waitFor(() => expect(window.localStorage.getItem(KEY)).toBeNull());
+  });
+
+  it("keeps the draft when the save fails, and restores it", async () => {
+    const onUpdateNotes = vi.fn().mockRejectedValue(new Error("boom"));
+    const first = renderContent(bookmark(), onUpdateNotes);
+    fireEvent.click(screen.getByText(/add a personal note/i));
+    fireEvent.change(screen.getByPlaceholderText(/add a personal note/i), { target: { value: "precious" } });
+    await waitFor(() => expect(window.localStorage.getItem(KEY)).not.toBeNull());
+    fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").findIndex((b) => b.querySelector("svg.lucide-check"))]);
+    await waitFor(() => expect(onUpdateNotes).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(window.localStorage.getItem(KEY)).toContain("precious");
+    first.unmount();
+
+    renderContent(bookmark());
+    expect(await screen.findByText(/Restored unsaved draft/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/add a personal note/i)).toHaveValue("precious");
   });
 
   it("works when localStorage throws", () => {

@@ -18,7 +18,7 @@ interface BookmarkDetailContentProps {
   bookmark: Bookmark;
   onUpdateTags: (id: string, tags: string[]) => void;
   onUpdateCategory: (id: string, category: string) => void;
-  onUpdateNotes: (id: string, notes: string | null) => void;
+  onUpdateNotes: (id: string, notes: string | null) => Promise<void> | void;
   onPin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onUnpin?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
   onReadLater?: (id: string, callbacks: { onSuccess: () => void; onError: () => void }) => void;
@@ -133,8 +133,8 @@ export function BookmarkDetailContent({
     isEmpty: (value) => value === (bookmark.notes ?? ""),
   });
 
-  const closeNotesEditor = () => {
-    clearDraft(notesDraftKey);
+  const closeNotesEditor = (discardDraft = true) => {
+    if (discardDraft) clearDraft(notesDraftKey);
     setNotesRestored(false);
     setEditingNotes(false);
   };
@@ -163,7 +163,14 @@ export function BookmarkDetailContent({
   const handleNotesSubmit = () => {
     const trimmed = notesInput.trim() || null;
     if (trimmed !== (bookmark.notes?.trim() || null)) {
-      onUpdateNotes(bookmark.id, trimmed);
+      // Keep the draft until the save succeeds, so a failed save can be restored.
+      const draftKey = notesDraftKey;
+      closeNotesEditor(false);
+      void Promise.resolve(onUpdateNotes(bookmark.id, trimmed)).then(
+        () => clearDraft(draftKey),
+        () => undefined,
+      );
+      return;
     }
     closeNotesEditor();
   };
@@ -310,7 +317,7 @@ export function BookmarkDetailContent({
             {notesRestored && (
               <p role="status" className="text-xs text-muted-foreground">
                 Restored unsaved draft —{" "}
-                <button type="button" className="underline" onClick={closeNotesEditor}>Discard</button>
+                <button type="button" className="underline" onClick={() => closeNotesEditor()}>Discard</button>
               </p>
             )}
             <Textarea
@@ -324,7 +331,7 @@ export function BookmarkDetailContent({
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNotesSubmit}>
                 <Check className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={closeNotesEditor}>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => closeNotesEditor()}>
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>

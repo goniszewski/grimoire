@@ -999,9 +999,9 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { category_id: matches[0][0] } });
   }, [updateBookmarkMutation, categoryMap]);
 
-  const updateBookmarkField = useCallback((id: string, field: "title" | "url" | "summary", value: string) => {
+  const updateBookmarkField = useCallback(async (id: string, field: "title" | "url" | "summary", value: string): Promise<void> => {
     if (field === "title") {
-      updateBookmarkMutation.mutate({ id, patch: { title: value } });
+      await updateBookmarkMutation.mutateAsync({ id, patch: { title: value } });
     }
     // url and summary changes are not directly supported by PUT /bookmarks/:id
     // (url changes would require re-ingestion; summary is from content extraction)
@@ -1053,8 +1053,8 @@ export function useBookmarks() {
     updateBookmarkMutation.mutate({ id, patch: { read_at: null } }, callbacks);
   }, [updateBookmarkMutation]);
 
-  const updateBookmarkNotes = useCallback((id: string, notes: string | null) => {
-    updateBookmarkMutation.mutate({ id, patch: { notes } });
+  const updateBookmarkNotes = useCallback(async (id: string, notes: string | null): Promise<void> => {
+    await updateBookmarkMutation.mutateAsync({ id, patch: { notes } });
   }, [updateBookmarkMutation]);
 
   const resetLibraryPreferences = useCallback(() => {
