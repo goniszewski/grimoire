@@ -123,7 +123,9 @@ export class OrganizationAgent {
 
         for (const candidate of nearest) {
           if (candidate.score < DUPLICATE_THRESHOLD) continue;
-          const pairKey = [embedding.bookmarkId, candidate.bookmarkId].sort().join(":");
+          const pairKey = [embedding.bookmarkId, candidate.bookmarkId]
+            .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+            .join(":");
           if (seenPairs.has(pairKey)) continue;
           seenPairs.add(pairKey);
 
