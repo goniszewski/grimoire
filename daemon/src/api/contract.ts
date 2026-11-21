@@ -3545,6 +3545,7 @@ export const apiContract = {
         "400": problemResponse("Malformed JSON"),
         "415": problemResponse("Request body is not application/json"),
         "422": problemResponse("Invalid server URL, token name, or category"),
+        "503": problemResponse("Signing was attempted on this host but Apple's signing service was unreachable; no token is kept"),
       },
       examples: [
         {

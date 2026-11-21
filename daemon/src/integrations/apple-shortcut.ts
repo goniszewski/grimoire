@@ -28,8 +28,13 @@ export interface ShortcutOptions {
 
 // ─── Plist serialization ──────────────────────────────────────────────────────
 
+// Characters XML 1.0 cannot represent; a plist containing them fails to parse.
+// eslint-disable-next-line no-control-regex
+const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+
 function escapeXml(value: string): string {
   return value
+    .replace(INVALID_XML_CHARS, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
@@ -108,10 +113,11 @@ function action(identifier: string, parameters: Record<string, PlistValue>): Pli
 export function buildShortcutWorkflow(options: ShortcutOptions): PlistValue {
   const captureUrl = `${options.serverUrl.replace(/\/+$/, "")}/capture`;
   const detectLinkId = randomUUID().toUpperCase();
+  const firstLinkId = randomUUID().toUpperCase();
   const requestId = randomUUID().toUpperCase();
 
   const bodyFields: PlistValue[] = [
-    field("url", tokenString({ Type: "ActionOutput", OutputUUID: detectLinkId, OutputName: "URLs" })),
+    field("url", tokenString({ Type: "ActionOutput", OutputUUID: firstLinkId, OutputName: "Item from List" })),
     field(
       "title",
       tokenString({
@@ -133,6 +139,15 @@ export function buildShortcutWorkflow(options: ShortcutOptions): PlistValue {
     WFWorkflowTypes: ["ActionExtension"],
     WFWorkflowActions: [
       action("is.workflow.actions.detect.link", { UUID: detectLinkId }),
+      // Several links can arrive from one share; keep the first so `url` is always a single string.
+      action("is.workflow.actions.getitemfromlist", {
+        UUID: firstLinkId,
+        WFItemSpecifier: "First Item",
+        WFInput: {
+          Value: { Type: "ActionOutput", OutputUUID: detectLinkId, OutputName: "URLs" },
+          WFSerializationType: "WFTextTokenAttachment",
+        },
+      }),
       action("is.workflow.actions.downloadurl", {
         UUID: requestId,
         WFURL: captureUrl,
@@ -200,11 +215,14 @@ export async function signShortcut(unsignedPlist: string): Promise<Uint8Array<Ar
 export interface GeneratedShortcut {
   data: Uint8Array<ArrayBuffer>;
   signed: boolean;
+  /** True when this host tried to sign (macOS) so an unsigned result means signing failed, not "unsupported". */
+  signAttempted: boolean;
 }
 
 export async function generateShortcut(options: ShortcutOptions): Promise<GeneratedShortcut> {
   const plist = toXmlPlist(buildShortcutWorkflow(options));
+  const signAttempted = canSignShortcuts();
   const signed = await signShortcut(plist);
-  if (signed) return { data: signed, signed: true };
-  return { data: new TextEncoder().encode(plist), signed: false };
+  if (signed) return { data: signed, signed: true, signAttempted };
+  return { data: new TextEncoder().encode(plist), signed: false, signAttempted };
 }

@@ -14,7 +14,7 @@ const MAX_TOKEN_NAME_LENGTH = 120;
 const MAX_CATEGORY_LENGTH = 100;
 const MAX_SERVER_URL_LENGTH = 2000;
 
-function problem(c: Context, status: 400 | 415 | 422, title: string, detail?: string) {
+function problem(c: Context, status: 400 | 415 | 422 | 503, title: string, detail?: string) {
   return c.json(
     {
       type: `https://littleimp.app/problems/${title.toLowerCase().replace(/\s+/g, "-")}`,
@@ -58,6 +58,9 @@ function parseServerUrl(value: unknown): { origin: string } | { error: string } 
   return { origin: parsed.origin };
 }
 
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
+
 function parseOptionalText(
   body: Record<string, unknown>,
   key: string,
@@ -67,6 +70,7 @@ function parseOptionalText(
   const raw = body[key];
   if (typeof raw !== "string") return { error: `\`${key}\` must be a string` };
   const trimmed = raw.trim();
+  if (CONTROL_CHARS.test(trimmed)) return { error: `\`${key}\` must not contain control characters` };
   if (trimmed.length > maxLength) return { error: `\`${key}\` must be at most ${maxLength} characters` };
   return { value: trimmed || undefined };
 }
@@ -101,11 +105,28 @@ export function createAppleShortcutRoute(deps: AppleShortcutDeps): Hono {
 
     // Validation is finished before the token exists, so a rejected request never leaves a stray token.
     const created = tokens.create(name.value ?? DEFAULT_TOKEN_NAME);
-    const shortcut = await (deps.generate ?? generateShortcut)({
-      serverUrl: server.origin,
-      token: created.token,
-      category: category.value,
-    });
+    let shortcut: Awaited<ReturnType<typeof generateShortcut>>;
+    try {
+      shortcut = await (deps.generate ?? generateShortcut)({
+        serverUrl: server.origin,
+        token: created.token,
+        category: category.value,
+      });
+    } catch (error) {
+      tokens.revoke(created.record.id);
+      throw error;
+    }
+
+    // On a Mac that failed to sign (offline, timeout) the file is unusable on iOS; do not leave its token behind.
+    if (!shortcut.signed && shortcut.signAttempted) {
+      tokens.revoke(created.record.id);
+      return problem(
+        c,
+        503,
+        "Signing Unavailable",
+        "Apple's signing service could not be reached. Check the internet connection and try again."
+      );
+    }
 
     return c.body(shortcut.data, 200, {
       "Content-Type": "application/octet-stream",

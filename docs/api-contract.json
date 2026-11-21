@@ -10184,6 +10184,13 @@
           "schema": {
             "ref": "ProblemDetails"
           }
+        },
+        "503": {
+          "description": "Signing was attempted on this host but Apple's signing service was unreachable; no token is kept",
+          "contentType": "application/problem+json",
+          "schema": {
+            "ref": "ProblemDetails"
+          }
         }
       },
       "examples": [

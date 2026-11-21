@@ -26,20 +26,25 @@ function saveBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   a.href = objectUrl;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(objectUrl);
+  a.remove();
+  // Safari reads the blob asynchronously; revoking immediately can cancel the download.
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
 }
 
 function AppleShortcutPanel() {
   const qc = useQueryClient();
   const [serverUrl, setServerUrl] = useState(DAEMON_URL);
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
+  const [deviceName, setDeviceName] = useState("");
   const [unsigned, setUnsigned] = useState(false);
 
   const generate = useMutation({
     mutationFn: () =>
       downloadAppleShortcut({
         server_url: serverUrl.trim(),
+        ...(deviceName.trim() ? { name: `Apple Shortcut – ${deviceName.trim()}` } : {}),
         ...(category.trim() ? { category: category.trim() } : {}),
       }),
     onSuccess: ({ blob, filename, signed }) => {
@@ -91,6 +96,18 @@ function AppleShortcutPanel() {
         </div>
       </div>
 
+      <div className="space-y-1">
+        <Label htmlFor="shortcut-device" className="text-xs">Device name (optional)</Label>
+        <Input
+          id="shortcut-device"
+          value={deviceName}
+          onChange={(e) => setDeviceName(e.target.value)}
+          placeholder="Robert's iPhone"
+          maxLength={80}
+          className="text-xs h-8"
+        />
+      </div>
+
       {loopback && (
         <p className="text-xs text-warning">
           127.0.0.1 only works on this Mac. For an iPhone, use a Tailscale Serve address so the daemon stays on
@@ -122,7 +139,7 @@ function AppleShortcutPanel() {
       )}
 
       <p className="text-[11px] text-muted-foreground">
-        Each generated file embeds its own new integration token (named “Apple Shortcut”). Treat the file like a
+        Each generated file embeds its own new integration token (named “Apple Shortcut” plus the device name). Treat the file like a
         password and revoke the token in the list below if you lose a device.
       </p>
     </div>

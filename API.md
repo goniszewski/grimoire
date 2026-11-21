@@ -2751,6 +2751,7 @@ Responses:
 | `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
 | `415` | application/problem+json | `ProblemDetails` | Request body is not application/json |
 | `422` | application/problem+json | `ProblemDetails` | Invalid server URL, token name, or category |
+| `503` | application/problem+json | `ProblemDetails` | Signing was attempted on this host but Apple's signing service was unreachable; no token is kept |
 
 Examples:
 

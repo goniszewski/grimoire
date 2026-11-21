@@ -4356,6 +4356,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Signing was attempted on this host but Apple's signing service was unreachable; no token is kept",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "x-grimoire-source-method": "POST"

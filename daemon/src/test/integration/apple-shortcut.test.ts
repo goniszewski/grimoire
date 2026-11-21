@@ -35,6 +35,15 @@ describe("apple shortcut generator", () => {
     expect(xml).toContain("Saved to Grimoire");
   });
 
+  it("keeps a single link and strips characters XML cannot hold", () => {
+    const xml = toXmlPlist(buildShortcutWorkflow({ serverUrl: "http://127.0.0.1:3210", token: "t", category: "A\u0001B" }));
+
+    expect(xml).toContain("is.workflow.actions.getitemfromlist");
+    expect(xml).toContain("<string>First Item</string>");
+    expect(xml).toContain("<string>AB</string>");
+    expect(xml).not.toContain("\u0001");
+  });
+
   it("omits the category field when none is given and escapes markup", () => {
     const xml = toXmlPlist(buildShortcutWorkflow({ serverUrl: "http://127.0.0.1:3210", token: "a<b>&c" }));
 
@@ -59,7 +68,7 @@ describe("POST /integrations/apple-shortcut", () => {
         db,
         generate: async (options) => {
           embeddedToken = options.token;
-          return { data: new TextEncoder().encode(`${options.serverUrl}|${options.category ?? ""}`), signed: false };
+          return { data: new TextEncoder().encode(`${options.serverUrl}|${options.category ?? ""}`), signed: false, signAttempted: false };
         },
       })
     );
@@ -117,12 +126,36 @@ describe("POST /integrations/apple-shortcut", () => {
     ["oversized name", { server_url: ORIGIN, name: "x".repeat(121) }],
     ["non-string category", { server_url: ORIGIN, category: 1 }],
     ["oversized category", { server_url: ORIGIN, category: "x".repeat(101) }],
+    ["control character in category", { server_url: ORIGIN, category: "Inbox\u0001" }],
   ])("rejects %s without creating a token", async (_label, body) => {
     const response = await post(body);
 
     expect(response.status).toBe(422);
     expect(response.headers.get("Content-Type")).toContain("application/problem+json");
     expect(tokenCount()).toBe(0);
+  });
+
+  it("revokes the token and returns 503 when signing was attempted but failed", async () => {
+    const failing = new Hono();
+    failing.route(
+      "/",
+      createAppleShortcutRoute({
+        db,
+        generate: async () => ({ data: new Uint8Array(), signed: false, signAttempted: true }),
+      })
+    );
+
+    const response = await failing.request("/integrations/apple-shortcut", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: ORIGIN },
+      body: JSON.stringify({ server_url: ORIGIN }),
+    });
+
+    expect(response.status).toBe(503);
+    const active = db
+      .query<{ n: number }, []>("SELECT COUNT(*) AS n FROM integration_tokens WHERE revoked_at IS NULL")
+      .get()!.n;
+    expect(active).toBe(0);
   });
 
   it("rejects malformed JSON and non-JSON bodies", async () => {
