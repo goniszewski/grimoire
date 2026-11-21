@@ -4299,6 +4299,78 @@
         "x-grimoire-source-method": "POST"
       }
     },
+    "/integrations/apple-shortcut": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Generate a Share Sheet shortcut that saves pages to Grimoire.",
+        "description": "Creates a new managed integration token and embeds it in a `SendToGrimoire.shortcut` file that posts shared URLs to `POST /capture` on the given server. On macOS hosts the file is signed with `shortcuts sign --mode anyone`, which contacts Apple's signing service; elsewhere an unsigned file is returned and `X-Grimoire-Shortcut-Signed` is `false`. iOS and macOS only import signed shortcuts, so an unsigned file must be signed on a Mac first. The token is embedded in the file and never returned separately; revoke it from the integration token list.",
+        "operationId": "postIntegrationsAppleShortcut",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleShortcutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shortcut file attachment. The X-Grimoire-Shortcut-Signed header reports whether the file is signed.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Request body is not application/json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid server URL, token name, or category",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Signing was attempted on this host but Apple's signing service was unreachable; no token is kept",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-grimoire-source-method": "POST"
+      }
+    },
     "/integration-tokens/{id}/rotate": {
       "post": {
         "tags": [
@@ -10612,6 +10684,32 @@
         },
         "required": [
           "data"
+        ],
+        "additionalProperties": false
+      },
+      "AppleShortcutRequest": {
+        "type": "object",
+        "description": "Request to generate a Share Sheet shortcut for Apple Shortcuts",
+        "properties": {
+          "server_url": {
+            "type": "string",
+            "description": "Origin of the Grimoire server as reachable from the device that runs the shortcut",
+            "format": "uri",
+            "maxLength": 2000
+          },
+          "name": {
+            "type": "string",
+            "description": "Name for the integration token created for this shortcut",
+            "maxLength": 120
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional root category name new bookmarks are filed under",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "server_url"
         ],
         "additionalProperties": false
       },

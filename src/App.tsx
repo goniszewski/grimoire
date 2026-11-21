@@ -17,6 +17,7 @@ import Tags from "./pages/Tags";
 import TagDetail from "./pages/TagDetail";
 import NotFound from "./pages/NotFound";
 import Revisit from "./pages/Revisit";
+import Share from "./pages/Share";
 import { demoRouterBasename, isDemoMode } from "@/demo/enabled";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/categories/:id" element={<CategoryDetail />} />
               <Route path="/tags" element={<Tags />} />
               <Route path="/tags/:tag" element={<TagDetail />} />
+              <Route path="/share" element={<Share />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

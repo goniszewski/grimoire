@@ -52,6 +52,7 @@ import {
   Globe,
 } from "lucide-react";
 import { generateBookmarkletUrl } from "@/lib/bookmarklet";
+import { PhoneShareSetup } from "@/components/PhoneShareSetup";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -1490,6 +1491,11 @@ const LocalSettings = () => {
 
             {/* Browser Integration */}
             <BrowserIntegration />
+
+            <div className="border-t" />
+
+            {/* Phone share setup */}
+            <PhoneShareSetup />
 
             <div className="border-t" />
 
