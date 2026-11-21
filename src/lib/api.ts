@@ -39,6 +39,7 @@ import type {
   ImportDuplicatePolicyDto,
   ImportFolderRemappingInputDto,
   ImportProgressEventDto,
+  AppleShortcutRequestDto,
   IntegrationTokenCreateRequestDto,
   IntegrationTokenCreateResultDto,
   IntegrationTokenCreateResponseDto,
@@ -1080,6 +1081,32 @@ export async function downloadExport(
   const match = disposition.match(/filename="([^"]+)"/);
   const filename = match?.[1] ?? `bookmarks.${format}`;
   return { blob: await res.blob(), filename };
+}
+
+// ─── Apple Shortcut ───────────────────────────────────────────────────────────
+
+/**
+ * Generates a Share Sheet shortcut file. The daemon creates a fresh integration
+ * token and embeds it in the file, so every call adds one token to the list.
+ */
+export async function downloadAppleShortcut(
+  request: AppleShortcutRequestDto
+): Promise<{ blob: Blob; filename: string; signed: boolean }> {
+  const res = await transport.fetch(`${DAEMON_URL}/integrations/apple-shortcut`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    throw await responseError(res);
+  }
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  return {
+    blob: await res.blob(),
+    filename: match?.[1] ?? "SendToGrimoire.shortcut",
+    signed: res.headers.get("X-Grimoire-Shortcut-Signed") === "true",
+  };
 }
 
 // ─── Backup & Restore ─────────────────────────────────────────────────────────

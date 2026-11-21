@@ -13,6 +13,13 @@ async function bootstrap(): Promise<void> {
   }
 
   createRoot(document.getElementById("root")!).render(<App />);
+
+  // Makes the app installable so Android lists it in the Share menu. The worker caches nothing.
+  if (import.meta.env.PROD && !isDemoMode && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Installability is optional; the app works without a worker.
+    });
+  }
 }
 
 void bootstrap();

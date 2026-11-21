@@ -26,6 +26,7 @@ import { createUpdatesRoute } from "./routes/updates.js";
 import { createReprocessRoute } from "./routes/reprocess.js";
 import { createMediaRoute } from "./routes/media.js";
 import { createIntegrationTokensRoute } from "./routes/integration-tokens.js";
+import { createAppleShortcutRoute } from "./routes/apple-shortcut.js";
 import { createCaptureRoute } from "./routes/capture.js";
 import { createDemoRoute } from "./routes/demo.js";
 import { createBrowserIntegrationRoute } from "./routes/browser-integration.js";
@@ -60,6 +61,7 @@ const LOCAL_JSON_BODY_LIMIT_PATHS = new Set([
   "/backup/schedule",
   "/bookmarks/reprocess",
   "/integration-tokens",
+  "/integrations/apple-shortcut",
   "/restore",
   "/settings/test-s3",
   "/demo/load",
@@ -356,6 +358,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/", createUpdatesRoute());
   app.route("/", createReprocessRoute({ db: deps.db, queue: deps.queue }));
   app.route("/", createIntegrationTokensRoute({ db: deps.db }));
+  app.route("/", createAppleShortcutRoute({ db: deps.db }));
   app.route("/", createMcpRoute({ db: deps.db, queue: deps.queue, version: deps.version }));
   app.route("/", createDemoRoute({ db: deps.db }));
 

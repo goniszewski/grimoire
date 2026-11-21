@@ -2726,6 +2726,45 @@ Content-Type: application/json
 }
 ```
 
+#### POST /integrations/apple-shortcut
+
+Generate a Share Sheet shortcut that saves pages to Grimoire.
+
+Creates a new managed integration token and embeds it in a `SendToGrimoire.shortcut` file that posts shared URLs to `POST /capture` on the given server. On macOS hosts the file is signed with `shortcuts sign --mode anyone`, which contacts Apple's signing service; elsewhere an unsigned file is returned and `X-Grimoire-Shortcut-Signed` is `false`. iOS and macOS only import signed shortcuts, so an unsigned file must be signed on a Mac first. The token is embedded in the file and never returned separately; revoke it from the integration token list.
+
+Request body:
+
+- Content type: `application/json`
+- Schema: `AppleShortcutRequest`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `server_url` | string | yes | Origin of the Grimoire server as reachable from the device that runs the shortcut |
+| `name` | string | no | Name for the integration token created for this shortcut |
+| `category` | string | no | Optional root category name new bookmarks are filed under |
+
+Responses:
+
+| Status | Content type | Schema | Description |
+|---|---|---|---|
+| `200` | application/octet-stream | - | Shortcut file attachment. The X-Grimoire-Shortcut-Signed header reports whether the file is signed. |
+| `400` | application/problem+json | `ProblemDetails` | Malformed JSON |
+| `415` | application/problem+json | `ProblemDetails` | Request body is not application/json |
+| `422` | application/problem+json | `ProblemDetails` | Invalid server URL, token name, or category |
+
+Examples:
+
+**Generate a shortcut for a Tailscale URL**
+
+Request:
+
+```bash
+curl -X POST http://127.0.0.1:3210/integrations/apple-shortcut \
+  -H "Content-Type: application/json" \
+  -d '{"server_url":"https://grimoire.example.ts.net","category":"Safari inbox"}' \
+  -o SendToGrimoire.shortcut
+```
+
 #### POST /integration-tokens/:id/rotate
 
 Rotate an active integration token and return the new bearer token once.
@@ -5110,6 +5149,16 @@ Response data
 | Field | Type | Required | Description |
 |---|---|---:|---|
 | `data` | array<IntegrationTokenRecord> | yes | Integration token records |
+
+### AppleShortcutRequest
+
+Request to generate a Share Sheet shortcut for Apple Shortcuts
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `server_url` | string | yes | Origin of the Grimoire server as reachable from the device that runs the shortcut |
+| `name` | string | no | Name for the integration token created for this shortcut |
+| `category` | string | no | Optional root category name new bookmarks are filed under |
 
 ### McpErrorResponse
 

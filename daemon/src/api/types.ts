@@ -135,6 +135,7 @@ export type ExportBookmarkDto = ApiDto<"ExportBookmark">;
 
 export type IntegrationTokenRecordDto = ApiDto<"IntegrationTokenRecord">;
 export type IntegrationTokenCreateRequestDto = ApiDto<"IntegrationTokenCreateRequest">;
+export type AppleShortcutRequestDto = ApiDto<"AppleShortcutRequest">;
 export type IntegrationTokenCreateResultDto = ApiDto<"IntegrationTokenCreateResult">;
 export type IntegrationTokenCreateResponseDto = ApiDto<"IntegrationTokenCreateResponse">;
 export type IntegrationTokenListResponseDto = ApiDto<"IntegrationTokenListResponse">;

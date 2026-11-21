@@ -104,6 +104,58 @@ and reports success only after the daemon confirms the save. This avoids
 restrictive page CSPs such as GitHub's. Allow popups for the page if the browser
 blocks the capture window.
 
+### Save from your phone or Safari (Share menu)
+
+Send the page you are reading to Grimoire from the Share menu, then close the
+tab. Open **Settings → Save from your phone** for the same steps in the app.
+
+Your phone must be able to reach Grimoire. The daemon stays on loopback, so
+publish it privately first, for example with Tailscale Serve (see
+[Remote access](./06-remote-access.md)). `127.0.0.1` only works on the machine
+that runs Grimoire.
+
+**iPhone, iPad and Mac (Apple Shortcuts)**
+
+1. In **Settings → Save from your phone → iPhone & Mac**, enter the address your
+   device uses to reach Grimoire, optionally a category, and choose
+   **Generate SendToGrimoire.shortcut**.
+2. Open the downloaded file on the device (AirDrop or iCloud Drive for an
+   iPhone) and choose **Add Shortcut**.
+3. In Safari, tap **Share → SendToGrimoire**. The first time, Shortcuts asks
+   whether the shortcut may send data to your Grimoire address; choose
+   **Always Allow**. A “Saved to Grimoire” notification confirms the save.
+
+If the save fails, Shortcuts stops with an alert such as “no value was found
+for dictionary key ‘data’”. That means Grimoire rejected the request: check
+that the address is reachable from the device and that the token has not been
+revoked. A URL that is in your trash or archive is also rejected.
+
+Shortcuts only imports signed files. When Grimoire runs on macOS it signs the
+file for you with the system `shortcuts sign --mode anyone` command, which asks
+Apple's signing service to sign it, so this step needs internet access. If
+Grimoire runs on Linux or in Docker, the download is unsigned and the app shows
+a command to sign it on any Mac:
+
+```sh
+shortcuts sign --mode anyone -i SendToGrimoire.shortcut -o SendToGrimoire-signed.shortcut
+```
+
+Every generated file embeds its own new integration token named “Apple
+Shortcut”. Treat the file like a password and revoke the token under
+**Settings → Browser Integration** if you lose a device. The shortcut posts to
+`POST /capture`, so a URL that is already saved is not duplicated.
+
+**Android (installed web app)**
+
+1. Open Grimoire in Chrome on the phone using an **HTTPS** address.
+2. Choose **Install app** from the Chrome menu.
+3. In any browser, tap **Share → Grimoire**. The link is saved and a
+   confirmation page appears.
+
+Android only lists installed web apps in the Share menu, which is why HTTPS is
+required. Shared links go through the same access as the web UI; no token is
+stored on the phone.
+
 You can also import a Netscape/HTML bookmark export from your browser, and export your library as JSON or CSV.
 
 ### Importing from Shaarli, Linkding, Pinboard and others

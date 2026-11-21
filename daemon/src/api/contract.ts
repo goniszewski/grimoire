@@ -1835,6 +1835,18 @@ const schemas = {
   ),
   IntegrationTokenCreateResponse: envelope(ref("IntegrationTokenCreateResult"), "Integration token creation response"),
   IntegrationTokenListResponse: envelope(arrayOf(ref("IntegrationTokenRecord"), "Integration token records")),
+  AppleShortcutRequest: objectSchema(
+    {
+      server_url: stringSchema("Origin of the Grimoire server as reachable from the device that runs the shortcut", {
+        format: "uri",
+        maxLength: 2000,
+      }),
+      name: stringSchema("Name for the integration token created for this shortcut", { maxLength: 120 }),
+      category: stringSchema("Optional root category name new bookmarks are filed under", { maxLength: 100 }),
+    },
+    ["server_url"],
+    "Request to generate a Share Sheet shortcut for Apple Shortcuts"
+  ),
   McpErrorResponse: objectSchema({ error: stringSchema("MCP failure message") }, ["error"]),
   DemoLoadResult: envelope(
     objectSchema(
@@ -3513,6 +3525,32 @@ export const apiContract = {
               },
             },
           },
+        },
+      ],
+    },
+    {
+      method: "POST",
+      path: "/integrations/apple-shortcut",
+      tag: "Integrations",
+      summary: "Generate a Share Sheet shortcut that saves pages to Grimoire.",
+      description:
+        "Creates a new managed integration token and embeds it in a `SendToGrimoire.shortcut` file that posts shared URLs to `POST /capture` on the given server. On macOS hosts the file is signed with `shortcuts sign --mode anyone`, which contacts Apple's signing service; elsewhere an unsigned file is returned and `X-Grimoire-Shortcut-Signed` is `false`. iOS and macOS only import signed shortcuts, so an unsigned file must be signed on a Mac first. The token is embedded in the file and never returned separately; revoke it from the integration token list.",
+      request: { body: { contentType: "application/json", schema: ref("AppleShortcutRequest") } },
+      responses: {
+        "200": {
+          description:
+            "Shortcut file attachment. The X-Grimoire-Shortcut-Signed header reports whether the file is signed.",
+          contentType: "application/octet-stream",
+        },
+        "400": problemResponse("Malformed JSON"),
+        "415": problemResponse("Request body is not application/json"),
+        "422": problemResponse("Invalid server URL, token name, or category"),
+      },
+      examples: [
+        {
+          title: "Generate a shortcut for a Tailscale URL",
+          request:
+            'curl -X POST http://127.0.0.1:3210/integrations/apple-shortcut \\\n  -H "Content-Type: application/json" \\\n  -d \'{"server_url":"https://grimoire.example.ts.net","category":"Safari inbox"}\' \\\n  -o SendToGrimoire.shortcut',
         },
       ],
     },
