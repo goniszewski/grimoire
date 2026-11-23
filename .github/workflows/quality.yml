@@ -5,9 +5,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# A newer push to the same PR supersedes the older run. Pushes to main are
+# never cancelled.
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -75,9 +82,41 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  # macOS minutes bill at about 10x Linux, so the Homebrew smoke test runs only
+  # when it can fail: on pushes to main, on manual runs, and on pull requests
+  # that touch packaging inputs. The cheap Linux job below decides which.
+  changes:
+    name: Detect packaging changes
+    runs-on: ubuntu-latest
+    outputs:
+      packaging: ${{ steps.diff.outputs.packaging }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare against the base branch
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            echo "packaging=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "$BASE_SHA"...HEAD | grep -Eq '^(Formula/|install\.sh$|package(-lock)?\.json$|bun\.lock|daemon/package\.json$|scripts/(homebrew-|package-release|release-|installed-app-smoke)|\.github/workflows/quality\.yml$)'; then
+            echo "packaging=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "packaging=false" >> "$GITHUB_OUTPUT"
+          fi
+
   homebrew:
     name: Homebrew tap and install smoke test
+    needs: changes
+    if: needs.changes.outputs.packaging == 'true'
     runs-on: macos-latest
+    timeout-minutes: 20
     env:
       HOMEBREW_NO_AUTO_UPDATE: "1"
       HOMEBREW_NO_ENV_HINTS: "1"
