@@ -85,8 +85,13 @@ Through the API, repeat the parameter: `GET /bookmarks?tag=android&tag=app&tag_m
 
 ## Capture from the browser
 
-The rewritten Chrome/Firefox extension is still being prepared for publication.
-Until it is available in the existing store listings, use the built-in bookmarklet:
+### Grimoire Companion extension
+
+Install Companion from the [Chrome Web Store](https://chromewebstore.google.com/detail/grimoire-companion/mbciogjbnegofhhhlcbmlobjcgjdbgfh) or [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/grimoire-companion/). The Firefox listing also works in Firefox for Android 142 or newer. Create a token under **Settings → Browser Integration**, paste it into Companion, and save the current page or several open tabs at once, with category, tags, notes, Pin, and Read Later. See the [browser extension guide](https://goniszewski.com/grimoire/08-browser-extension) for setup details, including phones.
+
+### Bookmarklet
+
+For other browsers, or if you'd rather not install an extension, use the built-in bookmarklet:
 
 1. Open **Settings → Browser Integration**
 2. Create an integration token (the full secret is shown once — copy it if you need it elsewhere)
