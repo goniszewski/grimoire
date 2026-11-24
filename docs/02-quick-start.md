@@ -23,7 +23,7 @@ cd grimoire
 docker compose up -d
 ```
 
-The first run **builds the image from the local Dockerfile**. That can take several minutes. Later starts reuse the image.
+The first run **pulls the published `goniszewski/grimoire` image** from Docker Hub (amd64 and arm64), so there is nothing to build. To build from your checkout instead, run `docker compose build` first.
 
 ### 2. Check health
 

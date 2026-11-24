@@ -94,7 +94,8 @@ Environment variables are only first-start or unattended defaults.
 Additional LLM providers are configured through persisted Settings after
 startup: Anthropic, OpenRouter, custom OpenAI-compatible chat endpoints,
 DeepSeek international, and Cheaper Inference each have separate API key, base
-URL, and model fields.
+URL, and model fields. A LiteLLM proxy takes a base URL, a model chosen from the
+list the proxy serves, and an optional virtual key.
 Custom OpenAI-compatible embeddings use their own provider, API key, base URL,
 and model instead of sharing the selected LLM provider.
 
